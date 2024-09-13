@@ -1,7 +1,6 @@
 Potential schema
 
 ```sql
-
 ancestry {
 	id int pk
 	ancestry varchar
@@ -92,4 +91,12 @@ coloc {
 	candidate_snp varchar > variants.id
 	posterior_prob float
 }
+
+
+
 ```
+
+
+
+Summary statistics stored in gzipped files rather than database
+
