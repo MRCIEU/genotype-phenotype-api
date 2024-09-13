@@ -1,8 +1,14 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from main import app, get_db, Base
+from app.main import app, get_db
+from app.database import Base, engine, SessionLocal
+
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 

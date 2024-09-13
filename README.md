@@ -33,19 +33,28 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
    cd genotype-phenotype-api
    ```
 
-2. Open the project in VSCode:
+2. Create a `.env` file
+
+   ```
+   DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+   POSTGRES_USER=user
+   POSTGRES_PASSWORD=password
+   POSTGRES_DB=mydatabase
+   ```
+
+3. Open the project in VSCode:
    ```
    code .
    ```
 
-3. When prompted, click "Reopen in Container". This will start the development environment.
+4. When prompted, click "Reopen in Container". This will start the development environment.
 
-4. Once the container is built and running, you can start the FastAPI server by running:
+5. Once the container is built and running, you can start the FastAPI server by running:
    ```
    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-5. The API will be available at `http://localhost:8000`, and the code will hot-reload on changes.
+6. The API will be available at `http://localhost:8000`, and the code will hot-reload on changes.
 
 Or if not using VSCode
 
@@ -55,13 +64,28 @@ Or if not using VSCode
    cd genotype-phenotype-api
    ```
 
-2. Build and run the Docker containers:
+2. Create a `.env` file
+
+   ```
+   DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+   POSTGRES_USER=user
+   POSTGRES_PASSWORD=password
+   POSTGRES_DB=mydatabase
+   ANALYTICS_KEY=7a2b8f79-c837-45fa-ac48-0967ba8acf1b
+   ```
+
+3. Build and run the Docker containers:
    ```
    docker-compose up --build
    ```
 
-3. The API will be available at `http://localhost:8000`
+4. The API will be available at `http://localhost:8000`
 
+## Populate the database
+
+```
+python -m app.db.populate_db app/db/items.csv 
+```
 
 ## Running Tests
 

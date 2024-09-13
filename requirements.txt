@@ -5,3 +5,4 @@ psycopg2-binary==2.9.9
 pydantic==2.9.1
 pytest==8.3.3
 httpx==0.27.2
+fastapi-analytics==1.2.3

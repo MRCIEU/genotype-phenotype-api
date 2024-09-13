@@ -1,25 +1,10 @@
 from fastapi import FastAPI, HTTPException, Depends, Query
-from sqlalchemy import create_engine, Column, Integer, String, func
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
-import os
 from typing import List
-
-
-# Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/mydatabase")
-
-# SQLAlchemy setup
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# Define SQLAlchemy model
-class Item(Base):
-    __tablename__ = "items"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String)
+from app.database import SessionLocal, Base, engine, Item
+from api_analytics.fastapi import Analytics
+from app.settings import ANALYTICS_KEY
 
 # Define Pydantic models
 class ItemCreate(BaseModel):
@@ -37,6 +22,9 @@ class ItemResponse(BaseModel):
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Analytics
+analytics = Analytics(app, api_key=ANALYTICS_KEY)
 
 # Dependency to get the database session
 def get_db():
@@ -61,7 +49,7 @@ def read_item(item_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
     return db_item
 
-@app.get("/items/", response_model=list[ItemResponse])
+@app.get("/items/", response_model=List[ItemResponse])
 def read_items(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     items = db.query(Item).offset(skip).limit(limit).all()
     return items
@@ -96,5 +84,3 @@ def search_items(
 ):
     items = db.query(Item).filter(func.lower(Item.name).contains(func.lower(name))).offset(skip).limit(limit).all()
     return items
-
-

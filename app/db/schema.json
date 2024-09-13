@@ -1,0 +1,11 @@
+{
+    "tables": {
+        "item": {
+            "columns": {
+                "id": {"type": "Integer", "primary_key": true, "index": true},
+                "name": {"type": "String", "index": true},
+                "description": {"type": "String"}
+            }
+        }
+    }
+}
