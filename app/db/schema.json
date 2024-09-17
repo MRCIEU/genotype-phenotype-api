@@ -1,10 +1,288 @@
 {
     "tables": {
-        "item": {
+        "ancestry": {
             "columns": {
-                "id": {"type": "Integer", "primary_key": true, "index": true},
-                "name": {"type": "String", "index": true},
-                "description": {"type": "String"}
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "ancestry": {
+                    "type": "String"
+                }
+            }
+        },
+        "ontology": {
+            "columns": {
+                "id": {
+                    "type": "String",
+                    "primary_key": true
+                },
+                "name": {
+                    "type": "String"
+                },
+                "uri": {
+                    "type": "String"
+                }
+            }
+        },
+        "traits": {
+            "columns": {
+                "trait_name": {
+                    "type": "String"
+                },
+                "study": {
+                    "type": "Integer"
+                },
+                "ontology": {
+                    "type": "String"
+                },
+                "sample_size": {
+                    "type": "Integer"
+                },
+                "ncase": {
+                    "type": "Integer"
+                },
+                "ncontrol": {
+                    "type": "Integer"
+                },
+                "units": {
+                    "type": "String"
+                },
+                "ancestry": {
+                    "type": "Integer"
+                },
+                "type": {
+                    "type": "String"
+                },
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                }
+            },
+            "foreign_keys": {
+                "study": {
+                    "references": "studies.id"
+                },
+                "ontology": {
+                    "references": "ontology.name"
+                },
+                "ancestry": {
+                    "references": "ancestry.id"
+                }
+            }
+        },
+        "variants": {
+            "columns": {
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "chr": {
+                    "type": "Integer"
+                },
+                "pos": {
+                    "type": "Integer"
+                },
+                "a1": {
+                    "type": "String"
+                },
+                "a2": {
+                    "type": "String"
+                },
+                "sas_freq": {
+                    "type": "Float"
+                },
+                "eas_freq": {
+                    "type": "Float"
+                },
+                "eur_freq": {
+                    "type": "Float"
+                },
+                "afr_freq": {
+                    "type": "Float"
+                },
+                "his_freq": {
+                    "type": "Float"
+                },
+                "sas_ldscore": {
+                    "type": "Float"
+                },
+                "eas_ldscore": {
+                    "type": "Float"
+                },
+                "eur_ldscore": {
+                    "type": "Float"
+                },
+                "afr_ldscore": {
+                    "type": "Float"
+                },
+                "his_ldscore": {
+                    "type": "Float"
+                }
+            }
+        },
+        "ld": {
+            "columns": {
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "id1": {
+                    "type": "Integer"
+                },
+                "id2": {
+                    "type": "Integer"
+                },
+                "ancestry": {
+                    "type": "Integer"
+                },
+                "r_eur": {
+                    "type": "Float"
+                },
+                "r_sas": {
+                    "type": "Float"
+                },
+                "r_eas": {
+                    "type": "Float"
+                },
+                "r_afr": {
+                    "type": "Float"
+                },
+                "r_his": {
+                    "type": "Float"
+                }
+            },
+            "foreign_keys": {
+                "id1": {
+                    "references": "variants.id"
+                },
+                "id2": {
+                    "references": "variants.id"
+                },
+                "ancestry": {
+                    "references": "ancestry.id"
+                }
+            }
+        },
+        "finemap": {
+            "columns": {
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "leadsnp": {
+                    "type": "Integer"
+                },
+                "trait": {
+                    "type": "Integer"
+                }
+            },
+            "foreign_keys": {
+                "leadsnp": {
+                    "references": "variants.id"
+                },
+                "trait": {
+                    "references": "traits.id"
+                }
+            }
+        },
+        "assocs": {
+            "columns": {
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "variant": {
+                    "type": "Integer"
+                },
+                "trait": {
+                    "type": "Integer"
+                },
+                "beta": {
+                    "type": "Float"
+                },
+                "se": {
+                    "type": "Float"
+                },
+                "pval": {
+                    "type": "Float"
+                }
+            },
+            "foreign_keys": {
+                "variant": {
+                    "references": "variants.id"
+                },
+                "trait": {
+                    "references": "finemap.id"
+                }
+            }
+        },
+        "regions": {
+            "columns": {
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "name": {
+                    "type": "String"
+                },
+                "chr": {
+                    "type": "Integer"
+                },
+                "start": {
+                    "type": "Integer"
+                },
+                "end": {
+                    "type": "Integer"
+                },
+                "ancestry": {
+                    "type": "Integer"
+                }
+            },
+            "foreign_keys": {
+                "ancestry": {
+                    "references": "ancestry.id"
+                }
+            }
+        },
+        "coloc": {
+            "columns": {
+                "id": {
+                    "type": "Integer",
+                    "primary_key": true
+                },
+                "region": {
+                    "type": "Integer"
+                },
+                "iteration": {
+                    "type": "Integer"
+                },
+                "trait": {
+                    "type": "Integer"
+                },
+                "candidate_snp": {
+                    "type": "Integer"
+                },
+                "posterior_prob": {
+                    "type": "Float"
+                },
+                "regional_prob": {
+                    "type": "Float"
+                },
+                "posterior_explained_by_snp": {
+                    "type": "Float"
+                }
+            },
+            "foreign_keys": {
+                "region": {
+                    "references": "regions.id"
+                },
+                "trait": {
+                    "references": "finemap.id"
+                },
+                "candidate_snp": {
+                    "references": "variants.id"
+                }
             }
         }
     }

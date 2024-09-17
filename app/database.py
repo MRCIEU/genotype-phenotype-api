@@ -1,6 +1,6 @@
 import json
 import os
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 from app.settings import DATABASE_URL, SCHEMA_PATH
