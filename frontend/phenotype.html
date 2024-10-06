@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+  <title>GPM</title>
+  <script type="module" src="/main.js"></script>
+  <script src="navigation-bar.js"></script>
+</head>
+
+<body>
+  <navigation-bar></navigation-bar>
+
+  <div id="app" x-data="app">
+    <div class="columns is-centered">
+      <div class="column is-three-quarters">
+        <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
+      </div>
+    </div>
+      <div class="column is-three-quarters">
+        <input class="input" type="text" placeholder="Text input" />
+      </div>
+      <div class="column">
+        <button class="button">Search</button>
+      </div>
+
+    <div class="card">
+      <button id="counter" type="button" @click="count++" x-text="`count is ${count}`"></button>
+    </div>
+  </div>
+</body>
+
+</html>
