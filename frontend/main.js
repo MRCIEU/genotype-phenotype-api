@@ -47,15 +47,13 @@ Alpine.data('searchInput', () => ({
   },
 
   get getItemsForSearch() {
-    console.log(this.search)
     const filterItems = this.dummyData.filter((item) => {
         return item.name.toLowerCase().includes(this.search.toLowerCase())
     })
-    console.log(filterItems)
 
     if(filterItems.length < this.dummyData.length && filterItems.length > 0) {
-        this.isOpen = true
-        return filterItems
+      this.isOpen = true
+      return filterItems
     } else {
       this.isOpen = false
     }
