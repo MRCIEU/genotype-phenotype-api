@@ -8,33 +8,27 @@
   <title>GPM</title>
   <script type="module" src="/main.js"></script>
   <script src="components/navigation-bar.js"></script>
+  <script src="components/graph-options.js"></script>
 </head>
 
 <body>
   <div id="phenotype" x-data="phenotype">
     <navigation-bar></navigation-bar>
 
-    <div class="columns mt-6">
+    <div class="columns mt-4">
       <div class="column">
-        <h1 class="title is-1 has-text-centered" x-text="getStudyToDisplay"></h1>
+        <h3 class="title is-2 has-text-centered" x-text="getStudyToDisplay"></h1>
       </div>
     </div>
 
     <div class="columns mt-6">
       <div class="column is-four-fifths">
-        <img :src="colocs" />
+        <div x-init="getPhenotypeGraph" id="phenotype-chart"></div>
       </div>
 
       <!-- turn this into another web component to reuse -->
       <div class="column is-one-fifth">
-        <input class="slider is-fullwidth mt-2" step="1" min="0" max="100" value="50" type="range"> <br /> Min P-value <br />
-        <input class="slider is-fullwidth mt-2" step="1" min="0" max="100" value="50" type="range"> <br /> Posterior Probability <br />
-        <label class="checkbox mt-3"> <input type="checkbox" /> Include Rare Variants </label> <br />
-        <label class="checkbox mt-2"> <input type="checkbox" /> Only Molecular Traits </label> <br />
-        <div class="control mt-2">
-          <label class="radio"> <input type="radio" name="answer" /> Cis only </label>
-          <label class="radio"> <input type="radio" name="answer" /> Cis and Trans </label>
-        </div>
+        <graph-options></graph-options>
       </div>
     </div>
 
