@@ -3,7 +3,7 @@ class GraphOptions extends HTMLElement {
         super();
     }
     connectedCallback() {
-        fetch("components/graph-options.html")
+        fetch("web-components/graph-options.html")
             .then(stream => stream.text())
             .then(text => this.innerHTML = text)
     }

@@ -3,7 +3,7 @@ class NavigationBar extends HTMLElement {
         super();
     }
     connectedCallback() {
-        fetch("components/navigation-bar.html")
+        fetch("web-components/navigation-bar.html")
             .then(stream => stream.text())
             .then(text => this.innerHTML = text)
     }

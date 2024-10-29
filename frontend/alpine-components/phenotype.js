@@ -22,7 +22,7 @@ export default function pheontype() {
       return study.name
     },
 
-    get getDataForColocResults() {
+    get getDataForColocTable() {
       this.dataReceived = true 
       let filteredColocData = this.colocData.filter(coloc => {
         if (this.colocDisplayFilters.chr !== null) return coloc.CHR == this.colocDisplayFilters.chr
@@ -45,9 +45,15 @@ export default function pheontype() {
     //splitting into chromosomes, using scaleBand: https://stackoverflow.com/questions/65499073/how-to-create-a-facetplot-in-d3-js
     // looks cool: https://nvd3.org/examples/scatter.html //https://observablehq.com/@d3/splom/2?intent=fork
     getPhenotypeGraph(graphOptions, redraw) {
+      const chartContainer = d3.select("#phenotype-chart");
+      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
+      if (redraw) {
+        chartContainer.select("svg").remove()
+      }
+
       const graphConstants = {
-        width: 1100,
-        height: 400,
+        width: graphWidth, 
+        height: Math.floor(graphWidth / 2.5),
         outerMargin: {
           top: 20,
           right: 0,
@@ -72,10 +78,6 @@ export default function pheontype() {
         }
       }
 
-      const chartContainer = d3.select("#phenotype-chart");
-      if (redraw) {
-        chartContainer.select("svg").remove()
-      }
       let self = this
 
       // calculating the y axis ticks (and number of them)

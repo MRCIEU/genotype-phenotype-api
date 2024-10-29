@@ -7,8 +7,8 @@ import smallLogo from './images/small_logo.svg'
 
 /* TODO: look into using alpine with reusable web components here: https://stackoverflow.com/questions/65710987/reusable-alpine-js-components */
 import Alpine from 'alpinejs';
-import phenotype from './alpine/phenotype.js';
-import search from './alpine/search.js';
+import phenotype from './alpine-components/phenotype.js';
+import search from './alpine-components/search.js';
 window.Alpine = Alpine;
 
 Alpine.data('homepage', () => ({
