@@ -1,20 +1,50 @@
 import * as d3 from 'd3';
 import colocs from '../images/colocs.png'
-import coloc from '../sample_data/coloc.json'
-import studies from '../sample_data/studies.json'
 
 export default function pheontype() {
   return {
     dataReceived: true,
     colocs: colocs,
-    studyData: studies,
-    colocData: coloc,
+    studyData: null,
+    colocData: null,
+    filteredColocData: null,
+    studiesToFilterBy: null,
     colocDisplayFilters: {
       chr: null,
       candidate_snp: null
     },
 
+    loadData() {
+      fetch('../sample_data/coloc.json')
+        .then(response => {
+          return response.json()
+        }).then(data => {
+          this.colocData = data
+          this.filteredColocData = data
+
+          // deduplicate studies and sort based on frequency
+          let allStudies = this.colocData.map(s => [s.study_a, s.study_b]).flat()
+          let frequency = {};
+          allStudies.forEach(item => {
+            frequency[item] = (frequency[item] || 0) + 1;
+          });
+
+          let uniqueStudies= [...new Set(allStudies)];
+          uniqueStudies.sort((a, b) => frequency[b] - frequency[a]);
+
+          this.studiesToFilterBy = uniqueStudies
+        })
+
+      fetch('../sample_data/studies.json')
+        .then(response => {
+          return response.json()
+        }).then(data => {
+          this.studyData = data
+        })
+    },
+
     get getStudyToDisplay() {
+      if (this.studyData === null) return
       let studyId = (new URLSearchParams(location.search).get('id'))
       const study = this.studyData.find((item) => {
           return item.id == studyId
@@ -22,9 +52,18 @@ export default function pheontype() {
       return study.name
     },
 
+    filterStudies(study) {
+      if (study === null) {
+        this.filteredColocData = this.colocData
+      } else {
+        this.filteredColocData = this.colocData.filter(c => c.study_a === study || c.study_b === study)
+      }
+    },
+
     get getDataForColocTable() {
+      if (this.filteredColocData === null) return
       this.dataReceived = true 
-      let filteredColocData = this.colocData.filter(coloc => {
+      let filteredColocData = this.filteredColocData.filter(coloc => {
         if (this.colocDisplayFilters.chr !== null) return coloc.CHR == this.colocDisplayFilters.chr
         else if (this.colocDisplayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.colocDisplayFilters.candidate_snp 
         else return true
@@ -33,12 +72,12 @@ export default function pheontype() {
     },
 
     initPhenotypeGraph() {
-      const graphOptions = Alpine.store('graphOptionStore')
-      this.getPhenotypeGraph(graphOptions, false)
+      if (this.filteredColocData === null) {
+        return
+      }
 
-      this.$watch('$store.graphOptionStore', (graphOptions) => {
-        this.getPhenotypeGraph(graphOptions, true)
-      })
+      const graphOptions = Alpine.store('graphOptionStore')
+      this.getPhenotypeGraph(graphOptions)
     },
 
     //overlay options: https://codepen.io/hanconsol/pen/bGPBGxb
@@ -46,10 +85,8 @@ export default function pheontype() {
     // looks cool: https://nvd3.org/examples/scatter.html //https://observablehq.com/@d3/splom/2?intent=fork
     getPhenotypeGraph(graphOptions, redraw) {
       const chartContainer = d3.select("#phenotype-chart");
+      chartContainer.select("svg").remove()
       let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
-      if (redraw) {
-        chartContainer.select("svg").remove()
-      }
 
       const graphConstants = {
         width: graphWidth, 
@@ -89,10 +126,10 @@ export default function pheontype() {
 
       // data wrangling around the colocData payload (this can be simplified and provided by the backend)
       let chromosomes = Array.from(Array(22).keys()).map(c => 'CHR '.concat(c+1))
-      let grouped_by_snp = Object.groupBy(this.colocData, ({ candidate_snp }) => candidate_snp);
-      let coloc = this.colocData.map(c => {
+      let grouped_by_snp = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
+      let coloc = this.filteredColocData.map(c => {
         c.MbP = c.BP / 1000000
-        c.numUniqueTraits = this.colocData.filter(result => result.candidate_snp == c.candidate_snp).length
+        c.numUniqueTraits = this.filteredColocData.filter(result => result.candidate_snp == c.candidate_snp).length
         return c
       })
 
@@ -103,10 +140,15 @@ export default function pheontype() {
         chr: 'CHR '.concat(result.CHR),
         CHR: result.CHR,
         annotation: Object.keys(graphConstants.annotationInfo)[Math.floor(Math.random()*Object.keys(graphConstants.annotationInfo).length)],
-        numUniqueTraits: result.numUniqueTraits +2
+        numUniqueTraits: result.numUniqueTraits +2,
+        ignore: false
       }))
       data.sort((a, b) => a.CHR > b.CHR);
-
+      // fill in missing CHRs, so we don't get a weird looking graph
+      chromosomes.forEach(chr => {
+        data.push({chr: chr, ignore: true})
+      })
+      
       // place wrapper g with margins
       const svg = chartContainer
         .append("svg")

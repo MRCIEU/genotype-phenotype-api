@@ -12,7 +12,7 @@
   </head>
 
   <body>
-    <div id="phenotype" x-data="phenotype">
+    <div id="phenotype" x-data="phenotype" x-init="loadData">
       <navigation-bar></navigation-bar>
 
       <div class="columns mt-4 mb-0">
@@ -23,10 +23,25 @@
 
       <div class="columns mt-2">
         <div class="column is-four-fifths">
-          <div x-init="initPhenotypeGraph" id="phenotype-chart"></div>
+          <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
         </div>
 
         <div class="column is-one-fifth">
+          <div class="dropdown is-hoverable is-right">
+            <div class="dropdown-trigger">
+              <button class="button mt-0 mb-4" aria-haspopup="true">
+                <span>Filter Results By:</span>
+              </button>
+            </div>
+            <div class="dropdown-menu mt-0" id="dropdown-menu3" role="menu">
+              <div class="dropdown-content">
+                    <a class="dropdown-item" @click="filterStudies(null)">Clear Filter</a>
+                <template @click.outside="closeSearch" x-for="study in studiesToFilterBy">
+                    <a class="dropdown-item" x-text="study" @click="filterStudies(study)"></a>
+                </template>
+              </div>
+            </div>
+          </div>
           <graph-options></graph-options>
         </div>
       </div>
