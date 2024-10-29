@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+    <title>GPM</title>
+    <script type="module" src="/main.js"></script>
+    <script src="web-components/navigation-bar.js"></script>
+    <script src="web-components/graph-options.js"></script>
+  </head>
+
+  <body>
+    <div id="phenotype" x-data="phenotype">
+      <navigation-bar></navigation-bar>
+
+      <div class="columns mt-4 mb-0">
+        <div class="column">
+          <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h1>
+        </div>
+      </div>
+
+      <div class="columns mt-2">
+        <div class="column is-four-fifths">
+          <div x-init="initPhenotypeGraph" id="phenotype-chart"></div>
+        </div>
+
+        <div class="column is-one-fifth">
+          <graph-options></graph-options>
+        </div>
+      </div>
+
+      <div class="columns mt-2 is-centered">
+        <div class="column is-11">
+        <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+          <thead>
+            <tr>
+              <th><abbr title="Study A">Study A</abbr></th>
+              <th><abbr title="Study B">Study B</abbr></th>
+              <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
+              <th><abbr title="Coloc Posterior Probability">Coloc Posterior Probability</abbr></th>
+              <th><abbr title="Posterior Explained By SNP">Posterior Explained By SNP</abbr></th>
+            </tr>
+          </thead>
+          <tfoot>
+            <tr>
+              <th><abbr title="Study A">Study A</abbr></th>
+              <th><abbr title="Study B">Study B</abbr></th>
+              <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
+              <th><abbr title="Coloc Posterior Probability">Coloc Posterior Probability</abbr></th>
+              <th><abbr title="Posterior Explained By SNP">Posterior Explained By SNP</abbr></th>
+            </tr>
+          </tfoot>
+          <tbody>
+            <template x-for="coloc in getDataForColocTable">
+              <tr>
+                <td x-text="coloc.study_a"></td>
+                <td x-text="coloc.study_b"></td>
+                <td x-text="coloc.candidate_snp"></td>
+                <td x-text="coloc.posterior_prob"></td>
+                <td x-text="coloc.posterior_explained_by_snp"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+
+        </div>
+      </div>
+
+      </div>
+    </div>
+  </body>
+
+</html>
