@@ -1,13 +1,10 @@
-# Genotype-phenotype map API
+# Genotype-phenotype Map Website
 
-## Background
+This repository will incorperate both backend and frontend components to the website
 
-Using [fastapi](http://fastapi.tiangolo.com) framework with a SQL database to store genotype-phenotype map data.
+* [Backend README can be found here](backend/README.md)
+* [Frontend README can be found here](frontend/README.md)
 
+## Running locally:
 
-## Database design
-
-![Database design](db/genotype-phenotype-map_1.png)
-
-
-
+TODO

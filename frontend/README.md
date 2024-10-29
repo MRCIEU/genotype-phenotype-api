@@ -1,6 +1,6 @@
 # genotype-phenotype-api website
 
-# To Start 
+## Running locally
 
 Run the following commands
 
