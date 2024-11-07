@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "name": "Region Around Gene RP11-90C4.1",
+  "gene": {
+    "chr": 1,
+    "start": 55581037,
+    "stop": 55868248,
+    "width": 287212,
+    "gene_id": "ENSG00000234810",
+    "gene_name": "RP11-90C4.1",
+    "gene_biotype": "lincRNA"
+  }
+}

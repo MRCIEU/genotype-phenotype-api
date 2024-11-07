@@ -6,44 +6,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
   <title>GPM</title>
-  <script type="module" src="/main.js"></script>
+  <script type="module" src="/main.js" async blocking="render"></script>
   <script src="web-components/navigation-bar.js"></script>
 </head>
 
 <body>
-  <navigation-bar></navigation-bar>
-  <div id="homepage" x-data="homepage">
-    <div class="columns mt-6 is-centered">
-      <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
-    </div>
-    <div class="columns mt-1 is-centered">
-      <div class="column is-three-quarters">
-        <div class="dropdown is-active level" x-data="searchInput">
-          <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="search">
-          <div class="dropdown-menu">
-            <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.id">
-              <div class="dropdown-content">
-                <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
-              </div>
-            </template>
+  <div id = "wait-to-load" style="display:none;">
+    <navigation-bar></navigation-bar>
+    <div id="homepage" x-data="homepage">
+      <div class="columns mt-6 is-centered">
+        <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
+      </div>
+      <div class="columns mt-1 is-centered">
+        <div class="column is-three-quarters">
+          <div class="dropdown is-active level" x-data="searchInput">
+            <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="search">
+            <div class="dropdown-menu">
+              <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.id">
+                <div class="dropdown-content">
+                  <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div class="block mt-6">
+            GWAS studies: <strong>2500</strong><br />
+            Molecular studies: <strong>567,332</strong><br />
+            Colocalised Pairs: <strong>123,456</strong><br />
+            Causal Variants: <strong>12,221</strong><br />
+            Post-docs: <strong>3</strong><br />
+            Mistakes: <strong>many</strong><br />
+          </div>
+          <div class="block">
+            Citation: <strong>DOI here</strong>
           </div>
         </div>
-        <div class="block mt-6">
-          GWAS studies: <strong>2500</strong><br />
-          Molecular studies: <strong>567,332</strong><br />
-          Colocalised Pairs: <strong>123,456</strong><br />
-          Causal Variants: <strong>12,221</strong><br />
-          Post-docs: <strong>3</strong><br />
-          Mistakes: <strong>many</strong><br />
-        </div>
-        <div class="block">
-          Citation: <strong>DOI here</strong>
-        </div>
       </div>
-    </div>
 
-    <div class="card">
-      <button id="counter" type="button" @click="count++" x-text="`count is ${count}`"></button>
+      <div class="card">
+        <button id="counter" type="button" @click="count++" x-text="`count is ${count}`"></button>
+      </div>
     </div>
   </div>
 </body>

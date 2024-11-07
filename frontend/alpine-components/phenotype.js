@@ -1,10 +1,10 @@
 import * as d3 from 'd3';
-import colocs from '../images/colocs.png'
+import constants from './constants.js'
+
+// TODO: change to have the chromosomes differ by chr size: https://ars.els-cdn.com/content/image/3-s2.0-B9780123852120000068-f06-12-9780123852120.jpg
 
 export default function pheontype() {
   return {
-    dataReceived: true,
-    colocs: colocs,
     studyData: null,
     colocData: null,
     filteredColocData: null,
@@ -56,13 +56,16 @@ export default function pheontype() {
       if (study === null) {
         this.filteredColocData = this.colocData
       } else {
+        this.colocDisplayFilters =  {
+          chr: null,
+          candidate_snp: null
+        }
         this.filteredColocData = this.colocData.filter(c => c.study_a === study || c.study_b === study)
       }
     },
 
     get getDataForColocTable() {
       if (this.filteredColocData === null) return
-      this.dataReceived = true 
       let filteredColocData = this.filteredColocData.filter(coloc => {
         if (this.colocDisplayFilters.chr !== null) return coloc.CHR == this.colocDisplayFilters.chr
         else if (this.colocDisplayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.colocDisplayFilters.candidate_snp 
@@ -73,6 +76,8 @@ export default function pheontype() {
 
     initPhenotypeGraph() {
       if (this.filteredColocData === null) {
+        const chartContainer = document.getElementById("phenotype-chart");
+        chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>'
         return
       }
 
@@ -83,7 +88,14 @@ export default function pheontype() {
     //overlay options: https://codepen.io/hanconsol/pen/bGPBGxb
     //splitting into chromosomes, using scaleBand: https://stackoverflow.com/questions/65499073/how-to-create-a-facetplot-in-d3-js
     // looks cool: https://nvd3.org/examples/scatter.html //https://observablehq.com/@d3/splom/2?intent=fork
-    getPhenotypeGraph(graphOptions, redraw) {
+    getPhenotypeGraph(graphOptions) {
+      if (this.filteredColocData === null) {
+        return
+      }
+
+      const chartElement = document.getElementById("phenotype-chart");
+      chartElement.innerHTML = ''
+
       const chartContainer = d3.select("#phenotype-chart");
       chartContainer.select("svg").remove()
       let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
@@ -210,9 +222,7 @@ export default function pheontype() {
       // CHR header text
       innerGraph
         .append('text')
-        .text(function (d) {
-          return d[0];
-        })
+        .text(function (d) { return d[0] })
         .attr("font-weight", 700)
         .attr('text-anchor', 'middle')
         .attr('transform', 'translate(' + innerWidth / 2 + ',' + -2 + ')')

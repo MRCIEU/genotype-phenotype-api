@@ -13,7 +13,7 @@
 
   <body>
     <div id = "wait-to-load" style="display:none;">
-      <div id="phenotype" x-data="phenotype" x-init="loadData">
+      <div id="region" x-data="region" x-init="loadData">
         <navigation-bar></navigation-bar>
 
         <div class="columns mt-4 mb-0">
@@ -24,11 +24,11 @@
 
         <div class="columns mt-2">
           <div class="column is-four-fifths">
-            <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
+            <div x-model="initGraph" id="region-chart"></div>
           </div>
 
           <div class="column is-one-fifth">
-            <div class="dropdown is-hoverable is-right">
+            <!-- <div class="dropdown is-hoverable is-right">
               <div class="dropdown-trigger">
                 <button class="button mt-0 mb-4" aria-haspopup="true">
                   <span>Filter Results By:</span>
@@ -42,7 +42,7 @@
                   </template>
                 </div>
               </div>
-            </div>
+            </div> -->
             <graph-options></graph-options>
           </div>
         </div>
@@ -69,7 +69,7 @@
               </tr>
             </tfoot>
             <tbody>
-              <template x-for="coloc in getDataForColocTable">
+              <!-- <template x-for="coloc in getDataForTable">
                 <tr>
                   <td x-text="coloc.study_a"></td>
                   <td x-text="coloc.study_b"></td>
@@ -77,7 +77,7 @@
                   <td x-text="coloc.posterior_prob"></td>
                   <td x-text="coloc.posterior_explained_by_snp"></td>
                 </tr>
-              </template>
+              </template> -->
             </tbody>
           </table>
 
