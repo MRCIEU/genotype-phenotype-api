@@ -24,6 +24,7 @@ export default function region() {
             study.trait = study.trait.replace('GTEx-sQTL-cis', '')
             study.trait = study.trait.substring(0, 25)
           })
+          this.regionData.studies.sort((a, b) => a.bp - b.bp);
         })
 
       fetch('../sample_data/region_metadata.json')

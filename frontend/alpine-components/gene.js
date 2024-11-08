@@ -13,14 +13,12 @@ export default function gene() {
           return response.json()
         }).then(data => {
           this.geneData = data
-          this.geneData.studies.sort((a, b) => a.bp - b.bp);
+          this.geneData.colocalisations.forEach(coloc => coloc.mbp = coloc.bp / 1_000_000)
 
           this.geneData.studies.forEach((study) => {
-            study.trait = study.trait.replace('GTEx-cis', '')
-            study.trait = study.trait.replace('BrainMeta-cis-eQTL', 'BrainMeta')
-            study.trait = study.trait.replace(' chr', ' ')
-            study.trait = study.trait.replace('GTEx-sQTL-cis', '')
+            study.mbp = study.bp / 1_000_000
           })
+          this.geneData.studies.sort((a, b) => a.mbp - b.mbp);
         })
 
       fetch('../sample_data/gene_metadata.json')
@@ -28,6 +26,8 @@ export default function gene() {
           return response.json()
         }).then(data => {
           this.geneMetadata = data
+          this.geneMetadata.gene.start = this.geneMetadata.gene.start / 1_000_000
+          this.geneMetadata.gene.stop = this.geneMetadata.gene.stop / 1_000_000
         })
     },
 
@@ -37,14 +37,30 @@ export default function gene() {
     },
 
     get getDataForTable() {
-      return this.geneData.studies
+      if (this.filteredGeneData === null) return []
+      return this.filteredGeneData.studies
     },
 
     filterStudies(graphOptions) {
-      this.filteredGeneData = this.geneData
+      this.filteredGeneData = JSON.parse(JSON.stringify(this.geneData))
+
+      // filter based on graphOptions store
       this.filteredGeneData.studies = this.filteredGeneData.studies.filter(study => 
-        -Math.log10(study.min_p) > (graphOptions.pValue)
+        // study.posterior_prob >= graphOptions.coloc &&
+        -Math.log10(study.min_p) > (graphOptions.pValue) &&
+        (study.rare == graphOptions.includeRareVariants || study.rare == false) && 
+        (!graphOptions.onlyMolecularTraits || study.molecular == graphOptions.onlyMolecularTraits) && 
+        (study.trans == graphOptions.includeTrans || study.trans == false)
       )
+      this.filteredGeneData.colocalisations = this.filteredGeneData.colocalisations.filter(coloc => 
+        coloc.posterior_prob >= graphOptions.coloc
+      )
+
+      const allStudies = this.filteredGeneData.studies.map(study => study.unique_study_id)
+      this.filteredGeneData.colocalisations.forEach(coloc => {
+        coloc.studies = coloc.studies.filter(study => allStudies.includes(study.id))
+      })
+
     },
 
     initGraph() {
@@ -60,7 +76,7 @@ export default function gene() {
     },
 
     getGraph(graphOptions) {
-      if (this.geneData.studies === null || this.geneMetadata === null) {
+      if (this.filteredGeneData === null || this.geneMetadata === null) {
         return
       }
       // this.geneData.studies.forEach((study) => {
@@ -82,7 +98,7 @@ export default function gene() {
           top: 20,
           right: 30,
           bottom: 80,
-          left: 200,
+          left: 220,
         }
       }
 
@@ -100,7 +116,7 @@ export default function gene() {
       const yCategories = [...new Set(this.geneData.studies.map(d => d.trait))];
 
       const xScale = d3.scaleLinear()
-        .domain([this.geneMetadata.gene.start - 5, this.geneMetadata.gene.stop + 5])
+        .domain([this.geneMetadata.gene.start, this.geneMetadata.gene.stop])
         .nice()
         .range([0, innerWidth]);
 
@@ -112,15 +128,31 @@ export default function gene() {
       // Draw the axes
       svg.append("g")
         .attr("class", "x-axis")
-        .style("text-anchor", "end")
+        .call(d3.axisBottom(xScale))
         .attr("transform", `translate(0,${innerHeight})`)
+        .selectAll("text")  
+        .style("text-anchor", "end")
         .attr("dx", "-0.8em")
         .attr("dy", "0.15em")
-        .call(d3.axisBottom(xScale))
+        .attr("transform", "rotate(-65)")
 
       svg.append("g")
         .attr("class", "y-axis")
         .call(d3.axisLeft(yScale));
+        
+      //Labels for x and y axis
+      svg.append("text")
+        .attr("font-size", "14px")
+        .attr("transform", "rotate (-90)")
+        .attr("x", "-220")
+        .attr("y", graphConstants.outerMargin.left * -1 + 20)
+        .text("Trait / Study");
+
+      svg.append("text")
+        .attr("font-size", "14px")
+        .attr("x", graphConstants.width/2 - graphConstants.outerMargin.left)
+        .attr("y", graphConstants.height - graphConstants.outerMargin.bottom + 30)
+        .text("Genomic Position (MB)");
 
       yCategories.forEach(category => {
         const yPos = yScale(category) + yScale.bandwidth() / 2;
@@ -136,29 +168,26 @@ export default function gene() {
 
       // Plot the points
       svg.selectAll(".point")
-          .data(this.geneData.studies)
+          .data(this.filteredGeneData.studies)
           .enter()
           .append("circle")
-          .attr("cx", d => xScale(d.bp))
+          .attr("cx", d => xScale(d.mbp))
           .attr("cy", d => yScale(d.trait))
           .attr("r", 3)
           .attr("fill", d => d.color)
 
-      // Group points by their x-value to find pairs for line drawing
-      const groupedByX = d3.groups(this.geneData.studies, d => d.bp);
-
-      // Draw lines connecting points with the same x-value
-      groupedByX.forEach(([xValue, points]) => {
-          if (points.length > 1) {
-            const minPoint = points.reduce((min, point) => yScale(point.trait) < yScale(min.trait) ? point: min)
-            const maxPoint = points.reduce((max, point) => yScale(point.trait) > yScale(max.trait) ? point: max)
+      // Draw lines connecting points with known colocalisations
+      this.filteredGeneData.colocalisations.forEach(coloc => {
+          if (coloc.studies.length > 1) {
+            const minPoint = coloc.studies.reduce((min, study) => yScale(study.name) < yScale(min.name) ? study : min)
+            const maxPoint = coloc.studies.reduce((max, name) => yScale(name.name) > yScale(max.name) ? name : max)
 
             svg.append("line")
               .attr("class", "graph-line")
-              .attr("x1", xScale(xValue))
-              .attr("y1", yScale(minPoint.trait))
-              .attr("x2", xScale(xValue))
-              .attr("y2", yScale(maxPoint.trait));
+              .attr("x1", xScale(coloc.mbp))
+              .attr("y1", yScale(minPoint.name))
+              .attr("x2", xScale(coloc.mbp))
+              .attr("y2", yScale(maxPoint.name));
           }
       });
 

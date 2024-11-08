@@ -52,32 +52,29 @@
           <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
             <thead>
               <tr>
-                <th><abbr title="Study A">Study A</abbr></th>
-                <th><abbr title="Study B">Study B</abbr></th>
+                <th><abbr title="Trait">Study A</abbr></th>
+                <th><abbr title="Region">Region</abbr></th>
+                <th><abbr title="P-value">P-value</abbr></th>
                 <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
-                <th><abbr title="Coloc Posterior Probability">Coloc Posterior Probability</abbr></th>
-                <th><abbr title="Posterior Explained By SNP">Posterior Explained By SNP</abbr></th>
               </tr>
             </thead>
             <tfoot>
               <tr>
-                <th><abbr title="Study A">Study A</abbr></th>
-                <th><abbr title="Study B">Study B</abbr></th>
+                <th><abbr title="Trait">Study A</abbr></th>
+                <th><abbr title="Region">Region</abbr></th>
+                <th><abbr title="P-value">P-value</abbr></th>
                 <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
-                <th><abbr title="Coloc Posterior Probability">Coloc Posterior Probability</abbr></th>
-                <th><abbr title="Posterior Explained By SNP">Posterior Explained By SNP</abbr></th>
               </tr>
             </tfoot>
             <tbody>
-              <!-- <template x-for="coloc in getDataForTable">
+              <template x-for="study in getDataForTable">
                 <tr>
-                  <td x-text="coloc.study_a"></td>
-                  <td x-text="coloc.study_b"></td>
-                  <td x-text="coloc.candidate_snp"></td>
-                  <td x-text="coloc.posterior_prob"></td>
-                  <td x-text="coloc.posterior_explained_by_snp"></td>
+                  <td x-text="study.trait"></td>
+                  <td x-text="study.ld_region"></td>
+                  <td x-text="study.min_p"></td>
+                  <td x-text="study.candidate_snp"></td>
                 </tr>
-              </template> -->
+              </template>
             </tbody>
           </table>
 

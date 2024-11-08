@@ -1,6 +1,8 @@
 {
+     "rare": false, "molecular": false, "trans": false,
   "studies": [
     {
+     "rare": true, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55504650_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55504650_3.tsv.gz",
@@ -11,6 +13,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55730327_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55730327_7.tsv.gz",
@@ -21,6 +24,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55730327_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55730327_4.tsv.gz",
@@ -32,6 +36,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55504650_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55504650_2.tsv.gz",
@@ -42,6 +47,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55504650_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55504650_7.tsv.gz",
@@ -52,6 +58,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": true, "molecular": false, "trans": true,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55730327_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55730327_3.tsv.gz",
@@ -62,6 +69,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55504650_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55504650_4.tsv.gz",
@@ -73,6 +81,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST000759",
       "unique_study_id": "ebi-a-GCST000759_EUR_1_55730327_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000759/finemapped/EUR_1_55730327_2.tsv.gz",
@@ -83,6 +92,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": true, "trans": false,
       "study": "ebi-a-GCST000760",
       "unique_study_id": "ebi-a-GCST000760_EUR_1_55730327_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST000760/finemapped/EUR_1_55730327_1.tsv.gz",
@@ -93,6 +103,7 @@
       "trait": "Cholesterol, total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST002221",
       "unique_study_id": "ebi-a-GCST002221_EUR_1_55719166_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST002221/finemapped/EUR_1_55719166_6.tsv.gz",
@@ -103,6 +114,7 @@
       "trait": "Cholesterol, total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST002221",
       "unique_study_id": "ebi-a-GCST002221_EUR_1_55505647_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST002221/finemapped/EUR_1_55505647_6.tsv.gz",
@@ -113,16 +125,18 @@
       "trait": "Cholesterol, total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST002222",
       "unique_study_id": "ebi-a-GCST002222_EUR_1_55719166_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST002222/finemapped/EUR_1_55719166_1.tsv.gz",
       "chr": 1,
       "bp": 55719166,
-      "min_p": 8.5704e-143,
+      "min_p": 8.5704e-43,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST005068",
       "unique_study_id": "ebi-a-GCST005068_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST005068/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -133,6 +147,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55521313_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55521313_5.tsv.gz",
@@ -143,6 +158,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55505647_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55505647_7.tsv.gz",
@@ -154,6 +170,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55694188_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55694188_7.tsv.gz",
@@ -165,6 +182,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55466303_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55466303_7.tsv.gz",
@@ -176,6 +194,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55694188_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55694188_5.tsv.gz",
@@ -186,6 +205,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55505647_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55505647_5.tsv.gz",
@@ -196,6 +216,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55466303_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55466303_5.tsv.gz",
@@ -206,6 +227,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_54866285_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_54866285_5.tsv.gz",
@@ -216,6 +238,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55521313_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55521313_7.tsv.gz",
@@ -227,6 +250,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_54866285_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_54866285_7.tsv.gz",
@@ -238,16 +262,18 @@
       "trait": "Low density lipoprotein c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55485042_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55485042_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55500978_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55500978_2.tsv.gz",
@@ -259,16 +285,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55500978_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55500978_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55500978_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55500978_4.tsv.gz",
@@ -279,16 +307,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55588142_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55588142_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55602763_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55602763_4.tsv.gz",
@@ -299,6 +329,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55528629_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55528629_4.tsv.gz",
@@ -309,6 +340,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55602763_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55602763_2.tsv.gz",
@@ -320,16 +352,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55528629_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55528629_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55528629_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55528629_6.tsv.gz",
@@ -341,6 +375,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55500978_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55500978_6.tsv.gz",
@@ -352,6 +387,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55588142_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55588142_4.tsv.gz",
@@ -362,6 +398,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55485042_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55485042_6.tsv.gz",
@@ -373,6 +410,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55485042_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55485042_2.tsv.gz",
@@ -384,6 +422,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55485042_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55485042_4.tsv.gz",
@@ -394,6 +433,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55528629_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55528629_2.tsv.gz",
@@ -405,6 +445,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55588142_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55588142_6.tsv.gz",
@@ -416,6 +457,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55759138_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55759138_2.tsv.gz",
@@ -427,6 +469,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55602763_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55602763_6.tsv.gz",
@@ -438,6 +481,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55759138_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55759138_6.tsv.gz",
@@ -449,6 +493,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55588142_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55588142_2.tsv.gz",
@@ -460,16 +505,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55602763_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55602763_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55674000_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55674000_2.tsv.gz",
@@ -481,6 +528,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55674000_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55674000_6.tsv.gz",
@@ -492,26 +540,29 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55674000_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55674000_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55759138_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55759138_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.305e-16,
+      "min_p": 6.305e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55759138_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55759138_4.tsv.gz",
@@ -522,6 +573,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013871",
       "unique_study_id": "ebi-a-GCST90013871_EUR_1_55674000_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013871/finemapped/EUR_1_55674000_4.tsv.gz",
@@ -532,6 +584,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013882",
       "unique_study_id": "ebi-a-GCST90013882_EUR_1_55521313_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013882/finemapped/EUR_1_55521313_9.tsv.gz",
@@ -543,6 +596,7 @@
       "trait": "High cholesterol (Firth c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013882",
       "unique_study_id": "ebi-a-GCST90013882_EUR_1_55492083_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013882/finemapped/EUR_1_55492083_9.tsv.gz",
@@ -554,6 +608,7 @@
       "trait": "High cholesterol (Firth c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013882",
       "unique_study_id": "ebi-a-GCST90013882_EUR_1_55505647_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013882/finemapped/EUR_1_55505647_9.tsv.gz",
@@ -565,6 +620,7 @@
       "trait": "High cholesterol (Firth c"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013919",
       "unique_study_id": "ebi-a-GCST90013919_EUR_1_55521109_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013919/finemapped/EUR_1_55521109_3.tsv.gz",
@@ -575,6 +631,7 @@
       "trait": "Cholesterol lowering medi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013919",
       "unique_study_id": "ebi-a-GCST90013919_EUR_1_55505647_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013919/finemapped/EUR_1_55505647_3.tsv.gz",
@@ -585,6 +642,7 @@
       "trait": "Cholesterol lowering medi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013932",
       "unique_study_id": "ebi-a-GCST90013932_EUR_1_55505647_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013932/finemapped/EUR_1_55505647_9.tsv.gz",
@@ -596,6 +654,7 @@
       "trait": "High cholesterol (SPA cor"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013932",
       "unique_study_id": "ebi-a-GCST90013932_EUR_1_55492083_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013932/finemapped/EUR_1_55492083_9.tsv.gz",
@@ -607,6 +666,7 @@
       "trait": "High cholesterol (SPA cor"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013932",
       "unique_study_id": "ebi-a-GCST90013932_EUR_1_55521313_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013932/finemapped/EUR_1_55521313_9.tsv.gz",
@@ -618,6 +678,7 @@
       "trait": "High cholesterol (SPA cor"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013969",
       "unique_study_id": "ebi-a-GCST90013969_EUR_1_55521109_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013969/finemapped/EUR_1_55521109_3.tsv.gz",
@@ -628,6 +689,7 @@
       "trait": "Cholesterol lowering medi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013969",
       "unique_study_id": "ebi-a-GCST90013969_EUR_1_55505647_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013969/finemapped/EUR_1_55505647_3.tsv.gz",
@@ -638,6 +700,7 @@
       "trait": "Cholesterol lowering medi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55674000_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55674000_4.tsv.gz",
@@ -648,6 +711,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55529187_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55529187_4.tsv.gz",
@@ -658,6 +722,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55429135_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55429135_4.tsv.gz",
@@ -668,6 +733,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55624236_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55624236_6.tsv.gz",
@@ -679,6 +745,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55674000_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55674000_1.tsv.gz",
@@ -690,6 +757,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55485042_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55485042_6.tsv.gz",
@@ -701,6 +769,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55529187_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55529187_6.tsv.gz",
@@ -712,6 +781,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55429135_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55429135_6.tsv.gz",
@@ -723,6 +793,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55529187_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55529187_1.tsv.gz",
@@ -734,6 +805,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55674000_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55674000_6.tsv.gz",
@@ -745,6 +817,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55759138_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55759138_6.tsv.gz",
@@ -756,6 +829,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55624236_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55624236_1.tsv.gz",
@@ -767,6 +841,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55485042_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55485042_1.tsv.gz",
@@ -778,6 +853,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55624236_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55624236_4.tsv.gz",
@@ -788,6 +864,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55759138_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55759138_1.tsv.gz",
@@ -799,6 +876,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55429135_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55429135_1.tsv.gz",
@@ -810,6 +888,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55485042_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55485042_4.tsv.gz",
@@ -820,6 +899,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90013994",
       "unique_study_id": "ebi-a-GCST90013994_EUR_1_55759138_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90013994/finemapped/EUR_1_55759138_4.tsv.gz",
@@ -830,6 +910,7 @@
       "trait": "Apolipoprotein B levels ("
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55528629_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55528629_6.tsv.gz",
@@ -841,6 +922,7 @@
       "trait": "Cholesterol levels (UKB dlkdsjf fsdlkf sd)"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55528629_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55528629_2.tsv.gz",
@@ -852,6 +934,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55624236_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55624236_4.tsv.gz",
@@ -862,6 +945,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55528629_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55528629_4.tsv.gz",
@@ -872,6 +956,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55588142_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55588142_4.tsv.gz",
@@ -882,6 +967,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55500978_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55500978_4.tsv.gz",
@@ -892,6 +978,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55624236_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55624236_2.tsv.gz",
@@ -903,6 +990,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55674000_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55674000_2.tsv.gz",
@@ -914,6 +1002,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55500978_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55500978_2.tsv.gz",
@@ -925,6 +1014,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55500978_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55500978_6.tsv.gz",
@@ -936,6 +1026,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55485042_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55485042_4.tsv.gz",
@@ -946,6 +1037,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55485042_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55485042_6.tsv.gz",
@@ -957,6 +1049,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55588142_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55588142_2.tsv.gz",
@@ -968,6 +1061,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55485042_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55485042_2.tsv.gz",
@@ -979,6 +1073,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55588142_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55588142_6.tsv.gz",
@@ -990,6 +1085,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55759138_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55759138_6.tsv.gz",
@@ -1001,6 +1097,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55759138_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55759138_4.tsv.gz",
@@ -1011,6 +1108,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55674000_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55674000_6.tsv.gz",
@@ -1022,6 +1120,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55674000_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55674000_4.tsv.gz",
@@ -1032,6 +1131,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55759138_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55759138_2.tsv.gz",
@@ -1043,6 +1143,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014000",
       "unique_study_id": "ebi-a-GCST90014000_EUR_1_55624236_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014000/finemapped/EUR_1_55624236_6.tsv.gz",
@@ -1054,6 +1155,7 @@
       "trait": "Cholesterol levels (UKB d"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55588142_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55588142_2.tsv.gz",
@@ -1065,16 +1167,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55500978_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55500978_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55500978_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55500978_4.tsv.gz",
@@ -1085,6 +1189,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55500978_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55500978_2.tsv.gz",
@@ -1096,6 +1201,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55674000_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55674000_6.tsv.gz",
@@ -1107,6 +1213,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55500978_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55500978_6.tsv.gz",
@@ -1118,6 +1225,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55528629_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55528629_4.tsv.gz",
@@ -1128,16 +1236,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55674000_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55674000_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55485042_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55485042_4.tsv.gz",
@@ -1148,16 +1258,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55759138_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55759138_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55674000_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55674000_4.tsv.gz",
@@ -1168,6 +1280,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55759138_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55759138_6.tsv.gz",
@@ -1179,16 +1292,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55485042_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55485042_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55759138_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55759138_2.tsv.gz",
@@ -1200,6 +1315,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55528629_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55528629_2.tsv.gz",
@@ -1211,6 +1327,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55602763_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55602763_6.tsv.gz",
@@ -1222,6 +1339,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55485042_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55485042_2.tsv.gz",
@@ -1233,16 +1351,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55588142_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55588142_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55485042_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55485042_6.tsv.gz",
@@ -1254,6 +1374,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55528629_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55528629_6.tsv.gz",
@@ -1265,16 +1386,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55528629_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55528629_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55674000_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55674000_2.tsv.gz",
@@ -1286,6 +1409,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55759138_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55759138_4.tsv.gz",
@@ -1296,6 +1420,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55602763_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55602763_2.tsv.gz",
@@ -1307,6 +1432,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55588142_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55588142_4.tsv.gz",
@@ -1317,16 +1443,18 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55602763_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55602763_8.tsv.gz",
       "chr": 1,
       "bp": 55716497,
-      "min_p": 6.5817e-16,
+      "min_p": 6.5817e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55602763_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55602763_4.tsv.gz",
@@ -1337,6 +1465,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90014009",
       "unique_study_id": "ebi-a-GCST90014009_EUR_1_55588142_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90014009/finemapped/EUR_1_55588142_6.tsv.gz",
@@ -1348,6 +1477,7 @@
       "trait": "Direct low density lipopr"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018959",
       "unique_study_id": "ebi-a-GCST90018959_EUR_1_54890518_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018959/finemapped/EUR_1_54890518_2.tsv.gz",
@@ -1358,6 +1488,7 @@
       "trait": "Height"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018961",
       "unique_study_id": "ebi-a-GCST90018961_EUR_1_55505647_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018961/finemapped/EUR_1_55505647_8.tsv.gz",
@@ -1368,6 +1499,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018961",
       "unique_study_id": "ebi-a-GCST90018961_EUR_1_55492083_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018961/finemapped/EUR_1_55492083_8.tsv.gz",
@@ -1378,6 +1510,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018961",
       "unique_study_id": "ebi-a-GCST90018961_EUR_1_55492083_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018961/finemapped/EUR_1_55492083_9.tsv.gz",
@@ -1389,6 +1522,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018961",
       "unique_study_id": "ebi-a-GCST90018961_EUR_1_55505647_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018961/finemapped/EUR_1_55505647_9.tsv.gz",
@@ -1400,6 +1534,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018961",
       "unique_study_id": "ebi-a-GCST90018961_EUR_1_55521313_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018961/finemapped/EUR_1_55521313_9.tsv.gz",
@@ -1411,6 +1546,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018961",
       "unique_study_id": "ebi-a-GCST90018961_EUR_1_55521313_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018961/finemapped/EUR_1_55521313_8.tsv.gz",
@@ -1421,6 +1557,7 @@
       "trait": "LDL cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55505647_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55505647_9.tsv.gz",
@@ -1431,6 +1568,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55505647_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55505647_7.tsv.gz",
@@ -1442,6 +1580,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55505647_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55505647_8.tsv.gz",
@@ -1452,6 +1591,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55521313_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55521313_8.tsv.gz",
@@ -1462,6 +1602,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55521313_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55521313_7.tsv.gz",
@@ -1473,6 +1614,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55492083_8",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55492083_8.tsv.gz",
@@ -1483,6 +1625,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55521313_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55521313_9.tsv.gz",
@@ -1493,6 +1636,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55492083_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55492083_9.tsv.gz",
@@ -1503,6 +1647,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90018974",
       "unique_study_id": "ebi-a-GCST90018974_EUR_1_55492083_7",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018974/finemapped/EUR_1_55492083_7.tsv.gz",
@@ -1514,6 +1659,7 @@
       "trait": "Total cholesterol levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90025946",
       "unique_study_id": "ebi-a-GCST90025946_EUR_1_55723441_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90025946/finemapped/EUR_1_55723441_1.tsv.gz",
@@ -1524,6 +1670,7 @@
       "trait": "Creatinine levels"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90025970",
       "unique_study_id": "ebi-a-GCST90025970_EUR_1_56304147_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90025970/finemapped/EUR_1_56304147_5.tsv.gz",
@@ -1534,6 +1681,7 @@
       "trait": "High light scatter reticu"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90025970",
       "unique_study_id": "ebi-a-GCST90025970_EUR_1_55518467_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90025970/finemapped/EUR_1_55518467_5.tsv.gz",
@@ -1544,6 +1692,7 @@
       "trait": "High light scatter reticu"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90025972",
       "unique_study_id": "ebi-a-GCST90025972_EUR_1_56304147_3",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90025972/finemapped/EUR_1_56304147_3.tsv.gz",
@@ -1554,6 +1703,7 @@
       "trait": "Reticulocyte count"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90029000",
       "unique_study_id": "ebi-a-GCST90029000_EUR_1_54839308_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90029000/finemapped/EUR_1_54839308_2.tsv.gz",
@@ -1564,6 +1714,7 @@
       "trait": "Platelet distribution wid"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90029000",
       "unique_study_id": "ebi-a-GCST90029000_EUR_1_55771636_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90029000/finemapped/EUR_1_55771636_2.tsv.gz",
@@ -1574,6 +1725,7 @@
       "trait": "Platelet distribution wid"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90029021",
       "unique_study_id": "ebi-a-GCST90029021_EUR_1_55505647_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90029021/finemapped/EUR_1_55505647_9.tsv.gz",
@@ -1585,6 +1737,7 @@
       "trait": "High cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90029021",
       "unique_study_id": "ebi-a-GCST90029021_EUR_1_55519015_9",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90029021/finemapped/EUR_1_55519015_9.tsv.gz",
@@ -1596,6 +1749,7 @@
       "trait": "High cholesterol"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092810",
       "unique_study_id": "ebi-a-GCST90092810_EUR_1_55521313_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092810/finemapped/EUR_1_55521313_1.tsv.gz",
@@ -1607,6 +1761,7 @@
       "trait": "Ratio of apolipoprotein B"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092810",
       "unique_study_id": "ebi-a-GCST90092810_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092810/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -1618,6 +1773,7 @@
       "trait": "Ratio of apolipoprotein B"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092810",
       "unique_study_id": "ebi-a-GCST90092810_EUR_1_55676374_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092810/finemapped/EUR_1_55676374_1.tsv.gz",
@@ -1629,50 +1785,55 @@
       "trait": "Ratio of apolipoprotein B"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092869",
       "unique_study_id": "ebi-a-GCST90092869_EUR_1_55505647_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092869/finemapped/EUR_1_55505647_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.029e-14,
+      "min_p": 2.029e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092869",
       "unique_study_id": "ebi-a-GCST90092869_EUR_1_55526428_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092869/finemapped/EUR_1_55526428_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.029e-14,
+      "min_p": 2.029e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092871",
       "unique_study_id": "ebi-a-GCST90092871_EUR_1_55521109_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092871/finemapped/EUR_1_55521109_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.4954e-14,
+      "min_p": 1.4954e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092871",
       "unique_study_id": "ebi-a-GCST90092871_EUR_1_55505647_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092871/finemapped/EUR_1_55505647_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.4954e-14,
+      "min_p": 1.4954e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092879",
       "unique_study_id": "ebi-a-GCST90092879_EUR_1_55505647_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092879/finemapped/EUR_1_55505647_5.tsv.gz",
@@ -1684,6 +1845,7 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092879",
       "unique_study_id": "ebi-a-GCST90092879_EUR_1_55526428_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092879/finemapped/EUR_1_55526428_5.tsv.gz",
@@ -1695,6 +1857,7 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092879",
       "unique_study_id": "ebi-a-GCST90092879_EUR_1_55526428_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092879/finemapped/EUR_1_55526428_2.tsv.gz",
@@ -1706,6 +1869,7 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092879",
       "unique_study_id": "ebi-a-GCST90092879_EUR_1_55505647_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092879/finemapped/EUR_1_55505647_2.tsv.gz",
@@ -1717,39 +1881,43 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092917",
       "unique_study_id": "ebi-a-GCST90092917_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092917/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.4874e-15,
+      "min_p": 2.4874e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092917",
       "unique_study_id": "ebi-a-GCST90092917_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092917/finemapped/EUR_1_55521109_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.4874e-15,
+      "min_p": 2.4874e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092917",
       "unique_study_id": "ebi-a-GCST90092917_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092917/finemapped/EUR_1_55492083_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.4874e-15,
+      "min_p": 2.4874e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092918",
       "unique_study_id": "ebi-a-GCST90092918_EUR_1_55676374_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092918/finemapped/EUR_1_55676374_1.tsv.gz",
@@ -1761,6 +1929,7 @@
       "trait": "Cholesteryl ester levels "
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092918",
       "unique_study_id": "ebi-a-GCST90092918_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092918/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -1772,6 +1941,7 @@
       "trait": "Cholesteryl ester levels "
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092918",
       "unique_study_id": "ebi-a-GCST90092918_EUR_1_55521313_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092918/finemapped/EUR_1_55521313_1.tsv.gz",
@@ -1783,72 +1953,79 @@
       "trait": "Cholesteryl ester levels "
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092919",
       "unique_study_id": "ebi-a-GCST90092919_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092919/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 4.1971e-14,
+      "min_p": 4.1971e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092919",
       "unique_study_id": "ebi-a-GCST90092919_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092919/finemapped/EUR_1_55492083_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 4.1971e-14,
+      "min_p": 4.1971e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092919",
       "unique_study_id": "ebi-a-GCST90092919_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092919/finemapped/EUR_1_55521109_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 4.1971e-14,
+      "min_p": 4.1971e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092921",
       "unique_study_id": "ebi-a-GCST90092921_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092921/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 5.6616e-16,
+      "min_p": 5.6616e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092921",
       "unique_study_id": "ebi-a-GCST90092921_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092921/finemapped/EUR_1_55492083_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 5.6616e-16,
+      "min_p": 5.6616e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092921",
       "unique_study_id": "ebi-a-GCST90092921_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092921/finemapped/EUR_1_55521109_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 5.6616e-16,
+      "min_p": 5.6616e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092925",
       "unique_study_id": "ebi-a-GCST90092925_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092925/finemapped/EUR_1_55521109_1.tsv.gz",
@@ -1860,6 +2037,7 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092925",
       "unique_study_id": "ebi-a-GCST90092925_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092925/finemapped/EUR_1_55492083_1.tsv.gz",
@@ -1871,6 +2049,7 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092925",
       "unique_study_id": "ebi-a-GCST90092925_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092925/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -1882,39 +2061,43 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092927",
       "unique_study_id": "ebi-a-GCST90092927_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092927/finemapped/EUR_1_55492083_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.1754e-16,
+      "min_p": 1.1754e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092927",
       "unique_study_id": "ebi-a-GCST90092927_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092927/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.1754e-16,
+      "min_p": 1.1754e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092927",
       "unique_study_id": "ebi-a-GCST90092927_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092927/finemapped/EUR_1_55521109_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.1754e-16,
+      "min_p": 1.1754e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092969",
       "unique_study_id": "ebi-a-GCST90092969_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092969/finemapped/EUR_1_55492083_1.tsv.gz",
@@ -1926,6 +2109,7 @@
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092969",
       "unique_study_id": "ebi-a-GCST90092969_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092969/finemapped/EUR_1_55521109_1.tsv.gz",
@@ -1937,6 +2121,7 @@
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092969",
       "unique_study_id": "ebi-a-GCST90092969_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092969/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -1948,28 +2133,31 @@
       "trait": "Cholesterol to total lipi"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092971",
       "unique_study_id": "ebi-a-GCST90092971_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092971/finemapped/EUR_1_55521109_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.68e-16,
+      "min_p": 2.68e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092971",
       "unique_study_id": "ebi-a-GCST90092971_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092971/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.68e-16,
+      "min_p": 2.68e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092971",
       "unique_study_id": "ebi-a-GCST90092971_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092971/finemapped/EUR_1_55492083_1.tsv.gz",
@@ -1981,39 +2169,43 @@
       "trait": "Cholesteryl esters to tot"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092973",
       "unique_study_id": "ebi-a-GCST90092973_EUR_1_55521313_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092973/finemapped/EUR_1_55521313_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.2604e-16,
+      "min_p": 1.2604e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092973",
       "unique_study_id": "ebi-a-GCST90092973_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092973/finemapped/EUR_1_55492083_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.2604e-16,
+      "min_p": 1.2604e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092973",
       "unique_study_id": "ebi-a-GCST90092973_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092973/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.2604e-16,
+      "min_p": 1.2604e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092977",
       "unique_study_id": "ebi-a-GCST90092977_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092977/finemapped/EUR_1_55492083_1.tsv.gz",
@@ -2025,6 +2217,7 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092977",
       "unique_study_id": "ebi-a-GCST90092977_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092977/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -2036,6 +2229,7 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092977",
       "unique_study_id": "ebi-a-GCST90092977_EUR_1_55521313_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092977/finemapped/EUR_1_55521313_1.tsv.gz",
@@ -2047,6 +2241,7 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092979",
       "unique_study_id": "ebi-a-GCST90092979_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092979/finemapped/EUR_1_55505647_1.tsv.gz",
@@ -2058,6 +2253,7 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092979",
       "unique_study_id": "ebi-a-GCST90092979_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092979/finemapped/EUR_1_55492083_1.tsv.gz",
@@ -2069,6 +2265,7 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90092979",
       "unique_study_id": "ebi-a-GCST90092979_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90092979/finemapped/EUR_1_55521109_1.tsv.gz",
@@ -2080,6 +2277,7 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093021",
       "unique_study_id": "ebi-a-GCST90093021_EUR_1_55521109_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093021/finemapped/EUR_1_55521109_4.tsv.gz",
@@ -2091,6 +2289,7 @@
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093021",
       "unique_study_id": "ebi-a-GCST90093021_EUR_1_55505647_4",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093021/finemapped/EUR_1_55505647_4.tsv.gz",
@@ -2102,6 +2301,7 @@
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093025",
       "unique_study_id": "ebi-a-GCST90093025_EUR_1_55519174_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093025/finemapped/EUR_1_55519174_2.tsv.gz",
@@ -2113,6 +2313,7 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093025",
       "unique_study_id": "ebi-a-GCST90093025_EUR_1_55505647_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093025/finemapped/EUR_1_55505647_2.tsv.gz",
@@ -2124,39 +2325,43 @@
       "trait": "Phospholipids to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093027",
       "unique_study_id": "ebi-a-GCST90093027_EUR_1_55505647_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093027/finemapped/EUR_1_55505647_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.017e-14,
+      "min_p": 1.017e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093027",
       "unique_study_id": "ebi-a-GCST90093027_EUR_1_55492083_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093027/finemapped/EUR_1_55492083_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.017e-14,
+      "min_p": 1.017e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093027",
       "unique_study_id": "ebi-a-GCST90093027_EUR_1_55521109_2",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093027/finemapped/EUR_1_55521109_2.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 1.017e-14,
+      "min_p": 1.017e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093032",
       "unique_study_id": "ebi-a-GCST90093032_EUR_1_55518467_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093032/finemapped/EUR_1_55518467_6.tsv.gz",
@@ -2167,6 +2372,7 @@
       "trait": "Free cholesterol levels i"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093032",
       "unique_study_id": "ebi-a-GCST90093032_EUR_1_55526428_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093032/finemapped/EUR_1_55526428_6.tsv.gz",
@@ -2177,6 +2383,7 @@
       "trait": "Free cholesterol levels i"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093032",
       "unique_study_id": "ebi-a-GCST90093032_EUR_1_55505647_6",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093032/finemapped/EUR_1_55505647_6.tsv.gz",
@@ -2187,50 +2394,55 @@
       "trait": "Free cholesterol levels i"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093033",
       "unique_study_id": "ebi-a-GCST90093033_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093033/finemapped/EUR_1_55492083_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.836e-16,
+      "min_p": 2.836e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093033",
       "unique_study_id": "ebi-a-GCST90093033_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093033/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.836e-16,
+      "min_p": 2.836e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093033",
       "unique_study_id": "ebi-a-GCST90093033_EUR_1_55521109_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093033/finemapped/EUR_1_55521109_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 2.836e-16,
+      "min_p": 2.836e-6,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Free cholesterol to total"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093039",
       "unique_study_id": "ebi-a-GCST90093039_EUR_1_55521313_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093039/finemapped/EUR_1_55521313_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 6.5366e-15,
+      "min_p": 6.5366e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093039",
       "unique_study_id": "ebi-a-GCST90093039_EUR_1_55492083_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093039/finemapped/EUR_1_55492083_1.tsv.gz",
@@ -2242,17 +2454,19 @@
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90093039",
       "unique_study_id": "ebi-a-GCST90093039_EUR_1_55505647_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90093039/finemapped/EUR_1_55505647_1.tsv.gz",
       "chr": 1,
       "bp": 55590015,
-      "min_p": 6.5366e-15,
+      "min_p": 6.5366e-5,
       "ld_region": "EUR/1/54226262_56413116",
       "suspected_gene": "USP24",
       "trait": "Triglycerides to total li"
     },
     {
+     "rare": false, "molecular": false, "trans": false,
       "study": "ebi-a-GCST90103634",
       "unique_study_id": "ebi-a-GCST90103634_EUR_1_55718708_1",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90103634/finemapped/EUR_1_55718708_1.tsv.gz",
@@ -2263,5 +2477,53 @@
       "trait": "Estimated glomerular filt"
     }
   ],
-  "colocalisations": []
+  "colocalisations": [
+    {
+     "rare": false, "molecular": false, "trans": false,
+      "studies": [
+        {
+     "rare": false, "molecular": false, "trans": false,
+          "id": "ebi-a-GCST90093033_EUR_1_55521109_1",
+          "name": "Free cholesterol to total"
+        },
+        {
+     "rare": false, "molecular": false, "trans": false,
+          "id": "ebi-a-GCST90093039_EUR_1_55492083_1",
+          "name": "Triglycerides to total li"
+        },
+        {
+     "rare": false, "molecular": false, "trans": false,
+          "id": "ebi-a-GCST90092971_EUR_1_55492083_1",
+          "name": "Cholesteryl esters to tot"
+        }
+      ],
+      "unique_study_ids": ["ebi-a-GCST90093033_EUR_1_55521109_1", "ebi-a-GCST90093039_EUR_1_55492083_1", "ebi-a-GCST90092971_EUR_1_55492083_1"],
+      "unique_study_names": ["", "Triglycerides to total li", "Cholesteryl esters to tot"],
+      "chr": 1,
+      "bp": 55590015,
+      "posterior_prob":0.6937,
+      "candidate_snp":"1:37939173_C_T"
+    },
+    {
+     "rare": false, "molecular": false, "trans": false,
+      "studies": [
+        {
+     "rare": false, "molecular": false, "trans": false,
+          "id": "ebi-a-GCST000759_EUR_1_55730327_2",
+          "name": "LDL cholesterol"
+        },
+        {
+     "rare": false, "molecular": false, "trans": false,
+          "id": "ebi-a-GCST002221_EUR_1_55719166_6",
+          "name": "Cholesterol, total"
+        }
+      ],
+      "unique_study_ids": ["ebi-a-GCST000759_EUR_1_55730327_2", "ebi-a-GCST002221_EUR_1_55719166_6"],
+      "unique_study_names": ["LDL cholesterol", "Cholesterol, total"],
+      "chr": 1,
+      "bp": 55713628,
+      "posterior_prob":0.937,
+      "candidate_snp":"1:55713628_C_T"
+    }
+  ]
 }

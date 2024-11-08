@@ -4,13 +4,10 @@
   <hr class="divider mt-0 mb-0">
 
   P-value <span x-text="pValue"></span> <br />
-  <input class="slider is-four-fifths mt-0 mb-0" @click="$store.graphOptionStore.pValue = parseFloat(pValue)" x-model="pValue" step="0.1" min="3.8" max="7.3" value="7.3" type="range">
+  <input class="slider is-four-fifths mt-0 mb-0" @click="$store.graphOptionStore.pValue = parseFloat(pValue)" x-model="pValue" step="0.1" min="3.7" max="7.3" value="7.3" type="range">
   <hr class="divider mt-0 mb-0">
 
-  <label class="checkbox mt-1"> <input @click="$store.graphOptionStore.includeRareVariants = includeRareVariants" x-model="includeRareVariants" type="checkbox" /> Include Rare Variants </label> <br />
-  <label class="checkbox mt-1"> <input @click="$store.graphOptionStore.onlyMolecularTraits = onlyMolecularTraits" x-model="onlyMolecularTraits" type="checkbox" /> Only Molecular Traits </label> <br />
-  <div class="control mt-1">
-    <label class="radio"> <input type="radio" @click="$store.graphOptionStore.cisTrans = cisTrans" x-model="cisTrans" value="cis" /> Cis only </label>
-    <label class="radio"> <input type="radio" @click="$store.graphOptionStore.cisTrans = cisTrans"  x-model="cisTrans" value="cis_and_trans" /> Cis and Trans </label>
-  </div>
+  <label class="checkbox mt-1"> <input @change="$store.graphOptionStore.includeRareVariants = includeRareVariants" x-model="includeRareVariants" type="checkbox" /> Include Rare Variants </label> <br />
+  <label class="checkbox mt-1"> <input @change="$store.graphOptionStore.onlyMolecularTraits = onlyMolecularTraits" x-model="onlyMolecularTraits" type="checkbox" /> Only Molecular Traits </label> <br />
+  <label class="checkbox mt-1"> <input @change="$store.graphOptionStore.includeTrans = includeTrans" x-model="includeTrans" type="checkbox" /> Include Trans Markers</label> <br />
 </div>

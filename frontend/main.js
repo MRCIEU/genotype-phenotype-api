@@ -19,20 +19,15 @@ Alpine.data('homepage', () => ({
   count: 0,
 }))
 
-Alpine.data('graphOptions', () => ({
+const graphOptions = {
   coloc: 0.8,
   pValue: 7.3,
   includeRareVariants: true,
   onlyMolecularTraits: false,
-  cisTrans: 'cis'
-}))
-Alpine.store('graphOptionStore', {
-  coloc: 0.8,
-  pValue: 7.3,
-  includeRareVariants: true,
-  onlyMolecularTraits: false,
-  cisTrans: 'cis'
-})
+  includeTrans: false
+}
+Alpine.data('graphOptions', () => (Object.assign({}, graphOptions)))
+Alpine.store('graphOptionStore', Object.assign({}, graphOptions))
 
 Alpine.data('searchInput', search)
 Alpine.data('phenotype', phenotype)
