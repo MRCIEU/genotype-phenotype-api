@@ -42,6 +42,7 @@ export default function gene() {
     },
 
     filterStudies(graphOptions) {
+      // best way to deep copy an object in the browser
       this.filteredGeneData = JSON.parse(JSON.stringify(this.geneData))
 
       // filter based on graphOptions store
@@ -52,15 +53,14 @@ export default function gene() {
         (!graphOptions.onlyMolecularTraits || study.molecular == graphOptions.onlyMolecularTraits) && 
         (study.trans == graphOptions.includeTrans || study.trans == false)
       )
+
       this.filteredGeneData.colocalisations = this.filteredGeneData.colocalisations.filter(coloc => 
         coloc.posterior_prob >= graphOptions.coloc
       )
-
-      const allStudies = this.filteredGeneData.studies.map(study => study.unique_study_id)
+      const allStudyIds = this.filteredGeneData.studies.map(study => study.unique_study_id)
       this.filteredGeneData.colocalisations.forEach(coloc => {
-        coloc.studies = coloc.studies.filter(study => allStudies.includes(study.id))
+        coloc.studies = coloc.studies.filter(study => allStudyIds.includes(study.id))
       })
-
     },
 
     initGraph() {
@@ -72,10 +72,10 @@ export default function gene() {
 
       const graphOptions = Alpine.store('graphOptionStore')
       this.filterStudies(graphOptions)
-      this.getGraph(graphOptions)
+      this.produceGraph(graphOptions)
     },
 
-    getGraph(graphOptions) {
+    produceGraph(graphOptions) {
       if (this.filteredGeneData === null || this.geneMetadata === null) {
         return
       }

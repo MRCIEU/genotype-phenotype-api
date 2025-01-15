@@ -147,7 +147,7 @@
       "trait": "LDL cholesterol"
     },
     {
-     "rare": false, "molecular": false, "trans": false,
+     "rare": false, "molecular": false, "trans": true,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55521313_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55521313_5.tsv.gz",
@@ -194,7 +194,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
-     "rare": false, "molecular": false, "trans": false,
+     "rare": false, "molecular": false, "trans": true,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55694188_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55694188_5.tsv.gz",
@@ -205,7 +205,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
-     "rare": false, "molecular": false, "trans": false,
+     "rare": false, "molecular": false, "trans": true,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55505647_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55505647_5.tsv.gz",
@@ -216,7 +216,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
-     "rare": false, "molecular": false, "trans": false,
+     "rare": false, "molecular": false, "trans": true,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_55466303_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_55466303_5.tsv.gz",
@@ -227,7 +227,7 @@
       "trait": "Low density lipoprotein c"
     },
     {
-     "rare": false, "molecular": false, "trans": false,
+     "rare": false, "molecular": false, "trans": true,
       "study": "ebi-a-GCST90002412",
       "unique_study_id": "ebi-a-GCST90002412_EUR_1_54866285_5",
       "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90002412/finemapped/EUR_1_54866285_5.tsv.gz",

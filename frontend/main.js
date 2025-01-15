@@ -7,6 +7,7 @@ import smallLogo from './images/small_logo.svg'
 
 /* TODO: look into using alpine with reusable web components here: https://stackoverflow.com/questions/65710987/reusable-alpine-js-components */
 import Alpine from 'alpinejs';
+import about from './alpine-components/about.js';
 import gene from './alpine-components/gene.js';
 import region from './alpine-components/region.js';
 import phenotype from './alpine-components/phenotype.js';
@@ -32,6 +33,7 @@ Alpine.store('graphOptionStore', Object.assign({}, graphOptions))
 Alpine.data('searchInput', search)
 Alpine.data('phenotype', phenotype)
 Alpine.data('gene', gene)
+Alpine.data('about', about)
 Alpine.data('region', region)
 
 Alpine.start();

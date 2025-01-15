@@ -52,9 +52,7 @@ export default function region() {
       this.filteredRegionData.studies = this.filteredRegionData.studies.filter(study => 
         -Math.log10(study.min_p) > (graphOptions.pValue)
       )
-      console.log(this.filteredRegionData.studies)
       const justGene = this.filteredRegionData.studies.filter(study => study.bp > 55581037 && study.bp < 55868248)
-      console.log(JSON. stringify(justGene))
     },
 
     initGraph() {
