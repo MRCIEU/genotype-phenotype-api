@@ -9,6 +9,7 @@ WORKDIR /workspace
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
+    less \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

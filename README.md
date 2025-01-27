@@ -120,3 +120,11 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 ## License
 
 This project is licensed under the GPL3 License.
+
+
+## Development notes
+
+
+
+
+
