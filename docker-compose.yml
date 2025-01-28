@@ -11,7 +11,7 @@ services:
     environment:
       - DEBUG=1
       - ANALYTICS_KEY=${ANALYTICS_KEY}
-      - DB_PATH="app/db/data/gpmap.db"
+      - DB_PATH=${DB_PATH}
     ports:
       - "8000:8000"
     healthcheck:

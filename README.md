@@ -32,6 +32,7 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
 2. Create a `.env` file
 
    ```
+   DB_PATH="app/db/data/gpmap.db"
    ANALYTICS_KEY=<key from https://my-api-analytics.vercel.app>
    ```
 
