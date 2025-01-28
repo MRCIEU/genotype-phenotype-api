@@ -1,8 +1,6 @@
-Attempting to define the schema once for database generation, data import scripts and model views and validation. 
-
-The API requires `schema.json` which represents the postgres database definition sql in json format. It is generated from `schema-markup.txt` by
+The database is a duckdb database and is generated from the pipeline files using R
 
 ```
-python sql_to_json.py
+docker build --platform linux/amd64 -t gpmap_duckdb -f Dockerfile.duckdb .
+docker run -v $(pwd)/data:/project/data gpmap_duckdb Rscript /project/process.r /project/data /project/data/gpmap.db
 ```
-
