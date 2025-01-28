@@ -1,91 +1,151 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, ConfigDict
-from typing import List
-from app.database import SessionLocal, Base, engine, Variants, Traits, Coloc, Finemap
+from fastapi import FastAPI, HTTPException, Query
+import duckdb
+from typing import List, Optional
+from pydantic import BaseModel
+# Get variables from settings.py
+from app.settings import DB_PATH, ANALYTICS_KEY
 from api_analytics.fastapi import Analytics
-from app.settings import ANALYTICS_KEY
 
-# Define Pydantic models
-class VariantsResponse(BaseModel):
-    id: int
-    chr: int
-    pos: int
-    a1: str
-    a2: str
+app = FastAPI(
+    title="GPMap API",
+    description="API for querying genetic studies data",
+    version="0.0.0:9000"
+)
+app.add_middleware(Analytics, ANALYTICS_KEY)
 
-    model_config = ConfigDict(from_attributes=True)
-    
-# Create tables
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI()
-
-# Analytics
-analytics = Analytics(app, api_key=ANALYTICS_KEY)
-
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def create_response_model(model: BaseModel, results):
+    return [model(**{field: row[idx] for idx, field in enumerate(model.__fields__.keys())}) for row in results]
 
 
-@app.get("/variants/", response_model=List[VariantsResponse])
-def get_variants(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    variants = db.query(Variants).offset(skip).limit(limit).all()
-    return variants
+class Study(BaseModel):
+    data_type: str
+    data_format: str
+    source: str
+    study_name: str
+    trait: str
+    ancestry: Optional[str] = None
+    sample_size: Optional[int] = None
+    category: Optional[str] = None
+    study_location: str
+    extracted_location: str
+    reference_build: str
+    p_value_threshold: float
+    variant_type: Optional[str] = None
+    gene: Optional[str] = None
+    probe: Optional[str] = None
+    tissue: Optional[str] = None
+
+@app.get("/studies", response_model=List[Study])
+async def list_studies():
+    """Retrieve all studies from the database."""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+    results = conn.execute("""
+        SELECT *
+        FROM studies_processed
+    """).fetchall()
+    conn.close()
+
+    response = create_response_model(Study, results)
+    return response
 
 
-# @app.post("/items/", response_model=ItemResponse)
-# def create_item(item: ItemCreate, db: Session = Depends(get_db)):
-#     db_item = Item(**item.model_dump())
-#     db.add(db_item)
-#     db.commit()
-#     db.refresh(db_item)
-#     return db_item
+class Coloc(BaseModel):
+    iteration: Optional[int] = None
+    traits: Optional[str] = None
+    posterior_prob: Optional[float] = None
+    regional_prob: Optional[int] = None
+    candidate_snp: Optional[str] = None
+    posterior_explained_by_snp: Optional[float] = None
+    dropped_trait: Optional[bool] = None
+    id: Optional[int] = None
+    study: Optional[str] = None
+    chr: Optional[int] = None
+    bp: Optional[int] = None
+    min_p: Optional[float] = None
+    cis_trans: Optional[str] = None
+    ld_block: Optional[str] = None
+    known_gene: Optional[str] = None
 
-# @app.get("/items/{item_id}", response_model=ItemResponse)
-# def read_item(item_id: int, db: Session = Depends(get_db)):
-#     db_item = db.query(Item).filter(Item.id == item_id).first()
-#     if db_item is None:
-#         raise HTTPException(status_code=404, detail="Item not found")
-#     return db_item
+@app.get("/coloc/study", response_model=List[Coloc])
+async def list_coloc(study: str = Query(None, description="Study identifier to filter results")):
+    """Retrieve all coloc regions that contain the study"""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+    query = """
+    SELECT * 
+    FROM coloc
+    WHERE id IN (
+        SELECT id 
+        FROM coloc
+        WHERE study IN (?)
+    )"""
+    results = conn.execute(query, (study,)).fetchall()
+    conn.close()
+    response = create_response_model(Coloc, results)
+    return response
 
-# @app.get("/items/", response_model=List[ItemResponse])
-# def read_items(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-#     items = db.query(Item).offset(skip).limit(limit).all()
-#     return items
 
-# @app.put("/items/{item_id}", response_model=ItemResponse)
-# def update_item(item_id: int, item: ItemCreate, db: Session = Depends(get_db)):
-#     db_item = db.query(Item).filter(Item.id == item_id).first()
-#     if db_item is None:
-#         raise HTTPException(status_code=404, detail="Item not found")
-#     item_data = item.model_dump()
-#     for key, value in item_data.items():
-#         setattr(db_item, key, value)
-#     db.commit()
-#     db.refresh(db_item)
-#     return db_item
+@app.get("/coloc/ld_block", response_model=List[Coloc])
+async def list_coloc(ld_block: str = Query(None, description="Block identifier to filter results")):
+    """Retrieve all the coloc results for the LD block"""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+    query = """
+    SELECT * 
+    FROM coloc
+    WHERE id IN (
+        SELECT id 
+        FROM coloc
+        WHERE ld_block IN (?)
+    )"""
+    results = conn.execute(query, (ld_block,)).fetchall()
+    conn.close()
+    response = create_response_model(Coloc, results)
+    return response
 
-# @app.delete("/items/{item_id}", response_model=ItemResponse)
-# def delete_item(item_id: int, db: Session = Depends(get_db)):
-#     db_item = db.query(Item).filter(Item.id == item_id).first()
-#     if db_item is None:
-#         raise HTTPException(status_code=404, detail="Item not found")
-#     db.delete(db_item)
-#     db.commit()
-#     return db_item
 
-# @app.get("/items/search/", response_model=List[ItemResponse])
-# def search_items(
-#     name: str = Query(..., min_length=1, description="Search query for item name"),
-#     skip: int = 0,
-#     limit: int = 10,
-#     db: Session = Depends(get_db)
-# ):
-#     items = db.query(Item).filter(func.lower(Item.name).contains(func.lower(name))).offset(skip).limit(limit).all()
-#     return items
+@app.get("/coloc/variant", response_model=List[Coloc])
+async def list_coloc(variant: str = Query(None, description="Block identifier to filter results")):
+    """Retrieve all the coloc results for a variant in chr:pos_a1_a2 format"""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+    query = """
+    SELECT * 
+    FROM coloc
+    WHERE id IN (
+        SELECT id 
+        FROM coloc
+        WHERE candidate_snp IN (?)
+    )"""
+    results = conn.execute(query, (variant,)).fetchall()
+    conn.close()
+    response = create_response_model(Coloc, results)
+    return response
+
+@app.get("/coloc/genomicrange", response_model=List[Coloc])
+async def list_coloc(genomicrange: str = Query(None, description="Genomic range identifier to filter results")):
+    """Retrieve all the coloc results in a genomic range given in chr:start-end format"""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+
+    chrom, position = genomicrange.split(":")
+    p1, p2 = position.split("-")
+    p1, p2 = int(p1), int(p2)
+
+    query = """
+    SELECT * 
+    FROM coloc
+    WHERE id IN (
+        SELECT id 
+        FROM coloc
+        WHERE chr = (?) AND bp BETWEEN (?) AND (?)
+    )"""
+    results = conn.execute(query, (chrom, p1, p2)).fetchall()
+    conn.close()
+    response = create_response_model(Coloc, results)
+    return response
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    conn = duckdb.connect(DB_PATH, read_only=True)
+    conn.execute("SELECT 1").fetchone()
+    conn.close()
+    return {"status": "healthy"}
+

@@ -6,11 +6,7 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
 
 ## Overview
 
-![alt text](image.png)
-
-## Database design
-
-![Database design](db/genotype-phenotype-map_1.png)
+![alt text](strategy.png)
 
 ## Endpoints
 
@@ -36,13 +32,11 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
 2. Create a `.env` file
 
    ```
-   DATABASE_URL=postgresql://user:password@db:5432/mydatabase
-   POSTGRES_USER=user
-   POSTGRES_PASSWORD=password
-   POSTGRES_DB=mydatabase
+   ANALYTICS_KEY=<key from https://my-api-analytics.vercel.app>
    ```
 
 3. Open the project in VSCode:
+
    ```
    code .
    ```
@@ -50,6 +44,7 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
 4. When prompted, click "Reopen in Container". This will start the development environment.
 
 5. Once the container is built and running, you can start the FastAPI server by running:
+
    ```
    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    ```
@@ -67,14 +62,11 @@ Or if not using VSCode
 2. Create a `.env` file
 
    ```
-   DATABASE_URL=postgresql://user:password@db:5432/mydatabase
-   POSTGRES_USER=user
-   POSTGRES_PASSWORD=password
-   POSTGRES_DB=mydatabase
-   ANALYTICS_KEY=7a2b8f79-c837-45fa-ac48-0967ba8acf1b
+   ANALYTICS_KEY=<key from https://my-api-analytics.vercel.app>
    ```
 
 3. Build and run the Docker containers:
+
    ```
    docker-compose up --build
    ```
@@ -83,22 +75,13 @@ Or if not using VSCode
 
 ## Populate the database
 
-```
-python -m app.db.populate_db app/db/items.csv 
-```
-
-## Running Tests
-
-To run the unit tests, make sure you're in the development container, then execute:
+The database is a duckdb database and is generated from the pipeline files using R
 
 ```
-pytest app/test_main.py
-```
-
-If you're not in the development container, you can run the tests using Docker Compose:
-
-```
-docker-compose run web pytest app/test_main.py
+cd app/db
+docker build --platform linux/amd64 -t gpmap_duckdb -f Dockerfile.duckdb .
+docker run -v $(pwd)/data:/project/data gpmap_duckdb Rscript /project/process.r /project/data /project/data/gpmap.db
+cd -
 ```
 
 ## CI/CD
@@ -120,11 +103,3 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 ## License
 
 This project is licensed under the GPL3 License.
-
-
-## Development notes
-
-
-
-
-
