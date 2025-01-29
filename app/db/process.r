@@ -91,5 +91,9 @@ dbDisconnect(con, shutdown=TRUE)
 
 
 
+lookup_ld <- function(variants, ld_dir) {
+    
+}
+
 
 
