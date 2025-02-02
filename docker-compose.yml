@@ -1,17 +1,19 @@
 version: '3.8'
 
 services:
-  web:
+  api:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
     volumes:
       - .:/workspace:cached
+      - ${LOCAL_DB_DIR}:/workspace/data:cached
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DEBUG=1
       - ANALYTICS_KEY=${ANALYTICS_KEY}
-      - DB_PATH=${DB_PATH}
+      - DB_PROCESSED_PATH=${DB_PROCESSED_PATH}
+      - DB_ASSOCS_PATH=${DB_ASSOCS_PATH}
     ports:
       - "8000:8000"
     healthcheck:

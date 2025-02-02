@@ -32,8 +32,10 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
 2. Create a `.env` file
 
    ```
-   DB_PATH="app/db/data/gpmap.db"
-   ANALYTICS_KEY=<key from https://my-api-analytics.vercel.app>
+   ANALYTICS_KEY=7a2b8f79-c837-45fa-ac48-0967ba8acf1b
+   DB_PROCESSED_PATH="data/processed.db"
+   DB_ASSOCS_PATH="data/assocs.db"
+   LOCAL_DB_DIR="/local-scratch/projects/genotype-phenotype-map/results/2025_01_28-13_04"
    ```
 
 3. Open the project in VSCode:

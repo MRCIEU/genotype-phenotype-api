@@ -101,13 +101,13 @@ generate_ld_obj <- function(ld_dir, ld_block, all_study_blocks) {
     ld$lead <- ldvars
     ind <- which(ldvars %in% all_study_blocks$SNP)
     ld <- ld[ind,]
-    ldl <- tidyr::pivot_longer(ld, cols=-lead, names_to="variant", values_to="r2") %>% filter(r2 > 0.8 | variant %in% ld$lead) %>% filter(lead != variant) %>% mutate(ld_block=ld_block)
+    ldl <- tidyr::pivot_longer(ld, cols=-lead, names_to="variant", values_to="r") %>% filter(r^2 > 0.8 | variant %in% ld$lead) %>% filter(lead != variant) %>% mutate(ld_block=ld_block)
     return(ldl)
 }
 
 ld_blocks <- unique(all_study_blocks$ld_block)
 generate_ld_obj(ld_dir, ld_blocks[1000], variant_annotations)
-ldl <- mclapply(ld_blocks, \(x) generate_ld_obj(ld_dir, x, variant_annotations), mc.cores=20) %>% bind_rows()
+ldl <- mclapply(ld_blocks, \(x) generate_ld_obj(ld_dir, x, variant_annotations), mc.cores=30) %>% bind_rows()
 
 
 processed_db <- file.path(results_dir, "processed.db")
@@ -123,6 +123,10 @@ dbWriteTable(processed_con, "ld", ldl)
 
 dbDisconnect(processed_con, shutdown=TRUE)
 
+# processed_con <- "/local-scratch/projects/genotype-phenotype-map/results/2025_01_28-13_04/processed.db"
+# pcon <- dbConnect(duckdb::duckdb(), processed_con, read_only=TRUE)
+# dat <- tbl(pcon, "ld")
+# dbDisconnect(pcon, shutdown=TRUE)
 
 
 
@@ -185,10 +189,10 @@ dbDisconnect(assocs_con, shutdown=TRUE)
 assocs_db <- file.path(results_dir, "assocs.db")
 
 
-assocs_con <- dbConnect(duckdb::duckdb(), assocs_db, read_only=TRUE)
-dbGetQuery(assocs_con, "SELECT * FROM assocs where SNP = '1:833068_A_G'")
-dbGetQuery(assocs_con, "SELECT * FROM assocs where study = 'ebi-a-GCST90013905' AND P < 5e-8")
-dbDisconnect(assocs_con, shutdown=TRUE)
+# assocs_con <- dbConnect(duckdb::duckdb(), assocs_db, read_only=TRUE)
+# dbGetQuery(assocs_con, "SELECT * FROM assocs where SNP = '1:833068_A_G'")
+# dbGetQuery(assocs_con, "SELECT * FROM assocs where study = 'ebi-a-GCST90013905' AND P < 5e-8")
+# dbDisconnect(assocs_con, shutdown=TRUE)
 
 
 
