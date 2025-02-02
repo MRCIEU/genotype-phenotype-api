@@ -16,27 +16,23 @@ library(parallel)
 
 args <- commandArgs(T)
 
-input_dir <- "data/results/2025_01_28-13_04"
-input_dir <- "/local-scratch/projects/genotype-phenotype-map/results/2025_01_28-13_04"
-rtdir <- "data"
-rtdir <- "/local-scratch/projects/genotype-phenotype-map"
-db_file <- file.path(input_dir, "processed.db")
+# results_dir <- "/local-scratch/projects/genotype-phenotype-map/results/2025_01_28-13_04"
+# rtdir <- "/local-scratch/projects/genotype-phenotype-map"
 
-input_dir <- args[1]
-db_file <- args[2]
-unlink(db_file)
+results_dir <- args[1]
+rtdir <- args[2]
 
-all_study_blocks <- fread(file.path(input_dir, "all_study_blocks.tsv"))
+all_study_blocks <- fread(file.path(results_dir, "all_study_blocks.tsv"))
 str(all_study_blocks)
-raw_coloc_results <- fread(file.path(input_dir, "raw_coloc_results.tsv"))
+raw_coloc_results <- fread(file.path(results_dir, "raw_coloc_results.tsv"))
 str(raw_coloc_results)
-# rare_results <- fread(file.path(input_dir, "rare_results.tsv"))
+# rare_results <- fread(file.path(results_dir, "rare_results.tsv"))
 # str(rare_results)
-results_metadata <- fread(file.path(input_dir, "results_metadata.tsv"))
+results_metadata <- fread(file.path(results_dir, "results_metadata.tsv"))
 str(results_metadata)
-studies_processed <- fread(file.path(input_dir, "studies_processed.tsv"))
+studies_processed <- fread(file.path(results_dir, "studies_processed.tsv"))
 str(studies_processed)
-variant_annotations <- fread(file.path(input_dir, "variant_annotations.tsv"))
+variant_annotations <- fread(file.path(results_dir, "variant_annotations.tsv"))
 str(variant_annotations)
 variant_annotations_full <- fread(file.path(rtdir, "data", "variant_annotation", "vep_annotations_hg38.tsv.gz"))
 names(variant_annotations)
@@ -94,7 +90,6 @@ head(variant_annotations)
 
 
 # Generate LD
-ld_dir <- "data/data/ld_reference_panel_hg38"
 ld_dir <- file.path(rtdir, "data/ld_reference_panel_hg38")
 
 generate_ld_obj <- function(ld_dir, ld_block, all_study_blocks) {
@@ -115,7 +110,7 @@ generate_ld_obj(ld_dir, ld_blocks[1000], variant_annotations)
 ldl <- mclapply(ld_blocks, \(x) generate_ld_obj(ld_dir, x, variant_annotations), mc.cores=20) %>% bind_rows()
 
 
-processed_db <- file.path(input_dir, "processed.db")
+processed_db <- file.path(results_dir, "processed.db")
 unlink(processed_db)
 
 processed_con <- dbConnect(duckdb::duckdb(), processed_db)
@@ -176,18 +171,25 @@ assocs_source <- function(source, mc.cores=30) {
 sources <- unique(studies_processed$source)
 
 assocs <- lapply(sources, \(x) assocs_source(x, 30))
-assocs_db <- file.path(input_dir, "assocs.db")
+assocs_db <- file.path(results_dir, "assocs.db")
 unlink(assocs_db)
 assocs_con <- dbConnect(duckdb::duckdb(), assocs_db)
 dbWriteTable(assocs_con, "assocs", assocs[[1]])
 for(i in 2:length(assocs)) {
     dbAppendTable(assocs_con, "assocs", assocs[[i]])
 }
+dbDisconnect(assocs_con, shutdown=TRUE)
 
+
+# dbConnect read only
+assocs_db <- file.path(results_dir, "assocs.db")
+
+
+assocs_con <- dbConnect(duckdb::duckdb(), assocs_db, read_only=TRUE)
 dbGetQuery(assocs_con, "SELECT * FROM assocs where SNP = '1:833068_A_G'")
 dbGetQuery(assocs_con, "SELECT * FROM assocs where study = 'ebi-a-GCST90013905' AND P < 5e-8")
-
 dbDisconnect(assocs_con, shutdown=TRUE)
+
 
 
 
