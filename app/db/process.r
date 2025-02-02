@@ -114,10 +114,21 @@ ld_blocks <- unique(all_study_blocks$ld_block)
 generate_ld_obj(ld_dir, ld_blocks[1000], variant_annotations)
 ldl <- mclapply(ld_blocks, \(x) generate_ld_obj(ld_dir, x, variant_annotations), mc.cores=20) %>% bind_rows()
 
-install.packages("future.apply")
-library(future.apply)
-plan(multicore, workers = 1)
-ext <- future_lapply(ld_blocks, \(x) generate_ld_obj(ld_dir, x, variant_annotations)) %>% bind_rows()
+
+processed_db <- file.path(input_dir, "processed.db")
+unlink(processed_db)
+
+processed_con <- dbConnect(duckdb::duckdb(), processed_db)
+dbWriteTable(processed_con, "all_study_blocks", all_study_blocks)
+dbWriteTable(processed_con, "results_metadata", results_metadata)
+dbWriteTable(processed_con, "studies_processed", studies_processed)
+dbWriteTable(processed_con, "variant_annotations", variant_annotations_full)
+dbWriteTable(processed_con, "coloc", coloc)
+dbWriteTable(processed_con, "ld", ldl)
+
+dbDisconnect(processed_con, shutdown=TRUE)
+
+
 
 
 # Extract summary statistics
@@ -128,22 +139,7 @@ varids_list <- lapply(1:22, \(x) {
     subset(varids_info, chr==x)$varids
 })
 
-str(varids_list)
-
-path <- studies_processed$extracted_location[1]
-path <- file.path(rtdir, "data/study/", studies_processed$study_name[1], "imputed")
-dir(path)
-extract_variants <- function(varids, path) {
-    file_list <- list.files(path) %>% file.path(path, .)
-    ext <- lapply(file_list, \(x) fread(x) %>% filter(SNP %in% varids)) %>% bind_rows()
-    return(ext)
-}
-
-t1 <- Sys.time()
-extract_variants(varids_list, path)
-Sys.time() - t1
-
-extract_variants2 <- function(varids_list, path, study="study") {
+extract_variants <- function(varids_list, path, study="study") {
     file_list <- list.files(path) %>% file.path(path, .) %>% grep("pre_filter", ., value=TRUE, invert=TRUE) %>% grep("dentist", ., value=TRUE, invert=TRUE)
     if(length(file_list) == 0) {
         return(NULL)
@@ -161,40 +157,13 @@ extract_variants2 <- function(varids_list, path, study="study") {
     return(ext)
 }
 
-t1 <- Sys.time()
-extract_variants2(varids_list, path)
-Sys.time() - t1
-x <- "ebi-a-GCST90026162"
-
-
-table(studies_processed$source)
-
-x <- "UKB-PPP-european-CELA2A:P08217:OID30411:v1"
-x <- "UKB-PPP-european-IKBKG:Q9Y6K9:OID20544:v1"
-x <- studies_processed$study_name[studies_processed$source == "brain_emeta"][28504]
-
-assocs1 <- mclapply(studies_processed$study_name[studies_processed$source == "brain_emeta"][6], \(x) {
-    message(x)
-    path <- file.path(rtdir, "data/study/", x, "imputed")
-    tryCatch({
-        extract_variants2(varids_list, path)
-    }, error=function(e) {
-        message(e)
-        return(NULL)
-    })
-}, mc.cores=30)
-
-a1 <- bind_rows(assocs1)
-a1 <- a1 %>% select(SNP, study, BETA, SE, IMPUTED, P, EAF)
-
-
 
 assocs_source <- function(source, mc.cores=30) {
     assocs <- mclapply(studies_processed$study_name[studies_processed$source == source], \(x) {
         message(x)
         path <- file.path(rtdir, "data/study/", x, "imputed")
         tryCatch({
-            extract_variants2(varids_list, path, x)
+            extract_variants(varids_list, path, x)
         }, error=function(e) {
             message(e)
             return(NULL)
@@ -204,70 +173,24 @@ assocs_source <- function(source, mc.cores=30) {
     return(assocs %>% bind_rows())
 }
 
-assocs3 <- assocs_source("brain_emeta", 50)
+sources <- unique(studies_processed$source)
 
-assocs4 <- assocs_source("ukb", 50)
-assocs5 <- assocs_source("ebi_catalog", 50)
+assocs <- lapply(sources, \(x) assocs_source(x, 30))
+assocs_db <- file.path(input_dir, "assocs.db")
+unlink(assocs_db)
+assocs_con <- dbConnect(duckdb::duckdb(), assocs_db)
+dbWriteTable(assocs_con, "assocs", assocs[[1]])
+for(i in 2:length(assocs)) {
+    dbAppendTable(assocs_con, "assocs", assocs[[i]])
+}
 
+dbGetQuery(assocs_con, "SELECT * FROM assocs where SNP = '1:833068_A_G'")
+dbGetQuery(assocs_con, "SELECT * FROM assocs where study = 'ebi-a-GCST90013905' AND P < 5e-8")
 
-assocs2 <- mclapply(studies_processed$study_name[studies_processed$source == "ukb_ppp"], \(x) {
-    message(x)
-    path <- file.path(rtdir, "data/study/", x, "imputed")
-    tryCatch({
-        extract_variants2(varids_list, path) %>% mutate(study=x)
-    }, error=function(e) {
-        message(e)
-        return(tibble())
-    })
-}, mc.cores=30)
-
-length(assocs2)
-sapply(assocs2, class)
-
-a2 <- lapply(assocs2, \(x) {
-    if("try-error" %in% class(x)) {
-        return(NULL)
-    }
-    return(x)
-}) %>% bind_rows
-
-dim(a2)
-
-a2 <- bind_rows(assocs2)
-a1 <- a1 %>% select(SNP, study, BETA, SE, IMPUTED, P, EAF)
-
-a2
-
-
-assocs1 <- mclapply(studies_processed$study_name[studies_processed$source == "brain_meta"], \(x) {
-    message(x)
-    path <- file.path(rtdir, "data/study/", x, "imputed")
-    tryCatch({
-        extract_variants2(varids_list, path) %>% mutate(study=x)
-    }, error=function(e) {
-        message(e)
-        return(NULL)
-    })
-}, mc.cores=30)
-
-
-tryCatch(adsasd, error=function(e) {
-    message(e)
-    return(tibble())
-})
+dbDisconnect(assocs_con, shutdown=TRUE)
 
 
 
 
-db_file <- file.path(input_dir, "processed.db")
 
-con <- dbConnect(duckdb::duckdb(), db_file)
-dbWriteTable(con, "all_study_blocks", all_study_blocks)
-dbWriteTable(con, "results_metadata", results_metadata)
-dbWriteTable(con, "studies_processed", studies_processed)
-dbWriteTable(con, "variant_annotations", variant_annotations_full)
-dbWriteTable(con, "coloc", coloc)
-dbWriteTable(con, "ld", ldl)
-dbWriteTable(con, "assocs", assocs)
 
-dbDisconnect(con, shutdown=TRUE)
