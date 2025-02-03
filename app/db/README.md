@@ -1,6 +1,15 @@
-The database is a duckdb database and is generated from the pipeline files using R
+# Build a duckdb from the pipeline files
 
+## Setup
+
+```r
+renv::restore()
 ```
-sudo docker build -t gpmap_duckdb -f Dockerfile.duckdb .
-docker run -v $(pwd)/data:/project/data gpmap_duckdb Rscript /project/process.r /project/data /project/data/gpmap.db
+
+## Run
+
+```bash
+Rscript process.r /local-scratch/projects/genotype-phenotype-map/results/2025_01_28-13_04 /local-scratch/projects/genotype-phenotype-map
 ```
+
+This will create a `processed.db` and `assocs.db` in the `/local-scratch/projects/genotype-phenotype-map/results/2025_01_28-13_04` directory.
