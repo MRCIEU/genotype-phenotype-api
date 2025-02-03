@@ -76,16 +76,25 @@ Or if not using VSCode
 
 4. The API will be available at `http://localhost:8000`
 
-## Populate the database
 
-The database is a duckdb database and is generated from the pipeline files using R
+## Production
+
+No production yet but a dev version is available - 
+
+Setup a tunnel (need to be on vpn):
 
 ```
-cd app/db
-docker build --platform linux/amd64 -t gpmap_duckdb -f Dockerfile.duckdb .
-docker run -v $(pwd)/data:/project/data gpmap_duckdb Rscript /project/process.r /project/data /project/data/gpmap.db
-cd -
+ssh -L 8001:localhost:8000 <username>@ieu-p1.epi.bris.ac.uk
 ```
+
+Then check e.g.
+
+```bash
+curl http://localhost:8001/health
+```
+
+Or connect to http://localhost:8001/docs on your browser.
+
 
 ## CI/CD
 
