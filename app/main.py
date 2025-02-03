@@ -108,7 +108,7 @@ class Variants(BaseModel):
     ld_block: Optional[str] = None
 
 @app.post("/variants/rsids", response_model=List[Variants])
-async def list_variants(rsids: List[str]):
+async def list_variants(rsids: List[str] = Query(None, description="List of rsids to filter results")):
     """Retrieve all variants with the given rsids"""
     conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
     query = """
@@ -122,16 +122,34 @@ async def list_variants(rsids: List[str]):
     response = create_response_model(Variants, results)
     return response
 
-@app.get("/variants/rsids", response_model=List[Variants])
-async def list_variants(rsids: str = Query(None, description="Comma separated list of rsids")):
+@app.get("/variants/grange", response_model=List[Variants])
+async def list_variants(grange: str = Query(None, description="Genomic range identifier to filter results")):
     """Retrieve all variants with the given rsids"""
+    conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
+
+    chrom, position = grange.split(":")
+    p1, p2 = position.split("-")
+    p1, p2 = int(p1), int(p2)
+
+    query = """
+    SELECT * 
+    FROM variant_annotations
+    WHERE chr = (?) AND bp BETWEEN (?) AND (?)"""
+    results = conn.execute(query, (chrom, p1, p2)).fetchall()
+    conn.close()
+    response = create_response_model(Variants, results)
+    return response
+
+@app.post("/variants/variantid", response_model=List[Variants])
+async def list_variants(variantid: List[str] = Query(None, description="List of variants to filter results")):
+    """Retrieve all variants with the given chr:pos_a1_a2 format"""
     conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
     query = """
     SELECT * 
     FROM variant_annotations
-    WHERE RSID IN (?)"""
-    formatted_rsids = ','.join(f"'{rsid}'" for rsid in rsids.split(","))
-    query = query.replace('?', formatted_rsids)
+    WHERE SNP IN (?)"""
+    formatted_vids = ','.join(f"'{vid}'" for vid in variantid)
+    query = query.replace('?', formatted_vids)
     results = conn.execute(query).fetchall()
     conn.close()
     response = create_response_model(Variants, results)
@@ -154,7 +172,6 @@ async def list_coloc(ld_block: str = Query(None, description="Block identifier t
     response = create_response_model(Coloc, results)
     return response
 
-
 @app.get("/coloc/variant", response_model=List[Coloc])
 async def list_coloc(variant: str = Query(None, description="Block identifier to filter results")):
     """Retrieve all the coloc results for a variant in chr:pos_a1_a2 format"""
@@ -172,12 +189,12 @@ async def list_coloc(variant: str = Query(None, description="Block identifier to
     response = create_response_model(Coloc, results)
     return response
 
-@app.get("/coloc/genomicrange", response_model=List[Coloc])
-async def list_coloc(genomicrange: str = Query(None, description="Genomic range identifier to filter results")):
+@app.get("/coloc/grange", response_model=List[Coloc])
+async def list_coloc(grange: str = Query(None, description="Genomic range identifier to filter results")):
     """Retrieve all the coloc results in a genomic range given in chr:start-end format"""
     conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
 
-    chrom, position = genomicrange.split(":")
+    chrom, position = grange.split(":")
     p1, p2 = position.split("-")
     p1, p2 = int(p1), int(p2)
 
@@ -200,8 +217,17 @@ class Ld(BaseModel):
     r: float
     ld_block: str
 
+@app.get("/coloc/head", response_model=List[Coloc])
+async def list_coloc_head():
+    """Retrieve the first 10 coloc results"""
+    conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
+    results = conn.execute("SELECT * FROM coloc LIMIT 10").fetchall()
+    conn.close()
+    response = create_response_model(Coloc, results)
+    return response
+
 @app.post("/ldmatrix", response_model=List[Ld])
-async def list_ldmatrix(variants: List[str]):
+async def list_ldmatrix(variants: List[str] = Query(None, description="List of variants to filter results")):
     """Retrieve the LD matrix for the given variants"""
     conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
     query = """
@@ -219,7 +245,7 @@ async def list_ldmatrix(variants: List[str]):
     return response
 
 @app.post("/ldproxy", response_model=List[Ld])
-async def list_ldmatrix(variants: List[str]):
+async def list_ldmatrix(variants: List[str] = Query(None, description="List of variants to filter results")):
     """Retrieve the LD proxies for a given set of variants in varid format"""
     conn = duckdb.connect(DB_PROCESSED_PATH, read_only=True)
     query = """
@@ -233,6 +259,53 @@ async def list_ldmatrix(variants: List[str]):
     response = create_response_model(Ld, results)
     return response
 
+class Assocs(BaseModel):
+    SNP: Optional[str] = None
+    BETA: Optional[float] = None
+    SE: Optional[float] = None
+    IMPUTED: Optional[bool] = None
+    P: Optional[float] = None
+    EAF: Optional[float] = None
+    study: Optional[str] = None
+
+@app.post("/assocs", response_model=List[Assocs])
+async def list_assocs(
+    variants: Optional[List[str]] = Query(None, description="List of variants to filter results"),
+    studies: Optional[List[str]] = Query(None, description="List of studies to filter results"),
+    p_value_threshold: Optional[float] = Query(None, description="P-value threshold to filter results")
+):
+    """Retrieve all associations for the given variants and/or studies"""
+    if not variants and not studies:
+        return []
+
+    conn = duckdb.connect(DB_ASSOCS_PATH, read_only=True)
+    query = "SELECT * FROM assocs WHERE 1=1"
+    
+    if variants:
+        formatted_variants = ','.join(f"'{variant}'" for variant in variants)
+        query += f" AND SNP IN ({formatted_variants})"
+    
+    if studies:
+        formatted_studies = ','.join(f"'{study}'" for study in studies)
+        query += f" AND study IN ({formatted_studies})"
+
+    if p_value_threshold is not None:
+        query += f" AND P <= {p_value_threshold}"
+    
+    results = conn.execute(query).fetchall()
+    conn.close()
+    response = create_response_model(Assocs, results)
+    return response
+
+@app.get("/assocs/head", response_model=List[Assocs])
+async def list_assocs_head():
+    """Retrieve the first 10 associations"""
+    conn = duckdb.connect(DB_ASSOCS_PATH, read_only=True)
+    results = conn.execute("SELECT * FROM assocs LIMIT 10").fetchall()
+    conn.close()
+    print(results[0])
+    response = create_response_model(Assocs, results)
+    return response
 
 @app.get("/health")
 async def health_check():
