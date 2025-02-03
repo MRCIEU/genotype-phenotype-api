@@ -69,11 +69,6 @@ coloc <- coloc %>%
 str(coloc)
 
 
-# Find finemapped results that colocalise with nothing
-no_coloc <- subset(all_study_blocks, !unique_study_id %in% coloc$traits) %>% rename(candidate_snp=SNP, traits=unique_study_id) %>% mutate(id=(1:nrow(.))+nrow(coloc))
-coloc <- bind_rows(coloc, no_coloc)
-
-
 # all_study_blocks includes variants that don't colocalise with anything. Need to get those, but they don't have variant IDs
 head(all_study_blocks)
 dim(all_study_blocks)
@@ -81,9 +76,15 @@ temp <- select(variant_annotations_full, SNP, CHR, BP)
 all_study_blocks <- left_join(all_study_blocks, temp, by=c("chr"="CHR", "bp"="BP")) %>% filter(!duplicated(unique_study_id))
 dim(all_study_blocks)
 
+# Find finemapped results that colocalise with nothing
+no_coloc <- subset(all_study_blocks, !unique_study_id %in% coloc$traits) %>% rename(candidate_snp=SNP, traits=unique_study_id) %>% mutate(id=(1:nrow(.))+nrow(coloc))
+coloc <- bind_rows(coloc, no_coloc)
+
+
+
+
 # Add ld_block to variant_annotations
-temp <- coloc %>% group_by(candidate_snp) %>% slice_head(n=1)
-temp <- select(temp, candidate_snp, ld_block)
+temp <- coloc %>% filter(!duplicated(candidate_snp)) %>% select(candidate_snp, ld_block)
 variant_annotations <- left_join(variant_annotations, temp, by=c("SNP"="candidate_snp"))
 dim(variant_annotations)
 head(variant_annotations)
@@ -106,7 +107,7 @@ generate_ld_obj <- function(ld_dir, ld_block, all_study_blocks) {
 }
 
 ld_blocks <- unique(all_study_blocks$ld_block)
-generate_ld_obj(ld_dir, ld_blocks[1000], variant_annotations)
+generate_ld_obj(ld_dir, ld_blocks[1], variant_annotations)
 ldl <- mclapply(ld_blocks, \(x) generate_ld_obj(ld_dir, x, variant_annotations), mc.cores=30) %>% bind_rows()
 
 
@@ -180,23 +181,14 @@ unlink(assocs_db)
 assocs_con <- dbConnect(duckdb::duckdb(), assocs_db)
 dbWriteTable(assocs_con, "assocs", assocs[[1]])
 for(i in 2:length(assocs)) {
-    dbAppendTable(assocs_con, "assocs", assocs[[i]])
+    if(nrow(assocs[[i]]) > 0) {
+        dbAppendTable(assocs_con, "assocs", assocs[[i]])
+    }
 }
 dbDisconnect(assocs_con, shutdown=TRUE)
-
-
-# dbConnect read only
-assocs_db <- file.path(results_dir, "assocs.db")
 
 
 # assocs_con <- dbConnect(duckdb::duckdb(), assocs_db, read_only=TRUE)
 # dbGetQuery(assocs_con, "SELECT * FROM assocs where SNP = '1:833068_A_G'")
 # dbGetQuery(assocs_con, "SELECT * FROM assocs where study = 'ebi-a-GCST90013905' AND P < 5e-8")
 # dbDisconnect(assocs_con, shutdown=TRUE)
-
-
-
-
-
-
-
