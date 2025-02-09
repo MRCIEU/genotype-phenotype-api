@@ -8,5 +8,15 @@ export default {
       '#beb9db',
       '#fdcce5',
       '#8bd3c7'
+    ],
+    variantTypes: [
+      'missense_variant',
+      'synonymous_variant',
+      'intron_variant',
+      'regulatory_region_variant',
+      'upstream_gene_variant',
+      'downstream_gene_variant',
+      'intergenic_variant',
+      'non_coding_transcript_variant'
     ]
 }

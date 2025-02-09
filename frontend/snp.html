@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+  <title>GPM</title>
+  <script type="module" src="/main.js"></script>
+  <script src="web-components/navigation-bar.js"></script>
+  <script src="web-components/graph-options.js"></script>
+</head>
+
+<body>
+  <div id="wait-to-load" style="display:none;">
+    <div id="snp" x-data="snp" x-init="loadData">
+      <navigation-bar></navigation-bar>
+
+      <div class="columns mt-4 mb-0">
+        <div class="column">
+          <h3 class="title is-2 has-text-centered mb-0" x-text="getSNPName"></h3>
+        </div>
+      </div>
+
+      <div class="columns mt-2">
+        <div class="column is-one-fifth">
+          <div class="card">
+            <div class="card-content">
+              <div class="content">
+                <p class="title is-4">VEP Annotation</p>
+                <p><strong>Position:</strong> <span x-text="`${getAnnotationData().CHR}:${getAnnotationData().BP}`"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>Alleles:</strong> <span x-text="`${getAnnotationData().EA}/${getAnnotationData().OA}`"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>Gene:</strong> <span x-text="getAnnotationData().symbol"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>Consequence:</strong> <span x-text="getAnnotationData().Consequence"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>Impact:</strong> <span x-text="getAnnotationData().impact"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>Amino Acid Change:</strong> <span x-text="getAnnotationData().Amino_acids"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>EUR AF:</strong> <span x-text="getAnnotationData().EUR_AF"></span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="column is-three-fifths">
+          <div x-model="initNetworkGraph" id="snp-network-plot"></div>
+        </div>
+
+        <div class="column is-one-fifth">
+          <graph-options></graph-options>
+        </div>
+      </div>
+
+      <div class="columns mt-2 is-centered">
+        <div class="column is-11">
+          <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
+            <thead>
+              <tr>
+                <th class="has-text-centered py-2"><abbr title="Tissue">Tissue</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Trait">Trait</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Cis / Trans">Cis / Trans</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Data Type">Data Type</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Sample Size">Sample Size</abbr></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="item in getDataForTable">
+                <tr>
+                  <td class="py-1 px-2" x-text="item.tissue"></td>
+                  <td class="py-1 px-2" x-text="item.trait"></td>
+                  <td class="py-1 px-2" x-text="item.min_p"></td>
+                  <td class="py-1 px-2" x-text="item.cis_trans"></td>
+                  <td class="py-1 px-2" x-text="item.data_type"></td>
+                  <td class="py-1 px-2" x-text="item.sample_size"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html> 

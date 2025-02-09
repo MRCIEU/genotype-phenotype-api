@@ -37,7 +37,7 @@
               <div class="dropdown-menu mt-0" id="dropdown-menu3" role="menu">
                 <div class="dropdown-content">
                       <a class="dropdown-item" @click="filterStudies(null)">Clear Filter</a>
-                  <template @click.outside="closeSearch" x-for="study in studiesToFilterBy">
+                  <template @click.outside="closeSearch" x-for="study in traitsToFilterBy">
                       <a class="dropdown-item" x-text="study" @click="filterStudies(study)"></a>
                   </template>
                 </div>
