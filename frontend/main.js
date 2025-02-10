@@ -14,6 +14,14 @@ import homepage from './alpine-components/homepage.js';
 import snp from './alpine-components/snp.js';
 window.Alpine = Alpine;
 
+// Register Web Components
+import { NavigationBar } from './web-components/navigation-bar.js';
+import { GraphOptions } from './web-components/graph-options.js';
+
+customElements.define('navigation-bar', NavigationBar);
+customElements.define('graph-options', GraphOptions);
+
+
 const graphOptions = {
   coloc: 0.8,
   pValue: 0.00000005,
@@ -21,7 +29,7 @@ const graphOptions = {
   onlyMolecularTraits: false,
   includeTrans: false,
   pValueOptions: [
-      0.0001,      // 1e-4
+      0.00015,      // 1.5e-4
       0.00005,     // 5e-5
       0.00001,     // 1e-5
       0.000005,    // 5e-6

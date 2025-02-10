@@ -7,8 +7,6 @@
   <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
   <title>GPM</title>
   <script type="module" src="/main.js"></script>
-  <script src="web-components/navigation-bar.js"></script>
-  <script src="web-components/graph-options.js"></script>
 </head>
 
 <body>
@@ -30,7 +28,7 @@
                 <p class="title is-4">VEP Annotation</p>
                 <p><strong>Position:</strong> <span x-text="`${getAnnotationData().CHR}:${getAnnotationData().BP}`"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Alleles:</strong> <span x-text="`${getAnnotationData().EA}/${getAnnotationData().OA}`"></span></p>
+                <p><strong>Alleles:</strong> <span x-text="`EA: ${getAnnotationData().EA} / OA:${getAnnotationData().OA}`"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
                 <p><strong>Gene:</strong> <span x-text="getAnnotationData().symbol"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
@@ -40,14 +38,22 @@
                 <div class="is-divider" style="margin: 0;"></div>
                 <p><strong>Amino Acid Change:</strong> <span x-text="getAnnotationData().Amino_acids"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>EUR AF:</strong> <span x-text="getAnnotationData().EUR_AF"></span></p>
+                <p><strong>Codon Change:</strong> <span x-text="getAnnotationData().Codons"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>Protein Position:</strong> <span x-text="getAnnotationData().Protein_position"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>cDNA Position:</strong> <span x-text="getAnnotationData().cDNA_position"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>CDS Position:</strong> <span x-text="getAnnotationData().CDS_position"></span></p>
+                <div class="is-divider" style="margin: 0;"></div>
+                <p><strong>EUR EAF:</strong> <span x-text="getAnnotationData().EUR_AF"></span></p>
               </div>
             </div>
           </div>
         </div>
 
         <div class="column is-three-fifths">
-          <div x-model="initNetworkGraph" id="snp-network-plot"></div>
+          <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
         </div>
 
         <div class="column is-one-fifth">

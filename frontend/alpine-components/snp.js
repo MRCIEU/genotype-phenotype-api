@@ -16,6 +16,7 @@ export default function gene() {
                 tissue: study.tissue ? study.tissue : "N/A",
                 cis_trans: study.cis_trans? study.cis_trans : "N/A"
             })) 
+            this.data.studies.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
             this.filterByOptions(Alpine.store('graphOptionStore'));
         } catch (error) {
@@ -24,7 +25,7 @@ export default function gene() {
     },
 
     getSNPName() {
-        return this.data ? `RSID: ${this.data.annotation.rsid}` : 'RSID: ...';
+        return this.data ? `RSID: ${this.data.annotation.RSID}` : 'RSID: ...';
     },
 
     getAnnotationData() {
@@ -32,193 +33,209 @@ export default function gene() {
     },
 
     getDataForTable() {
-        return this.data ? this.data.studies: {};
+        return this.data ? this.data.filteredStudies: {};
     },
 
     filterByOptions(graphOptions) {
       this.data.filteredStudies = this.data.studies.filter(study => {
-        return(study.min_p <= graphOptions.pValue &&
-               study.posterior_prob >= graphOptions.coloc &&
-               (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
-               (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true))
+        return(study.min_p <= graphOptions.pValue) &&
+              (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
+            //    study.posterior_prob >= graphOptions.coloc &&
+               (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true)
                // && rare variants in the future...
       })
-      this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
     },
 
-    initNetworkGraph() {
-      if (!this.data) {
-        const chartContainer = document.getElementById("snp-network-plot");
-        chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
-        return;
-      }
-
-      const graphOptions = Alpine.store('graphOptionStore');
-      this.filterByOptions(graphOptions);
-      this.getNetworkGraph();
-    },
-
-    getNetworkGraph() {
-      if (this.data.filteredStudies === null) {
-        return
-      }
-
-      const chartElement = document.getElementById("snp-network-plot");
-      chartElement.innerHTML = ''
-
-      const chartContainer = d3.select("#snp-network-plot");
-      chartContainer.select("svg").remove()
-      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
-
-      const graphConstants = {
-        width: graphWidth, 
-        height: graphWidth,
-        outerMargin: {
-          top: 20,
-          right: 0,
-          bottom: 60,
-          left: 60,
-        },
-        innerMargin: {
-          top: 20,
-          right: 0,
-          bottom: 20,
-          left: 0,
+    initChordDiagram() {
+        if (!this.data) {
+            const chartContainer = document.getElementById("snp-chord-diagram");
+            chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
+            return;
         }
-      }
-      const svg = chartContainer
-        .append("svg")
-        .attr('width', graphConstants.width + graphConstants.outerMargin.left)
-        .attr('height', graphConstants.height)
+
+        const graphOptions = Alpine.store('graphOptionStore');
+        this.filterByOptions(graphOptions);
+        this.getChordDiagram();
+    },
+
+
+    getChordDiagram() {
+      if (!this.data) return;
+      const self = this;
+      const container = document.getElementById('snp-chord-diagram');
+      container.innerHTML = '';
+
+      // Clear any existing SVG
+      d3.select('#snp-chord-diagram').select('svg').remove();
+
+      // Set dimensions
+      const width = 800;
+      const height = 800;
+      const innerRadius = Math.min(width, height) * 0.45;
+      const outerRadius = innerRadius * 1.01;
+
+      // Append SVG
+      const svg = d3.select('#snp-chord-diagram')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
         .append('g')
-        .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + graphConstants.outerMargin.top + ')');
-      // Create the network data structure
-      const nodes = []
-      const links = []
-      const nodesByType = {}
+        .attr('transform', `translate(${width / 2},${height / 2})`);
 
-      // Group nodes by data_type
-      this.data.studies.forEach(study => {
-        if (!nodesByType[study.data_type]) {
-          nodesByType[study.data_type] = []
-        }
-        nodesByType[study.data_type].push(study)
-        nodes.push({
-          id: study.unique_study_id,
-          trait: study.trait,
-          type: study.data_type,
-          size: 2 
-        })
-      })
+      // Process data
+      const candidate_snp = this.data.annotation.RSID;
+      const studies = this.data.filteredStudies;
 
-      // Create links between nodes of same type
-      Object.values(nodesByType).forEach(typeGroup => {
-        for (let i = 0; i < typeGroup.length; i++) {
-          for (let j = i + 1; j < typeGroup.length; j++) {
-            links.push({
-              source: typeGroup[i].unique_study_id,
-              target: typeGroup[j].unique_study_id,
-              type: typeGroup[i].data_type
-            })
+      // Extract unique data_types
+      const dataTypes = Array.from(new Set(studies.map(d => d.data_type)));
+
+      // Extract unique traits
+      const traits = studies.map(d => d.trait);
+
+      // Combine candidate_snp and traits into nodes
+      const nodes = [candidate_snp, ...traits];
+
+      // Create data_type mapping for coloring
+      const dataTypeMap = {};
+      studies.forEach(study => {
+        dataTypeMap[study.trait] = study.data_type;
+      });
+
+      // Create color scale based on data_type
+      const color = d3.scaleOrdinal()
+        .domain(dataTypes)
+        .range(Object.values(constants.colors));
+
+      // Create index mapping
+      const indexMap = {};
+      nodes.forEach((node, i) => {
+        indexMap[node] = i;
+      });
+
+      // Initialize matrix
+      const matrix = Array(nodes.length).fill(null).map(() => Array(nodes.length).fill(0));
+
+      // Populate matrix: connections from candidate_snp to each trait
+      studies.forEach(study => {
+        const source = indexMap[candidate_snp];
+        const target = indexMap[study.trait];
+        matrix[source][target] = 1; // Each trait connects once to the SNP
+      });
+
+      // Define chord layout
+      const chordGenerator = d3.chord()
+        .padAngle(0.005)
+        .sortSubgroups(d3.descending);
+
+      const chords = chordGenerator(matrix);
+
+      // Define arc generator
+      const arc = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius);
+
+      // Define ribbon generator
+      const ribbon = d3.ribbon()
+        .radius(innerRadius);
+
+      // Add groups (candidate_snp and traits)
+      const group = svg.selectAll('.group')
+        .data(chords.groups)
+        .enter().append('g')
+        .attr('class', 'group');
+
+      group.append('path')
+        .style('fill', d => {
+          const name = nodes[d.index];
+          if (name === candidate_snp) {
+            return '#808080'; // Gray for SNP
           }
-        }
-      })
+          return color(dataTypeMap[name]);
+        })
+        .style('stroke', d => d3.rgb(color(dataTypeMap[nodes[d.index]])).darker())
+        .attr('d', arc)
+        .on('mouseover', function(event, d) {
+          d3.select(this).transition().duration(200).style('fill', d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
+        })
+        .on('mouseout', function(event, d) {
+          d3.select(this).transition().duration(200).style('fill', nodes[d.index] === candidate_snp ? '#808080' : color(dataTypeMap[nodes[d.index]]));
+        });
 
-      // Color scale for different data types
-      const color = d3.scaleOrdinal(d3.schemeCategory10)
-        .domain(Object.keys(nodesByType))
-
-      // Create force simulation with fixed iterations
-      const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-        .force("charge", d3.forceManyBody().strength(-200))
-        .force("center", d3.forceCenter(graphConstants.width / 2, graphConstants.height / 2))
-        .force("collision", d3.forceCollide().radius(30))
-        // Stop the simulation immediately
-        .stop()
-        // Run simulation manually for 300 iterations
-        .tick(300)
-
-      // Draw links with final positions
-      const link = svg.append("g")
-        .selectAll("line")
-        .data(links)
-        .join("line")
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y)
-        .style("stroke", d => color(d.type))
-        .style("stroke-opacity", 0.4)
-        .style("stroke-width", 1)
-
-      // Draw nodes with final positions
-      const node = svg.append("g")
-        .selectAll("g")
-        .data(nodes)
-        .join("g")
-        .attr("transform", d => `translate(${d.x},${d.y})`)
-
-      node.append("circle")
-        .attr("r", d => d.size)
-        .style("fill", d => color(d.type))
-        .style("stroke", "#fff")
-        .style("stroke-width", 1.5)
-
-      node.append("title")
-        .text(d => d.trait)
-
-      // Add labels
-      node.append("text")
-        .text(d => d.trait)
-        .attr("x", 12)
-        .attr("y", 3)
-        .style("font-size", "8px")
+      // Add chords
+      svg.selectAll('.chord')
+        .data(chords)
+        .enter().append('path')
+        .attr('class', 'chord')
+        .attr('d', ribbon)
+        .style('fill', d => {
+          const trait = nodes[d.target.index];
+          return color(dataTypeMap[trait]);
+        })
+        .style('stroke', d => d3.rgb(color(dataTypeMap[nodes[d.target.index]])).darker())
+        .attr('opacity', 0.7)
+        .on('mouseover', function(event, d) {
+          d3.select(this).transition().duration(200).attr('opacity', 1);
+          const study = self.data.filteredStudies.find(study => study.trait === nodes[d.target.index]);
+          d3.select('#snp-chord-diagram')
+              .append('div')
+              .attr('class', 'tooltip')
+              .style('position', 'absolute')
+              .style('background-color', 'white')
+              .style('padding', '5px')
+              .style('border', '1px solid black')
+              .style('border-radius', '5px')
+              .style('left', `${event.pageX + 10}px`)
+              .style('top', `${event.pageY - 10}px`)
+              .html(`Trait: ${study.trait}<br>
+                    p-value: ${study.min_p}<br>
+                    Cis/Trans: ${study.cis_trans}<br>
+                    `);
+        })
+        .on('mouseout', function(event, d) {
+          d3.select(this).transition().duration(200).attr('opacity', 0.7);
+          d3.selectAll('.tooltip').remove();
+        })
+        // .append('title')
+        // .text(d => `${candidate_snp} → ${nodes[d.target.index]} (${dataTypeMap[nodes[d.target.index]]})`);
 
       // Add legend
       const legend = svg.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(${graphConstants.width - 100}, 20)`)
+        .attr("transform", `translate(${-width / 2 + 20}, ${-height / 2 + 20})`);
 
-      legend.selectAll("rect")
-        .data(Object.keys(nodesByType))
-        .join("rect")
-        .attr("y", (d, i) => i * 20)
-        .attr("width", 10)
-        .attr("height", 10)
-        .style("fill", d => color(d))
+      dataTypes.forEach((type, i) => {
+        const legendItem = legend.append("g")
+          .attr("transform", `translate(0, ${i * 20})`);
 
-      legend.selectAll("text")
-        .data(Object.keys(nodesByType))
-        .join("text")
-        .attr("x", 20)
-        .attr("y", (d, i) => i * 20 + 9)
-        .text(d => d)
-        .style("font-size", "12px")
+        legendItem.append("rect")
+          .attr("width", 18)
+          .attr("height", 18)
+          .attr("fill", color(type));
 
-      // Modify drag behavior to maintain fixed positions
-      function dragstarted(event) {
-        if (!event.active) simulation.alphaTarget(0.3).restart()
-      }
+        legendItem.append("text")
+          .attr("x", 24)
+          .attr("y", 9)
+          .attr("dy", "0.35em")
+          .text(type)
+          .style("font-size", "12px");
+      });
 
-      function dragged(event) {
-        event.subject.x = event.x
-        event.subject.y = event.y
-        // Update position immediately
-        d3.select(this).attr("transform", `translate(${event.x},${event.y})`)
-        // Update connected links
-        link
-          .filter(l => l.source === event.subject || l.target === event.subject)
-          .attr("x1", l => l.source.x)
-          .attr("y1", l => l.source.y)
-          .attr("x2", l => l.target.x)
-          .attr("y2", l => l.target.y)
-      }
+      // Add SNP to legend
+      const snpLegend = legend.append("g")
+        .attr("transform", `translate(0, ${dataTypes.length * 20})`);
 
-      function dragended(event) {
-        if (!event.active) simulation.stop()
-      }
+      snpLegend.append("rect")
+        .attr("width", 18)
+        .attr("height", 18)
+        .attr("fill", "#808080");
 
+      snpLegend.append("text")
+        .attr("x", 24)
+        .attr("y", 9)
+        .attr("dy", "0.35em")
+        .text("Candidate SNP")
+        .style("font-size", "12px");
     }
+
   }
 } 

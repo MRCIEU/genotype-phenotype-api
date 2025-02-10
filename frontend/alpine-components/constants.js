@@ -18,5 +18,12 @@ export default {
       'downstream_gene_variant',
       'intergenic_variant',
       'non_coding_transcript_variant'
+    ],
+    orderedDataTypes: [
+      'splice_variant',
+      'gene_expression',
+      'methylation',
+      'protein',
+      'phenotype'
     ]
 }

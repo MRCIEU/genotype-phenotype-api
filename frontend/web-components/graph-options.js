@@ -1,4 +1,4 @@
-class GraphOptions extends HTMLElement {
+export class GraphOptions extends HTMLElement {
     constructor() {
         super();
     }
@@ -8,5 +8,3 @@ class GraphOptions extends HTMLElement {
             .then(text => this.innerHTML = text)
     }
 }
-
-customElements.define('graph-options', GraphOptions);
