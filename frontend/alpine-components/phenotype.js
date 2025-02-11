@@ -68,10 +68,11 @@ export default function pheontype() {
 
     filterByOptions(graphOptions) {
       this.filteredColocData = this.colocData.colocs.filter(coloc => {
-        return(coloc.min_p <= graphOptions.pValue &&
+        return((coloc.min_p <= graphOptions.pValue &&
                coloc.posterior_prob >= graphOptions.coloc &&
                (graphOptions.includeTrans ? true : !coloc.includes_trans) &&
                (graphOptions.onlyMolecularTraits ? coloc.includes_qtl : true))
+              || coloc.rare)
                // && rare variants in the future...
       })
 
@@ -109,7 +110,6 @@ export default function pheontype() {
 
     get getDataForColocTable() {
       if (this.filteredGroupedColoc === null || this.filteredGroupedColoc == null) return
-      console.log(this.filteredGroupedColoc)
       return(Object.values(this.filteredGroupedColoc))
 
       // let uniqueStudies = this.filteredColocData.map
@@ -158,12 +158,16 @@ export default function pheontype() {
           bottom: 60,
           left: 60,
         },
-        innerMargin: {
-          top: 20,
+        rareMargin: {
+          top: 40,
           right: 0,
-          bottom: 20,
+          bottom: 0,
           left: 0,
         }
+      }
+
+      if (!graphOptions.includeRareVariants) {
+        graphConstants.rareMargin.top = 0 
       }
 
       let self = this
@@ -172,8 +176,8 @@ export default function pheontype() {
       const lowerYScale = graphOptions.coloc - 0.01
       const step = 0.05
       const len = Math.floor((1 - lowerYScale) / step) + 1
-      let tickValues = Array(len).fill().map((_, i) => graphOptions.coloc + (i * step))
-      tickValues = tickValues.map((num) => Math.round((num + Number.EPSILON) * 100) / 100)
+      let yAxisValues = Array(len).fill().map((_, i) => graphOptions.coloc + (i * step))
+      yAxisValues = yAxisValues.map((num) => Math.round((num + Number.EPSILON) * 100) / 100)
 
       // data wrangling around the colocData payload (this can be simplified and provided by the backend)
       let chromosomes = Array.from(Array(22).keys()).map(c => 'CHR '.concat(c+1))
@@ -188,22 +192,22 @@ export default function pheontype() {
       const svg = chartContainer
         .append("svg")
         .attr('width', graphConstants.width + graphConstants.outerMargin.left)
-        .attr('height', graphConstants.height)
+        .attr('height', graphConstants.height + graphConstants.outerMargin.top + graphConstants.outerMargin.bottom)
         .append('g')
-        .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + graphConstants.outerMargin.top + ')');
+        .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + (graphConstants.outerMargin.top + graphConstants.rareMargin.top) + ')');
 
       //Labels for x and y axis
       svg.append("text")
         .attr("font-size", "14px")
         .attr("transform", "rotate (-90)")
-        .attr("x", "-220")
+        .attr("x", "-220" - (graphConstants.rareMargin.top / 2))
         .attr("y", "-30")
         .text("Coloc posterior probability");
 
       svg.append("text")
         .attr("font-size", "14px")
         .attr("x", graphConstants.width/2 - graphConstants.outerMargin.left)
-        .attr("y", graphConstants.height - graphConstants.outerMargin.bottom + 20)
+        .attr("y", graphConstants.height - 40 + graphConstants.rareMargin.top)
         .text("Genomic Position (MB)");
 
       // calculate the outer scale band for each line graph
@@ -214,7 +218,7 @@ export default function pheontype() {
 
       // inner dimensions of chart based on bandwidth of outer scale
       const innerWidth = outerXScale.bandwidth()
-      const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
+      const innerHeight = graphConstants.height + graphConstants.rareMargin.top - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
       // creating each inner graph 
       const innerGraph = svg
@@ -231,7 +235,7 @@ export default function pheontype() {
       innerGraph
         .append('rect')
         .attr('width', innerWidth)
-        .attr('height', innerHeight)
+        .attr('height', innerHeight - graphConstants.rareMargin.top)
         .attr('fill', '#f9f9f9');
 
       // CHR header box
@@ -264,9 +268,10 @@ export default function pheontype() {
         .domain(d3.extent(graphData, (d) => d.MbP))
         .domain([0,270])
         .range([0, innerWidth]);
+
       let innerYScale = d3.scaleLinear()
         .domain([lowerYScale, 1.01])
-        .range([innerHeight, 0]);
+        .range([innerHeight - graphConstants.rareMargin.top, 0]);
 
       // inner x scales
       innerGraph
@@ -279,8 +284,10 @@ export default function pheontype() {
         .attr("dy", ".15em")
         .attr("transform", "rotate(-65)");
 
+      // inner y axis
       svg.append('g')
-        .call(d3.axisLeft(innerYScale).tickValues(tickValues).tickSize(-innerWidth));
+        .call(d3.axisLeft(innerYScale).tickValues(yAxisValues).tickSize(-innerWidth))
+        .attr('transform', `translate(0,${graphConstants.rareMargin.top})`);
 
       let tooltip = d3.select("body").append("div")
         .attr("class", "tooltip")
@@ -289,11 +296,11 @@ export default function pheontype() {
       // drawing the dots, as well as the code to display the tooltip
       innerGraph
         .selectAll('dot')
-        .data(d => d[1])
+        .data(d => d[1].filter(item => !item.rare))
         .enter()
         .append('circle')
         .attr("cx", function (d) { return innerXScale(d.MbP); } )
-        .attr("cy", d => innerYScale(d.posterior_prob)) 
+        .attr("cy", d => innerYScale(d.posterior_prob) + graphConstants.rareMargin.top) 
         .attr("r", d => d.scaledNumStudies+1)
         .attr('fill', d => d.annotationColor )
         .on('mouseover', function(d, i) {
@@ -330,6 +337,113 @@ export default function pheontype() {
           self.colocDisplayFilters.candidate_snp = i.candidate_snp
           self.colocDisplayFilters.chr = null
         });
+
+
+      if (graphOptions.includeRareVariants) {
+        this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScale)
+      }
+    },
+
+    displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScale) {
+      innerGraph
+        .select('rect')
+        .attr('y', graphConstants.rareMargin.top);
+
+      // Add background for rare variants section
+      innerGraph
+        .append('rect')
+        .attr('width', innerWidth)
+        .attr('height', graphConstants.rareMargin.top)
+        .attr('fill', '#f9f9f9')
+        .attr('y', 0);
+
+      let tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+      // Add rare variant dots with stroke outline and no fill
+      innerGraph
+        .selectAll('.rare-dot')
+        .data(d => d[1].filter(item => item.rare))
+        .enter()
+        .append('circle')
+        .attr('class', 'rare-dot')
+        .attr("cx", d => innerXScale(d.MbP))
+        .attr("cy", graphConstants.rareMargin.top / 2)
+        .attr("fill", "transparent")
+        .attr("stroke", "black")
+        .attr("r", 4)
+        .on('mouseover', function(d, i) {
+          d3.select(this).style("cursor", "pointer"); 
+
+          let allTraits = self.filteredGroupedColoc[i.candidate_snp].map(s => [s.trait_a, s.trait_b]).flat()
+          let uniqueTraits = [...new Set(allTraits)]
+          let traitNames = uniqueTraits.slice(0,9)
+          traitNames = traitNames.join("<br />")
+          if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
+
+          d3.select(this).transition()
+            .duration('100')
+            .attr("r", 8)
+          tooltip.transition()
+            .duration(100)
+            .style("opacity", 1)
+            .style("visibiility", "visible")
+            .style("display", "flex");
+          tooltip.html(traitNames)
+            .style("left", (d.pageX + 10) + "px")
+            .style("top", (d.pageY - 15) + "px");
+        })
+        .on('mouseout', function (d, i) {
+            d3.select(this).transition()
+              .duration('200')
+              .attr("r", 4)
+            tooltip.transition()
+            .duration(100)
+            .style("visibiility", "hidden")
+            .style("display", "none");
+        })
+        .on('click', function(d, i) {
+          self.colocDisplayFilters.candidate_snp = i.candidate_snp;
+          self.colocDisplayFilters.chr = null;
+        });
+
+      // Adjust the position of the main plot circles
+      innerGraph.selectAll('circle:not(.rare-dot)')
+        .attr('y', d => d.y + graphConstants.rareMargin.top);
+
+      // Update y-axis position for each chromosome group separately
+      svg.selectAll('.y-axis')
+        .attr('transform', `translate(0, ${graphConstants.rareMargin.top})`);
+
+      // Add "Rare Variants" text to y-axis
+      svg.append('text')
+        .attr('class', 'rare-variants-label')
+        .attr('x', -30)
+        .attr('y', graphConstants.outerMargin.top)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', 'start')
+        .style('font-size', '12px')
+        .text('Rare:');
+
+      // Adjust existing y-axis labels position
+      svg.selectAll('.y-axis-label')
+        .attr('transform', d => `translate(${graphConstants.outerMargin.left - 50}, ${graphConstants.outerMargin.top + graphConstants.rareMargin.top + (d.height / 2)}) rotate(-90)`);
+
+      // Add separator line in each inner graph
+      innerGraph
+        .append('line')
+        .attr('class', 'separator-line')
+        .attr('x1', 0)
+        .attr('x2', innerWidth)
+        .attr('y1', graphConstants.rareMargin.top)
+        .attr('y2', graphConstants.rareMargin.top)
+        .attr('stroke', '#ccc')
+        .attr('stroke-width', 1);
+
+      // Adjust main coloc data rect position
+      innerGraph
+        .select('.coloc-background-rect')
+        .attr('y', graphConstants.rareMargin.top);
     }
   }
 }
