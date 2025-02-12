@@ -7,8 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
     <title>GPM</title>
     <script type="module" src="/main.js"></script>
-    <script src="web-components/navigation-bar.js"></script>
-    <script src="web-components/graph-options.js"></script>
   </head>
 
   <body>
@@ -37,7 +35,7 @@
               <div class="dropdown-menu mt-0" id="dropdown-menu3" role="menu">
                 <div class="dropdown-content">
                       <a class="dropdown-item" @click="filterStudies(null)">Clear Filter</a>
-                  <template @click.outside="closeSearch" x-for="study in studiesToFilterBy">
+                  <template @click.outside="closeSearch" x-for="study in traitsToFilterBy">
                       <a class="dropdown-item" x-text="study" @click="filterStudies(study)"></a>
                   </template>
                 </div>

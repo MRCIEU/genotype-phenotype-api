@@ -18,7 +18,7 @@
 
         <div class="columns mt-4 mb-0">
           <div class="column">
-            <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h1>
+            <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
           </div>
         </div>
 
@@ -36,9 +36,9 @@
               </div>
               <div class="dropdown-menu mt-0" id="dropdown-menu3" role="menu">
                 <div class="dropdown-content">
-                      <a class="dropdown-item" @click="filterStudies(null)">Clear Filter</a>
-                  <template @click.outside="closeSearch" x-for="study in studiesToFilterBy">
-                      <a class="dropdown-item" x-text="study" @click="filterStudies(study)"></a>
+                      <a class="dropdown-item" @click="filterByStudy(null)">Clear Filter</a>
+                  <template @click.outside="closeSearch" x-for="trait in orderedTraitsToFilterBy">
+                      <a class="dropdown-item" x-text="trait" @click="filterByStudy(trait)"></a>
                   </template>
                 </div>
               </div>
@@ -49,38 +49,43 @@
 
         <div class="columns mt-2 is-centered">
           <div class="column is-11">
-          <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-            <thead>
-              <tr>
-                <th><abbr title="Study A">Study A</abbr></th>
-                <th><abbr title="Study B">Study B</abbr></th>
-                <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
-                <th><abbr title="Coloc Posterior Probability">Coloc Posterior Probability</abbr></th>
-                <th><abbr title="Posterior Explained By SNP">Posterior Explained By SNP</abbr></th>
-              </tr>
-            </thead>
-            <tfoot>
-              <tr>
-                <th><abbr title="Study A">Study A</abbr></th>
-                <th><abbr title="Study B">Study B</abbr></th>
-                <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
-                <th><abbr title="Coloc Posterior Probability">Coloc Posterior Probability</abbr></th>
-                <th><abbr title="Posterior Explained By SNP">Posterior Explained By SNP</abbr></th>
-              </tr>
-            </tfoot>
-            <tbody>
-              <template x-for="coloc in getDataForColocTable">
+            <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+              <thead>
                 <tr>
-                  <td x-text="coloc.study_a"></td>
-                  <td x-text="coloc.study_b"></td>
-                  <td x-text="coloc.candidate_snp"></td>
-                  <td x-text="coloc.posterior_prob"></td>
-                  <td x-text="coloc.posterior_explained_by_snp"></td>
+                  <th><abbr title="Coloc Info">Coloc Info</abbr></th>
+                  <th><abbr title="Trait">Trait</abbr></th>
+                  <th><abbr title="Data Type">Data Type</abbr></th>
+                  <th><abbr title="Gene">Gene</abbr></th>
+                  <th><abbr title="Tissue">Tissue</abbr></th>
+                  <th><abbr title="Sample Size">Sample Size</abbr></th>
+                  <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
                 </tr>
-              </template>
-            </tbody>
-          </table>
-
+              </thead>
+              <tbody class="is-size-7">
+                <template x-for="(group, index) in getDataForColocTable">
+                  <template x-for="study in group.studies">
+                    <tr x-bind:style="index % 2 === 0 ? 'background-color: antiquewhite;' : 'background-color: white'">
+                      <!-- <td scope="rowgroup" x-bind:rowspan="group.studies.length" x-html="'SNP: ' + group.snp + '<br />PP: ' + group.posterior_prob + '<br />PP explained: ' + group.posterior_explained_by_snp"></td> -->
+                      <td x-text="group.snp"></td>
+                      <td x-text="study.trait" style="width:40%"></td>
+                      <td x-text="study.data_type"></td>
+                      <td x-text="study.gene"></td>
+                      <td x-text="study.tissue"></td>
+                      <td x-text="study.sample_size"></td>
+                      <td x-text="study.cis_trans"></td>
+                    </tr>
+                      <!-- <tr>
+                        <td x-text="study.trait" style="width:40%"></td>
+                        <td x-text="study.data_type"></td>
+                        <td x-text="study.gene"></td>
+                        <td x-text="study.tissue"></td>
+                        <td x-text="study.sample_size"></td>
+                        <td x-text="study.cis_trans"></td>
+                      </tr> -->
+                  </template>
+                </template>
+              </tbody>
+            </table>
           </div>
         </div>
 

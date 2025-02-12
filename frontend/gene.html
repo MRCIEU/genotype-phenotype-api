@@ -1,74 +1,64 @@
 <!doctype html>
 <html lang="en">
 
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
-    <title>GPM</title>
-    <script type="module" src="/main.js"></script>
-    <script src="web-components/navigation-bar.js"></script>
-    <script src="web-components/graph-options.js"></script>
-  </head>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+  <title>GPM</title>
+  <script type="module" src="/main.js"></script>
+</head>
 
-  <body>
-    <div id = "wait-to-load" style="display:none;">
-      <div id="gene" x-data="gene" x-init="loadData">
-        <navigation-bar></navigation-bar>
+<body>
+  <div id="wait-to-load" style="display:none;">
+    <div id="gene" x-data="gene" x-init="loadData">
+      <navigation-bar></navigation-bar>
 
-        <div class="columns mt-4 mb-0">
-          <div class="column">
-            <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h1>
-          </div>
+      <div class="columns mt-4 mb-0">
+        <div class="column">
+          <h3 class="title is-2 has-text-centered mb-0" x-text="getGeneName"></h3>
+        </div>
+      </div>
+
+      <div class="columns mt-2">
+        <div class="column is-four-fifths">
+          <div x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
+          <div x-model="initNetworkGraph" id="gene-network-plot"></div>
         </div>
 
-        <div class="columns mt-2">
-          <div class="column is-four-fifths">
-            <div x-model="initGraph" id="gene-chart"></div>
-          </div>
-
-          <div class="column is-one-fifth">
-            <graph-options></graph-options>
-          </div>
+        <div class="column is-one-fifth">
+          <graph-options></graph-options>
         </div>
+      </div>
 
-        <div class="columns mt-2 is-centered">
-          <div class="column is-11">
-          <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+      <div class="columns mt-2 is-centered">
+        <div class="column is-11">
+          <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
             <thead>
               <tr>
-                <th><abbr title="Trait">Study A</abbr></th>
-                <th><abbr title="Region">Region</abbr></th>
-                <th><abbr title="P-value">P-value</abbr></th>
-                <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Tissue">Tissue</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Trait">Trait</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="SNP">SNP</abbr></th>
               </tr>
             </thead>
-            <tfoot>
-              <tr>
-                <th><abbr title="Trait">Study A</abbr></th>
-                <th><abbr title="Region">Region</abbr></th>
-                <th><abbr title="P-value">P-value</abbr></th>
-                <th><abbr title="Candidate SNP">Candidate SNP</abbr></th>
-              </tr>
-            </tfoot>
             <tbody>
-              <template x-for="study in getDataForTable">
+              <template x-for="item in getDataForTable">
                 <tr>
-                  <td x-text="study.trait"></td>
-                  <td x-text="study.ld_region"></td>
-                  <td x-text="study.min_p"></td>
-                  <td x-text="study.candidate_snp"></td>
+                  <td class="py-1 px-2" x-text="item.tissue_a"></td>
+                  <td class="py-1 px-2" x-text="item.trait_b"></td>
+                  <td class="py-1 px-2" x-text="item.min_p"></td>
+                  <td class="py-1 px-2">
+                  <a :href="'snp.html?' + item.candidate_snp" x-text="item.candidate_snp"></a>
+                  </td>
                 </tr>
               </template>
             </tbody>
           </table>
-
-          </div>
-        </div>
-
         </div>
       </div>
     </div>
-  </body>
+  </div>
+</body>
 
-</html>
+</html> 

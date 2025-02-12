@@ -1,4 +1,4 @@
-class NavigationBar extends HTMLElement {
+export class NavigationBar extends HTMLElement {
     constructor() {
         super();
     }
@@ -8,5 +8,3 @@ class NavigationBar extends HTMLElement {
             .then(text => this.innerHTML = text)
     }
 }
-
-customElements.define('navigation-bar', NavigationBar);
