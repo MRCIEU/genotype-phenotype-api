@@ -18,7 +18,7 @@
 
         <div class="columns mt-4 mb-0">
           <div class="column">
-            <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h1>
+            <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
           </div>
         </div>
 
@@ -49,83 +49,43 @@
 
         <div class="columns mt-2 is-centered">
           <div class="column is-11">
-          <!-- <span x-show="filteredStudies.length > 1000">Please select specific things</span> -->
-          <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-            <thead>
-              <tr>
-                <th><abbr title="Coloc Info">Coloc Info</abbr></th>
-                <th><abbr title="Trait">Trait</abbr></th>
-                <th><abbr title="Data Type">Data Type</abbr></th>
-                <th><abbr title="Gene">Gene</abbr></th>
-                <th><abbr title="Tissue">Tissue</abbr></th>
-                <th><abbr title="Sample Size">Sample Size</abbr></th>
-                <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
-              </tr>
-            </thead>
-            <tfoot>
-              <tr>
-                <th><abbr title="Coloc Info">Coloc Info</abbr></th>
-                <th><abbr title="Trait">Trait</abbr></th>
-                <th><abbr title="Data Type">Data Type</abbr></th>
-                <th><abbr title="Gene">Gene</abbr></th>
-                <th><abbr title="Tissue">Tissue</abbr></th>
-                <th><abbr title="Sample Size">Sample Size</abbr></th>
-                <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
-              </tr>
-            </tfoot>
-            <tbody class="is-size-7">
-              <template x-for="group in getDataForColocTable">
-                <template>
-                  <tr>
-                    <td scope="rowgroup" :rowspan="group.studies.length + 1">
-                      <span x-text="'SNP: ' + group.candidate_snp"></span><br/>
-                      <span x-text="'PP: ' + group.posterior_prob"></span><br/> 
-                      <span x-text="'PP explained: ' + group.posterior_prob_explained_by_snp"></span>
-                    </td>
-                    <td x-text="group.studies[0].trait_a" style="width:40%"></td>
-                    <td x-text="group.studies[0].data_type"></td>
-                    <td x-text="group.studies[0].gene"></td>
-                    <td x-text="group.studies[0].tissue"></td>
-                    <td x-text="group.studies[0].sample_size"></td>
-                    <td x-text="group.studies[0].cis_trans"></td>
-                  </tr>
-                  <template x-for="study in group.studies.slice(1)">
-                    <tr>
-                      <td x-text="study.trait_a" style="width:40%"></td>
-                      <td x-text="study.data_type"></td>
-                      <td x-text="study.gene"></td>
-                      <td x-text="study.tissue"></td>
-                      <td x-text="study.sample_size"></td>
-                      <td x-text="study.cis_trans"></td>
-                    </tr>
-                  </template>
-                </template>
-              </template>
-
-              <!-- <template x-for="group in getDataForColocTable">
+            <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+              <thead>
                 <tr>
-                  <td scope="rowgroup" x-bind:rowspan="group.studies.length" x-bind:text-content="'SNP: ' + group.snp + '<br />PP:' + group.posterior_prob + '<br />PP explained:' + group.posterior_prob_explained_by_snp">hi</td>
-                  <td x-text="group[1].trait" style="width:40%"></td>
-                  <td x-text="group[1].data_type"></td>
-                  <td x-text="group[1].gene"></td>
-                  <td x-text="group[1].tissue"></td>
-                  <td x-text="group[1].sample_size"></td>
-                  <td x-text="group[1].cis_trans"></td>
+                  <th><abbr title="Coloc Info">Coloc Info</abbr></th>
+                  <th><abbr title="Trait">Trait</abbr></th>
+                  <th><abbr title="Data Type">Data Type</abbr></th>
+                  <th><abbr title="Gene">Gene</abbr></th>
+                  <th><abbr title="Tissue">Tissue</abbr></th>
+                  <th><abbr title="Sample Size">Sample Size</abbr></th>
+                  <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
                 </tr>
-                <template x-for="study in group.studies.shift()">
-                  <tr>
+              </thead>
+              <tbody class="is-size-7">
+                <template x-for="(group, index) in getDataForColocTable">
+                  <template x-for="study in group.studies">
+                    <tr x-bind:style="index % 2 === 0 ? 'background-color: antiquewhite;' : 'background-color: white'">
+                      <!-- <td scope="rowgroup" x-bind:rowspan="group.studies.length" x-html="'SNP: ' + group.snp + '<br />PP: ' + group.posterior_prob + '<br />PP explained: ' + group.posterior_explained_by_snp"></td> -->
+                      <td x-text="group.snp"></td>
                       <td x-text="study.trait" style="width:40%"></td>
                       <td x-text="study.data_type"></td>
                       <td x-text="study.gene"></td>
                       <td x-text="study.tissue"></td>
                       <td x-text="study.sample_size"></td>
                       <td x-text="study.cis_trans"></td>
-                  </tr>
+                    </tr>
+                      <!-- <tr>
+                        <td x-text="study.trait" style="width:40%"></td>
+                        <td x-text="study.data_type"></td>
+                        <td x-text="study.gene"></td>
+                        <td x-text="study.tissue"></td>
+                        <td x-text="study.sample_size"></td>
+                        <td x-text="study.cis_trans"></td>
+                      </tr> -->
+                  </template>
                 </template>
-              </template> -->
-            </tbody>
-          </table>
-
+              </tbody>
+            </table>
           </div>
         </div>
 

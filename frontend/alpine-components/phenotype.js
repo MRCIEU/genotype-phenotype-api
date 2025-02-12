@@ -109,17 +109,18 @@ export default function pheontype() {
     },
 
     get getDataForColocTable() {
-      if (this.filteredGroupedColoc === null || this.filteredGroupedColoc == null) return
-      return(Object.values(this.filteredGroupedColoc))
+      if (this.filteredStudies === null) return
+      // let colocDataSubset = this.filteredStudies.map(snp => {
+      // })
 
-      // let uniqueStudies = this.filteredColocData.map
-      // this.filteredStudies = this.colocData.studies.filter(study => {
-
+      // let colocDataSubset = this.filteredGroupedColoc.filter(coloc => {
       //   if (this.colocDisplayFilters.chr !== null) return coloc.chr == this.colocDisplayFilters.chr
       //   else if (this.colocDisplayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.colocDisplayFilters.candidate_snp 
       //   else return true
       // })
-      // return filteredColocData
+      // colocDataSubset = Object.values(colocDataSubset)
+      const result = Object.values(this.filteredStudies).slice(0, 10)
+      return result
     },
 
     initPhenotypeGraph() {
@@ -263,26 +264,41 @@ export default function pheontype() {
           self.colocDisplayFilters.candidate_snp = null
         })
 
-      // inner y scales
-      const innerXScale = d3.scaleLinear()
-        .domain(d3.extent(graphData, (d) => d.MbP))
-        .domain([0,270])
-        .range([0, innerWidth]);
+      // Create scales for each chromosome
+      const innerXScales = {};
+      chromosomes.forEach(chr => {
+        const chrNum = parseInt(chr.slice(4));
+        const maxMb = constants.maxBpPerChr[chrNum] / 1000000;
+        innerXScales[chr] = d3.scaleLinear()
+          .domain([0, maxMb])
+          .range([0, innerWidth]);
+      });
 
+      // Use the scales in the x-axis creation
+      innerGraph
+        .append('g')
+        .each(function(d) {
+          const chr = d[0];
+          const scale = innerXScales[chr];
+          const maxMb = constants.maxBpPerChr[parseInt(chr.slice(4))] / 1000000;
+          const tickStep = maxMb > 100 ? 50 : 25;
+          const tickValues = d3.range(0, maxMb, tickStep).filter(t => t <= maxMb && t > 0);
+          d3.select(this)
+            .call(d3.axisBottom(scale)
+              .tickValues(tickValues)
+              .tickSize(-innerHeight))
+            .attr('transform', `translate(0,${innerHeight})`)
+            .selectAll("text")  
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-65)");
+        });
+
+      // inner y scales
       let innerYScale = d3.scaleLinear()
         .domain([lowerYScale, 1.01])
         .range([innerHeight - graphConstants.rareMargin.top, 0]);
-
-      // inner x scales
-      innerGraph
-        .append('g')
-        .call(d3.axisBottom(innerXScale).tickValues([50,100,150,200,250]).tickSize(-innerHeight))
-        .attr('transform', `translate(0,${innerHeight})`)
-        .selectAll("text")  
-        .style("text-anchor", "end")
-        .attr("dx", "-.8em")
-        .attr("dy", ".15em")
-        .attr("transform", "rotate(-65)");
 
       // inner y axis
       svg.append('g')
@@ -299,7 +315,9 @@ export default function pheontype() {
         .data(d => d[1].filter(item => !item.rare))
         .enter()
         .append('circle')
-        .attr("cx", function (d) { return innerXScale(d.MbP); } )
+        .attr("cx", function (d) { 
+          return innerXScales[d.chrText](d.MbP); 
+        })
         .attr("cy", d => innerYScale(d.posterior_prob) + graphConstants.rareMargin.top) 
         .attr("r", d => d.scaledNumStudies+1)
         .attr('fill', d => d.annotationColor )
@@ -340,11 +358,11 @@ export default function pheontype() {
 
 
       if (graphOptions.includeRareVariants) {
-        this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScale)
+        this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales)
       }
     },
 
-    displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScale) {
+    displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales) {
       innerGraph
         .select('rect')
         .attr('y', graphConstants.rareMargin.top);
@@ -367,7 +385,7 @@ export default function pheontype() {
         .enter()
         .append('circle')
         .attr('class', 'rare-dot')
-        .attr("cx", d => innerXScale(d.MbP))
+        .attr("cx", d => innerXScales[d.chrText](d.MbP))
         .attr("cy", graphConstants.rareMargin.top / 2)
         .attr("fill", "transparent")
         .attr("stroke", "black")
@@ -418,12 +436,12 @@ export default function pheontype() {
       // Add "Rare Variants" text to y-axis
       svg.append('text')
         .attr('class', 'rare-variants-label')
-        .attr('x', -30)
+        .attr('x', -35)
         .attr('y', graphConstants.outerMargin.top)
         .attr('dy', '0.35em')
         .attr('text-anchor', 'start')
         .style('font-size', '12px')
-        .text('Rare:');
+        .text('Rare*');
 
       // Adjust existing y-axis labels position
       svg.selectAll('.y-axis-label')
@@ -437,8 +455,8 @@ export default function pheontype() {
         .attr('x2', innerWidth)
         .attr('y1', graphConstants.rareMargin.top)
         .attr('y2', graphConstants.rareMargin.top)
-        .attr('stroke', '#ccc')
-        .attr('stroke-width', 1);
+        .attr('stroke', '#000000')
+        .attr('stroke-width', 2);
 
       // Adjust main coloc data rect position
       innerGraph

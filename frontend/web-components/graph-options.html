@@ -3,7 +3,7 @@
   <input class="slider is-four-fifths mt-0 mb-0" @click="$store.graphOptionStore.coloc = parseFloat(coloc)" x-model="coloc" step="0.05" min="0.5" max="0.8" value="0.8" type="range">
   <hr class="divider mt-0 mb-0">
 
-  P-value <span x-text="Number(pValue).toExponential()"></span> <br />
+  Coloc P-value <span x-text="Number(pValue).toExponential()"></span> <br />
   <input class="slider is-four-fifths mt-0 mb-0" x-model="pValueIndex" @input="updatePValue()" type="range" step="1" min="0" max="7">
   <hr class="divider mt-0 mb-0">
 
