@@ -1,0 +1,5 @@
+iteration	traits	posterior_prob	regional_prob	candidate_snp	posterior_explained_by_snp	dropped_trait
+1	ebi-a-GCST90028992_EUR_9_132989126_4, qtl-subset-ukb-ppp-european-ITGB7:P26010:OID21393:v1_EUR_9_133279427_1	0.9836	1	9:133274295_A_T	0.5054	NA
+1	ebi-a-GCST90028992_EUR_11_309127_1, qtl-subset-ukb-ppp-european-ITGB7:P26010:OID21393:v1_EUR_11_308180_1	0.9199	1	11:309127_A_G	1	NA
+1	ebi-a-GCST90028992_EUR_12_111395984_1, qtl-subset-ukb-ppp-european-ITGB6:P18564:OID20493:v1_EUR_12_111427245_1, qtl-subset-ukb-ppp-european-ITGB7:P26010:OID21393:v1_EUR_12_111472415_1	0.905	1	12:111446804_C_T	0.9436	NA
+1	qtl-subset-ukb-ppp-european-ITGB2:P05107:OID20315:v1_EUR_17_7166093_1, qtl-subset-ukb-ppp-european-ITGB7:P26010:OID21393:v1_EUR_17_7166093_1	0.9997	1	17:7087693_C_T	1	NA
