@@ -309,7 +309,6 @@ export default function gene() {
         .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
 
       const yCategories = [...new Set(expandedStudies.map(d => d.trait))];
-
       const xScale = d3.scaleLinear()
         .domain([minMbp, maxMbp])
         .nice()

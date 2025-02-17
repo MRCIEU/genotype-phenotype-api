@@ -3,44 +3,37 @@ import constants from './constants.js';
 
 export default function region() {
   return {
-    regionMetadata: null,
     regionData: null,
     filteredRegionData: null,
-    minBP: null,
-    maxBP: null,
+    minMbp: null,
+    maxMbp: null,
+    allTraits: [],
 
-    loadData() {
-      fetch('../sample_data/region.json')
-        .then(response => {
-          return response.json()
-        }).then(data => {
-          this.regionData = data
-          this.minBP = this.regionData.studies.reduce((min, study) => study.bp < min.bp ? study : min).bp
-          this.maxBP = this.regionData.studies.reduce((min, study) => study.bp > min.bp ? study : min).bp
-          this.regionData.studies.forEach((study) => {
-            study.trait = study.trait.replace('GTEx-cis', '')
-            study.trait = study.trait.replace('BrainMeta-cis-eQTL', 'BrainMeta')
-            study.trait = study.trait.replace(' chr', ' ')
-            study.trait = study.trait.replace('GTEx-sQTL-cis', '')
-            study.trait = study.trait.substring(0, 25)
-          })
-          this.regionData.studies.sort((a, b) => a.bp - b.bp);
-        })
+    async loadData() {
+      try {
+        const response = await fetch('/sample_data/region_result.json');
+        this.regionData = await response.json();
 
-      fetch('../sample_data/region_metadata.json')
-        .then(response => {
-          return response.json()
-        }).then(data => {
-          this.regionMetadata = data
-          this.regionMetadata.genes.forEach((gene, index) => {
-            gene.color = constants.colors[index % constants.colors.length]
-          })
+        this.regionData.colocs = this.regionData.colocs.map(coloc => ({
+            ...coloc,
+            mbp : coloc.bp / 1000000,
+        }))
+        Object.keys(this.regionData.studies).forEach(snp => { 
+          this.regionData.studies[snp].studies = this.regionData.studies[snp].studies.map(study => ({
+            ...study,
+            mbp : study.bp / 1000000,
+          }))
         })
+        this.minMbp = Math.min(...this.regionData.colocs.map(d => d.mbp))
+        this.maxMbp = Math.max(...this.regionData.colocs.map(d => d.mbp))
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     },
 
     get getStudyToDisplay() {
-      if (this.regionMetadata === null) return
-      return this.regionMetadata.name
+      if (this.regionData === null) return
+      return this.regionData.name
     },
 
     get getDataForTable() {
@@ -49,14 +42,28 @@ export default function region() {
 
     filterStudies(graphOptions) {
       this.filteredRegionData = this.regionData
-      this.filteredRegionData.studies = this.filteredRegionData.studies.filter(study => 
-        -Math.log10(study.min_p) > (graphOptions.pValue)
-      )
-      const justGene = this.filteredRegionData.studies.filter(study => study.bp > 55581037 && study.bp < 55868248)
+      this.filteredRegionData.colocs = this.filteredRegionData.colocs.filter(coloc => {
+        return((coloc.min_p <= graphOptions.pValue &&
+               coloc.posterior_prob >= graphOptions.coloc &&
+               (graphOptions.includeTrans ? true : !coloc.includes_trans) &&
+               (graphOptions.onlyMolecularTraits ? coloc.includes_qtl : true))
+              || coloc.rare)
+               // && rare variants in the future...
+      })
+      // Filter studies within each SNP group
+      Object.keys(this.filteredRegionData.studies).forEach(snp => {
+        this.allTraits = [...new Set([...this.allTraits, ...this.filteredRegionData.studies[snp].studies.map(study => study.trait)])]
+        this.filteredRegionData.studies[snp].studies = this.filteredRegionData.studies[snp].studies.filter(study => {
+          return((study.min_p <= graphOptions.pValue &&
+                 (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
+                 (graphOptions.onlyMolecularTraits ? study.data_type === 'gene_expression' : true))
+                || study.variant_type === 'rare')
+        })
+      })
     },
 
     initGraph() {
-      if (this.regionData === null || this.regionMetadata === null) {
+      if (this.regionData === null || this.regionData.metadata === null) {
         const chartContainer = document.getElementById("region-chart");
         chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>'
         return
@@ -64,268 +71,211 @@ export default function region() {
 
       const graphOptions = Alpine.store('graphOptionStore')
       this.filterStudies(graphOptions)
-      this.getGraph(graphOptions)
+      this.getRegionGraph()
     },
 
-    getGraph(graphOptions) {
-      if (this.regionData.studies === null || this.regionMetadata === null) {
-        return
+    getRegionGraph() {
+      const container = document.getElementById('region-chart');
+      container.innerHTML = '';
+      const margin = { top: 50, right: 150, bottom: 200, left: 180 }
+
+      // Set up dimensions
+      const width = container.clientWidth - margin.left - margin.right;
+      const height = 600 - margin.top - margin.bottom;
+
+      const chartElement = document.getElementById("region-chart");
+      chartElement.innerHTML = ''
+
+      const chartContainer = d3.select("#region-chart");
+      chartContainer.select("svg").remove()
+      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
+
+      const graphConstants = {
+        width: graphWidth, 
+        height: Math.floor(graphWidth / 2) + 500,
+        outerMargin: {
+          top: 50,
+          right: 30,
+          bottom: 80,
+          left: 40,
+        }
       }
-      this.regionData.studies.forEach((study) => {
-        const gene = this.regionMetadata.genes.find(gene => study.bp > gene.start && study.bp < gene.stop)
-        study.color = (gene !== undefined) ? gene.color : '#888888' 
+
+      let self = this
+      const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
+      const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
+
+
+      const svg = chartContainer
+        .append("svg")
+        .attr('width', graphConstants.width)
+        .attr('height', graphConstants.height)
+        .append('g')
+        .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
+
+      console.log(this.allTraits)
+      const xScale = d3.scaleLinear()
+        .domain([this.minMbp, this.maxMbp])
+        .nice()
+        .range([0, innerWidth]);
+
+      const yScale = d3.scalePoint()
+          .domain(this.allTraits)
+          .range([innerHeight, 0])
+          .padding(0.1)
+
+      // Draw the axes
+      svg.append("g")
+        .attr("class", "x-axis")
+        .call(d3.axisBottom(xScale))
+        .attr("transform", `translate(0,${innerHeight})`)
+        .selectAll("text")  
+        .style("text-anchor", "end")
+        .attr("dx", "-0.8em")
+        .attr("dy", "0.15em")
+        .attr("transform", "rotate(-65)")
+
+      svg.append("g")
+        .attr("class", "y-axis")
+        .call(d3.axisLeft(yScale))
+        .selectAll("text")
+        .style("display", "none")
+        
+      //Labels for x and y axis
+      svg.append("text")
+        .attr("font-size", "14px")
+        .attr("transform", "rotate (-90)")
+        .attr("x", "-220")
+        .attr("y", graphConstants.outerMargin.left * -1 + 20)
+        .text("Trait / Study");
+
+      svg.append("text")
+        .attr("font-size", "14px")
+        .attr("x", graphConstants.width/2 - graphConstants.outerMargin.left)
+        .attr("y", graphConstants.height - graphConstants.outerMargin.bottom + 30)
+        .text("Genomic Position (MB)");
+
+      this.allTraits.forEach(category => {
+        const yPos = yScale(category) + yScale.bandwidth() / 2;
+        svg.append("line")
+          .attr("x1", 0)
+          .attr("x2", graphConstants.width)
+          .attr("y1", yPos)
+          .attr("y2", yPos)
+          .attr("stroke", "lightgray")
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "4 2");
       })
 
-      const chartElement = document.getElementById("region-chart");
-      chartElement.innerHTML = ''
-
-      const chartContainer = d3.select("#region-chart");
-      chartContainer.select("svg").remove()
-      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
-
-      const graphConstants = {
-        width: graphWidth, 
-        height: Math.floor(graphWidth / 1),
-        outerMargin: {
-          top: 20,
-          right: 30,
-          bottom: 80,
-          left: 100,
-        },
-        innerMargin: {
-          top: 20,
-          right: 0,
-          bottom: 20,
-          left: 0,
-        },
-      }
-
-      let self = this
-      const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-      const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
-
-      const svg = chartContainer
-        .append("svg")
-        .attr('width', graphConstants.width)
-        .attr('height', graphConstants.height)
-        .append('g')
-        .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-      const yCategories = [...new Set(this.regionData.studies.map(d => d.trait))];
-      // let allStudies = grouped_by_snp[i.candidate_snp].map(s => [s.study_a, s.study_b]).flat()
-      // let uniqueStudies = [...new Set(allStudies)]
-
-      const xScale = d3.scaleLinear()
-        .domain([this.minBP - 5, this.maxBP + 5]) // Add some padding on the x-axis
-        .nice()
-        .range([0, innerWidth]);
-
-      const yScale = d3.scalePoint()
-          .domain(yCategories)
-          .range([innerHeight, 0])
-          .padding(0.5);
-
-      // Draw the axes
-      svg.append("g")
-          .attr("class", "x-axis")
-          .attr("transform", `translate(0,${innerHeight})`)
-          .call(d3.axisBottom(xScale))
-          // .style("text-anchor", "end")
-          // .attr("dx", "-.8em")
-          // .attr("dy", ".15em")
-          // .attr("transform", "rotate(-65)");
-
-      svg.append("g")
-          .attr("class", "y-axis")
-          .call(d3.axisLeft(yScale));
-
-      // Plot the points
-      svg.selectAll(".point")
-          .data(this.regionData.studies)
-          .enter()
-          .append("circle")
-          .attr("cx", d => xScale(d.bp))
-          .attr("cy", d => yScale(d.trait))
-          .attr("r", 3)
-          .attr("fill", d => d.color)
-
-      // Group points by their x-value to find pairs for line drawing
-      const groupedByX = d3.groups(this.regionData.studies, d => d.BP);
-
-      // // Draw lines connecting points with the same x-value
-      // groupedByX.forEach(([xValue, points]) => {
-      //     if (points.length > 1) { // Only draw lines if more than one point has the same x-value
-      //         svg.append("line")
-      //             .attr("class", "graph-line")
-      //             .attr("x1", xScale(xValue))
-      //             .attr("y1", yScale(points[0].category))
-      //             .attr("x2", xScale(xValue))
-      //             .attr("y2", yScale(points[1].category));
-      //     }
-      // });
-
-      // Add annotations as shaded regions below the x-axis
-      const annotationHeight = 20; // Height for annotation rectangles
-      const annotationY = innerHeight + 30; // Position below the x-axis
-
-      svg.selectAll(".annotation")
-          .data(this.regionMetadata.genes)
-          .enter()
+      // Add clip path and plot group
+      svg.append("defs").append("clipPath")
+          .attr("id", "clip")
           .append("rect")
-          .attr("class", "annotation")
-          .attr("x", d => xScale(d.start))
-          .attr("y", annotationY)
-          .attr("width", d => xScale(d.stop) - xScale(d.start))
-          .attr("height", annotationHeight)
-          .attr("fill", d => d.color)
+          .attr("width", innerWidth)
+          .attr("height", innerHeight);
 
+      const plotGroup = svg.append("g")
+          .attr("clip-path", "url(#clip)");
 
-      svg.selectAll(".annotation-text")
-          .data(this.regionMetadata.genes)
-          .enter()
-          .append("text")
-          .attr("class", "annotation-text")
-          .attr("x", d => (xScale(d.start) + xScale(d.stop)) / 2)
-          .attr("y", annotationY + annotationHeight / 2 + 4) // Center vertically within the rectangle
-          .text(d => d.gene_name)
-    },
+      // Create brush without zoom functionality
+      const brush = d3.brushX()
+          .extent([[0, 0], [innerWidth, innerHeight]])
+          .on("end", function(event) {
+              // Clear the brush selection after it's made
+              if (event.selection) {
+                  svg.select(".brush").call(brush.move, null);
+              }
+          });
 
-
-
-
-
-
-
-
-
-
-    getTestGraph(graphOptions) {
-      if (this.regionData.studies === null) {
-        return
-      }
-
-      const chartElement = document.getElementById("region-chart");
-      chartElement.innerHTML = ''
-
-      const chartContainer = d3.select("#region-chart");
-      chartContainer.select("svg").remove()
-      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
-
-      const graphConstants = {
-        width: graphWidth, 
-        height: Math.floor(graphWidth / 2.5),
-        outerMargin: {
-          top: 20,
-          right: 30,
-          bottom: 80,
-          left: 50,
-        },
-        innerMargin: {
-          top: 20,
-          right: 0,
-          bottom: 20,
-          left: 0,
-        },
-      }
-
-      let self = this
-
-      const data = [
-        { category: 'A', value: 5 },
-        { category: 'B', value: 10 },
-        { category: 'C', value: 5 },
-        { category: 'D', value: 15 },
-        { category: 'E', value: 10 },
-        { category: 'F', value: 20 }
-      ];
-
-      const geneAnnotations = [
-        { start: 0, end: 8.2, label: "Low Range", color: '#fd7f6f' },
-        { start: 8, end: 16, label: "Medium Range", color: '#7eb0d5' },
-        { start: 15, end: 25, label: "High Range", color: '#b2e061' }
-      ];
-
-      const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-      const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
-
-      const svg = chartContainer
-        .append("svg")
-        .attr('width', graphConstants.width)
-        .attr('height', graphConstants.height)
-        .append('g')
-        .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-      const yCategories = [...new Set(data.map(d => d.category))];
-      // let allStudies = grouped_by_snp[i.candidate_snp].map(s => [s.study_a, s.study_b]).flat()
-      // let uniqueStudies = [...new Set(allStudies)]
-
-      const xScale = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.value) + 5]) // Add some padding on the x-axis
-        .nice()
-        .range([0, innerWidth]);
-
-      const yScale = d3.scalePoint()
-          .domain(yCategories)
-          .range([innerHeight, 0])
-          .padding(0.5);
-
-      // Draw the axes
+      // Add brush to svg
       svg.append("g")
-          .attr("class", "x-axis")
-          .attr("transform", `translate(0,${innerHeight})`)
-          .call(d3.axisBottom(xScale));
+          .attr("class", "brush")
+          .call(brush);
 
-      svg.append("g")
-          .attr("class", "y-axis")
-          .call(d3.axisLeft(yScale));
+      // Create a container for tooltips outside of the SVG
+      const tooltipContainer = d3.select('#region-plot')
+          .append('div')
+          .attr('class', 'tooltip')
+          .style('position', 'absolute')
+          .style('visibility', 'hidden')
+          .style('background-color', 'white')
+          .style('padding', '5px')
+          .style('border', '1px solid black')
+          .style('border-radius', '5px');
 
-      // Plot the points
-      svg.selectAll(".point")
-          .data(data)
-          .enter().append("circle")
-          .attr("class", "point")
-          .attr("cx", d => xScale(d.value))
-          .attr("cy", d => yScale(d.category))
-          .attr("r", 5);
+      // Add points as a separate group to ensure events work
+      // const points = svg.append("g")
+      //     .attr("class", "points-group");
 
-      // Group points by their x-value to find pairs for line drawing
-      const groupedByX = d3.groups(data, d => d.value);
+      // points.selectAll(".point")
+      //     .data(expandedStudies)
+      //     .enter()
+      //     .append("circle")
+      //     .attr("class", "point")
+      //     .attr("cx", d => xScale(d.mbp))
+      //     .attr("cy", d => yScale(d.trait))
+      //     .attr("r", 3)
+      //     .attr("fill", d => this.getVariantTypeColor(d.variantType))
+      //     .style('opacity', 0.7)
+      //     .on('mouseover', function(event, d) {
+      //         d3.select(this)
+      //             .style('opacity', 1)
+      //             .attr('r', 5);
+                  
+      //         d3.select('#region-plot')
+      //             .append('div')
+      //             .attr('class', 'tooltip')
+      //             .style('position', 'absolute')
+      //             .style('background-color', 'white')
+      //             .style('padding', '5px')
+      //             .style('border', '1px solid black')
+      //             .style('border-radius', '5px')
+      //             .style('left', `${event.pageX + 10}px`)
+      //             .style('top', `${event.pageY - 10}px`)
+      //             .html(`Trait: ${d.trait}<br>
+      //                   Position: ${d.mbp.toFixed(3)} MB<br>
+      //                   Variant Type: ${d.variantType}`);
+      //     })
+      //     .on('mouseout', function() {
+      //         d3.select(this)
+      //             .style('opacity', 0.7)
+      //             .attr('r', 3);
+                  
+      //         d3.selectAll('.tooltip').remove();
+      //     });
+      
 
-      // Draw lines connecting points with the same x-value
-      groupedByX.forEach(([xValue, points]) => {
-          if (points.length > 1) { // Only draw lines if more than one point has the same x-value
-              svg.append("line")
-                  .attr("class", "graph-line")
-                  .attr("x1", xScale(xValue))
-                  .attr("y1", yScale(points[0].category))
-                  .attr("x2", xScale(xValue))
-                  .attr("y2", yScale(points[1].category));
+      const lines = Object.keys(this.filteredRegionData.studies).map(snp => {
+        return this.filteredRegionData.studies[snp].studies.reduce((acc, study) => {
+          const bp = snp.match(/\d+:(\d+)_/)[1] / 1000000;
+          const prevStudies = acc.length > 0 ? acc[acc.length - 1] : null;
+          
+          if (!prevStudies) {
+            return [study]; // First study, just return it in an array
           }
-      });
-      // Add annotations as shaded regions below the x-axis
-      const annotationHeight = 20; // Height for annotation rectangles
-      const annotationY = innerHeight + 30; // Position below the x-axis
-
-      svg.selectAll(".annotation")
-          .data(geneAnnotations)
+          
+          return [...acc, {
+            x1: xScale(bp),
+            y1: yScale(prevStudies.trait),
+            x2: xScale(bp),
+            y2: yScale(study.trait),
+          }];
+        }, []); // Initialize with empty array
+      }).flat();
+      console.log(lines)
+      // Move the lines to be rendered before the points
+      plotGroup.selectAll(".graph-line")
+          .data(lines)
           .enter()
-          .append("rect")
-          .attr("class", "annotation")
-          .attr("x", d => xScale(d.start))
-          .attr("y", annotationY)
-          .attr("width", d => xScale(d.end) - xScale(d.start))
-          .attr("height", annotationHeight)
-          .attr("fill", d => d.color)
-
-      // Add annotation labels
-      svg.selectAll(".annotation-text")
-          .data(geneAnnotations)
-          .enter()
-          .append("text")
-          .attr("class", "annotation-text")
-          .attr("x", d => (xScale(d.start) + xScale(d.end)) / 2)
-          .attr("y", annotationY + annotationHeight / 2 + 4) // Center vertically within the rectangle
-          .text(d => d.label)
-    }
+          .append("line")
+          .attr("class", "graph-line")
+          .attr("x1", d => d.x1)
+          .attr("y1", d => d.y1)
+          .attr("x2", d => d.x2)
+          .attr("y2", d => d.y2)
+          .style("stroke", "black")
+          .style("stroke-width", 4)
+          .style("stroke-linecap", "round");
+    },
   }
 }

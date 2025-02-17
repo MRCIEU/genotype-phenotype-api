@@ -2,7 +2,7 @@ import 'font-awesome/css/font-awesome.css'
 import 'bulma/css/bulma.css'
 import 'bulma-slider/dist/css/bulma-slider.min.css'
 import 'bulma-divider/dist/css/bulma-divider.min.css'
-import './custom.css'
+import './assets/css/custom.css'
 
 /* TODO: look into using alpine with reusable web components here: https://stackoverflow.com/questions/65710987/reusable-alpine-js-components */
 import Alpine from 'alpinejs';
