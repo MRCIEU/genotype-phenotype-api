@@ -92,12 +92,16 @@ export default function region() {
 
       const graphConstants = {
         width: graphWidth, 
-        height: Math.floor(graphWidth / 2) + 500,
+        height: Math.floor(graphWidth / 2),
         outerMargin: {
           top: 50,
           right: 30,
           bottom: 80,
-          left: 40,
+          left: 60,
+        },
+        geneTrackMargin: {
+          top: 40,
+          height: 20
         }
       }
 
@@ -106,10 +110,11 @@ export default function region() {
       const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
 
+      // svg.attr("height", graphConstants.height + graphConstants.geneTrackMargin.top + 50); // Add extra space for rotated labels
       const svg = chartContainer
         .append("svg")
         .attr('width', graphConstants.width)
-        .attr('height', graphConstants.height)
+        .attr('height', graphConstants.height + graphConstants.geneTrackMargin.top)
         .append('g')
         .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
 
@@ -119,10 +124,14 @@ export default function region() {
         .nice()
         .range([0, innerWidth]);
 
-      const yScale = d3.scalePoint()
-          .domain(this.allTraits)
+      // Calculate the maximum number of studies for any SNP
+      const maxStudiesPerSnp = Math.max(...Object.values(this.filteredRegionData.studies)
+        .map(snp => snp.studies.length));
+
+      const yScale = d3.scaleLinear()
+          .domain([0, maxStudiesPerSnp - 1])  // -1 because we're using 0-based indexing
           .range([innerHeight, 0])
-          .padding(0.1)
+          .nice();
 
       // Draw the axes
       svg.append("g")
@@ -137,35 +146,37 @@ export default function region() {
 
       svg.append("g")
         .attr("class", "y-axis")
-        .call(d3.axisLeft(yScale))
-        .selectAll("text")
-        .style("display", "none")
+        .call(d3.axisLeft(yScale)
+          .ticks(maxStudiesPerSnp)
+          .tickFormat(d => d + 1))  // Changed from empty string to show numbers, add 1 to make it 1-based
         
       //Labels for x and y axis
       svg.append("text")
         .attr("font-size", "14px")
         .attr("transform", "rotate (-90)")
-        .attr("x", "-220")
+        .attr("x", -graphConstants.height / 2)
         .attr("y", graphConstants.outerMargin.left * -1 + 20)
-        .text("Trait / Study");
+        .text("Number of Colocalizing Studies");
 
       svg.append("text")
         .attr("font-size", "14px")
         .attr("x", graphConstants.width/2 - graphConstants.outerMargin.left)
-        .attr("y", graphConstants.height - graphConstants.outerMargin.bottom + 30)
+        .attr("y", graphConstants.height + graphConstants.geneTrackMargin.height - graphConstants.outerMargin.bottom + 30)
         .text("Genomic Position (MB)");
 
-      this.allTraits.forEach(category => {
-        const yPos = yScale(category) + yScale.bandwidth() / 2;
+      // Draw horizontal grid lines for each study position
+      const studyPositions = d3.range(maxStudiesPerSnp);
+      studyPositions.forEach(index => {
+        const yPos = yScale(index);
         svg.append("line")
           .attr("x1", 0)
-          .attr("x2", graphConstants.width)
+          .attr("x2", innerWidth)
           .attr("y1", yPos)
           .attr("y2", yPos)
           .attr("stroke", "lightgray")
           .attr("stroke-width", 1)
           .attr("stroke-dasharray", "4 2");
-      })
+      });
 
       // Add clip path and plot group
       svg.append("defs").append("clipPath")
@@ -177,14 +188,55 @@ export default function region() {
       const plotGroup = svg.append("g")
           .attr("clip-path", "url(#clip)");
 
-      // Create brush without zoom functionality
+      // Create brush
       const brush = d3.brushX()
           .extent([[0, 0], [innerWidth, innerHeight]])
           .on("end", function(event) {
-              // Clear the brush selection after it's made
-              if (event.selection) {
-                  svg.select(".brush").call(brush.move, null);
-              }
+              if (!event.selection) return; // Ignore empty selections
+              
+              // Get the selected range in data coordinates
+              const extent = event.selection.map(xScale.invert);
+              
+              // Update the x scale domain to zoom
+              xScale.domain(extent);
+              
+              // Update x-axis
+              svg.select(".x-axis")
+                  .transition()
+                  .duration(750)
+                  .call(d3.axisBottom(xScale))
+                  .selectAll("text")  
+                  .style("text-anchor", "end")
+                  .attr("dx", "-0.8em")
+                  .attr("dy", "0.15em")
+                  .attr("transform", "rotate(-65)");
+              
+              // Update lines
+              plotGroup.selectAll(".graph-line")
+                  .transition()
+                  .duration(750)
+                  .attr("x1", d => xScale(d.bp))
+                  .attr("x2", d => xScale(d.bp));
+              
+              // Update gene rectangles
+              svg.selectAll(".gene-rect")
+                  .transition()
+                  .duration(750)
+                  .attr("x", d => xScale(d.min_bp / 1000000))
+                  .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000));
+              
+              // Update gene labels
+              svg.selectAll(".gene-label")
+                  .transition()
+                  .duration(750)
+                  .attr("x", d => xScale((d.min_bp + (d.max_bp - d.min_bp)/2) / 1000000))
+                  .attr("transform", function(d) {
+                      const x = xScale((d.min_bp + (d.max_bp - d.min_bp)/2) / 1000000);
+                      return `rotate(45, ${x}, ${geneTrackHeight + 12})`;
+                  });
+
+              // Clear the brush selection after zooming
+              svg.select(".brush").call(brush.move, null);
           });
 
       // Add brush to svg
@@ -193,7 +245,7 @@ export default function region() {
           .call(brush);
 
       // Create a container for tooltips outside of the SVG
-      const tooltipContainer = d3.select('#region-plot')
+      const tooltipContainer = d3.select('#region-chart')
           .append('div')
           .attr('class', 'tooltip')
           .style('position', 'absolute')
@@ -203,67 +255,18 @@ export default function region() {
           .style('border', '1px solid black')
           .style('border-radius', '5px');
 
-      // Add points as a separate group to ensure events work
-      // const points = svg.append("g")
-      //     .attr("class", "points-group");
-
-      // points.selectAll(".point")
-      //     .data(expandedStudies)
-      //     .enter()
-      //     .append("circle")
-      //     .attr("class", "point")
-      //     .attr("cx", d => xScale(d.mbp))
-      //     .attr("cy", d => yScale(d.trait))
-      //     .attr("r", 3)
-      //     .attr("fill", d => this.getVariantTypeColor(d.variantType))
-      //     .style('opacity', 0.7)
-      //     .on('mouseover', function(event, d) {
-      //         d3.select(this)
-      //             .style('opacity', 1)
-      //             .attr('r', 5);
-                  
-      //         d3.select('#region-plot')
-      //             .append('div')
-      //             .attr('class', 'tooltip')
-      //             .style('position', 'absolute')
-      //             .style('background-color', 'white')
-      //             .style('padding', '5px')
-      //             .style('border', '1px solid black')
-      //             .style('border-radius', '5px')
-      //             .style('left', `${event.pageX + 10}px`)
-      //             .style('top', `${event.pageY - 10}px`)
-      //             .html(`Trait: ${d.trait}<br>
-      //                   Position: ${d.mbp.toFixed(3)} MB<br>
-      //                   Variant Type: ${d.variantType}`);
-      //     })
-      //     .on('mouseout', function() {
-      //         d3.select(this)
-      //             .style('opacity', 0.7)
-      //             .attr('r', 3);
-                  
-      //         d3.selectAll('.tooltip').remove();
-      //     });
-      
-
       const lines = Object.keys(this.filteredRegionData.studies).map(snp => {
-        return this.filteredRegionData.studies[snp].studies.reduce((acc, study) => {
+        const studies = this.filteredRegionData.studies[snp].studies;
           const bp = snp.match(/\d+:(\d+)_/)[1] / 1000000;
-          const prevStudies = acc.length > 0 ? acc[acc.length - 1] : null;
-          
-          if (!prevStudies) {
-            return [study]; // First study, just return it in an array
-          }
-          
-          return [...acc, {
+          return {
+            bp: bp,
             x1: xScale(bp),
-            y1: yScale(prevStudies.trait),
+            y1: yScale(0),
             x2: xScale(bp),
-            y2: yScale(study.trait),
-          }];
-        }, []); // Initialize with empty array
-      }).flat();
-      console.log(lines)
-      // Move the lines to be rendered before the points
+            y2: yScale(studies.length),
+          }
+      })
+
       plotGroup.selectAll(".graph-line")
           .data(lines)
           .enter()
@@ -276,6 +279,127 @@ export default function region() {
           .style("stroke", "black")
           .style("stroke-width", 4)
           .style("stroke-linecap", "round");
+
+      // Calculate gene track height and position
+      const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top; // Position below x-axis
+      const geneHeight = 20; // Height of each gene rectangle
+
+      // Create gene rectangles
+      const genes = this.filteredRegionData.metadata;
+      
+      // Function to detect overlaps and assign levels
+      function assignLevels(genes) {
+        let levels = [];
+        genes.forEach(gene => {
+          let level = 0;
+          while (true) {
+            // Check if current level has overlap
+            const hasOverlap = levels[level]?.some(existingGene => 
+              !(gene.max_bp < existingGene.min_bp || gene.min_bp > existingGene.max_bp)
+            );
+            
+            if (!hasOverlap) {
+              // No overlap found, assign this level
+              if (!levels[level]) levels[level] = [];
+              levels[level].push(gene);
+              gene.level = level;
+              break;
+            }
+            level++;
+          }
+        });
+        return levels;
+      }
+
+      const geneLevels = assignLevels(genes);
+      const totalLevels = geneLevels.length;
+
+      // Add gene rectangles with vertical stacking
+      const geneGroup = svg.append("g")
+          .attr("class", "gene-track")
+          .attr("transform", `translate(0, ${geneTrackY})`);
+
+      geneGroup.selectAll(".gene-rect")
+          .data(genes)
+          .enter()
+          .append("rect")
+          .attr("class", "gene-rect")
+          .attr("x", d => xScale(d.min_bp / 1000000))
+          .attr("y", d => d.level * (graphConstants.geneTrackMargin.height + 5)) // Add 5px spacing between levels
+          .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000))
+          .attr("height", graphConstants.geneTrackMargin.height)
+          .attr("fill", (d, i) => constants.colors[i % constants.colors.length])
+          .attr("opacity", 0.7)
+          .on('mouseover', function(event, d) {
+              d3.select(this)
+                  .style('opacity', 1)
+                  .attr('r', 5);
+                  
+              tooltipContainer.html(`Gene: ${d.symbol}`)
+                .style('visibility', 'visible')
+                .style('display', 'flex')
+                .style('left', `${event.pageX + 10}px`)
+                .style('top', `${event.pageY - 10}px`)
+          })
+          .on('mouseout', function() {
+              d3.select(this)
+                  .style('opacity', 0.7)
+                  .attr('r', 3);
+                  
+              tooltipContainer.style('visibility', 'hidden')
+          });
+
+      // Update SVG height to accommodate stacked genes
+      const newHeight = graphConstants.height + (totalLevels * (geneHeight + 5)) + 50;
+      svg.attr("height", newHeight);
+
+      // Add reset zoom text after creating the SVG
+      svg.append("text")
+        .attr("class", "reset-zoom")
+        .attr("x", innerWidth - 80)  // Position near top-right
+        .attr("y", -20)              // Position above the plot
+        .text("Reset Zoom")
+        .style("cursor", "pointer")   // Show pointer cursor on hover
+        .style("fill", "black")        // Make it look clickable
+        .on("click", function() {
+          // Reset x scale to original domain
+          xScale.domain([self.minMbp, self.maxMbp]);
+          
+          // Update x-axis with transition
+          svg.select(".x-axis")
+            .transition()
+            .duration(750)
+            .call(d3.axisBottom(xScale))
+            .selectAll("text")  
+            .style("text-anchor", "end")
+            .attr("dx", "-0.8em")
+            .attr("dy", "0.15em")
+            .attr("transform", "rotate(-65)");
+          
+          // Update lines
+          plotGroup.selectAll(".graph-line")
+            .transition()
+            .duration(750)
+            .attr("x1", d => xScale(d.bp))
+            .attr("x2", d => xScale(d.bp));
+          
+          // Update gene rectangles
+          svg.selectAll(".gene-rect")
+            .transition()
+            .duration(750)
+            .attr("x", d => xScale(d.min_bp / 1000000))
+            .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000));
+          
+          // Update gene labels
+          svg.selectAll(".gene-label")
+            .transition()
+            .duration(750)
+            .attr("x", d => xScale((d.min_bp + (d.max_bp - d.min_bp)/2) / 1000000))
+            .attr("transform", function(d) {
+              const x = xScale((d.min_bp + (d.max_bp - d.min_bp)/2) / 1000000);
+              return `rotate(45, ${x}, ${geneTrackHeight + 12})`;
+            });
+        });
     },
   }
 }
