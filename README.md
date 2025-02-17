@@ -1,4 +1,6 @@
-# Genotype-phenotype map API
+# Genotype-phenotype Map Website
+
+This repository will incorperate both backend and frontend components to the website
 
 ## Background
 
@@ -96,6 +98,9 @@ curl http://localhost:8001/health
 Or connect to http://localhost:8001/docs on your browser.
 
 
+* [Backend README can be found here](backend/README.md)
+* [Frontend README can be found here](frontend/README.md)
+
 ## CI/CD
 
 The project includes a GitHub Actions workflow for Continuous Integration and Deployment. On each push to the main branch, it will:
@@ -115,3 +120,6 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 ## License
 
 This project is licensed under the GPL3 License.
+## Running locally:
+
+TODO

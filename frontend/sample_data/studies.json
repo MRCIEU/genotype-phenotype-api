@@ -1,0 +1,17 @@
+[
+    {
+      "id": 1,
+      "type": "phenotype",
+      "name": "Mean corpuscular hemoglobin"
+    },
+    {
+      "id": 2,
+      "type": "phenotype",
+      "name": "Mean corpuscular hemoglobin concentration"
+    },
+    {
+      "id": 3,
+      "type": "gene",
+      "name": "D2"
+    }
+  ]

@@ -52,3 +52,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+dist
+node_modules
+.vite

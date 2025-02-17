@@ -1,0 +1,48 @@
+svg {
+  font-family: arial
+}
+
+.tick line {
+  stroke: black;
+  stroke-opacity: 0.0;
+  shape-rendering: crispEdges;
+}
+
+.axis-label {
+  font-size: 12px;
+}
+.point {
+  fill: steelblue;
+}
+.graph-line {
+  stroke: black;
+  stroke-width: 1.5;
+}
+.annotation {
+  opacity: 0.5;
+}
+.annotation-text {
+  font-size: 10px;
+  fill: black;
+  text-anchor: middle;
+}
+
+div.tooltip { 
+  position: absolute;
+  display: flex;
+  background-color: #dddddd;
+  border: black 1px solid;
+  padding: 2px;
+  opacity: 0.8;
+  border-radius: 10px;
+}
+
+.grid-line {
+  stroke: #aaaaaa;
+  stroke-width: 1;
+  stroke-dasharray: 3, 3;
+}
+
+#wait-to-load {
+  display:block !important;
+}
