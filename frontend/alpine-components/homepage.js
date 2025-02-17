@@ -1,11 +1,9 @@
 import studies from '../sample_data/studies.json'
-import logo from '../images/logo.png'
-import smallLogo from '../images/small_logo.svg'
+import logo from '../assets/images/logo.png'
 
 export default function homepage() {
   return {
     logo,
-    smallLogo,
     count: 0,
     searchOpen: false,
     search: '',
