@@ -5,3 +5,4 @@ pydantic==2.10.6
 pytest==8.3.4
 httpx==0.28.1
 fastapi-analytics==1.2.3
+sqlalchemy==2.0.34
