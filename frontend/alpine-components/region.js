@@ -7,7 +7,6 @@ export default function region() {
     filteredRegionData: null,
     minMbp: null,
     maxMbp: null,
-    allTraits: [],
 
     async loadData() {
       try {
@@ -52,7 +51,6 @@ export default function region() {
       })
       // Filter studies within each SNP group
       Object.keys(this.filteredRegionData.studies).forEach(snp => {
-        this.allTraits = [...new Set([...this.allTraits, ...this.filteredRegionData.studies[snp].studies.map(study => study.trait)])]
         this.filteredRegionData.studies[snp].studies = this.filteredRegionData.studies[snp].studies.filter(study => {
           return((study.min_p <= graphOptions.pValue &&
                  (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
@@ -118,7 +116,6 @@ export default function region() {
         .append('g')
         .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
 
-      console.log(this.allTraits)
       const xScale = d3.scaleLinear()
         .domain([this.minMbp, this.maxMbp])
         .nice()
