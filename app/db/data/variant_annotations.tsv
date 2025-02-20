@@ -1,5 +1,0 @@
-SNP	CHR	BP	EA	OA	Gene	Feature_type	Consequence	cDNA_position	CDS_position	Protein_position	Amino_acids	Codons	RSID	impact	symbol	biotype	strand	canonical
-11:309127_A_G	11	309127	A	G	ENSG00000185885	Transcript	upstream_gene_variant	-	-	-	-	-	rs1059091,COSV60249689	MODIFIER	IFITM1	protein_coding	1	YES
-12:111446804_C_T	12	111446804	C	T	ENSG00000111252	Transcript	missense_variant	1166	784	262	W/R	Tgg/Cgg	rs3184504,CM084630,COSV57981059	MODERATE	SH2B3	protein_coding	1	YES
-17:7087693_C_T	17	7087693	C	T	-	-	intergenic_variant	-	-	-	-	-	rs188743906	MODIFIER	NA	NA	NA	NA
-9:133274295_A_T	9	133274295	A	T	ENSG00000175164	Transcript	intron_variant	-	-	-	-	-	rs115478735	MODIFIER	ABO	protein_coding	-1	YES

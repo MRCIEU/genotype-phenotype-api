@@ -1,48 +1,76 @@
-import studies from '../sample_data/studies.json'
 import logo from '../assets/images/logo.png'
+import constants from './constants'
 
 export default function homepage() {
   return {
     logo,
-    count: 0,
-    searchOpen: false,
-    search: '',
-    dummyData: studies,
-    modalOpen: false,
-    gwasUploadData: null,
-    uploadFileName: null,
-    uploadPValue: 7.3,
+    searchText: '',
+    searchOptionData: [],
+    uploadMetadata: {
+      modalOpen: false,
+      gwasUploadData: null,
+      uploadFileName: null,
+      uploadPValue: 7.3,
+    },
+    searchMetadata: {
+      searchOpen: false,
+      searchDelay: 300, // Delay in milliseconds
+      minSearchChars: 2, // Minimum characters before searching
+      searchTimeout: null, // Timeout reference
+    },
+    filteredItems: [], // Property to store filtered items
+
+    async loadData() {
+      const response = await fetch(constants.apiUrl + '/search/options')
+      this.searchOptionData = await response.json()
+    },
 
     goToItem(item) {
-      window.location.href = 'phenotype.html?id=' + item.id;
+      if (item.type === 'study') {
+        window.location.href = 'phenotype.html?id=' + item.type_id;
+      } else if (item.type === 'gene') {
+        window.location.href = 'gene.html?id=' + item.type_id;
+      }
       this.search = ''
     },
 
     openModal() {
-      this.modalOpen = true
-      console.log(this.modalOpen)
+      this.uploadMetadata.modalOpen = true
+      console.log(this.uploadMetadata.modalOpen)
     },
 
     closeModal() {
-      this.modalOpen = false 
-      console.log(this.modalOpen)
+      this.uploadMetadata.modalOpen = false 
+      console.log(this.uploadMetadata.modalOpen)
     },
 
     closeSearch() {
       this.search = ''
-      this.searchOpen = false
+      this.searchMetadata.searchOpen = false
     },
 
     get getItemsForSearch() {
-      const filterItems = this.dummyData.filter((item) => {
-        return item.name.toLowerCase().includes(this.search.toLowerCase())
-      })
-      if(filterItems.length < this.dummyData.length && filterItems.length > 0) {
-        this.searchOpen = true
-        return filterItems
-      } else {
-        this.searchOpen = false
+      // Clear the previous timeout if it exists
+      if (this.searchMetadata.searchTimeout) {
+        clearTimeout(this.searchMetadata.searchTimeout);
       }
+
+      // Return the current filtered items
+      if (this.searchText.length < this.searchMetadata.minSearchChars) {
+        this.filteredItems = []; // Clear filtered items if not enough characters
+        return this.filteredItems;
+      }
+
+      // Set a new timeout
+      this.searchMetadata.searchTimeout = setTimeout(() => {
+        this.filteredItems = this.searchOptionData.filter((item) => {
+          return item.name.toLowerCase().includes(this.searchText.toLowerCase());
+        });
+        console.log(this.filteredItems);
+        this.searchMetadata.searchOpen = this.filteredItems.length > 0; // Update searchOpen based on filtered items
+      }, this.searchMetadata.searchDelay); // Delay execution by this.searchDelay milliseconds
+
+      return this.filteredItems; // Return the filtered items
     },
 
     // look into npm library called pako

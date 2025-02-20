@@ -1,4 +1,5 @@
 export default {
+    apiUrl: import.meta.env.VITE_API_URL,
     maxBpPerChr: {
       1: 249250621,
       2: 243199373,
@@ -24,11 +25,11 @@ export default {
       22: 51304566
     },
     colors: [
-      '#fd7f6f', 
+      '#ffee65',
       '#7eb0d5',
+      '#fd7f6f', 
       '#b2e061',
       '#ffb55a',
-      '#ffee65',
       '#beb9db',
       '#fdcce5',
       '#8bd3c7'

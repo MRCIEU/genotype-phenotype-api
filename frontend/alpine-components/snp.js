@@ -2,21 +2,23 @@ import Alpine from 'alpinejs'
 import * as d3 from "d3";
 import constants from './constants.js'
 
-export default function gene() {
+export default function snp() {
   return {
     data: null,
 
     async loadData() {
-        try {
-            const response = await fetch('/sample_data/snp_result.json');
-            this.data = await response.json();
+        let variantId = (new URLSearchParams(location.search).get('id'))
 
-            this.data.studies = this.data.studies.map(study => ({
-                ...study,
-                tissue: study.tissue ? study.tissue : "N/A",
-                cis_trans: study.cis_trans? study.cis_trans : "N/A"
+        try {
+            const response = await fetch(constants.apiUrl + '/variants/' + variantId)
+            this.data = await response.json()
+
+            this.data.colocs = this.data.colocs .map(coloc => ({
+                ...coloc,
+                tissue: coloc.tissue ? coloc.tissue : "N/A",
+                cis_trans: coloc.cis_trans? coloc.cis_trans : "N/A"
             })) 
-            this.data.studies.sort((a, b) => a.data_type.localeCompare(b.data_type));
+            this.data.colocs.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
             this.filterByOptions(Alpine.store('graphOptionStore'));
         } catch (error) {
@@ -25,23 +27,23 @@ export default function gene() {
     },
 
     getSNPName() {
-        return this.data ? `RSID: ${this.data.annotation.RSID}` : 'RSID: ...';
+        return this.data ? `RSID: ${this.data.variant.RSID}` : 'RSID: ...';
     },
 
-    getAnnotationData() {
-        return this.data ? this.data.annotation : {};
+    getVariantData() {
+        return this.data ? this.data.variant : {};
     },
 
     getDataForTable() {
-        return this.data ? this.data.filteredStudies: {};
+        return this.data ? this.data.filteredColocs: {};
     },
 
     filterByOptions(graphOptions) {
-      this.data.filteredStudies = this.data.studies.filter(study => {
-        return(study.min_p <= graphOptions.pValue) &&
-              (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
+      this.data.filteredColocs = this.data.colocs.filter(coloc => {
+        return(coloc.min_p <= graphOptions.pValue) &&
+              (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
             //    study.posterior_prob >= graphOptions.coloc &&
-               (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true)
+               (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true)
                // && rare variants in the future...
       })
     },
@@ -70,7 +72,7 @@ export default function gene() {
 
       // Set dimensions
       const width = 800;
-      const height = 800;
+      const height = 600;
       const innerRadius = Math.min(width, height) * 0.45;
       const outerRadius = innerRadius * 1.01;
 
@@ -83,22 +85,22 @@ export default function gene() {
         .attr('transform', `translate(${width / 2},${height / 2})`);
 
       // Process data
-      const candidate_snp = this.data.annotation.RSID;
-      const studies = this.data.filteredStudies;
+      const candidate_snp = this.data.variant.RSID;
+      const colocs = this.data.filteredColocs;
 
       // Extract unique data_types
-      const dataTypes = Array.from(new Set(studies.map(d => d.data_type)));
+      const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
 
       // Extract unique traits
-      const traits = studies.map(d => d.trait);
+      const traits = colocs.map(d => d.trait);
 
       // Combine candidate_snp and traits into nodes
       const nodes = [candidate_snp, ...traits];
 
       // Create data_type mapping for coloring
       const dataTypeMap = {};
-      studies.forEach(study => {
-        dataTypeMap[study.trait] = study.data_type;
+      colocs.forEach(coloc => {
+        dataTypeMap[coloc.trait] = coloc.data_type;
       });
 
       // Create color scale based on data_type
@@ -116,9 +118,9 @@ export default function gene() {
       const matrix = Array(nodes.length).fill(null).map(() => Array(nodes.length).fill(0));
 
       // Populate matrix: connections from candidate_snp to each trait
-      studies.forEach(study => {
+      colocs.forEach(coloc => {
         const source = indexMap[candidate_snp];
-        const target = indexMap[study.trait];
+        const target = indexMap[coloc.trait];
         matrix[source][target] = 1; // Each trait connects once to the SNP
       });
 
@@ -175,28 +177,31 @@ export default function gene() {
         .attr('opacity', 0.7)
         .on('mouseover', function(event, d) {
           d3.select(this).transition().duration(200).attr('opacity', 1);
-          const study = self.data.filteredStudies.find(study => study.trait === nodes[d.target.index]);
+          const coloc = self.data.filteredColocs.find(coloc => coloc.trait === nodes[d.target.index]);
+          let tooltipColor = "white";
+          if (coloc.association) {
+            tooltipColor = coloc.association.BETA > 0 ? "#afe1af" : "#ee4b2b";
+          }
           d3.select('#snp-chord-diagram')
               .append('div')
               .attr('class', 'tooltip')
               .style('position', 'absolute')
-              .style('background-color', 'white')
+              .style('background-color', tooltipColor)
               .style('padding', '5px')
               .style('border', '1px solid black')
               .style('border-radius', '5px')
               .style('left', `${event.pageX + 10}px`)
               .style('top', `${event.pageY - 10}px`)
-              .html(`Trait: ${study.trait}<br>
-                    p-value: ${study.min_p}<br>
-                    Cis/Trans: ${study.cis_trans}<br>
+              .html(`Trait: ${coloc.trait}<br>
+                    p-value: ${coloc.min_p}<br>
+                    Cis/Trans: ${coloc.cis_trans}<br>
+                    BETA: ${coloc.association ? coloc.association.BETA : "N/A"}
                     `);
         })
         .on('mouseout', function(event, d) {
           d3.select(this).transition().duration(200).attr('opacity', 0.7);
           d3.selectAll('.tooltip').remove();
         })
-        // .append('title')
-        // .text(d => `${candidate_snp} → ${nodes[d.target.index]} (${dataTypeMap[nodes[d.target.index]]})`);
 
       // Add legend
       const legend = svg.append("g")

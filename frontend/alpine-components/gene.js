@@ -10,31 +10,34 @@ export default function gene() {
     variantTypes: null, 
 
     async loadData() {
+        let geneId = (new URLSearchParams(location.search).get('id'))
         try {
-            const response = await fetch('/sample_data/gene_result.json');
+            const response = await fetch(constants.apiUrl + '/genes/' + geneId);
             this.data = await response.json();
-            this.data.gene.start = this.data.gene.start / 1000000
-            this.data.gene.stop = this.data.gene.stop / 1000000
-
-            this.data.colocs = this.data.colocs.map(coloc => ({
-                ...coloc,
-                mbp : coloc.bp / 1000000,
-                variantType: this.data.snps[coloc.candidate_snp].Consequence
-            }))
-            this.data.studies = this.data.studies.map(study => ({
+            this.data.gene.minMbp = this.data.gene.min_bp / 1000000
+            this.data.gene.maxMbp = this.data.gene.max_bp / 1000000
+            this.data.colocs = this.data.colocs.map(coloc => {
+                const variantType = this.data.variants.find(variant => variant.SNP === coloc.candidate_snp)
+                return {
+                    ...coloc,
+                    mbp : coloc.bp / 1000000,
+                    variantType: variantType ? variantType.Consequence : null
+                }
+            })
+            this.data.study_extractions = this.data.study_extractions.map(study => ({
                 ...study,
                 mbp : study.bp / 1000000,
             }))
             // Create set of traits from colocs for efficient lookup
             const colocTraits = new Set(
-                this.data.colocs.flatMap(coloc => [coloc.trait_a, coloc.trait_b])
+                this.data.colocs.flatMap(coloc => coloc.trait)
             );
 
             // Filter studies to only include those not in colocs
-            this.data.studiesNotInColoc = this.data.studies.filter(study => 
+            this.data.studiesNotInColoc = this.data.study_extractions.filter(study => 
                 !colocTraits.has(study.trait)
             );
-            let variantTypesInData = Object.values(this.data.snps).map(snp => snp.Consequence)
+            let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
             let filteredVariantTypes = constants.variantTypes.filter(variantType => variantTypesInData.includes(variantType))
             this.variantTypes = Object.fromEntries(filteredVariantTypes.map((key, index) => [key, constants.colors[index]]));
 
@@ -44,7 +47,7 @@ export default function gene() {
     },
 
     getGeneName() {
-        return this.data ? `Gene: ${this.data.gene.name}` : 'Gene: ...';
+        return this.data ? `Gene: ${this.data.gene.symbol}` : 'Gene: ...';
     },
 
     getDataForTable() {
@@ -55,11 +58,11 @@ export default function gene() {
       this.data.filteredColocs = this.data.colocs.filter(coloc => {
         return(coloc.min_p <= graphOptions.pValue &&
                coloc.posterior_prob >= graphOptions.coloc &&
-               (graphOptions.includeTrans ? true : !coloc.includes_trans) &&
-               (graphOptions.onlyMolecularTraits ? coloc.includes_qtl : true))
+               (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
+               (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
                // && rare variants in the future...
       })
-      this.data.filteredStudies = this.data.studies.filter(study => {
+      this.data.filteredStudies = this.data.study_extractions.filter(study => {
         return(study.min_p <= graphOptions.pValue && 
                (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
                (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true))
@@ -109,8 +112,8 @@ export default function gene() {
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
         // Create scales
-        const uniqueTraits = [...new Set(this.data.filteredColocs.map(d => d.trait_b))];
-        const uniqueTissues = [...new Set(this.data.filteredColocs.map(d => d.tissue_a))];
+        const uniqueTraits = [...new Set(this.data.filteredColocs.map(d => d.trait))];
+        const uniqueTissues = [...new Set(this.data.filteredColocs.map(d => d.tissue))];
 
         const x = d3.scaleBand()
             .domain(uniqueTraits)
@@ -167,8 +170,8 @@ export default function gene() {
             .data(this.data.filteredColocs)
             .enter()
             .append('circle')
-            .attr('cx', d => x(d.trait_b) + x.bandwidth()/2)
-            .attr('cy', d => y(d.tissue_a) + y.bandwidth()/2)
+            .attr('cx', d => x(d.trait) + x.bandwidth()/2)
+            .attr('cy', d => y(d.tissue) + y.bandwidth()/2)
             .attr('r', 5)
             .style('fill', d => this.getVariantTypeColor(d.variantType))
             .style('opacity', 0.7)
@@ -183,10 +186,10 @@ export default function gene() {
                     .style('border-radius', '5px')
                     .style('left', `${event.pageX + 10}px`)
                     .style('top', `${event.pageY - 10}px`)
-                    .html(`Tissue: ${d.tissue_a}<br>
-                          Trait: ${d.trait_b}<br>
+                    .html(`Tissue: ${d.tissue}<br>
+                          Trait: ${d.trait}<br>
                           p-value: ${d.min_p}<br>
-                          Variant Type: ${this.data.snps[d.candidate_snp].Consequence}`
+                          Variant Type: ${d.variantType}`
                          );
             })
             .on('mouseout', () => {
@@ -288,8 +291,7 @@ export default function gene() {
         // Create expanded list with both traits for each coloc
         let expandedStudies = [];
         this.data.filteredColocs.forEach(coloc => {
-            expandedStudies.push({ trait: coloc.trait_a, tissue: coloc.tissue_a, pValue: coloc.min_p, variantType: coloc.variantType, mbp: coloc.mbp });
-            expandedStudies.push({ trait: coloc.trait_b, tissue: coloc.tissue_b, pValue: coloc.min_p, variantType: coloc.variantType, mbp: coloc.mbp });
+            expandedStudies.push({ trait: coloc.trait, tissue: coloc.tissue, pValue: coloc.min_p, variantType: coloc.variantType, mbp: coloc.mbp });
         });
         const existingTraits = new Set(expandedStudies.map(study => study.trait));
         this.data.filteredStudies.forEach(study => {
@@ -444,9 +446,9 @@ export default function gene() {
           .append("line")
           .attr("class", "graph-line")
           .attr("x1", d => xScale(d.mbp))
-          .attr("y1", d => yScale(d.trait_a))
+          .attr("y1", d => yScale(d.trait))
           .attr("x2", d => xScale(d.mbp))
-          .attr("y2", d => yScale(d.trait_b))
+          .attr("y2", d => yScale(d.trait))
           .style("stroke", "black")
           .style("stroke-width", 2);
     },

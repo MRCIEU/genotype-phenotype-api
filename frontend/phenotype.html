@@ -5,7 +5,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
-    <title>GPM</title>
+    <title>GPM Phenotype</title>
     <script type="module" src="/main.js"></script>
     <script src="web-components/navigation-bar.js"></script>
     <script src="web-components/graph-options.js"></script>
@@ -17,8 +17,13 @@
         <navigation-bar></navigation-bar>
 
         <div class="columns mt-4 mb-0">
-          <div class="column">
+          <div class="column is-four-fifths">
             <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
+          </div>
+          <div class="column is-one-fifth">
+            <div x-show="filteredColocData && filteredColocData.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
+                Please change current filter settings for results to appear.
+            </div>
           </div>
         </div>
 
@@ -88,7 +93,6 @@
             </table>
           </div>
         </div>
-
         </div>
       </div>
     </div>
