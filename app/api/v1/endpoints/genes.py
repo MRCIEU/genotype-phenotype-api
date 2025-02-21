@@ -28,6 +28,7 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
         gene = convert_duckdb_to_pydantic_model(Gene, gene)
 
         studies = db.get_study_extractions_in_region(gene.chr, gene.min_bp, gene.max_bp, symbol)
+        print(studies[0])
         studies = convert_duckdb_to_pydantic_model(StudyExtaction, studies)
 
         variant_ids = [coloc.candidate_snp for coloc in colocs]

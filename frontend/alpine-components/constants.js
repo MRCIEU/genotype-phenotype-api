@@ -34,6 +34,15 @@ export default {
       '#fdcce5',
       '#8bd3c7'
     ],
+    tableColors: [
+      'antiquewhite',
+      'white',
+      'lavenderblush',
+      'honeydew',
+      'aliceblue',
+      'oldlace',
+      'mintcream'
+    ],
     variantTypes: [
       'missense_variant',
       'synonymous_variant',

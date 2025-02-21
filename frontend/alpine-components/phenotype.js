@@ -6,11 +6,11 @@ export default function pheontype() {
     colocData: null,
     filteredColocData: null,
     filteredGroupedColoc: null,
-    filteredStudies: null,
     orderedTraitsToFilterBy: null,
-    colocDisplayFilters: {
+    displayFilters: {
       chr: null,
-      candidate_snp: null
+      candidate_snp: null,
+      trait: null
     },
 
     async loadData() {
@@ -47,8 +47,20 @@ export default function pheontype() {
         })
         this.colocData.colocs.sort((a, b) => a.chr > b.chr);
 
-        const graphOptions = Alpine.store('graphOptionStore')
-        this.filterByOptions(graphOptions) 
+        // order traits by frequency in order to display in dropdown for filtering
+        let allTraits = this.colocData.colocs.map(s => s.trait)
+        let frequency = {};
+        allTraits.forEach(item => {
+          frequency[item] = (frequency[item] || 0) + 1;
+        });
+
+        // sort by frequency
+        let uniqueTraits = [...new Set(allTraits)];
+        uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
+
+        this.orderedTraitsToFilterBy = uniqueTraits.filter(t => t !== this.colocData.study.trait)
+
+        this.filterByOptions(Alpine.store('graphOptionStore')) 
 
       } catch (error) {
         console.error('Error loading data:', error);
@@ -62,57 +74,67 @@ export default function pheontype() {
     },
 
     filterByOptions(graphOptions) {
+      let colocIdsWithTraits = []
+      if (this.displayFilters.trait) {
+        colocIdsWithTraits = this.colocData.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.id)
+      } 
       this.filteredColocData = this.colocData.colocs.filter(coloc => {
-        return((coloc.min_p <= graphOptions.pValue &&
-               coloc.posterior_prob >= graphOptions.coloc &&
-               (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
-               (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
-              || coloc.rare)
-               // && rare variants in the future...
-      })
+        const graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
+          coloc.posterior_prob >= graphOptions.coloc &&
+          (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
+          (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
+         || coloc.rare)
 
-      // console.log(this.colocData.colocs)
+        const traitFilter = this.displayFilters.trait ? colocIdsWithTraits.includes(coloc.id) : true
+
+        return graphOptionFilters && traitFilter
+      })
       console.log(this.filteredColocData.length)
+
       // deduplicate studies and sort based on frequency
       this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
-      let allTraits = this.filteredColocData.map(s => s.trait)
-      let frequency = {};
-      allTraits.forEach(item => {
-        frequency[item] = (frequency[item] || 0) + 1;
-      });
-
-      // sort by frequency
-      let uniqueTraits = [...new Set(allTraits)];
-      uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
-
-      this.orderedTraitsToFilterBy = uniqueTraits
     },
 
     filterByStudy(trait) {
       if (trait === null) {
         this.filteredColocData = this.colocData
       } else {
-        this.colocDisplayFilters =  {
+        this.displayFilters =  {
           chr: null,
-          candidate_snp: null
+          candidate_snp: null,
+          trait: trait
         }
-        this.filteredColocData = this.colocData.colocs.filter(c => c.trait === trait)
+        this.filterByOptions(Alpine.store('graphOptionStore'))
+      }
+    },
+
+    removeDisplayFilters() {
+      this.displayFilters = {
+        chr: null,
+        candidate_snp: null,
+        trait: null
       }
     },
 
     get getDataForColocTable() {
-      if (this.filteredStudies === null) return
-      // let colocDataSubset = this.filteredStudies.map(snp => {
-      // })
+      if (this.filteredColocData === null) return
+      let tableData = this.filteredColocData.filter(coloc => {
+        if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
+        else if (this.displayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.displayFilters.candidate_snp 
+        else return true
+      })
 
-      // let colocDataSubset = this.filteredGroupedColoc.filter(coloc => {
-      //   if (this.colocDisplayFilters.chr !== null) return coloc.chr == this.colocDisplayFilters.chr
-      //   else if (this.colocDisplayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.colocDisplayFilters.candidate_snp 
-      //   else return true
-      // })
-      // colocDataSubset = Object.values(colocDataSubset)
-      // const result = Object.values(this.filteredStudies).slice(0, 10)
-      return [] 
+      // TODO: remove this after changing to DataTables library?
+      tableData = tableData.slice(0, 500)
+
+      tableData.forEach(coloc => {
+        const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+        coloc.color = constants.tableColors[hash]
+      })
+
+      this.filteredGroupedColoc = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
+
+      return this.filteredGroupedColoc 
     },
 
     initPhenotypeGraph() {
@@ -264,8 +286,8 @@ export default function pheontype() {
         })
         .on('click', function(d, i) {
           let chr = parseInt(i[0].slice(4))
-          self.colocDisplayFilters.chr = chr
-          self.colocDisplayFilters.candidate_snp = null
+          self.displayFilters.chr = chr
+          self.displayFilters.candidate_snp = null
         })
 
       // Create scales for each chromosome
@@ -356,10 +378,24 @@ export default function pheontype() {
             .style("display", "none");
         })
         .on('click', function(d, i) {
-          self.colocDisplayFilters.candidate_snp = i.candidate_snp
-          self.colocDisplayFilters.chr = null
+          self.displayFilters.candidate_snp = i.candidate_snp
+          self.displayFilters.chr = null
         });
 
+      // Add horizontal grid lines for each 0.05 marker
+      innerGraph
+        .selectAll('.grid-line')
+        .data(yAxisValues)
+        .enter()
+        .append('line')
+        .attr('class', 'grid-line')
+        .attr('x1', 0)
+        .attr('x2', innerWidth)
+        .attr('y1', d => innerYScale(d) + graphConstants.rareMargin.top)
+        .attr('y2', d => innerYScale(d) + graphConstants.rareMargin.top)
+        .attr('stroke', '#e0e0e0')
+        .attr('opacity', 0.5)
+        .attr('stroke-width', 1);
 
       if (graphOptions.includeRareVariants) {
         this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales)

@@ -81,7 +81,7 @@ class StudyExtaction(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: str
     known_gene: Optional[str] = None
-    candidate_snp: str
+    candidate_snp: Optional[str] = None
     trait: str
     data_type: str
     tissue: Optional[str] = None
