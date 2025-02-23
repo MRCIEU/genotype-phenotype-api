@@ -12,7 +12,7 @@ async def get_search_options():
     try:
         cache_service = CacheService()
         search_terms = cache_service.get_study_names_for_search()
-        genes = cache_service.get_genes()
+        genes = cache_service.get_gene_names()
 
         search_terms = [{"type": "study", "name": term[1], "type_id": term[0]} for term in search_terms]
         genes = [{"type": "gene", "name": gene[0], "type_id": gene[0]} for gene in genes]

@@ -1,5 +1,6 @@
+from __future__ import annotations
 from pydantic import BaseModel
-from typing import List, Optional, Union, Any
+from typing import ForwardRef, List, Optional, Union, Any
 
 class Association(BaseModel):
     SNP: Optional[str] = None
@@ -42,6 +43,7 @@ class Gene(BaseModel):
     chr: int 
     min_bp: int
     max_bp: int
+    genes_in_region: Optional[List[Gene]] = None
 
 class GeneMetadata(BaseModel):
     symbol: str
@@ -139,6 +141,7 @@ class GeneResponse(BaseModel):
     colocs: List[Coloc]
     variants: List[Variant]
     study_extractions: List[StudyExtaction]
+    tissues: List[str]
 
 class Region(BaseModel):
     chr: int 
@@ -160,20 +163,18 @@ class StudyResponse(BaseModel):
     colocs: List[Coloc]
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
-    """
-    Convert DuckDB query results to a Pydantic model instance or a list of Pydantic model instances.
-
-    :param results: List of tuples returned from DuckDB query or a single tuple.
-    :param model: Pydantic model class to convert the results into.
-    :return: List of Pydantic model instances or a single Pydantic model instance.
-    """
-    # If results is a list of tuples, convert each tuple to a model instance
+    """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):
         if len(results) == 0: return []
-        return [model(**{field: row[idx] for idx, field in enumerate(model.model_fields.keys())}) for row in results]
-    # If results is a single tuple, convert it to a model instance
+        return [model(**{
+            field: row[idx] for idx, field in enumerate(model.model_fields.keys())
+            if idx < len(row)  # Only include fields that exist in the tuple
+        }) for row in results]
     elif isinstance(results, tuple):
-        return model(**{field: results[idx] for idx, field in enumerate(model.model_fields.keys())})
+        return model(**{
+            field: results[idx] for idx, field in enumerate(model.model_fields.keys())
+            if idx < len(results)  # Only include fields that exist in the tuple
+        })
     else:
         raise ValueError("Results must be a list of tuples or a single tuple.")
 

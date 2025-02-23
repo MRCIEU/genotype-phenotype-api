@@ -89,7 +89,6 @@ export default function pheontype() {
 
         return graphOptionFilters && traitFilter
       })
-      console.log(this.filteredColocData.length)
 
       // deduplicate studies and sort based on frequency
       this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);

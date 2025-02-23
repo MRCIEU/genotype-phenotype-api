@@ -16,11 +16,11 @@ async def upload_gwas(gwas: Study):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{uuid}", response_model=Study)
-async def get_gwas(uuid: str):
+@router.get("/{guid}", response_model=Study)
+async def get_gwas(guid: str):
     try:
         redis = RedisClient()
-        gwas = redis.get_from_queue(redis.process_gwas_queue, uuid)
+        gwas = redis.get_from_queue(redis.process_gwas_queue, guid)
         return gwas
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

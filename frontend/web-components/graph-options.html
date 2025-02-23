@@ -1,13 +1,13 @@
 <div id="graphOptions" x-data="graphOptions">
-  Posterior Probability <span x-text="coloc"></span> <br />
+  <span class="is-size-8">Posterior Probability <span x-text="coloc"></span></span> <br />
   <input class="slider is-four-fifths mt-0 mb-0" @click="$store.graphOptionStore.coloc = parseFloat(coloc)" x-model="coloc" step="0.05" min="0.5" max="0.8" value="0.8" type="range">
   <hr class="divider mt-0 mb-0">
 
-  Study P-value <span x-text="Number(pValue).toExponential()"></span> <br />
+  <span class="is-size-8">Study P-value <span x-text="Number(pValue).toExponential()"></span></span> <br />
   <input class="slider is-four-fifths mt-0 mb-0" x-model="pValueIndex" @input="updatePValue()" type="range" step="1" min="0" max="7">
   <hr class="divider mt-0 mb-0">
 
-  <label class="checkbox mt-1"> <input @change="$store.graphOptionStore.includeRareVariants = includeRareVariants" x-model="includeRareVariants" type="checkbox" /> Include Rare Variants </label> <br />
-  <label class="checkbox mt-1"> <input @change="$store.graphOptionStore.onlyMolecularTraits = onlyMolecularTraits" x-model="onlyMolecularTraits" type="checkbox" /> Only Molecular Traits </label> <br />
-  <label class="checkbox mt-1"> <input @change="$store.graphOptionStore.includeTrans = includeTrans" x-model="includeTrans" type="checkbox" /> Include Trans Markers</label> <br />
+  <label class="checkbox mt-1 is-size-8"> <input @change="$store.graphOptionStore.includeRareVariants = includeRareVariants" x-model="includeRareVariants" type="checkbox" /> Include Rare Variants </label> <br />
+  <label class="checkbox mt-1 is-size-8"> <input @change="$store.graphOptionStore.onlyMolecularTraits = onlyMolecularTraits" x-model="onlyMolecularTraits" type="checkbox" /> Only Molecular Traits </label> <br />
+  <label class="checkbox mt-1 is-size-8"> <input @change="$store.graphOptionStore.includeTrans = includeTrans" x-model="includeTrans" type="checkbox" /> Include Trans Markers</label> <br />
 </div>

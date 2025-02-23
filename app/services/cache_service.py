@@ -17,20 +17,20 @@ class CacheService:
         return self.db.get_study_names_for_search()
 
     @lru_cache(maxsize=1)
-    def get_genes(self) -> List[Tuple[str, str]]:
+    def get_gene_names(self) -> List[Tuple[str, str]]:
         """
         Retrieve genes from DuckDB with caching.
         Returns:
             List of tuples containing (gene_name, chromosome)
         """
-        return self.db.get_genes()
+        return self.db.get_gene_names()
 
     @lru_cache(maxsize=1)
-    def get_gene_ranges(self) -> List[Tuple[str, int, int]]:
+    def get_gene_ranges(self) -> List[Tuple[str, int, int, int]]:
         """
         Retrieve gene ranges for a given chromosome from DuckDB with caching.
         Returns:
-            List of tuples containing (gene_name, start_position, end_position)
+            List of tuples containing (gene_name, chr, start_position, end_position)
         """
         return self.db.get_gene_ranges()
 
@@ -41,12 +41,13 @@ class CacheService:
         Returns:
             List of Variant instances
         """
-        return self.db.get_tissues()
-      
+        tissues = self.db.get_tissues()
+        tissues =[tissue[0] for tissue in tissues]
+        return sorted(tissues)
 
     def clear_cache(self):
         """Clear the LRU cache for gene ranges"""
         self.get_gene_ranges.cache_clear()
-        self.get_genes.cache_clear()
+        self.get_gene_names.cache_clear()
         self.get_study_names_for_search.cache_clear()
         self.get_tissues.cache_clear()

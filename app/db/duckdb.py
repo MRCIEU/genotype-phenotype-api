@@ -43,7 +43,7 @@ class DuckDBClient:
         return self._fetch_colocs(f"candidate_snp = '{variant_id}'")
 
     def get_all_colocs_for_gene(self, symbol: str):
-        return self._fetch_colocs(f"known_gene = '{symbol}'")
+        return self._fetch_colocs(f"known_gene = '{symbol}' AND cis_trans = 'cis'")
 
     def get_all_colocs_for_region(self, region_name: str):
         return self._fetch_colocs(f"ld_block = '{region_name}'")
@@ -56,7 +56,7 @@ class DuckDBClient:
             "SELECT study_name, trait FROM studies_processed WHERE data_type = 'phenotype'"
         ).fetchall()
 
-    def get_genes(self):
+    def get_gene_names(self):
         return self.studies_conn.execute(
             "SELECT DISTINCT known_gene FROM all_study_blocks"
         ).fetchall()

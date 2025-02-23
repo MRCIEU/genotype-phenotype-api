@@ -59,5 +59,28 @@ export default {
       'methylation',
       'protein',
       'phenotype'
-    ]
+    ],
+    findMinAndMaxValues: function(data) {
+        const idFrequencies = data.reduce((acc, obj) => {
+          if (obj.id) {
+            acc[obj.id] = (acc[obj.id] || 0) + 1;
+          }
+          return acc;
+        }, {});
+
+        const frequencies = Object.values(idFrequencies);
+        const minNumStudies = Math.min(...frequencies);
+        const maxNumStudies = Math.max(...frequencies);
+
+        return[idFrequencies, minNumStudies, maxNumStudies]
+    },
+    scaleStudySize: function(frequency, minNumStudies, maxNumStudies) {
+      const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
+      const scaledNumStudies = ((frequency - minNumStudies) /
+        (maxNumStudies- minNumStudies)) *
+        (scaledMaxNumStudies- scaledMinNumStudies) +
+        scaledMinNumStudies  
+
+      return scaledNumStudies;
+    }
 }
