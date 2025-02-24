@@ -22,7 +22,7 @@ pip-delete-this-directory.txt
 
 # Databases
 *.sqlite3
-*.db
+example_*.db
 
 # OS generated files
 .DS_Store
