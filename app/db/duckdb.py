@@ -67,7 +67,7 @@ class DuckDBClient:
             """SELECT all_study_blocks.*, studies_processed.trait, studies_processed.data_type, studies_processed.tissue
             FROM all_study_blocks 
             JOIN studies_processed ON all_study_blocks.study = studies_processed.study_name 
-            WHERE (all_study_blocks.chr = ? AND all_study_blocks.bp BETWEEN ? AND ?) OR all_study_blocks.known_gene = ?
+            WHERE (all_study_blocks.chr = ? AND all_study_blocks.bp BETWEEN ? AND ?) OR (all_study_blocks.known_gene = ? AND all_study_blocks.cis_trans = 'cis')
             """,
             (chr, bp_start, bp_end, symbol)
         ).fetchall()

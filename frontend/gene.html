@@ -63,7 +63,7 @@
                 </tr>
               </thead>
               <tbody class="is-size-7">
-                <template x-for="[candidate_snp, colocs] in Object.entries(getDataForTable)">
+                <template x-for="[candidate_snp, colocs] in Object.entries(colocsForTable)">
                     <template x-for="(coloc, colocIndex) in colocs">
                         <tr x-bind:style="'background-color: ' + coloc.color">
                             <template x-if="colocIndex === 0">
@@ -85,6 +85,17 @@
                             <td x-text="(coloc.min_p !== null ? coloc.min_p.toExponential(2) : '')"></td>
                         </tr>
                     </template>
+                </template>
+                <template x-for="study in studyExtractionsForTable">
+                  <tr>
+                    <td>None</td>
+                    <td x-text="study.trait"></td>
+                    <td x-text="study.data_type"></td>
+                    <td><a :href="'gene.html?id=' + study.known_gene" x-text="study.known_gene"></a></td>
+                    <td x-text="study.tissue"></td>
+                    <td x-text="study.cis_trans"></td>
+                    <td x-text="(study.min_p !== null ? study.min_p.toExponential(2) : '')"></td>
+                  </tr>
                 </template>
               </tbody>
             </table>

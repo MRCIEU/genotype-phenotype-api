@@ -32,23 +32,19 @@ export default function gene() {
                     variantType: variantType ? variantType.Consequence.split(",")[0] : null,
                 }
             })
+            this.data.study_extractions = this.data.study_extractions.map(study => ({
+                ...study,
+                mbp : study.bp / 1000000,
+            }))
 
-            this.minMbp = Math.min(...this.data.colocs.map(d => d.mbp))
-            this.maxMbp = Math.max(...this.data.colocs.map(d => d.mbp))
+            this.minMbp = Math.min(...this.data.colocs.map(d => d.mbp), ...this.data.study_extractions.map(d => d.mbp))
+            this.maxMbp = Math.max(...this.data.colocs.map(d => d.mbp), ...this.data.study_extractions.map(d => d.mbp))
 
             this.data.study_extractions = this.data.study_extractions.map(study => ({
                 ...study,
                 mbp : study.bp / 1000000,
             }))
-            // Create set of traits from colocs for efficient lookup
-            const colocTraits = new Set(
-                this.data.colocs.flatMap(coloc => coloc.trait)
-            );
 
-            // Filter studies to only include those not in colocs
-            this.data.studiesNotInColoc = this.data.study_extractions.filter(study => 
-                !colocTraits.has(study.trait)
-            );
             let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
             let filteredVariantTypes = constants.variantTypes.filter(variantType => variantTypesInData.includes(variantType))
             this.variantTypes = Object.fromEntries(filteredVariantTypes.map((key, index) => [key, constants.colors[index]]));
@@ -74,9 +70,14 @@ export default function gene() {
         return this.data && this.data.colocs ? this.data.colocs[0].ld_block : null
     },
 
-    get getDataForTable() {
+    get colocsForTable() {
         if (!this.data) return [];
         return this.data.groupedColocs
+    },
+
+    get studyExtractionsForTable() {
+        if (!this.data) return [];
+        return this.data.filteredStudies
     },
 
     filterByOptions(graphOptions) {
@@ -128,12 +129,13 @@ export default function gene() {
 
         const graphOptions = Alpine.store('graphOptionStore');
         this.filterByOptions(graphOptions);
+
+        // listen to resize events to redraw the graph
         window.addEventListener('resize', () => {
-            // Debounce the resize event to prevent too many redraws
             clearTimeout(this.resizeTimer);
             this.resizeTimer = setTimeout(() => {
                 this.getTissueByTraitGraph();
-            }, 250); // Wait for 250ms after the last resize event
+            }, 250);
         });
         this.getTissueByTraitGraph();
     },
@@ -154,9 +156,8 @@ export default function gene() {
             }
         }
 
-        // Set up dimensions
-        const width = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-        const height = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
+        const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
+        const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
         // Create SVG with viewBox for responsiveness
         this.svg = d3.select('#gene-dot-plot')
@@ -174,12 +175,12 @@ export default function gene() {
 
         const x = d3.scaleBand()
             .domain(categories)
-            .range([0, width])
+            .range([0, innerWidth])
             .padding(0.1);
 
         const y = d3.scaleBand()
             .domain(tissues.reverse())
-            .range([height, 0])
+            .range([innerHeight, 0])
             .padding(0.1);
 
         // Add vertical grid lines
@@ -192,7 +193,7 @@ export default function gene() {
             .attr('x1', d => x(d) + x.bandwidth()/2)
             .attr('x2', d => x(d) + x.bandwidth()/2)
             .attr('y1', 0)
-            .attr('y2', height)
+            .attr('y2', innerHeight)
             .style('stroke', '#e0e0e0')
             .style('stroke-width', 1);
 
@@ -204,7 +205,7 @@ export default function gene() {
             .enter()
             .append('line')
             .attr('x1', 0)
-            .attr('x2', width)
+            .attr('x2', innerWidth)
             .attr('y1', d => y(d) + y.bandwidth()/2)
             .attr('y2', d => y(d) + y.bandwidth()/2)
             .style('stroke', '#e0e0e0')
@@ -212,7 +213,7 @@ export default function gene() {
 
         // Add X axis
         this.svg.append('g')
-            .attr('transform', `translate(0,${height})`)
+            .attr('transform', `translate(0,${innerHeight})`)
             .call(d3.axisBottom(x))
             .selectAll('text')
             .attr('transform', 'rotate(-45)')
@@ -283,14 +284,14 @@ export default function gene() {
 
         // Add axis labels
         this.svg.append('text')
-            .attr('x', width/2)
-            .attr('y', height + graphConstants.outerMargin.bottom - 10)
+            .attr('x', innerWidth/2)
+            .attr('y', innerHeight + graphConstants.outerMargin.bottom - 10)
             .style('text-anchor', 'middle')
             .text('Category');
 
         this.svg.append('text')
             .attr('transform', 'rotate(-90)')
-            .attr('x', -height/2)
+            .attr('x', -innerHeight/2)
             .attr('y', -graphConstants.outerMargin.left + 30)
             .style('text-anchor', 'middle')
             .text('Tissue');
@@ -319,12 +320,12 @@ export default function gene() {
         chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
         return;
       }
+      // listen to resize events to redraw the graph
       window.addEventListener('resize', () => {
-          // Debounce the resize event to prevent too many redraws
           clearTimeout(this.resizeTimer);
           this.resizeTimer = setTimeout(() => {
               this.getNetworkGraph();
-          }, 250); // Wait for 250ms after the last resize event
+          }, 250);
       });
 
       this.getNetworkGraph();
@@ -410,15 +411,23 @@ export default function gene() {
             bp: snp.match(/\d+:(\d+)_/)[1] / 1000000
         }));
 
+        this.data.filteredStudies.forEach(study => {
+            snpGroups.push({
+                snp: null,
+                studies: [study],
+                bp: study.bp / 1000000
+            })
+        })
+
         // Assign levels to prevent overlaps
         const positionedGroups = assignCircleLevels(snpGroups);
         const maxLevel = Math.max(...positionedGroups.map(g => g.level));
 
         // Add circles for each SNP group with adjusted vertical positions
         positionedGroups.forEach(({snp, studies, bp, level}) => {
-            const baseRadius = 5;
+            const baseRadius = 2;
             const radius = studies.length > 0 ? 
-                Math.min(baseRadius + Math.sqrt(studies.length) * 2, 20) : 
+                Math.min(baseRadius + Math.sqrt(studies.length) * 1.5, 10) : 
                 baseRadius;
 
             const variant = this.data.variants.find(v => v.SNP === snp);
@@ -564,210 +573,5 @@ export default function gene() {
             .style("text-anchor", "middle")
             .text("Genomic Position (MB)");
     },
-
-    // getNetworkGraphV1() {
-    //   const chartElement = document.getElementById("gene-network-plot");
-    //   chartElement.innerHTML = ''
-
-    //   const chartContainer = d3.select("#gene-network-plot");
-    //   chartContainer.select("svg").remove()
-    //   let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
-
-    //   const graphConstants = {
-    //     width: graphWidth, 
-    //     height: Math.floor(graphWidth / 2) + 500,
-    //     outerMargin: {
-    //       top: 50,
-    //       right: 30,
-    //       bottom: 80,
-    //       left: 220,
-    //     }
-    //   }
-
-    //   const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-    //   const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
-
-    // // Create expanded list with both traits for each coloc
-    // let expandedStudies = [];
-    // this.data.filteredColocs.forEach(coloc => {
-    //     expandedStudies.push({ trait: coloc.trait, tissue: coloc.tissue, pValue: coloc.min_p, variantType: coloc.variantType, mbp: coloc.mbp });
-    // });
-    // const existingTraits = new Set(expandedStudies.map(study => study.trait));
-    // this.data.filteredStudies.forEach(study => {
-    //     if (!existingTraits.has(study.trait)) {
-    //         expandedStudies.push({ trait: study.trait, tissue: study.tissue, pValue: study.min_p, variantType: 'phenotype', mbp: study.mbp });
-    //     }
-    // });
-    // expandedStudies = expandedStudies.sort((a, b) => a.mbp - b.mbp)
-    // const minMbp = Math.min(...expandedStudies.map(d => d.mbp))
-    // const maxMbp = Math.max(...expandedStudies.map(d => d.mbp))
-
-    //   const svg = chartContainer
-    //     .append("svg")
-    //     .attr('width', graphConstants.width)
-    //     .attr('height', graphConstants.height)
-    //     .append('g')
-    //     .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-    //   const yCategories = [...new Set(expandedStudies.map(d => d.trait))];
-    //   const xScale = d3.scaleLinear()
-    //     .domain([minMbp, maxMbp])
-    //     .nice()
-    //     .range([0, innerWidth]);
-
-    //   const yScale = d3.scalePoint()
-    //       .domain(yCategories)
-    //       .range([innerHeight, 0])
-    //       .padding(0.5);
-
-    //   // Draw the axes
-    //   svg.append("g")
-    //     .attr("class", "x-axis")
-    //     .call(d3.axisBottom(xScale))
-    //     .attr("transform", `translate(0,${innerHeight})`)
-    //     .selectAll("text")  
-    //     .style("text-anchor", "end")
-    //     .attr("dx", "-0.8em")
-    //     .attr("dy", "0.15em")
-    //     .attr("transform", "rotate(-65)")
-
-    //   svg.append("g")
-    //     .attr("class", "y-axis")
-    //     .call(d3.axisLeft(yScale));
-        
-    //   //Labels for x and y axis
-    //   svg.append("text")
-    //     .attr("font-size", "14px")
-    //     .attr("transform", "rotate (-90)")
-    //     .attr("x", "-220")
-    //     .attr("y", graphConstants.outerMargin.left * -1 + 20)
-    //     .text("Trait / Study");
-
-    //   svg.append("text")
-    //     .attr("font-size", "14px")
-    //     .attr("x", graphConstants.width/2 - graphConstants.outerMargin.left)
-    //     .attr("y", graphConstants.height - graphConstants.outerMargin.bottom + 30)
-    //     .text("Genomic Position (MB)");
-
-    //   yCategories.forEach(category => {
-    //     const yPos = yScale(category) + yScale.bandwidth() / 2;
-    //     svg.append("line")
-    //       .attr("x1", 0)
-    //       .attr("x2", graphConstants.width)
-    //       .attr("y1", yPos)
-    //       .attr("y2", yPos)
-    //       .attr("stroke", "lightgray")
-    //       .attr("stroke-width", 1)
-    //       .attr("stroke-dasharray", "4 2");
-    //   })
-
-    //   // Add clip path and plot group
-    //   svg.append("defs").append("clipPath")
-    //       .attr("id", "clip")
-    //       .append("rect")
-    //       .attr("width", innerWidth)
-    //       .attr("height", innerHeight);
-
-    //   const plotGroup = svg.append("g")
-    //       .attr("clip-path", "url(#clip)");
-
-    //   // Create brush without zoom functionality
-    //   const brush = d3.brushX()
-    //       .extent([[0, 0], [innerWidth, innerHeight]])
-    //       .on("end", function(event) {
-    //           // Clear the brush selection after it's made
-    //           if (event.selection) {
-    //               svg.select(".brush").call(brush.move, null);
-    //           }
-    //       });
-
-    //   // Add brush to svg
-    //   svg.append("g")
-    //       .attr("class", "brush")
-    //       .call(brush);
-
-    //   // Create a container for tooltips outside of the SVG
-    //   const tooltipContainer = d3.select('#gene-network-plot')
-    //       .append('div')
-    //       .attr('class', 'tooltip')
-    //       .style('position', 'absolute')
-    //       .style('visibility', 'hidden')
-    //       .style('background-color', 'white')
-    //       .style('padding', '5px')
-    //       .style('border', '1px solid black')
-    //       .style('border-radius', '5px');
-
-    //   // Add points as a separate group to ensure events work
-    //   const points = svg.append("g")
-    //       .attr("class", "points-group");
-
-    //   points.selectAll(".point")
-    //       .data(expandedStudies)
-    //       .enter()
-    //       .append("circle")
-    //       .attr("class", "point")
-    //       .attr("cx", d => xScale(d.mbp))
-    //       .attr("cy", d => yScale(d.trait))
-    //       .attr("r", 3)
-    //       .attr("fill", d => this.getVariantTypeColor(d.variantType))
-    //       .style('opacity', 0.7)
-    //       .on('mouseover', function(event, d) {
-    //           d3.select(this)
-    //               .style('opacity', 1)
-    //               .attr('r', 5);
-                  
-    //           d3.select('#gene-network-plot')
-    //               .append('div')
-    //               .attr('class', 'tooltip')
-    //               .style('position', 'absolute')
-    //               .style('background-color', 'white')
-    //               .style('padding', '5px')
-    //               .style('border', '1px solid black')
-    //               .style('border-radius', '5px')
-    //               .style('left', `${event.pageX + 10}px`)
-    //               .style('top', `${event.pageY - 10}px`)
-    //               .html(`Trait: ${d.trait}<br>
-    //                     Position: ${d.mbp.toFixed(3)} MB<br>
-    //                     Variant Type: ${d.variantType}`);
-    //       })
-    //       .on('mouseout', function() {
-    //           d3.select(this)
-    //               .style('opacity', 0.7)
-    //               .attr('r', 3);
-                  
-    //           d3.selectAll('.tooltip').remove();
-    //       });
-
-    //   // Move the lines to be rendered before the points
-    //   plotGroup.selectAll(".graph-line")
-    //       .data(this.data.filteredColocs)
-    //       .enter()
-    //       .append("line")
-    //       .attr("class", "graph-line")
-    //       .attr("x1", d => xScale(d.mbp))
-    //       .attr("y1", d => yScale(d.trait))
-    //       .attr("x2", d => xScale(d.mbp))
-    //       .attr("y2", d => yScale(d.trait))
-    //       .style("stroke", "black")
-    //       .style("stroke-width", 2);
-
-    //   // Add resize handler
-    //   const resizeNetworkGraph = () => {
-    //       const newWidth = chartContainer.node().getBoundingClientRect().width;
-    //       const newHeight = Math.max(400, window.innerHeight * 0.6);
-          
-    //       chartContainer.select('svg')
-    //           .attr('viewBox', `0 0 ${newWidth} ${newHeight}`);
-    //   };
-
-    //   // Add resize listener
-    //   window.addEventListener('resize', resizeNetworkGraph);
-
-    //   // Clean up listener when component is destroyed
-    //   return () => {
-    //       window.removeEventListener('resize', resizeNetworkGraph);
-    //   };
-    // },
-
   }
 } 
