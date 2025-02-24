@@ -16,7 +16,15 @@
 
       <div class="columns mt-4 mb-0">
         <div class="column">
-          <h3 class="title is-2 has-text-centered mb-0" x-text="getGeneName"></h3>
+          <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+getGeneName()"></h3>
+          <h6 class="has-text-centered mb-0 mt-0">
+            Range: <span x-text="getGenomicRange"></span>
+          </h6>
+          <h6 class="has-text-centered mb-0">
+            <a class="button is-link is-small is-centered is-light" x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+getGeneName()" target="_blank">
+              <span>NCBI Gene</span>
+            </a>
+          </h6>
         </div>
       </div>
 

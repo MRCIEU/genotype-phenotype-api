@@ -19,6 +19,11 @@ export default function gene() {
             this.data.gene.minMbp = this.data.gene.min_bp / 1000000
             this.data.gene.maxMbp = this.data.gene.max_bp / 1000000
 
+            this.data.gene.genes_in_region = this.data.gene.genes_in_region.map(gene => ({
+                ...gene,
+                minMbp : gene.min_bp / 1000000,
+                maxMbp : gene.max_bp / 1000000,
+            }))
             this.data.colocs = this.data.colocs.map(coloc => {
                 const variantType = this.data.variants.find(variant => variant.SNP === coloc.candidate_snp)
                 return {
@@ -28,13 +33,8 @@ export default function gene() {
                 }
             })
 
-            this.minMbp = Math.min(...this.data.colocs.map(d => d.mbp)) - 0.001
-            const minItem = this.data.colocs.reduce((min, item) => (item.mbp < min.mbp ? item : min));
-            console.log(minItem)
-            const maxItem = this.data.colocs.reduce((max, item) => (item.mbp > max.mbp ? item : max));
-            console.log(maxItem)
-            
-            this.maxMbp = Math.max(...this.data.colocs.map(d => d.mbp)) + 0.001
+            this.minMbp = Math.min(...this.data.colocs.map(d => d.mbp))
+            this.maxMbp = Math.max(...this.data.colocs.map(d => d.mbp))
 
             this.data.study_extractions = this.data.study_extractions.map(study => ({
                 ...study,
@@ -59,7 +59,11 @@ export default function gene() {
     },
 
     getGeneName() {
-        return this.data ? `Gene: ${this.data.gene.symbol}` : 'Gene: ...';
+        return this.data ? `${this.data.gene.symbol}` : '...';
+    },
+
+    getGenomicRange() {
+        return this.data ? `${this.data.gene.chr}:${this.data.gene.min_bp}-${this.data.gene.max_bp}` : '...';
     },
 
     get getDataForTable() {
@@ -330,14 +334,6 @@ export default function gene() {
     },
 
     getNetworkGraph() {
-      const container = document.getElementById('gene-network-plot');
-      container.innerHTML = '';
-      const margin = { top: 50, right: 150, bottom: 200, left: 180 }
-
-      // Set up dimensions
-      const width = container.clientWidth - margin.left - margin.right;
-      const height = 600 - margin.top - margin.bottom;
-
       const chartElement = document.getElementById("gene-network-plot");
       chartElement.innerHTML = ''
 
@@ -350,7 +346,7 @@ export default function gene() {
         height: Math.floor(graphWidth / 2),
         outerMargin: {
           top: 50,
-          right: 30,
+          right: 150,
           bottom: 80,
           left: 60,
         },
@@ -364,8 +360,6 @@ export default function gene() {
       const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
       const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
-
-      // svg.attr("height", graphConstants.height + graphConstants.geneTrackMargin.top + 50); // Add extra space for rotated labels
       const svg = chartContainer
         .append("svg")
         .attr('width', graphConstants.width)
@@ -512,6 +506,7 @@ export default function gene() {
         const studies = this.data.groupedColocs[snp];
           const bp = snp.match(/\d+:(\d+)_/)[1] / 1000000;
           return {
+            snp: snp,
             bp: bp,
             x1: xScale(bp),
             y1: yScale(0),
@@ -529,9 +524,37 @@ export default function gene() {
           .attr("y1", d => d.y1)
           .attr("x2", d => d.x2)
           .attr("y2", d => d.y2)
-          .style("stroke", "black")
-          .style("stroke-width", 4)
-          .style("stroke-linecap", "round");
+          .style("stroke", d => {
+            const variant = this.data.variants.find(v => v.SNP === d.snp);
+            return this.getVariantTypeColor(variant ? variant.Consequence.split(",")[0] : null);
+          })
+          .style("stroke-width", 3)
+          .style("stroke-linecap", "round")
+          .on('mouseover', function(event, d) {
+            console.log(d)
+            const uniqueTraits = [...new Set(this.data.filteredColocs.filter(coloc => coloc.candidate_snp === d.snp).map(s => s.trait))];
+            const traitNames = uniqueTraits.slice(0, 9);
+            let tooltipContent = traitNames.join("<br />");
+            if (uniqueTraits.length > 10) {
+                tooltipContent += "<br /> " + (uniqueTraits.length - 10) + " more...";
+            }
+
+            d3.select('#gene-network-plot')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('background-color', 'white')
+                .style('padding', '5px')
+                .style('border', '1px solid black')
+                .style('border-radius', '5px')
+                .style('left', `${event.pageX + 10}px`)
+                .style('top', `${event.pageY - 10}px`)
+                .html(tooltipContent);
+          })
+          .on('mouseout', () => {
+            d3.selectAll('.tooltip').remove();
+          });
+          
 
       // Calculate gene track height and position
       const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top; // Position below x-axis
@@ -545,8 +568,6 @@ export default function gene() {
         max_bp: this.data.gene.max_bp,
         chr: this.data.gene.chr
       });
-
-      
       
       // Function to detect overlaps and assign levels
       function assignLevels(genes) {
@@ -661,6 +682,41 @@ export default function gene() {
               return `rotate(45, ${x}, ${geneTrackHeight + 12})`;
             });
         });
+
+        // Add legend with adjusted position
+        const legendSpacing = 25;
+        const legendX = innerWidth + 10;  // Changed from innerWidth to width
+        
+        const legend = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(${legendX}, 20)`);
+
+        legend.selectAll('line')
+            .data(Object.keys(this.variantTypes))
+            .enter()
+            .append('line')
+            .attr('x1', 0)
+            .attr('x2', 20)
+            .attr('y', (d, i) => i * legendSpacing + 8)
+            .style('stroke', d => this.getVariantTypeColor(d))
+            .style('stroke-width', 6)
+            .style('stroke-linecap', 'round');
+
+        legend.selectAll('text')
+            .data(Object.keys(this.variantTypes))
+            .enter()
+            .append('text')
+            .attr('x', 25)
+            .attr('y', (d, i) => (i * legendSpacing) + 12)
+            .style('font-size', '12px')
+            .text(d => d.replace(/_/g, ' '));
+
+        legend.append('text')
+            .attr('x', 0)
+            .attr('y', -10)
+            .style('font-size', '14px')
+            .style('font-weight', 'bold')
+            .text('Variant Annotation');
     },
 
     // getNetworkGraphV1() {
