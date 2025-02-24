@@ -58,12 +58,20 @@ export default function gene() {
         }
     },
 
-    getGeneName() {
+    get geneName() {
         return this.data ? `${this.data.gene.symbol}` : '...';
     },
+    
+    get filteredColocsExist() {
+        return this.data && this.data.filteredColocs && this.data.filteredColocs.length > 0
+    },
 
-    getGenomicRange() {
+    get genomicRange() {
         return this.data ? `${this.data.gene.chr}:${this.data.gene.min_bp}-${this.data.gene.max_bp}` : '...';
+    },
+
+    get ldRegion() {
+        return this.data && this.data.colocs ? this.data.colocs[0].ld_block : null
     },
 
     get getDataForTable() {
@@ -120,6 +128,13 @@ export default function gene() {
 
         const graphOptions = Alpine.store('graphOptionStore');
         this.filterByOptions(graphOptions);
+        window.addEventListener('resize', () => {
+            // Debounce the resize event to prevent too many redraws
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = setTimeout(() => {
+                this.getTissueByTraitGraph();
+            }, 250); // Wait for 250ms after the last resize event
+        });
         this.getTissueByTraitGraph();
     },
 
@@ -132,8 +147,8 @@ export default function gene() {
             width: container.clientWidth,
             height: Math.max(400, window.innerHeight * 1.6), // Responsive height
             outerMargin: {
-                top: 50,
-                right: 150,
+                top: 0,
+                right: 10,
                 bottom: 100,
                 left: 220
             }
@@ -237,6 +252,11 @@ export default function gene() {
                     .style('fill', 'black')
                     .style('opacity', 0.7)
                     .on('mouseover', (event) => {
+                        // Bold the y-axis label for this tissue
+                        this.svg.selectAll('.tick text')
+                            .filter(d => d === tissue)
+                            .style('font-weight', 'bold');
+
                         if (category !== 'None') {
                             d3.select('#gene-dot-plot')
                                 .append('div')
@@ -252,6 +272,10 @@ export default function gene() {
                         }
                     })
                     .on('mouseout', () => {
+                        // Remove bold from y-axis label
+                        this.svg.selectAll('.tick text')
+                            .style('font-weight', 'normal');
+                        
                         d3.selectAll('.tooltip').remove();
                     });
             });
@@ -270,40 +294,6 @@ export default function gene() {
             .attr('y', -graphConstants.outerMargin.left + 30)
             .style('text-anchor', 'middle')
             .text('Tissue');
-
-        // Add legend
-        const legendSpacing = 25;
-        const legendX = width + 10;
-        
-        const legend = this.svg.append('g')
-            .attr('class', 'legend')
-            .attr('transform', `translate(${legendX}, 20)`);
-
-        legend.selectAll('circle')
-            .data(Object.keys(this.variantTypes))
-            .enter()
-            .append('circle')
-            .attr('cx', 5)
-            .attr('cy', (d, i) => i * legendSpacing + 8)
-            .attr('r', 5)
-            .style('fill', d => this.getVariantTypeColor(d))
-            .style('opacity', 0.7);
-
-        legend.selectAll('text')
-            .data(Object.keys(this.variantTypes))
-            .enter()
-            .append('text')
-            .attr('x', 25)
-            .attr('y', (d, i) => (i * legendSpacing) + 12)
-            .style('font-size', '12px')
-            .text(d => d.replace(/_/g, ' '));
-
-        legend.append('text')
-            .attr('x', 0)
-            .attr('y', -10)
-            .style('font-size', '14px')
-            .style('font-weight', 'bold')
-            .text('Variant Annotation');
 
         // Add window resize listener
         const resizeGraph = () => {
@@ -329,6 +319,13 @@ export default function gene() {
         chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
         return;
       }
+      window.addEventListener('resize', () => {
+          // Debounce the resize event to prevent too many redraws
+          clearTimeout(this.resizeTimer);
+          this.resizeTimer = setTimeout(() => {
+              this.getNetworkGraph();
+          }, 250); // Wait for 250ms after the last resize event
+      });
 
       this.getNetworkGraph();
     },

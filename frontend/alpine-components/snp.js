@@ -57,6 +57,13 @@ export default function snp() {
 
         const graphOptions = Alpine.store('graphOptionStore');
         this.filterByOptions(graphOptions);
+        window.addEventListener('resize', () => {
+            // Debounce the resize event to prevent too many redraws
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = setTimeout(() => {
+                this.getChordDiagram();
+            }, 250); // Wait for 250ms after the last resize event
+        });
         this.getChordDiagram();
     },
 
@@ -64,25 +71,32 @@ export default function snp() {
     getChordDiagram() {
       if (!this.data) return;
       const self = this;
-      const container = document.getElementById('snp-chord-diagram');
-      container.innerHTML = '';
+      const chartElement = document.getElementById('snp-chord-diagram');
+      chartElement.innerHTML = '';
 
-      // Clear any existing SVG
-      d3.select('#snp-chord-diagram').select('svg').remove();
+      const chartContainer = d3.select("#snp-chord-diagram");
+      chartContainer.select("svg").remove();
+      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
+      let graphHeight = 600
+
+      const graphConstants = {
+        width: graphWidth,
+        height: graphHeight,
+        innerRadius: Math.min(graphWidth, graphHeight) * 0.45,
+        outerRadius: Math.min(graphWidth, graphHeight) * 0.45 * 1.01,
+      }
 
       // Set dimensions
-      const width = 800;
-      const height = 600;
-      const innerRadius = Math.min(width, height) * 0.45;
+      const innerRadius = Math.min(graphConstants.width, graphConstants.height) * 0.45;
       const outerRadius = innerRadius * 1.01;
 
       // Append SVG
       const svg = d3.select('#snp-chord-diagram')
         .append('svg')
-        .attr('width', width)
-        .attr('height', height)
+        .attr('width', graphConstants.width)
+        .attr('height', graphConstants.height)
         .append('g')
-        .attr('transform', `translate(${width / 2},${height / 2})`);
+        .attr('transform', `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
 
       // Process data
       const candidate_snp = this.data.variant.RSID;
@@ -206,7 +220,7 @@ export default function snp() {
       // Add legend
       const legend = svg.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(${-width / 2 + 20}, ${-height / 2 + 20})`);
+        .attr("transform", `translate(${-graphConstants.width / 2 + 20}, ${-graphConstants.height / 2 + 20})`);
 
       dataTypes.forEach((type, i) => {
         const legendItem = legend.append("g")

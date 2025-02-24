@@ -25,7 +25,7 @@ export default {
       22: 51304566
     },
     colors: [
-      '#ffee65',
+      '#d5a7d6',
       '#7eb0d5',
       '#fd7f6f', 
       '#b2e061',

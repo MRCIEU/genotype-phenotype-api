@@ -40,6 +40,7 @@ class DuckDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     def get_colocs_for_variant(self, variant_id: str):
+        print(f"Fetching colocs for variant {variant_id}")
         return self._fetch_colocs(f"candidate_snp = '{variant_id}'")
 
     def get_all_colocs_for_gene(self, symbol: str):
@@ -82,6 +83,7 @@ class DuckDBClient:
 
     def get_variant(self, variant_id: str):
         query = f"SELECT * FROM variant_annotations WHERE SNP = '{variant_id}'"
+        query = f"SELECT * FROM variant_annotations LIMIT 1"
         return self.studies_conn.execute(query).fetchone()
 
     def get_gene_ranges(self):

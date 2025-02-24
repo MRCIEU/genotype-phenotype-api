@@ -15,22 +15,30 @@
       <navigation-bar></navigation-bar>
 
       <div class="columns mt-4 mb-0">
-        <div class="column">
-          <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+getGeneName()"></h3>
+        <div class="column is-10">
+          <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
           <h6 class="has-text-centered mb-0 mt-0">
-            Range: <span x-text="getGenomicRange"></span>
+            Range: <span x-text="genomicRange"></span>
           </h6>
+          <h6 class="has-text-centered mb-0"><a x-bind:href="'region.html?id='+ ldRegion">LD Region</a></h6>
           <h6 class="has-text-centered mb-0">
-            <a class="button is-link is-small is-centered is-light" x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+getGeneName()" target="_blank">
+            <a class="button is-link is-small is-centered is-light" x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName" target="_blank">
               <span>NCBI Gene</span>
             </a>
           </h6>
+        </div>
+        <div class="column is-2">
+          <div x-show="!filteredColocsExist" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
+              Please change current filter settings for results to appear.
+          </div>
         </div>
       </div>
 
       <div class="columns mt-2">
         <div class="column is-10">
+          <h4 class="title is-3 has-text-centered mb-0">Tissue by Trait Type Graph</h3>
           <div x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
+          <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
           <div x-model="initNetworkGraph" id="gene-network-plot"></div>
         </div>
 
@@ -80,32 +88,6 @@
             </table>
           </div>
 
-      <!-- <div class="columns mt-2 is-centered">
-        <div class="column is-11">
-          <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
-            <thead>
-              <tr>
-                <th class="has-text-centered py-2"><abbr title="Tissue">Tissue</abbr></th>
-                <th class="has-text-centered py-2"><abbr title="Trait">Trait</abbr></th>
-                <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
-                <th class="has-text-centered py-2"><abbr title="SNP">SNP</abbr></th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="item in getDataForTable">
-                <tr>
-                  <td class="py-1 px-2" x-text="item.tissue_a"></td>
-                  <td class="py-1 px-2" x-text="item.trait_b"></td>
-                  <td class="py-1 px-2" x-text="item.min_p"></td>
-                  <td class="py-1 px-2">
-                  <a :href="'snp.html?' + item.candidate_snp" x-text="item.candidate_snp"></a>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-      </div> -->
     </div>
   </div>
 </body>

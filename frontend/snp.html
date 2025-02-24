@@ -32,7 +32,7 @@
                 <div class="is-divider" style="margin: 0;"></div>
                 <p><strong>Gene:</strong> <span x-text="getVariantData().symbol"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Consequence:</strong> <span x-text="getVariantData().Consequence"></span></p>
+                <p><strong>Consequence:</strong> <span x-text="getVariantData().Consequence ? getVariantData().Consequence.split(',').join(', ') : ''"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
                 <p><strong>Impact:</strong> <span x-text="getVariantData().impact"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
@@ -71,7 +71,7 @@
                 <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
                 <th class="has-text-centered py-2"><abbr title="Cis / Trans">Cis / Trans</abbr></th>
                 <th class="has-text-centered py-2"><abbr title="Data Type">Data Type</abbr></th>
-                <th class="has-text-centered py-2"><abbr title="Sample Size">Sample Size</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Effect (BETA)">Effect (BETA)</abbr></th>
               </tr>
             </thead>
             <tbody>
@@ -79,10 +79,10 @@
                 <tr>
                   <td class="py-1 px-2" x-text="item.tissue"></td>
                   <td class="py-1 px-2" x-text="item.trait"></td>
-                  <td class="py-1 px-2" x-text="item.min_p"></td>
+                  <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                   <td class="py-1 px-2" x-text="item.cis_trans"></td>
                   <td class="py-1 px-2" x-text="item.data_type"></td>
-                  <td class="py-1 px-2" x-text="item.sample_size"></td>
+                  <td class="py-1 px-2" x-text="item.association ? item.association.BETA.toExponential(2) : 'N/A'"></td>
                 </tr>
               </template>
             </tbody>

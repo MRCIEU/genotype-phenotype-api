@@ -50,20 +50,14 @@ async def get_variant(
     try:
         db = DuckDBClient()
 
-        print(variant_id)
         variant = db.get_variant(variant_id)
-        print(variant)
-        variant = convert_duckdb_to_pydantic_model(Variant, variant)
-        print(variant)
         colocs = db.get_colocs_for_variant(variant_id)
         colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
-        print(colocs[0])
+        variant = convert_duckdb_to_pydantic_model(Variant, variant)
 
         studies = [coloc.study for coloc in colocs]
         associations = db.get_associations_for_variant_and_studies(variant_id, studies)
         associations = convert_duckdb_to_pydantic_model(Association, associations)
-        print(associations[0])
-        print(variant)
         
         extended_colocs = []
         for coloc in colocs:
@@ -76,7 +70,6 @@ async def get_variant(
                 **coloc.model_dump(),
                 association=association
             ))
-        print(extended_colocs[0])
 
         return VariantResponse(variant=variant, colocs=extended_colocs)
 
