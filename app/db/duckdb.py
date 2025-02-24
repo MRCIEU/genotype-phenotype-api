@@ -40,7 +40,6 @@ class DuckDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     def get_colocs_for_variant(self, variant_id: str):
-        print(f"Fetching colocs for variant {variant_id}")
         return self._fetch_colocs(f"candidate_snp = '{variant_id}'")
 
     def get_all_colocs_for_gene(self, symbol: str):

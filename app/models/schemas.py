@@ -144,10 +144,10 @@ class GeneResponse(BaseModel):
     tissues: List[str]
 
 class Region(BaseModel):
+    ancestry: str
     chr: int 
     start: int
     end: int
-    name: str
 
 class RegionResponse(BaseModel):
     region: Region

@@ -3,84 +3,88 @@ import constants from './constants.js';
 
 export default function region() {
   return {
-    regionData: null,
+    data: null,
+    graphicalMbRange: {
+      start: null,
+      end: null,
+    },
     filteredRegionData: null,
     minMbp: null,
     maxMbp: null,
 
     async loadData() {
-      try {
-        const response = await fetch('/sample_data/region_result.json');
-        this.regionData = await response.json();
+      let regionId = new URLSearchParams(window.location.search).get('id');
 
-        this.regionData.colocs = this.regionData.colocs.map(coloc => ({
+      try {
+        let [ancestry, chr, start, end] = regionId.split(/[-/]/)
+        const response = await fetch(constants.apiUrl + '/regions/' + ancestry + '/' + chr + '/' + start + '/' + end);
+        this.data = await response.json();
+
+        this.data.colocs = this.data.colocs.map(coloc => ({
             ...coloc,
             mbp : coloc.bp / 1000000,
         }))
-        Object.keys(this.regionData.studies).forEach(snp => { 
-          this.regionData.studies[snp].studies = this.regionData.studies[snp].studies.map(study => ({
-            ...study,
-            mbp : study.bp / 1000000,
-          }))
-        })
-        this.minMbp = Math.min(...this.regionData.colocs.map(d => d.mbp))
-        this.maxMbp = Math.max(...this.regionData.colocs.map(d => d.mbp))
+        this.minMbp = Math.min(...this.data.colocs.map(d => d.mbp))
+        this.maxMbp = Math.max(...this.data.colocs.map(d => d.mbp))
+        
+        this.graphicalMbRange = {
+            start: this.minMbp,
+            end: this.maxMbp
+        }
       } catch (error) {
         console.error('Error loading data:', error);
       }
     },
 
-    get getStudyToDisplay() {
-      if (this.regionData === null) return
-      return this.regionData.name
+    get regionName() {
+      if (this.data === null) return
+      return this.data.region.ancestry + ' ' + this.data.region.chr + ':' + this.data.region.start + '-' + this.data.region.end
     },
 
-    get getDataForTable() {
-      return this.regionData.studies
+    get colocsForTable() {
+      if (!this.data) return []
+      const colocsForTable = Object.assign({}, this.data.groupedColocs)
+      Object.keys(colocsForTable).forEach(snp => {
+        colocsForTable[snp] = colocsForTable[snp].filter(coloc => {
+          const mbp = coloc.candidate_snp.match(/\d+:(\d+)_/)[1] / 1000000;
+          return mbp >= this.graphicalMbRange.start && mbp <= this.graphicalMbRange.end
+        })
+      })
+      return colocsForTable
     },
 
-    filterStudies(graphOptions) {
-      this.filteredRegionData = this.regionData
-      this.filteredRegionData.colocs = this.filteredRegionData.colocs.filter(coloc => {
-        return((coloc.min_p <= graphOptions.pValue &&
+    filterByOptions(graphOptions) {
+      this.graphicalMbRange = {
+          start: this.minMbp,
+          end: this.maxMbp
+      };
+      this.data.filteredColocs = this.data.colocs.filter(coloc => {
+        const mbp = coloc.candidate_snp.match(/\d+:(\d+)_/)[1] / 1000000;
+        return(coloc.min_p <= graphOptions.pValue &&
                coloc.posterior_prob >= graphOptions.coloc &&
                (graphOptions.includeTrans ? true : !coloc.includes_trans) &&
                (graphOptions.onlyMolecularTraits ? coloc.includes_qtl : true))
-              || coloc.rare)
-               // && rare variants in the future...
       })
-      // Filter studies within each SNP group
-      Object.keys(this.filteredRegionData.studies).forEach(snp => {
-        this.filteredRegionData.studies[snp].studies = this.filteredRegionData.studies[snp].studies.filter(study => {
-          return((study.min_p <= graphOptions.pValue &&
-                 (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
-                 (graphOptions.onlyMolecularTraits ? study.data_type === 'gene_expression' : true))
-                || study.variant_type === 'rare')
-        })
+      this.data.filteredColocs.forEach(coloc => {
+        const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+        coloc.color = constants.tableColors[hash]
       })
+      this.data.groupedColocs = Object.groupBy(this.data.filteredColocs, ({ candidate_snp }) => candidate_snp);
     },
 
     initGraph() {
-      if (this.regionData === null || this.regionData.metadata === null) {
+      if (this.data === null || this.data.genes === null) {
         const chartContainer = document.getElementById("region-chart");
         chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>'
         return
       }
 
       const graphOptions = Alpine.store('graphOptionStore')
-      this.filterStudies(graphOptions)
+      this.filterByOptions(graphOptions)
       this.getRegionGraph()
     },
 
     getRegionGraph() {
-      const container = document.getElementById('region-chart');
-      container.innerHTML = '';
-      const margin = { top: 50, right: 150, bottom: 200, left: 180 }
-
-      // Set up dimensions
-      const width = container.clientWidth - margin.left - margin.right;
-      const height = 600 - margin.top - margin.bottom;
-
       const chartElement = document.getElementById("region-chart");
       chartElement.innerHTML = ''
 
@@ -107,8 +111,6 @@ export default function region() {
       const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
       const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
-
-      // svg.attr("height", graphConstants.height + graphConstants.geneTrackMargin.top + 50); // Add extra space for rotated labels
       const svg = chartContainer
         .append("svg")
         .attr('width', graphConstants.width)
@@ -122,8 +124,8 @@ export default function region() {
         .range([0, innerWidth]);
 
       // Calculate the maximum number of studies for any SNP
-      const maxStudiesPerSnp = Math.max(...Object.values(this.filteredRegionData.studies)
-        .map(snp => snp.studies.length));
+      const maxStudiesPerSnp = Math.max(...Object.values(this.data.groupedColocs)
+        .map(group => group.length));
 
       const yScale = d3.scaleLinear()
           .domain([0, maxStudiesPerSnp - 1])  // -1 because we're using 0-based indexing
@@ -188,13 +190,17 @@ export default function region() {
       // Create brush
       const brush = d3.brushX()
           .extent([[0, 0], [innerWidth, innerHeight]])
-          .on("end", function(event) {
-              if (!event.selection) return; // Ignore empty selections
+          .on("end", function (event) {
+              if (!event.selection) return;
               
-              // Get the selected range in data coordinates
               const extent = event.selection.map(xScale.invert);
               
-              // Update the x scale domain to zoom
+              self.graphicalMbRange = {
+                  start: extent[0],
+                  end: extent[1]
+              };
+              
+              // Update x scale domain to zoom
               xScale.domain(extent);
               
               // Update x-axis
@@ -204,8 +210,8 @@ export default function region() {
                   .call(d3.axisBottom(xScale))
                   .selectAll("text")  
                   .style("text-anchor", "end")
-                  .attr("dx", "-0.8em")
-                  .attr("dy", "0.15em")
+                  .attr("dx", "-.8em")
+                  .attr("dy", ".15em")
                   .attr("transform", "rotate(-65)");
               
               // Update lines
@@ -232,7 +238,7 @@ export default function region() {
                       return `rotate(45, ${x}, ${geneTrackHeight + 12})`;
                   });
 
-              // Clear the brush selection after zooming
+              // Clear the brush selection
               svg.select(".brush").call(brush.move, null);
           });
 
@@ -252,15 +258,15 @@ export default function region() {
           .style('border', '1px solid black')
           .style('border-radius', '5px');
 
-      const lines = Object.keys(this.filteredRegionData.studies).map(snp => {
-        const studies = this.filteredRegionData.studies[snp].studies;
+      const lines = Object.keys(this.data.groupedColocs).map(snp => {
+        const groups = this.data.groupedColocs[snp];
           const bp = snp.match(/\d+:(\d+)_/)[1] / 1000000;
           return {
             bp: bp,
             x1: xScale(bp),
             y1: yScale(0),
             x2: xScale(bp),
-            y2: yScale(studies.length),
+            y2: yScale(groups.length),
           }
       })
 
@@ -282,7 +288,7 @@ export default function region() {
       const geneHeight = 20; // Height of each gene rectangle
 
       // Create gene rectangles
-      const genes = this.filteredRegionData.metadata;
+      const genes = this.data.genes;
       
       // Function to detect overlaps and assign levels
       function assignLevels(genes) {
@@ -361,6 +367,12 @@ export default function region() {
         .on("click", function() {
           // Reset x scale to original domain
           xScale.domain([self.minMbp, self.maxMbp]);
+          
+          // // Reset currentMbRange
+          self.graphicalMbRange = {
+              start: self.minMbp,
+              end: self.maxMbp
+          };
           
           // Update x-axis with transition
           svg.select(".x-axis")
