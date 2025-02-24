@@ -29,15 +29,17 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
 
         colocs = db.get_all_colocs_for_gene(symbol)
         colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
+        coloc_traits = [coloc.traits for coloc in colocs]
 
         studies = db.get_study_extractions_in_region(gene.chr, gene.min_bp, gene.max_bp, symbol)
         studies = convert_duckdb_to_pydantic_model(StudyExtaction, studies)
+        filtered_studies = [s for s in studies if s.unique_study_id not in coloc_traits]
 
         variant_ids = [coloc.candidate_snp for coloc in colocs]
         variants = db.get_variants(variants=variant_ids)
         variants = convert_duckdb_to_pydantic_model(Variant, variants)
 
-        return GeneResponse(tissues=tissues, gene=gene, colocs=colocs, variants=variants, study_extractions=studies)
+        return GeneResponse(tissues=tissues, gene=gene, colocs=colocs, variants=variants, study_extractions=filtered_studies)
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))

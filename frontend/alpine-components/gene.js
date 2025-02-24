@@ -336,11 +336,11 @@ export default function gene() {
 
         const graphConstants = {
             width: container.clientWidth,
-            height: Math.max(400, window.innerHeight * 0.6),
+            height: Math.max(300, window.innerHeight * 0.3),
             outerMargin: {
                 top: 50,
                 right: 150,
-                bottom: 80,
+                bottom: 90,
                 left: 60,
             },
             geneTrackMargin: {
@@ -377,23 +377,62 @@ export default function gene() {
             .attr("dy", ".15em")
             .attr("transform", "rotate(-65)");
 
-        // Add circles for each SNP group
-        Object.entries(this.data.groupedColocs).forEach(([snp, studies]) => {
-            const bp = snp.match(/\d+:(\d+)_/)[1] / 1000000;
+        // Function to detect overlaps and assign vertical levels
+        function assignCircleLevels(snpGroups) {
+            let levels = [];
+            snpGroups.forEach(group => {
+                let level = 0;
+                const radius = Math.min(5 + Math.sqrt(group.studies.length) * 2, 20);
+                const position = group.bp;
+                
+                while (true) {
+                    const hasOverlap = levels[level]?.some(existing => {
+                        const existingRadius = Math.min(5 + Math.sqrt(existing.studies.length) * 2, 20);
+                        const distance = Math.abs(existing.bp - position);
+                        return distance < (radius + existingRadius);
+                    });
+                    
+                    if (!hasOverlap) {
+                        if (!levels[level]) levels[level] = [];
+                        levels[level].push({...group, level});
+                        break;
+                    }
+                    level++;
+                }
+            });
+            return levels.flat();
+        }
+
+        // Prepare SNP groups with position data
+        const snpGroups = Object.entries(this.data.groupedColocs).map(([snp, studies]) => ({
+            snp,
+            studies,
+            bp: snp.match(/\d+:(\d+)_/)[1] / 1000000
+        }));
+
+        // Assign levels to prevent overlaps
+        const positionedGroups = assignCircleLevels(snpGroups);
+        const maxLevel = Math.max(...positionedGroups.map(g => g.level));
+
+        // Add circles for each SNP group with adjusted vertical positions
+        positionedGroups.forEach(({snp, studies, bp, level}) => {
             const baseRadius = 5;
             const radius = studies.length > 0 ? 
-                Math.min(baseRadius + Math.sqrt(studies.length) * 2, 20) : // Square root scale with max size
+                Math.min(baseRadius + Math.sqrt(studies.length) * 2, 20) : 
                 baseRadius;
 
             const variant = this.data.variants.find(v => v.SNP === snp);
             const variantType = variant ? variant.Consequence.split(",")[0] : null;
 
+            // Calculate y position with more compact spacing
+            const yPos = (innerHeight/2) + (level - maxLevel/2) * (radius * 2.2); // Adjust multiplier (2.2) to control spacing
+
             svg.append('circle')
                 .attr('cx', xScale(bp))
-                .attr('cy', innerHeight/2)
+                .attr('cy', yPos)
                 .attr('r', radius)
                 .style('fill', this.getVariantTypeColor(variantType))
-                .style('opacity', 0.7)
+                .style('opacity', 0.9)
                 .on('mouseover', (event) => {
                     // Get unique traits and format them
                     const uniqueTraits = [...new Set(studies.map(s => s.trait))];
@@ -413,11 +452,7 @@ export default function gene() {
                         .style('border-radius', '5px')
                         .style('left', `${event.pageX + 10}px`)
                         .style('top', `${event.pageY - 10}px`)
-                        .html(`SNP: ${snp}<br>
-                              Position: ${bp.toFixed(3)} MB<br>
-                              Studies: ${studies.length}<br>
-                              Variant Type: ${variantType}<br>
-                              Traits:<br>${tooltipContent}`);
+                        .html(tooltipContent);
                 })
                 .on('mouseout', () => {
                     d3.selectAll('.tooltip').remove();
@@ -490,7 +525,7 @@ export default function gene() {
 
         // Add legend
         const legendSpacing = 25;
-        const legendX = graphConstants.width + 10;
+        const legendX = innerWidth + 10;
         
         const legend = svg.append('g')
             .attr('class', 'legend')
@@ -528,21 +563,6 @@ export default function gene() {
             .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
             .style("text-anchor", "middle")
             .text("Genomic Position (MB)");
-
-        // Add resize handler
-        const resizeGraph = () => {
-            const newWidth = container.clientWidth;
-            const newHeight = Math.max(400, window.innerHeight * 0.6);
-            
-            d3.select('#gene-network-plot svg')
-                .attr('viewBox', `0 0 ${newWidth} ${newHeight}`);
-        };
-
-        window.addEventListener('resize', resizeGraph);
-
-        return () => {
-            window.removeEventListener('resize', resizeGraph);
-        };
     },
 
     // getNetworkGraphV1() {
