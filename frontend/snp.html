@@ -21,42 +21,42 @@
       </div>
 
       <div class="columns mt-2">
-        <div class="column is-one-fifth">
+        <div class="column is-3">
           <div class="card">
             <div class="card-content">
               <div class="content">
                 <p class="title is-4">VEP Annotation</p>
-                <p><strong>Position:</strong> <span x-text="`${getAnnotationData().CHR}:${getAnnotationData().BP}`"></span></p>
+                <p><strong>Position:</strong> <span x-text="`${getVariantData().CHR}:${getVariantData().BP}`"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Alleles:</strong> <span x-text="`EA: ${getAnnotationData().EA} / OA:${getAnnotationData().OA}`"></span></p>
+                <p><strong>Alleles:</strong> <span x-text="`EA: ${getVariantData().EA} / OA:${getVariantData().OA}`"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Gene:</strong> <span x-text="getAnnotationData().symbol"></span></p>
+                <p><strong>Gene:</strong> <span x-text="getVariantData().symbol"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Consequence:</strong> <span x-text="getAnnotationData().Consequence"></span></p>
+                <p><strong>Consequence:</strong> <span x-text="getVariantData().Consequence ? getVariantData().Consequence.split(',').join(', ') : ''"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Impact:</strong> <span x-text="getAnnotationData().impact"></span></p>
+                <p><strong>Impact:</strong> <span x-text="getVariantData().impact"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Amino Acid Change:</strong> <span x-text="getAnnotationData().Amino_acids"></span></p>
+                <p><strong>Amino Acid Change:</strong> <span x-text="getVariantData().Amino_acids"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Codon Change:</strong> <span x-text="getAnnotationData().Codons"></span></p>
+                <p><strong>Codon Change:</strong> <span x-text="getVariantData().Codons"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>Protein Position:</strong> <span x-text="getAnnotationData().Protein_position"></span></p>
+                <p><strong>Protein Position:</strong> <span x-text="getVariantData().Protein_position"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>cDNA Position:</strong> <span x-text="getAnnotationData().cDNA_position"></span></p>
+                <p><strong>cDNA Position:</strong> <span x-text="getVariantData().cDNA_position"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>CDS Position:</strong> <span x-text="getAnnotationData().CDS_position"></span></p>
+                <p><strong>CDS Position:</strong> <span x-text="getVariantData().CDS_position"></span></p>
                 <div class="is-divider" style="margin: 0;"></div>
-                <p><strong>EUR EAF:</strong> <span x-text="getAnnotationData().EUR_AF"></span></p>
+                <p><strong>EUR EAF:</strong> <span x-text="getVariantData().EUR_AF"></span></p>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="column is-three-fifths">
+        <div class="column is-7">
           <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
         </div>
 
-        <div class="column is-one-fifth">
+        <div class="column is-2">
           <graph-options></graph-options>
         </div>
       </div>
@@ -71,7 +71,7 @@
                 <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
                 <th class="has-text-centered py-2"><abbr title="Cis / Trans">Cis / Trans</abbr></th>
                 <th class="has-text-centered py-2"><abbr title="Data Type">Data Type</abbr></th>
-                <th class="has-text-centered py-2"><abbr title="Sample Size">Sample Size</abbr></th>
+                <th class="has-text-centered py-2"><abbr title="Effect (BETA)">Effect (BETA)</abbr></th>
               </tr>
             </thead>
             <tbody>
@@ -79,10 +79,10 @@
                 <tr>
                   <td class="py-1 px-2" x-text="item.tissue"></td>
                   <td class="py-1 px-2" x-text="item.trait"></td>
-                  <td class="py-1 px-2" x-text="item.min_p"></td>
+                  <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                   <td class="py-1 px-2" x-text="item.cis_trans"></td>
                   <td class="py-1 px-2" x-text="item.data_type"></td>
-                  <td class="py-1 px-2" x-text="item.sample_size"></td>
+                  <td class="py-1 px-2" x-text="item.association ? item.association.BETA.toExponential(2) : 'N/A'"></td>
                 </tr>
               </template>
             </tbody>

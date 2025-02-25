@@ -12,27 +12,27 @@
 <body>
   <div id = "wait-to-load" style="display:none;">
     <navigation-bar></navigation-bar>
-    <div id="homepage" x-data="homepage">
+    <div id="homepage" x-data="homepage" x-init="loadData">
       <div class="columns mt-6 is-centered">
         <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
       </div>
       <div class="columns mt-1 is-centered">
         <div class="column is-three-quarters">
           <div class="dropdown is-active level">
-            <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="search">
-            <div class="dropdown-menu">
-              <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.id">
-                <div class="dropdown-content">
+            <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="searchText">
+            <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
+              <div class="dropdown-content" style="max-height: 320px; overflow-y: auto;">
+                <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.type_id">
                   <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
           </div>
           <br />
           <div class="is-divider" data-content="OR"></div>
           <div class="columns mt-6 is-centered">
             <button class="button is-success" data-target="modal-js-example" @click="openModal()">Upload GWAS for Comparison</button>
-            <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': modalOpen }" @keydown.window.escape="closeModal()">
+            <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': uploadMetadata.modalOpen }" @keydown.window.escape="closeModal()">
               <div class="modal-background" @click="closeModal()"></div>
               <div class="modal-card is-large" style="width: 900px; max-width: 90%;">
                 <header class="modal-card-head">
@@ -61,11 +61,11 @@
                     <label class="label">File</label>
                     <div class="file has-name">
                       <label class="file-label">
-                        <input class="file-input" type="file" name="file" @change="uploadFileName = $event.target.files[0]?.name; filterAndUploadFile($event.target.files[0])"/>
+                        <input class="file-input" type="file" name="file" @change="uploadMetadata.uploadFileName = $event.target.files[0]?.name; filterAndUploadFile($event.target.files[0])"/>
                         <span class="file-cta">
                           <span class="file-label"> Choose a file… </span>
                         </span>
-                        <span class="file-name" x-text="uploadFileName || 'No file selected'"></span>
+                        <span class="file-name" x-text="uploadMetadata.uploadFileName || 'No file selected'"></span>
                       </label>
                     </div>
                     <br />
@@ -134,7 +134,6 @@
             Molecular studies: <strong>567,332</strong><br />
             Colocalised Pairs: <strong>123,456</strong><br />
             Causal Variants: <strong>12,221</strong><br />
-            Post-docs: <strong>3</strong><br />
             Mistakes: <strong>many</strong><br />
           </div>
           <div class="block">
@@ -143,9 +142,6 @@
         </div>
       </div>
 
-      <div class="card">
-        <button id="counter" type="button" @click="count++" x-text="`count is ${count}`"></button>
-      </div>
     </div>
   </div>
 </body>

@@ -8,12 +8,16 @@ services:
     volumes:
       - .:/workspace:cached
       - ${LOCAL_DB_DIR}:/workspace/data:cached
+      - backend/app/tests/data/test_studies.db:/workspace/data/test_studies.db:cached
+      - backend/app/tests/data/test_associations.db:/workspace/data/test_associations.db:cached
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DEBUG=1
       - ANALYTICS_KEY=${ANALYTICS_KEY}
-      - DB_PROCESSED_PATH=${DB_PROCESSED_PATH}
+      - DB_STUDIES_PATH=${DB_STUDIES_PATH}
       - DB_ASSOCS_PATH=${DB_ASSOCS_PATH}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - "8000:8000"
     healthcheck:
@@ -21,3 +25,21 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:

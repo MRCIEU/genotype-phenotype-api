@@ -21,7 +21,7 @@ jobs:
         pip install -r requirements.txt
     - name: Run tests
       run: |
-        pytest app/test_main.py
+        cp .env.test .env && pytest -vs
 
   deploy:
     needs: test

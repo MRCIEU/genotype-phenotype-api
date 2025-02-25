@@ -1,4 +1,5 @@
 export default {
+    apiUrl: import.meta.env.VITE_API_URL,
     maxBpPerChr: {
       1: 249250621,
       2: 243199373,
@@ -24,14 +25,23 @@ export default {
       22: 51304566
     },
     colors: [
-      '#fd7f6f', 
+      '#d5a7d6',
       '#7eb0d5',
+      '#fd7f6f', 
       '#b2e061',
       '#ffb55a',
-      '#ffee65',
       '#beb9db',
       '#fdcce5',
       '#8bd3c7'
+    ],
+    tableColors: [
+      'antiquewhite',
+      'white',
+      'lavenderblush',
+      'honeydew',
+      'aliceblue',
+      'oldlace',
+      'mintcream'
     ],
     variantTypes: [
       'missense_variant',
@@ -49,5 +59,28 @@ export default {
       'methylation',
       'protein',
       'phenotype'
-    ]
+    ],
+    findMinAndMaxValues: function(data) {
+        const idFrequencies = data.reduce((acc, obj) => {
+          if (obj.id) {
+            acc[obj.id] = (acc[obj.id] || 0) + 1;
+          }
+          return acc;
+        }, {});
+
+        const frequencies = Object.values(idFrequencies);
+        const minNumStudies = Math.min(...frequencies);
+        const maxNumStudies = Math.max(...frequencies);
+
+        return[idFrequencies, minNumStudies, maxNumStudies]
+    },
+    scaleStudySize: function(frequency, minNumStudies, maxNumStudies) {
+      const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
+      const scaledNumStudies = ((frequency - minNumStudies) /
+        (maxNumStudies- minNumStudies)) *
+        (scaledMaxNumStudies- scaledMinNumStudies) +
+        scaledMinNumStudies  
+
+      return scaledNumStudies;
+    }
 }

@@ -1,126 +1,139 @@
 import * as d3 from 'd3';
 import constants from './constants.js'
 
-// TODO: change to have the chromosomes differ by chr size: https://ars.els-cdn.com/content/image/3-s2.0-B9780123852120000068-f06-12-9780123852120.jpg
-
 export default function pheontype() {
   return {
-    studyData: null,
     colocData: null,
     filteredColocData: null,
     filteredGroupedColoc: null,
-    filteredStudies: null,
     orderedTraitsToFilterBy: null,
-    colocDisplayFilters: {
+    displayFilters: {
       chr: null,
-      candidate_snp: null
+      candidate_snp: null,
+      trait: null
     },
 
-    loadData() {
-      fetch('../sample_data/coloc_result.json')
-        .then(response => {
-          return response.json()
-        }).then(data => {
-          this.colocData = data
+    async loadData() {
+      let studyId = (new URLSearchParams(location.search).get('id'))
+      try {
+        const response = await fetch(constants.apiUrl + '/studies/' + studyId)
+        this.colocData = await response.json()
 
-          const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
-          const { maxNumStudies, minNumStudies } = this.colocData.colocs.reduce( (acc, obj) => {
-            if (obj.num_unique_studies !== undefined) {
-              acc.minNumStudies = Math.min(acc.minNumStudies, obj.num_unique_studies);
-              acc.maxNumStudies = Math.max(acc.maxNumStudies, obj.num_unique_studies);
-            }
-            return acc;
-            },
-            { minNumStudies: Infinity, maxNumStudies: -Infinity }
-          );
+        // Count frequency of each id in colocs and scale between 2 and 10
+        const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
+        const idFrequencies = this.colocData.colocs.reduce((acc, obj) => {
+          if (obj.id) {
+            acc[obj.id] = (acc[obj.id] || 0) + 1;
+          }
+          return acc;
+        }, {});
 
-          this.colocData.colocs = this.colocData.colocs.map(c => {
-            c.MbP = c.bp / 1000000
-            c.chrText = 'CHR '.concat(c.chr)
-            c.annotationColor = constants.colors[Math.floor(Math.random()*Object.keys(constants.colors).length)]
-            c.ignore = false
-            c.scaledNumStudies = ((c.num_unique_studies - minNumStudies) / (maxNumStudies- minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
-            return c
-          })
-          this.colocData.colocs.sort((a, b) => a.chr > b.chr);
+        // Get min and max frequencies
+        const frequencies = Object.values(idFrequencies);
+        const minNumStudies = Math.min(...frequencies);
+        const maxNumStudies = Math.max(...frequencies);
 
-          const graphOptions = Alpine.store('graphOptionStore')
-          this.filterByOptions(graphOptions) 
-
+        this.colocData.colocs = this.colocData.colocs.map(c => {
+          c.MbP = c.bp / 1000000
+          c.chrText = 'CHR '.concat(c.chr)
+          c.annotationColor = constants.colors[Math.floor(Math.random()*Object.keys(constants.colors).length)]
+          c.ignore = false
+          if (minNumStudies === maxNumStudies) {
+            c.scaledNumStudies = 4 
+          } else {
+            c.scaledNumStudies = ((idFrequencies[c.id] - minNumStudies) / (maxNumStudies- minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
+          }
+          return c
         })
+        this.colocData.colocs.sort((a, b) => a.chr > b.chr);
 
-      fetch('../sample_data/studies.json')
-        .then(response => {
-          return response.json()
-        }).then(data => {
-          this.studyData = data
-        })
+        // order traits by frequency in order to display in dropdown for filtering
+        let allTraits = this.colocData.colocs.map(s => s.trait)
+        let frequency = {};
+        allTraits.forEach(item => {
+          frequency[item] = (frequency[item] || 0) + 1;
+        });
+
+        // sort by frequency
+        let uniqueTraits = [...new Set(allTraits)];
+        uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
+
+        this.orderedTraitsToFilterBy = uniqueTraits.filter(t => t !== this.colocData.study.trait)
+
+        this.filterByOptions(Alpine.store('graphOptionStore')) 
+
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     },
 
     get getStudyToDisplay() {
-      if (this.studyData === null) return
-      let studyId = (new URLSearchParams(location.search).get('id'))
-      const study = this.studyData.find((item) => {
-          return item.id == studyId
-      })
-      return study.name
+      if (this.colocData === null) return '...'
+
+      return this.colocData.study.trait
     },
 
     filterByOptions(graphOptions) {
+      let colocIdsWithTraits = []
+      if (this.displayFilters.trait) {
+        colocIdsWithTraits = this.colocData.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.id)
+      } 
       this.filteredColocData = this.colocData.colocs.filter(coloc => {
-        return((coloc.min_p <= graphOptions.pValue &&
-               coloc.posterior_prob >= graphOptions.coloc &&
-               (graphOptions.includeTrans ? true : !coloc.includes_trans) &&
-               (graphOptions.onlyMolecularTraits ? coloc.includes_qtl : true))
-              || coloc.rare)
-               // && rare variants in the future...
+        const graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
+          coloc.posterior_prob >= graphOptions.coloc &&
+          (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
+          (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
+         || coloc.rare)
+
+        const traitFilter = this.displayFilters.trait ? colocIdsWithTraits.includes(coloc.id) : true
+
+        return graphOptionFilters && traitFilter
       })
 
-      this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
       // deduplicate studies and sort based on frequency
-      let allTraits = this.filteredColocData.map(s => [s.trait_a, s.trait_b]).flat()
-      let frequency = {};
-      allTraits.forEach(item => {
-        frequency[item] = (frequency[item] || 0) + 1;
-      });
-
-      // sort by frequency
-      let uniqueTraits = [...new Set(allTraits)];
-      uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
-
-      this.orderedTraitsToFilterBy = uniqueTraits
-
-      this.filteredStudies = this.colocData.studies
-      // this.filteredStudies = this.colocData.studies.filter(study => {
-        // return(this.orderedTraitsToFilterBy.includes(study.trait))
-      // })
+      this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
     },
 
-    filterByStudy(study) {
-      if (study === null) {
+    filterByStudy(trait) {
+      if (trait === null) {
         this.filteredColocData = this.colocData
       } else {
-        this.colocDisplayFilters =  {
+        this.displayFilters =  {
           chr: null,
-          candidate_snp: null
+          candidate_snp: null,
+          trait: trait
         }
-        this.filteredColocData = this.colocData.colocs.filter(c => c.study_a === study || c.study_b === study)
+        this.filterByOptions(Alpine.store('graphOptionStore'))
+      }
+    },
+
+    removeDisplayFilters() {
+      this.displayFilters = {
+        chr: null,
+        candidate_snp: null,
+        trait: null
       }
     },
 
     get getDataForColocTable() {
-      if (this.filteredStudies === null) return
-      // let colocDataSubset = this.filteredStudies.map(snp => {
-      // })
+      if (this.filteredColocData === null) return
+      let tableData = this.filteredColocData.filter(coloc => {
+        if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
+        else if (this.displayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.displayFilters.candidate_snp 
+        else return true
+      })
 
-      // let colocDataSubset = this.filteredGroupedColoc.filter(coloc => {
-      //   if (this.colocDisplayFilters.chr !== null) return coloc.chr == this.colocDisplayFilters.chr
-      //   else if (this.colocDisplayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.colocDisplayFilters.candidate_snp 
-      //   else return true
-      // })
-      // colocDataSubset = Object.values(colocDataSubset)
-      const result = Object.values(this.filteredStudies).slice(0, 10)
-      return result
+      // TODO: remove this after changing to DataTables library?
+      tableData = tableData.slice(0, 500)
+
+      tableData.forEach(coloc => {
+        const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+        coloc.color = constants.tableColors[hash]
+      })
+
+      this.filteredGroupedColoc = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
+
+      return this.filteredGroupedColoc 
     },
 
     initPhenotypeGraph() {
@@ -132,6 +145,16 @@ export default function pheontype() {
 
       const graphOptions = Alpine.store('graphOptionStore')
       this.filterByOptions(graphOptions)
+      
+      // Add resize listener when initializing the graph
+      window.addEventListener('resize', () => {
+        // Debounce the resize event to prevent too many redraws
+        clearTimeout(this.resizeTimer);
+        this.resizeTimer = setTimeout(() => {
+          this.getPhenotypeGraph(graphOptions);
+        }, 250); // Wait for 250ms after the last resize event
+      });
+      
       this.getPhenotypeGraph(graphOptions)
     },
 
@@ -148,7 +171,9 @@ export default function pheontype() {
 
       const chartContainer = d3.select("#phenotype-chart");
       chartContainer.select("svg").remove()
-      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
+      
+      // Get the current width of the container
+      let graphWidth = chartContainer.node().getBoundingClientRect().width - 50;
 
       const graphConstants = {
         width: graphWidth, 
@@ -183,7 +208,7 @@ export default function pheontype() {
       // data wrangling around the colocData payload (this can be simplified and provided by the backend)
       let chromosomes = Array.from(Array(22).keys()).map(c => 'CHR '.concat(c+1))
 
-      let graphData = this.filteredColocData
+      let graphData = this.filteredColocData.slice()
       // fill in missing CHRs, so we don't get a weird looking graph
       chromosomes.forEach(chrText => {
         graphData.push({chrText: chrText, ignore: true})
@@ -195,7 +220,7 @@ export default function pheontype() {
         .attr('width', graphConstants.width + graphConstants.outerMargin.left)
         .attr('height', graphConstants.height + graphConstants.outerMargin.top + graphConstants.outerMargin.bottom)
         .append('g')
-        .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + (graphConstants.outerMargin.top + graphConstants.rareMargin.top) + ')');
+        .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + (graphConstants.outerMargin.top) + ')');
 
       //Labels for x and y axis
       svg.append("text")
@@ -260,8 +285,8 @@ export default function pheontype() {
         })
         .on('click', function(d, i) {
           let chr = parseInt(i[0].slice(4))
-          self.colocDisplayFilters.chr = chr
-          self.colocDisplayFilters.candidate_snp = null
+          self.displayFilters.chr = chr
+          self.displayFilters.candidate_snp = null
         })
 
       // Create scales for each chromosome
@@ -324,7 +349,7 @@ export default function pheontype() {
         .on('mouseover', function(d, i) {
           d3.select(this).style("cursor", "pointer"); 
 
-          let allTraits = self.filteredGroupedColoc[i.candidate_snp].map(s => [s.trait_a, s.trait_b]).flat()
+          let allTraits = self.filteredGroupedColoc[i.candidate_snp].map(s => s.trait)
           let uniqueTraits = [...new Set(allTraits)]
           let traitNames = uniqueTraits.slice(0,9)
           traitNames = traitNames.join("<br />")
@@ -352,10 +377,24 @@ export default function pheontype() {
             .style("display", "none");
         })
         .on('click', function(d, i) {
-          self.colocDisplayFilters.candidate_snp = i.candidate_snp
-          self.colocDisplayFilters.chr = null
+          self.displayFilters.candidate_snp = i.candidate_snp
+          self.displayFilters.chr = null
         });
 
+      // Add horizontal grid lines for each 0.05 marker
+      innerGraph
+        .selectAll('.grid-line')
+        .data(yAxisValues)
+        .enter()
+        .append('line')
+        .attr('class', 'grid-line')
+        .attr('x1', 0)
+        .attr('x2', innerWidth)
+        .attr('y1', d => innerYScale(d) + graphConstants.rareMargin.top)
+        .attr('y2', d => innerYScale(d) + graphConstants.rareMargin.top)
+        .attr('stroke', '#e0e0e0')
+        .attr('opacity', 0.5)
+        .attr('stroke-width', 1);
 
       if (graphOptions.includeRareVariants) {
         this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales)
@@ -378,6 +417,7 @@ export default function pheontype() {
       let tooltip = d3.select("body").append("div")
         .attr("class", "tooltip")
         .style("opacity", 0);
+
       // Add rare variant dots with stroke outline and no fill
       innerGraph
         .selectAll('.rare-dot')
@@ -393,7 +433,7 @@ export default function pheontype() {
         .on('mouseover', function(d, i) {
           d3.select(this).style("cursor", "pointer"); 
 
-          let allTraits = self.filteredGroupedColoc[i.candidate_snp].map(s => [s.trait_a, s.trait_b]).flat()
+          let allTraits = self.filteredGroupedColoc[i.candidate_snp].map(s => s.trait)
           let uniqueTraits = [...new Set(allTraits)]
           let traitNames = uniqueTraits.slice(0,9)
           traitNames = traitNames.join("<br />")
@@ -462,6 +502,11 @@ export default function pheontype() {
       innerGraph
         .select('.coloc-background-rect')
         .attr('y', graphConstants.rareMargin.top);
+    },
+
+    // Clean up the resize listener when the component is destroyed
+    disconnected() {
+      window.removeEventListener('resize', this.handleResize);
     }
   }
 }
