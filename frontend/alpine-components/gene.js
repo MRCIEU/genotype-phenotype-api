@@ -10,20 +10,20 @@ export default function gene() {
     variantTypes: null, 
     minMbp: null,
     maxMbp: null,
+    errorMessage: null,
 
     async loadData() {
         let geneId = (new URLSearchParams(location.search).get('id'))
         try {
             const response = await fetch(constants.apiUrl + '/genes/' + geneId);
+            if (!response.ok) {
+                this.errorMessage = `Failed to load gene: ${response.status} ${constants.apiUrl + '/genes/' + geneId}`
+                return
+            }
             this.data = await response.json();
             this.data.gene.minMbp = this.data.gene.min_bp / 1000000
             this.data.gene.maxMbp = this.data.gene.max_bp / 1000000
 
-            this.data.gene.genes_in_region = this.data.gene.genes_in_region.map(gene => ({
-                ...gene,
-                minMbp : gene.min_bp / 1000000,
-                maxMbp : gene.max_bp / 1000000,
-            }))
             this.data.colocs = this.data.colocs.map(coloc => {
                 const variantType = this.data.variants.find(variant => variant.SNP === coloc.candidate_snp)
                 return {
@@ -40,6 +40,15 @@ export default function gene() {
             this.minMbp = Math.min(...this.data.colocs.map(d => d.mbp), ...this.data.study_extractions.map(d => d.mbp))
             this.maxMbp = Math.max(...this.data.colocs.map(d => d.mbp), ...this.data.study_extractions.map(d => d.mbp))
 
+            this.data.gene.genes_in_region = this.data.gene.genes_in_region.map(gene => ({
+                ...gene,
+                minMbp : gene.min_bp / 1000000,
+                maxMbp : gene.max_bp / 1000000,
+            }))
+            this.data.gene.genes_in_region = this.data.gene.genes_in_region.filter(gene => {
+                return gene.minMbp < this.maxMbp && gene.maxMbp > this.minMbp
+            })
+
             this.data.study_extractions = this.data.study_extractions.map(study => ({
                 ...study,
                 mbp : study.bp / 1000000,
@@ -48,7 +57,7 @@ export default function gene() {
             let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
             let filteredVariantTypes = constants.variantTypes.filter(variantType => variantTypesInData.includes(variantType))
             this.variantTypes = Object.fromEntries(filteredVariantTypes.map((key, index) => [key, constants.colors[index]]));
-
+            this.filterByOptions(Alpine.store('graphOptionStore'));
         } catch (error) {
             console.error('Error loading data:', error);
         }
@@ -314,8 +323,8 @@ export default function gene() {
         };
     },
 
-    initNetworkGraph() {
-      if (!this.data) {
+    initTraitByPositionGraph() {
+      if (!this.data || !this.data.groupedColocs) {
         const chartContainer = document.getElementById("gene-network-plot");
         chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
         return;
@@ -324,20 +333,51 @@ export default function gene() {
       window.addEventListener('resize', () => {
           clearTimeout(this.resizeTimer);
           this.resizeTimer = setTimeout(() => {
-              this.getNetworkGraph();
+              this.getTraitByPositionGraph();
           }, 250);
       });
 
-      this.getNetworkGraph();
+      this.getTraitByPositionGraph();
     },
 
-    getNetworkGraph() {
+    getTraitByPositionGraph() {
         const container = document.getElementById('gene-network-plot');
         container.innerHTML = '';
 
+        // Prepare SNP groups with position data first
+        const snpGroups = Object.entries(this.data.groupedColocs).map(([snp, studies]) => ({
+            snp,
+            studies,
+            bp: snp.match(/\d+:(\d+)_/)[1] / 1000000
+        }));
+
+        this.data.filteredStudies.forEach(study => {
+            snpGroups.push({
+                snp: null,
+                studies: [study],
+                bp: study.bp / 1000000
+            })
+        })
+
+        // Get positioned groups first to determine height
+        const positionedGroups = assignCircleLevels(snpGroups);
+        const maxLevel = Math.max(...positionedGroups.map(g => g.level));
+        
+        // Calculate the height needed for the highest circle
+        const baseRadius = 2;
+        const maxCircleRadius = Math.max(baseRadius + Math.sqrt(Math.max(
+            ...positionedGroups.map(g => g.studies.length)
+        )), 10);
+        
+        const circleSpace = (maxLevel * maxCircleRadius/1.5) + 50; // 50 for padding from x-axis
+        
+        // Dynamically calculate height based on actual circle space needed
+        const minHeight = 300;
+        const calculatedHeight = Math.max(minHeight, circleSpace + 200); // +200 for margins and gene track
+
         const graphConstants = {
             width: container.clientWidth,
-            height: Math.max(300, window.innerHeight * 0.3),
+            height: calculatedHeight,
             outerMargin: {
                 top: 50,
                 right: 150,
@@ -404,24 +444,6 @@ export default function gene() {
             return levels.flat();
         }
 
-        // Prepare SNP groups with position data
-        const snpGroups = Object.entries(this.data.groupedColocs).map(([snp, studies]) => ({
-            snp,
-            studies,
-            bp: snp.match(/\d+:(\d+)_/)[1] / 1000000
-        }));
-
-        this.data.filteredStudies.forEach(study => {
-            snpGroups.push({
-                snp: null,
-                studies: [study],
-                bp: study.bp / 1000000
-            })
-        })
-
-        // Assign levels to prevent overlaps
-        const positionedGroups = assignCircleLevels(snpGroups);
-        const maxLevel = Math.max(...positionedGroups.map(g => g.level));
 
         // Add circles for each SNP group with adjusted vertical positions
         positionedGroups.forEach(({snp, studies, bp, level}) => {
@@ -433,8 +455,9 @@ export default function gene() {
             const variant = this.data.variants.find(v => v.SNP === snp);
             const variantType = variant ? variant.Consequence.split(",")[0] : null;
 
-            // Calculate y position with more compact spacing
-            const yPos = (innerHeight/2) + (level - maxLevel/2) * (radius * 2.2); // Adjust multiplier (2.2) to control spacing
+            // Adjust y-position calculation to start from the bottom
+            // and work upwards, leaving less empty space
+            const yPos = innerHeight - (level * (radius * 2.2)) - 50; // -50 for some padding from x-axis
 
             svg.append('circle')
                 .attr('cx', xScale(bp))

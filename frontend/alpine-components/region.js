@@ -11,6 +11,7 @@ export default function region() {
     filteredRegionData: null,
     minMbp: null,
     maxMbp: null,
+    errorMessage: null,
 
     async loadData() {
       let regionId = new URLSearchParams(window.location.search).get('id');
@@ -18,6 +19,10 @@ export default function region() {
       try {
         let [ancestry, chr, start, end] = regionId.split(/[-/]/)
         const response = await fetch(constants.apiUrl + '/regions/' + ancestry + '/' + chr + '/' + start + '/' + end);
+        if (!response.ok) {
+          this.errorMessage = `Failed to load region: ${response.status} ${constants.apiUrl + '/regions/' + ancestry + '/' + chr + '/' + start + '/' + end}`
+          return
+        }
         this.data = await response.json();
 
         this.data.colocs = this.data.colocs.map(coloc => ({
@@ -59,7 +64,6 @@ export default function region() {
           end: this.maxMbp
       };
       this.data.filteredColocs = this.data.colocs.filter(coloc => {
-        const mbp = coloc.candidate_snp.match(/\d+:(\d+)_/)[1] / 1000000;
         return(coloc.min_p <= graphOptions.pValue &&
                coloc.posterior_prob >= graphOptions.coloc &&
                (graphOptions.includeTrans ? true : !coloc.includes_trans) &&
