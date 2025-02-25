@@ -12,6 +12,8 @@ async def get_matrix(
     try:
         db = DuckDBClient()
         ld_matrix = db.get_ld_matrix(variants)
+        if ld_matrix is None:
+            raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
         response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
         return response
 
@@ -26,6 +28,8 @@ async def get_proxies(
     try:
         db = DuckDBClient()
         ld_proxies = db.get_ld_proxies(variants)
+        if ld_proxies is None:
+            raise HTTPException(status_code=404, detail=f"LD proxies for variants {variants} not found")
         response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
         return response
 

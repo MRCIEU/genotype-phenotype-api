@@ -21,6 +21,8 @@ async def get_study(study_id: str = Path(..., description="Study ID")) -> StudyR
     try:
         db = DuckDBClient()
         study = db.get_study(study_id)
+        if study is None:
+            raise HTTPException(status_code=400, detail=f"Study {study_id} not found")
         colocs = db.get_all_colocs_for_study(study_id)
 
         study = convert_duckdb_to_pydantic_model(Study, study)

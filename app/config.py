@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     ANALYTICS_KEY: str
     LOCAL_DB_DIR: str
 
-    model_config = {"env_file": ".env"}
+    model_config = {
+        "env_file": ".env"
+    }
 
 @lru_cache()
 def get_settings():

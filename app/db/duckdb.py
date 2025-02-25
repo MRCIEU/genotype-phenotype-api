@@ -82,7 +82,6 @@ class DuckDBClient:
 
     def get_variant(self, variant_id: str):
         query = f"SELECT * FROM variant_annotations WHERE SNP = '{variant_id}'"
-        query = f"SELECT * FROM variant_annotations LIMIT 1"
         return self.studies_conn.execute(query).fetchone()
 
     def get_gene_ranges(self):
@@ -93,13 +92,6 @@ class DuckDBClient:
         GROUP BY symbol
         """
         return self.studies_conn.execute(query).fetchall()
-
-    def get_variants_by_region(self, chrom: str, start: int, end: int):
-        return self.studies_conn.execute("""
-            SELECT * FROM variants 
-            WHERE chromosome = ? 
-            AND position BETWEEN ? AND ?
-        """, [chrom, start, end]).fetchall() 
 
     def get_ld_proxies(self, variants: List[str]):
         formatted_variants = ','.join(f"'{variant}'" for variant in variants)

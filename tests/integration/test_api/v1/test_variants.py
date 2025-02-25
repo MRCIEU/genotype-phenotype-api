@@ -1,7 +1,7 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import Association, ExtendedColoc, Variant, VariantResponse
+
 
 client = TestClient(app)
 

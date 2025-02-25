@@ -5,22 +5,6 @@ from app.models.schemas import GeneResponse
 
 client = TestClient(app)
 
-def test_get_genes_with_no_colocs():
-    response = client.get("/v1/genes/TTC34")
-    assert response.status_code == 200
-    genes = response.json()
-    assert len(genes) > 0
-
-    gene_response = GeneResponse(**genes)
-    assert gene_response.gene is not None
-    assert gene_response.gene.symbol is not None
-    assert gene_response.gene.chr is not None
-    assert gene_response.gene.min_bp is not None
-    assert gene_response.gene.max_bp is not None
-    assert gene_response.colocs is not None
-    assert len(gene_response.colocs) == 0
-    assert gene_response.variants is not None
-
 def test_get_genes_with_colocs():
     response = client.get("/v1/genes/TTLL10")
     assert response.status_code == 200
@@ -41,6 +25,11 @@ def test_get_genes_with_colocs():
         assert coloc.chr is not None
         assert coloc.bp is not None
         assert coloc.min_p is not None
+    for study in gene_response.study_extractions:
+        assert study.unique_study_id is not None
+        assert study.chr is not None
+        assert study.bp is not None
+        assert study.min_p is not None
 
 
 

@@ -18,6 +18,8 @@ async def get_region(ancestry: str = Path(..., description="Ancestry"),
         cache_service = CacheService()
 
         colocs = db.get_all_colocs_for_region(ld_block)
+        if colocs is None:
+            raise HTTPException(status_code=404, detail=f"No colocs found for region {ld_block}")
         genes = cache_service.get_gene_ranges()
 
         region = Region(chr=chr, start=start, end=end, ancestry=ancestry)
