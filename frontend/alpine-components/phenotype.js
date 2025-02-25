@@ -12,6 +12,7 @@ export default function pheontype() {
       candidate_snp: null,
       trait: null
     },
+    errorMessage: null,
 
     async loadData() {
       let studyId = (new URLSearchParams(location.search).get('id'))
@@ -116,15 +117,12 @@ export default function pheontype() {
     },
 
     get getDataForColocTable() {
-      if (this.filteredColocData === null) return
+      if (!this.filteredColocData) return []
       let tableData = this.filteredColocData.filter(coloc => {
         if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
         else if (this.displayFilters.candidate_snp !== null)  return coloc.candidate_snp === this.displayFilters.candidate_snp 
         else return true
       })
-
-      // TODO: remove this after changing to DataTables library?
-      tableData = tableData.slice(0, 500)
 
       tableData.forEach(coloc => {
         const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
@@ -133,7 +131,8 @@ export default function pheontype() {
 
       this.filteredGroupedColoc = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
 
-      return this.filteredGroupedColoc 
+      // return this.filteredGroupedColoc.slice(0, 500)
+      return Object.fromEntries(Object.entries(this.filteredGroupedColoc).slice(0, 100))
     },
 
     initPhenotypeGraph() {
@@ -481,7 +480,7 @@ export default function pheontype() {
         .attr('dy', '0.35em')
         .attr('text-anchor', 'start')
         .style('font-size', '12px')
-        .text('Rare*');
+        .text('Rare:');
 
       // Adjust existing y-axis labels position
       svg.selectAll('.y-axis-label')

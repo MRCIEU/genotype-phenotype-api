@@ -19,10 +19,18 @@ export default function homepage() {
       searchTimeout: null, // Timeout reference
     },
     filteredItems: [], // Property to store filtered items
+    errorMessage: null,
 
     async loadData() {
-      const response = await fetch(constants.apiUrl + '/search/options')
-      this.searchOptionData = await response.json()
+      try {
+        const response = await fetch(constants.apiUrl + '/search/options')
+        if (!response.ok) {
+          this.errorMessage = `Failed to load search options: ${response.status} ${constants.apiUrl + '/search/options'}`
+        }
+        this.searchOptionData = await response.json()
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     },
 
     goToItem(item) {

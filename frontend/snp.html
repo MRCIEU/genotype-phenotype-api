@@ -13,6 +13,9 @@
   <div id="wait-to-load" style="display:none;">
     <div id="snp" x-data="snp" x-init="loadData">
       <navigation-bar></navigation-bar>
+      <div x-show="errorMessage" class="notification is-danger is-light mt-4">
+        <span x-text="errorMessage"></span>
+      </div>
 
       <div class="columns mt-4 mb-0">
         <div class="column">

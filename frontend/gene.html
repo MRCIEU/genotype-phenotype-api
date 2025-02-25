@@ -14,6 +14,10 @@
     <div id="gene" x-data="gene" x-init="loadData">
       <navigation-bar></navigation-bar>
 
+      <div x-show="errorMessage" class="notification is-danger is-light mt-4">
+        <span x-text="errorMessage"></span>
+      </div>
+
       <div class="columns mt-4 mb-0">
         <div class="column is-10">
           <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
@@ -37,11 +41,12 @@
       <div class="columns mt-2">
         <div class="column is-10">
           <div class="is-divider mt-0 mb-2"></div>
+          <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
+          <div x-model="initTraitByPositionGraph" id="gene-network-plot"></div>
+          <div class="is-divider mt-0 mb-2"></div>
+          <br />
           <h4 class="title is-3 has-text-centered mb-0">Tissue by Trait Type Graph</h3>
           <div x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
-          <div class="is-divider mt-0 mb-2"></div>
-          <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
-          <div x-model="initNetworkGraph" id="gene-network-plot"></div>
         </div>
 
         <div class="column is-2">

@@ -12,9 +12,13 @@
 <body>
   <div id = "wait-to-load" style="display:none;">
     <navigation-bar></navigation-bar>
+
     <div id="homepage" x-data="homepage" x-init="loadData">
       <div class="columns mt-6 is-centered">
         <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
+      </div>
+      <div x-show="errorMessage" class="notification is-danger is-light mt-4">
+        <span x-text="errorMessage"></span>
       </div>
       <div class="columns mt-1 is-centered">
         <div class="column is-three-quarters">

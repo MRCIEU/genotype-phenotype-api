@@ -5,12 +5,17 @@ import constants from './constants.js'
 export default function snp() {
   return {
     data: null,
+    errorMessage: null,
 
     async loadData() {
         let variantId = (new URLSearchParams(location.search).get('id'))
 
         try {
             const response = await fetch(constants.apiUrl + '/variants/' + variantId)
+            if (!response.ok) {
+                this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
+                return
+            }
             this.data = await response.json()
 
             this.data.colocs = this.data.colocs .map(coloc => ({
