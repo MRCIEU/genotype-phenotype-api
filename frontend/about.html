@@ -1,70 +1,68 @@
 <!doctype html>
 <html lang="en">
 
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
-    <title>GPM</title>
-    <script type="module" src="/main.js"></script>
-  </head>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+        <title>GPM</title>
+        <script type="module" src="/main.js"></script>
+    </head>
 
-  <body>
-    <div id = "wait-to-load" style="display:none;">
-      <div id="about" x-data="about" x-init="loadData">
-        <navigation-bar></navigation-bar>
+    <body>
+        <div id = "wait-to-load" style="display:none;">
+            <div id="about" x-data="about" x-init="loadData">
+                <navigation-bar></navigation-bar>
 
-        <div class="content columns mt-2 is-centered">
-          <div class="column is-11">
-            <h1>About</h1>
-            <p>
-              Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
-              elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius
-              lectus, nec rutrum justo nibh eu lectus. Ut vulputate semper dui. Fusce erat
-              odio, sollicitudin vel erat vel, interdum mattis neque. Sub<sub>script</sub>
-              works as well!
-            </p>
-            <h3>Datasets</h3>
-            <p>
-              The datasets that were used to populate the Genotype-Phenotype Map are as follows:
-            </p>
-            <div class="columns mt-2 is-centered">
-              <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-                <thead>
-                  <tr>
-                    <th><abbr title="Name">Name</abbr></th>
-                    <th><abbr title="Data Source">Data Source</abbr></th>
-                    <th><abbr title="Number of Studies">Number of Studies</abbr></th>
-                    <th><abbr title="Type">Study Type</abbr></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <template x-for="dataset in getDatasetsForTable">
-                    <tr>
-                      <td x-text="dataset.name"></td>
-                      <td><a x-bind:href="dataset.source">Source</a></td>
-                      <td x-text="dataset.number_of_studies"></td>
-                      <td x-text="dataset.type"></td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
+                <div class="content columns mt-2 is-centered">
+                    <div class="column is-11">
+                        <h1>About</h1>
+                        <p>
+                            Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
+                            elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius
+                            lectus, nec rutrum justo nibh eu lectus. Ut vulputate semper dui. Fusce erat
+                            odio, sollicitudin vel erat vel, interdum mattis neque. Sub<sub>script</sub>
+                            works as well!
+                        </p>
+                        <h3>Datasets</h3>
+                        <p>
+                            The datasets that were used to populate the Genotype-Phenotype Map are as follows:
+                        </p>
+                        <div class="columns mt-2 is-centered">
+                            <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+                                <thead>
+                                    <tr>
+                                        <th><abbr title="Name">Name</abbr></th>
+                                        <th><abbr title="Data Source">Data Source</abbr></th>
+                                        <th><abbr title="Number of Studies">Number of Studies</abbr></th>
+                                        <th><abbr title="Type">Study Type</abbr></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="dataset in getDatasetsForTable">
+                                        <tr>
+                                            <td x-text="dataset.name"></td>
+                                            <td><a x-bind:href="dataset.source">Source</a></td>
+                                            <td x-text="dataset.number_of_studies"></td>
+                                            <td x-text="dataset.type"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
 
+                        </div>
+
+                        <h3>Acknowledgements</h3>
+                        <p>
+                            Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
+                            elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius
+                            lectus, nec rutrum justo nibh eu lectus. Ut vulputate semper dui. Fusce erat
+                            odio, sollicitudin vel erat vel, interdum mattis neque. Sub<sub>script</sub>
+                            works as well!
+                        </p>
+                    </div>
+                </div>
             </div>
-
-            <h3>Acknowledgements</h3>
-            <p>
-              Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
-              elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius
-              lectus, nec rutrum justo nibh eu lectus. Ut vulputate semper dui. Fusce erat
-              odio, sollicitudin vel erat vel, interdum mattis neque. Sub<sub>script</sub>
-              works as well!
-            </p>
-          </div>
-
         </div>
-      </div>
-    </div>
-  </body>
-
+    </body>
 </html>

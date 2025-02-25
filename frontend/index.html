@@ -2,152 +2,152 @@
 <html lang="en">
 
 <head>
-  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
-  <title>GPM</title>
-  <script type="module" src="/main.js" async blocking="render"></script>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+    <title>GPM</title>
+    <script type="module" src="/main.js" async blocking="render"></script>
 </head>
 
 <body>
-  <div id = "wait-to-load" style="display:none;">
-    <navigation-bar></navigation-bar>
+    <div id = "wait-to-load" style="display:none;">
+        <navigation-bar></navigation-bar>
 
-    <div id="homepage" x-data="homepage" x-init="loadData">
-      <div class="columns mt-6 is-centered">
-        <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
-      </div>
-      <div x-show="errorMessage" class="notification is-danger is-light mt-4">
-        <span x-text="errorMessage"></span>
-      </div>
-      <div class="columns mt-1 is-centered">
-        <div class="column is-three-quarters">
-          <div class="dropdown is-active level">
-            <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="searchText">
-            <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
-              <div class="dropdown-content" style="max-height: 320px; overflow-y: auto;">
-                <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.type_id">
-                  <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
-                </template>
-              </div>
+        <div id="homepage" x-data="homepage" x-init="loadData">
+            <div class="columns mt-6 is-centered">
+                <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
             </div>
-          </div>
-          <br />
-          <div class="is-divider" data-content="OR"></div>
-          <div class="columns mt-6 is-centered">
-            <button class="button is-success" data-target="modal-js-example" @click="openModal()">Upload GWAS for Comparison</button>
-            <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': uploadMetadata.modalOpen }" @keydown.window.escape="closeModal()">
-              <div class="modal-background" @click="closeModal()"></div>
-              <div class="modal-card is-large" style="width: 900px; max-width: 90%;">
-                <header class="modal-card-head">
-                  <p class="modal-card-title">Upload GWAS for Comparison</p>
-                </header>
-                <section class="modal-card-body">
-                  Upload a GWAS, and we will send you an email once the analysis has been completed. <br/><br />
-                  All GWASes must be using hg38.
-                  <br />
-                  <br />
-                  <div class="field">
-                    <label class="label">Name of GWAS</label>
-                    <div class="control">
-                      <input class="input" type="text" placeholder="Text input">
-                    </div>
-                  </div>
-                  <!-- <div class="field">
-                    <label class="label">P-value </label>
-
-                    <span x-text="uploadPValue"></span> <br />
-                    <input class="slider mt-0 mb-0"
-                      step="0.1" min="3.7" max="7.3" value="7.3" type="range">
-                  </div> -->
-                  
-                  <div class="field">
-                    <label class="label">File</label>
-                    <div class="file has-name">
-                      <label class="file-label">
-                        <input class="file-input" type="file" name="file" @change="uploadMetadata.uploadFileName = $event.target.files[0]?.name; filterAndUploadFile($event.target.files[0])"/>
-                        <span class="file-cta">
-                          <span class="file-label"> Choose a file… </span>
-                        </span>
-                        <span class="file-name" x-text="uploadMetadata.uploadFileName || 'No file selected'"></span>
-                      </label>
+            <div x-show="errorMessage" class="notification is-danger is-light mt-4">
+                <span x-text="errorMessage"></span>
+            </div>
+            <div class="columns mt-1 is-centered">
+                <div class="column is-three-quarters">
+                    <div class="dropdown is-active level">
+                        <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="searchText">
+                        <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
+                            <div class="dropdown-content" style="max-height: 320px; overflow-y: auto;">
+                                <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.type_id">
+                                    <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                     <br />
-                    <label class="label">GWAS Column Names</label>
-                    N can be either a column name or the sample size
-                  </div>
-                  <div class="field is-grouped">
-                    <p class="control">
-                      <input class="input" type="text" placeholder="CHR">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="text" placeholder="BP">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="email" placeholder="P">
-                    </p>
-                  </div>
-                  <div class="field is-grouped">
-                    <p class="control">
-                      <input class="input" type="text" placeholder="EA">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="text" placeholder="OA">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="email" placeholder="EAF">
-                    </p>
-                  </div>
-                  <div class="field is-grouped">
-                    <p class="control">
-                      <input class="input" type="text" placeholder="BETA">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="email" placeholder="OR">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="text" placeholder="SE">
-                    </p>
-                  </div>
-                  <div class="field is-grouped">
-                    <p class="control">
-                      <input class="input" type="text" placeholder="N">
-                    </p>
-                    <p class="control">
-                      <input class="input" type="email" placeholder="RSID">
-                    </p>
-                  </div>
-                  <div class="field">
-                    <label class="label">Email</label>
-                    <div class="control">
-                      <input class="input" type="email" placeholder="Email input">
-                    </div>
-                  </div>
-                </section>
-                <footer class="modal-card-foot">
-                  <div class="buttons">
-                    <button class="button is-success">Upload</button>
-                    <button class="button" @click="closeModal()">Cancel</button>
-                  </div>
-                </footer>
-              </div>
-            </div>
-          </div>
-          <div class="block mt-6">
-            GWAS studies: <strong>2500</strong><br />
-            Molecular studies: <strong>567,332</strong><br />
-            Colocalised Pairs: <strong>123,456</strong><br />
-            Causal Variants: <strong>12,221</strong><br />
-            Mistakes: <strong>many</strong><br />
-          </div>
-          <div class="block">
-            Citation: <strong>DOI here</strong>
-          </div>
-        </div>
-      </div>
+                    <div class="is-divider" data-content="OR"></div>
+                    <div class="columns mt-6 is-centered">
+                        <button class="button is-success" data-target="modal-js-example" @click="openModal()">Upload GWAS for Comparison</button>
+                        <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': uploadMetadata.modalOpen }" @keydown.window.escape="closeModal()">
+                            <div class="modal-background" @click="closeModal()"></div>
+                            <div class="modal-card is-large" style="width: 900px; max-width: 90%;">
+                                <header class="modal-card-head">
+                                    <p class="modal-card-title">Upload GWAS for Comparison</p>
+                                </header>
+                                <section class="modal-card-body">
+                                    Upload a GWAS, and we will send you an email once the analysis has been completed. <br/><br />
+                                    All GWASes must be using hg38.
+                                    <br />
+                                    <br />
+                                    <div class="field">
+                                        <label class="label">Name of GWAS</label>
+                                        <div class="control">
+                                            <input class="input" type="text" placeholder="Text input">
+                                        </div>
+                                    </div>
+                                    <!-- <div class="field">
+                                        <label class="label">P-value </label>
 
+                                        <span x-text="uploadPValue"></span> <br />
+                                        <input class="slider mt-0 mb-0"
+                                            step="0.1" min="3.7" max="7.3" value="7.3" type="range">
+                                    </div> -->
+                                    
+                                    <div class="field">
+                                        <label class="label">File</label>
+                                        <div class="file has-name">
+                                            <label class="file-label">
+                                                <input class="file-input" type="file" name="file" @change="uploadMetadata.uploadFileName = $event.target.files[0]?.name; filterAndUploadFile($event.target.files[0])"/>
+                                                <span class="file-cta">
+                                                    <span class="file-label"> Choose a file… </span>
+                                                </span>
+                                                <span class="file-name" x-text="uploadMetadata.uploadFileName || 'No file selected'"></span>
+                                            </label>
+                                        </div>
+                                        <br />
+                                        <label class="label">GWAS Column Names</label>
+                                        N can be either a column name or the sample size
+                                    </div>
+                                    <div class="field is-grouped">
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="CHR">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="BP">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="email" placeholder="P">
+                                        </p>
+                                    </div>
+                                    <div class="field is-grouped">
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="EA">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="OA">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="email" placeholder="EAF">
+                                        </p>
+                                    </div>
+                                    <div class="field is-grouped">
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="BETA">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="email" placeholder="OR">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="SE">
+                                        </p>
+                                    </div>
+                                    <div class="field is-grouped">
+                                        <p class="control">
+                                            <input class="input" type="text" placeholder="N">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" type="email" placeholder="RSID">
+                                        </p>
+                                    </div>
+                                    <div class="field">
+                                        <label class="label">Email</label>
+                                        <div class="control">
+                                            <input class="input" type="email" placeholder="Email input">
+                                        </div>
+                                    </div>
+                                </section>
+                                <footer class="modal-card-foot">
+                                    <div class="buttons">
+                                        <button class="button is-success">Upload</button>
+                                        <button class="button" @click="closeModal()">Cancel</button>
+                                    </div>
+                                </footer>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="block mt-6">
+                        GWAS studies: <strong>2500</strong><br />
+                        Molecular studies: <strong>567,332</strong><br />
+                        Colocalised Pairs: <strong>123,456</strong><br />
+                        Causal Variants: <strong>12,221</strong><br />
+                        Mistakes: <strong>many</strong><br />
+                    </div>
+                    <div class="block">
+                        Citation: <strong>DOI here</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
-  </div>
 </body>
 
 </html>
