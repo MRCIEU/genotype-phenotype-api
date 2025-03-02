@@ -134,11 +134,11 @@ export default function pheontype() {
                 else if (this.displayFilters.candidate_snp !== null)    return coloc.candidate_snp === this.displayFilters.candidate_snp 
                 else return true
             })
-            tableData = tableData.concat(this.filteredStudyExtractions.filter(se => {
+            tableData = this.filteredStudyExtractions.filter(se => {
                 if (this.displayFilters.chr !== null) return se.chr == this.displayFilters.chr
                 else if (this.displayFilters.candidate_snp !== null)    return se.candidate_snp === this.displayFilters.candidate_snp 
                 else return true
-            }))
+            }).concat(tableData)
 
             tableData.forEach(coloc => {
                 const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
@@ -439,14 +439,14 @@ export default function pheontype() {
                 .attr('stroke-width', 1);
 
             if (graphOptions.includeRareVariants) {
-                this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales)
+                this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight)
             }
 
             // Add no-coloc variants section
             this.displayNoColocVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight)
         },
 
-        displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales) {
+        displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight) {
             innerGraph
                 .select('rect')
                 .attr('y', graphConstants.rareMargin.top);
@@ -517,6 +517,16 @@ export default function pheontype() {
             // Update y-axis position for each chromosome group separately
             svg.selectAll('.y-axis')
                 .attr('transform', `translate(0, ${graphConstants.rareMargin.top})`);
+
+            innerGraph
+                .append('line')
+                .attr('class', 'separator-line')
+                .attr('x1', 0)
+                .attr('x2', innerWidth)
+                .attr('y1', innerHeight)
+                .attr('y2', innerHeight)
+                .attr('stroke', '#000000')
+                .attr('stroke-width', 2);
 
             // Add "Rare Variants" text to y-axis
             svg.append('text')

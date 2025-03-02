@@ -94,37 +94,39 @@ export default function gene() {
         },
 
         filterByOptions(graphOptions) {
-          this.data.filteredColocs = this.data.colocs.filter(coloc => {
-            return(coloc.min_p <= graphOptions.pValue &&
+            this.data.filteredColocs = this.data.colocs.filter(coloc => {
+                return(coloc.min_p <= graphOptions.pValue &&
                    coloc.posterior_prob >= graphOptions.coloc &&
                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                    (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
                    // && rare variants in the future...
-          })
-          this.data.filteredStudies = this.data.study_extractions.filter(study => {
-            return(study.min_p <= graphOptions.pValue && 
+            })
+            this.data.filteredStudies = this.data.study_extractions.filter(study => {
+                return(study.min_p <= graphOptions.pValue && 
                    (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
                    (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true))
-          })
-          this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
-
-          this.data.tissues.forEach(tissue => {
-            constants.orderedDataTypes.forEach(dataType => {
-                if (dataType === 'phenotype') return;
-                const tissueColocs = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue && coloc.data_type === dataType)
-                const colocIds = tissueColocs.map(coloc => coloc.id)
-                const allColocsWithTissue = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id))
-                const tissueStudies = this.data.filteredStudies.filter(study => study.tissue == tissue && study.data_type === dataType)
-                const tissueDataTypeResults = allColocsWithTissue.concat(tissueStudies)
-                this.tissueByDataType[dataType][tissue] = tissueDataTypeResults
             })
-          })
+            this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
+            this.minMbp = Math.min(...this.data.filteredColocs.map(d => d.mbp), ...this.data.filteredStudies.map(d => d.mbp))
+            this.maxMbp = Math.max(...this.data.filteredColocs.map(d => d.mbp), ...this.data.filteredStudies.map(d => d.mbp))
 
-          this.data.filteredColocs.forEach(coloc => {
-            const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
-            coloc.color = constants.tableColors[hash]
-          })
-          this.data.groupedColocs = Object.groupBy(this.data.filteredColocs, ({ candidate_snp }) => candidate_snp);
+            this.data.tissues.forEach(tissue => {
+                constants.orderedDataTypes.forEach(dataType => {
+                    if (dataType === 'phenotype') return;
+                    const tissueColocs = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue && coloc.data_type === dataType)
+                    const colocIds = tissueColocs.map(coloc => coloc.id)
+                    const allColocsWithTissue = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id))
+                    const tissueStudies = this.data.filteredStudies.filter(study => study.tissue == tissue && study.data_type === dataType)
+                    const tissueDataTypeResults = allColocsWithTissue.concat(tissueStudies)
+                    this.tissueByDataType[dataType][tissue] = tissueDataTypeResults
+                })
+            })
+
+            this.data.filteredColocs.forEach(coloc => {
+                const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+                coloc.color = constants.tableColors[hash]
+            })
+            this.data.groupedColocs = Object.groupBy(this.data.filteredColocs, ({ candidate_snp }) => candidate_snp);
         },
 
         getVariantTypeColor(variantType) {
@@ -178,8 +180,6 @@ export default function gene() {
                 .style('height', '100%')
                 .append('g')
                 .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-            // Create scales
 
             const tissues = this.data.tissues;
             const dataTypes = Object.keys(this.tissueByDataType)
@@ -292,14 +292,14 @@ export default function gene() {
                 .attr('x', innerWidth/2)
                 .attr('y', innerHeight + graphConstants.outerMargin.bottom - 10)
                 .style('text-anchor', 'middle')
-                .text('Category');
+                .text('Tissue');
 
             this.svg.append('text')
                 .attr('transform', 'rotate(-90)')
                 .attr('x', -innerHeight/2)
                 .attr('y', -graphConstants.outerMargin.left + 30)
                 .style('text-anchor', 'middle')
-                .text('Tissue');
+                .text('QTL Type');
 
             // Add window resize listener
             const resizeGraph = () => {
@@ -489,8 +489,11 @@ export default function gene() {
 
             // Add gene track
             const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top;
-            const genes = [...this.data.gene.genes_in_region];
+            const genes = this.data.gene.genes_in_region.filter(gene =>
+                gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp
+            )
             genes.push({
+                focus: true,
                 symbol: this.data.gene.symbol,
                 min_bp: this.data.gene.min_bp,
                 max_bp: this.data.gene.max_bp,
@@ -519,7 +522,7 @@ export default function gene() {
                 return levels;
             }
 
-            const geneLevels = assignLevels(genes);
+            assignLevels(genes);
             const geneGroup = svg.append("g")
                 .attr("class", "gene-track");
 
@@ -533,6 +536,8 @@ export default function gene() {
                 .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000))
                 .attr("height", graphConstants.geneTrackMargin.height)
                 .attr("fill", (d, i) => constants.colors[i % constants.colors.length])
+                .attr("stroke", (d) => d.focus ? "black": null)
+                .attr("stroke-width", 3) 
                 .attr("opacity", 0.7)
                 .on('mouseover', (event, d) => {
                     d3.select('#gene-network-plot')

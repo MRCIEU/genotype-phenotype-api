@@ -42,6 +42,9 @@
                 <div class="column is-10">
                     <div class="is-divider mt-0 mb-2"></div>
                     <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
+                    <p class="is-size-7 has-text-centered">Displays studies that are either</p>
+                    <p class="is-size-7 has-text-centered">(a) within the BP range of the gene, (b) annotated by the QTL resource as associated with that Gene (within +/-1Mb), or</p>
+                    <p class="is-size-7 has-text-centered">(c) colocalising with (b) at the select coloc threshold</p>
                     <div x-model="initTraitByPositionGraph" id="gene-network-plot"></div>
                 </div>
 
@@ -50,7 +53,10 @@
                 </div>
             </div>
                 <div class="is-divider mt-0 mb-2"></div>
-                <h4 class="title is-3 has-text-centered mb-0">Tissue by QTL Type</h3>
+                <h4 class="title is-3 has-text-centered mb-0">Tissue by QTL Type</h4>
+                <p class="is-size-7 has-text-centered" x-text="'Displays every tissue in which the gene '+ geneName +' is expressed.'"></p>
+                <p class="is-size-7 has-text-centered">If there is no circle, the gene is not expressed at the selected p-value threshold</p>
+
                 <div class="column is-12" x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
                 <div class="columns mt-0 is-centered">
                     <div class="column is-11">

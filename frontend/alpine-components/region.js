@@ -24,6 +24,11 @@ export default function region() {
                     return
                 }
                 this.data = await response.json();
+                this.data.genes = this.data.genes.map(gene => ({
+                        ...gene,
+                        minMbp: gene.min_bp / 1000000,
+                        maxMbp: gene.max_bp / 1000000,
+                }))
 
                 this.data.colocs = this.data.colocs.map(coloc => ({
                         ...coloc,
@@ -292,7 +297,9 @@ export default function region() {
             const geneHeight = 20; // Height of each gene rectangle
 
             // Create gene rectangles
-            const genes = this.data.genes;
+            const genes = this.data.genes.filter(gene =>
+                gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp
+            );
             
             // Function to detect overlaps and assign levels
             function assignLevels(genes) {
