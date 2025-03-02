@@ -3,7 +3,7 @@ import constants from './constants.js'
 
 export default function pheontype() {
     return {
-        colocData: null,
+        data: null,
         filteredColocData: null,
         filteredGroupedColoc: null,
         orderedTraitsToFilterBy: null,
@@ -18,11 +18,11 @@ export default function pheontype() {
             let studyId = (new URLSearchParams(location.search).get('id'))
             try {
                 const response = await fetch(constants.apiUrl + '/studies/' + studyId)
-                this.colocData = await response.json()
+                this.data = await response.json()
 
                 // Count frequency of each id in colocs and scale between 2 and 10
                 const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
-                const idFrequencies = this.colocData.colocs.reduce((acc, obj) => {
+                const idFrequencies = this.data.colocs.reduce((acc, obj) => {
                     if (obj.id) {
                         acc[obj.id] = (acc[obj.id] || 0) + 1;
                     }
@@ -34,7 +34,13 @@ export default function pheontype() {
                 const minNumStudies = Math.min(...frequencies);
                 const maxNumStudies = Math.max(...frequencies);
 
-                this.colocData.colocs = this.colocData.colocs.map(c => {
+                this.data.study_extractions = this.data.study_extractions.map(se => {
+                    se.MbP = se.bp / 1000000
+                    se.chrText = 'CHR '.concat(se.chr)
+                    se.ignore = false
+                    return se
+                })
+                this.data.colocs = this.data.colocs.map(c => {
                     c.MbP = c.bp / 1000000
                     c.chrText = 'CHR '.concat(c.chr)
                     c.annotationColor = constants.colors[Math.floor(Math.random()*Object.keys(constants.colors).length)]
@@ -46,10 +52,10 @@ export default function pheontype() {
                     }
                     return c
                 })
-                this.colocData.colocs.sort((a, b) => a.chr > b.chr);
+                this.data.colocs.sort((a, b) => a.chr > b.chr);
 
                 // order traits by frequency in order to display in dropdown for filtering
-                let allTraits = this.colocData.colocs.map(s => s.trait)
+                let allTraits = this.data.colocs.map(s => s.trait)
                 let frequency = {};
                 allTraits.forEach(item => {
                     frequency[item] = (frequency[item] || 0) + 1;
@@ -59,7 +65,7 @@ export default function pheontype() {
                 let uniqueTraits = [...new Set(allTraits)];
                 uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
 
-                this.orderedTraitsToFilterBy = uniqueTraits.filter(t => t !== this.colocData.study.trait)
+                this.orderedTraitsToFilterBy = uniqueTraits.filter(t => t !== this.data.study.trait)
 
                 this.filterByOptions(Alpine.store('graphOptionStore')) 
 
@@ -69,17 +75,17 @@ export default function pheontype() {
         },
 
         get getStudyToDisplay() {
-            if (this.colocData === null) return '...'
+            if (this.data === null) return '...'
 
-            return this.colocData.study.trait
+            return this.data.study.trait
         },
 
         filterByOptions(graphOptions) {
             let colocIdsWithTraits = []
             if (this.displayFilters.trait) {
-                colocIdsWithTraits = this.colocData.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.id)
+                colocIdsWithTraits = this.data.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.id)
             } 
-            this.filteredColocData = this.colocData.colocs.filter(coloc => {
+            this.filteredColocData = this.data.colocs.filter(coloc => {
                 const graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
                     coloc.posterior_prob >= graphOptions.coloc &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
@@ -90,6 +96,11 @@ export default function pheontype() {
 
                 return graphOptionFilters && traitFilter
             })
+            this.filteredStudyExtractions = this.data.study_extractions.filter(se => {
+                return se.min_p <= graphOptions.pValue &&
+                    (graphOptions.includeTrans ? true : se.cis_trans !== 'trans') &&
+                    (graphOptions.onlyMolecularTraits ? se.data_type !== 'phenotype' : true)
+            })
 
             // deduplicate studies and sort based on frequency
             this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
@@ -97,7 +108,7 @@ export default function pheontype() {
 
         filterByStudy(trait) {
             if (trait === null) {
-                this.filteredColocData = this.colocData
+                this.filteredColocData = this.data
             } else {
                 this.displayFilters =    {
                     chr: null,
@@ -123,6 +134,11 @@ export default function pheontype() {
                 else if (this.displayFilters.candidate_snp !== null)    return coloc.candidate_snp === this.displayFilters.candidate_snp 
                 else return true
             })
+            tableData = tableData.concat(this.filteredStudyExtractions.filter(se => {
+                if (this.displayFilters.chr !== null) return se.chr == this.displayFilters.chr
+                else if (this.displayFilters.candidate_snp !== null)    return se.candidate_snp === this.displayFilters.candidate_snp 
+                else return true
+            }))
 
             tableData.forEach(coloc => {
                 const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
@@ -131,7 +147,6 @@ export default function pheontype() {
 
             this.filteredGroupedColoc = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
 
-            // return this.filteredGroupedColoc.slice(0, 500)
             return Object.fromEntries(Object.entries(this.filteredGroupedColoc).slice(0, 100))
         },
 
@@ -168,6 +183,27 @@ export default function pheontype() {
             const chartElement = document.getElementById("phenotype-chart");
             chartElement.innerHTML = ''
 
+            // Remove any existing tooltips first
+            d3.selectAll(".tooltip").remove();
+
+            // Create a single tooltip that will be reused
+            // let tooltip = d3.select("body").append("div")
+            //     .attr("class", "tooltip")
+            //     .style("opacity", 0)
+            //     .on('mouseover', function() {
+            //         d3.select(this)
+            //             .style("opacity", 1)
+            //             .style("visibility", "visible")
+            //             .style("display", "flex");
+            //     })
+            //     .on('mouseout', function() {
+            //         d3.select(this)
+            //             .transition()
+            //             .duration(100)
+            //             .style("visibility", "hidden")
+            //             .style("display", "none");
+            //     });
+
             const chartContainer = d3.select("#phenotype-chart");
             chartContainer.select("svg").remove()
             
@@ -187,6 +223,12 @@ export default function pheontype() {
                     top: 40,
                     right: 0,
                     bottom: 0,
+                    left: 0,
+                },
+                noColocMargin: {
+                    bottom: 40,
+                    right: 0,
+                    top: 0,
                     left: 0,
                 }
             }
@@ -217,7 +259,7 @@ export default function pheontype() {
             const svg = chartContainer
                 .append("svg")
                 .attr('width', graphConstants.width + graphConstants.outerMargin.left)
-                .attr('height', graphConstants.height + graphConstants.outerMargin.top + graphConstants.outerMargin.bottom)
+                .attr('height', graphConstants.height + graphConstants.outerMargin.top + graphConstants.outerMargin.bottom + graphConstants.noColocMargin.bottom)
                 .append('g')
                 .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + (graphConstants.outerMargin.top) + ')');
 
@@ -232,7 +274,7 @@ export default function pheontype() {
             svg.append("text")
                 .attr("font-size", "14px")
                 .attr("x", graphConstants.width/2 - graphConstants.outerMargin.left)
-                .attr("y", graphConstants.height - 40 + graphConstants.rareMargin.top)
+                .attr("y", graphConstants.height - 40 + graphConstants.rareMargin.top + graphConstants.noColocMargin.bottom)
                 .text("Genomic Position (MB)");
 
             // calculate the outer scale band for each line graph
@@ -298,6 +340,10 @@ export default function pheontype() {
                     .range([0, innerWidth]);
             });
 
+            let tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
             // Use the scales in the x-axis creation
             innerGraph
                 .append('g')
@@ -311,7 +357,7 @@ export default function pheontype() {
                         .call(d3.axisBottom(scale)
                             .tickValues(tickValues)
                             .tickSize(-innerHeight))
-                        .attr('transform', `translate(0,${innerHeight})`)
+                        .attr('transform', `translate(0,${innerHeight + graphConstants.noColocMargin.bottom})`)
                         .selectAll("text")    
                         .style("text-anchor", "end")
                         .attr("dx", "-.8em")
@@ -328,10 +374,6 @@ export default function pheontype() {
             svg.append('g')
                 .call(d3.axisLeft(innerYScale).tickValues(yAxisValues).tickSize(-innerWidth))
                 .attr('transform', `translate(0,${graphConstants.rareMargin.top})`);
-
-            let tooltip = d3.select("body").append("div")
-                .attr("class", "tooltip")
-                .style("opacity", 0);
 
             // drawing the dots, as well as the code to display the tooltip
             innerGraph
@@ -353,6 +395,7 @@ export default function pheontype() {
                     let traitNames = uniqueTraits.slice(0,9)
                     traitNames = traitNames.join("<br />")
                     if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
+                    traitNames = 'SNP: ' + i.candidate_snp + '<br />' + traitNames
 
                     d3.select(this).transition()
                         .duration('100')
@@ -367,10 +410,10 @@ export default function pheontype() {
                         .style("top", (d.pageY - 15) + "px");
                 })
                 .on('mouseout', function (d, i) {
-                        d3.select(this).transition()
-                            .duration('200')
-                            .attr("r", d => d.scaledNumStudies + 1)
-                        tooltip.transition()
+                    d3.select(this).transition()
+                        .duration('200')
+                        .attr("r", d => d.scaledNumStudies + 1)
+                    tooltip.transition()
                         .duration(100)
                         .style("visibiility", "hidden")
                         .style("display", "none");
@@ -398,6 +441,9 @@ export default function pheontype() {
             if (graphOptions.includeRareVariants) {
                 this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales)
             }
+
+            // Add no-coloc variants section
+            this.displayNoColocVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight)
         },
 
         displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales) {
@@ -451,10 +497,10 @@ export default function pheontype() {
                         .style("top", (d.pageY - 15) + "px");
                 })
                 .on('mouseout', function (d, i) {
-                        d3.select(this).transition()
-                            .duration('200')
-                            .attr("r", 4)
-                        tooltip.transition()
+                    d3.select(this).transition()
+                        .duration('200')
+                        .attr("r", 4)
+                    tooltip.transition()
                         .duration(100)
                         .style("visibiility", "hidden")
                         .style("display", "none");
@@ -501,6 +547,83 @@ export default function pheontype() {
             innerGraph
                 .select('.coloc-background-rect')
                 .attr('y', graphConstants.rareMargin.top);
+        },
+
+        displayNoColocVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight) {
+            // Add background for no-coloc variants section
+            innerGraph
+                .append('rect')
+                .attr('width', innerWidth)
+                .attr('height', graphConstants.noColocMargin.bottom)
+                .attr('fill', '#f9f9f9')
+                .attr('y', innerHeight);
+
+            let tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            // Add no-coloc variant dots
+            innerGraph
+                .selectAll('.no-coloc-dot')
+                .data(d => {
+                    const chr = d[0];
+                    return self.filteredStudyExtractions.filter(item => 'CHR ' + item.chr === chr);
+                })
+                .enter()
+                .append('circle')
+                .attr('class', 'no-coloc-dot')
+                .attr("cx", d => innerXScales[`CHR ${d.chr}`](d.bp / 1000000))
+                .attr("cy", innerHeight + (graphConstants.noColocMargin.bottom / 2))
+                .attr("fill", "#666666")
+                .attr("r", 3)
+                .on('mouseover', function(d, i) {
+                    d3.select(this).style("cursor", "pointer"); 
+                    d3.select(this).transition()
+                        .duration('100')
+                        .attr("r", 6);
+                    tooltip.transition()
+                        .duration(100)
+                        .style("opacity", 1)
+                        .style("visibility", "visible")
+                        .style("display", "flex");
+                    tooltip.html(`SNP: ${i.candidate_snp}<br/>P-value: ${i.min_p.toExponential(2)}`)
+                        .style("left", (d.pageX + 10) + "px")
+                        .style("top", (d.pageY - 15) + "px");
+                })
+                .on('mouseout', function (d, i) {
+                    d3.select(this).transition()
+                        .duration('200')
+                        .attr("r", 4)
+                    tooltip.transition()
+                        .duration(100)
+                        .style("visibiility", "hidden")
+                        .style("display", "none");
+                })
+                .on('click', function(d, i) {
+                    self.colocDisplayFilters.candidate_snp = i.candidate_snp;
+                    self.colocDisplayFilters.chr = null;
+                });
+
+            // Add "No coloc" text to y-axis
+            svg.append('text')
+                .attr('class', 'no-coloc-label')
+                .attr('x', -55)
+                .attr('y', innerHeight + graphConstants.rareMargin.top - (graphConstants.noColocMargin.bottom / 2)) 
+                .attr('dy', '0.35em')
+                .attr('text-anchor', 'start')
+                .style('font-size', '12px')
+                .text('No coloc:');
+
+            // Add separator line in each inner graph
+            innerGraph
+                .append('line')
+                .attr('class', 'separator-line')
+                .attr('x1', 0)
+                .attr('x2', innerWidth)
+                .attr('y1', innerHeight)
+                .attr('y2', innerHeight)
+                .attr('stroke', '#000000')
+                .attr('stroke-width', 2);
         },
 
         // Clean up the resize listener when the component is destroyed

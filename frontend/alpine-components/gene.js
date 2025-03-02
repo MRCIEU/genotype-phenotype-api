@@ -6,7 +6,7 @@ export default function gene() {
     return {
         data: null,
         svg: null,
-        tissueByTraits: {},
+        tissueByDataType: {},
         variantTypes: null, 
         minMbp: null,
         maxMbp: null,
@@ -53,6 +53,10 @@ export default function gene() {
                     ...study,
                     mbp : study.bp / 1000000,
                 }))
+
+                constants.orderedDataTypes.forEach(dataType => {
+                    if (dataType !== 'phenotype') this.tissueByDataType[dataType] = {}
+                })
 
                 let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
                 let filteredVariantTypes = constants.variantTypes.filter(variantType => variantTypesInData.includes(variantType))
@@ -105,17 +109,15 @@ export default function gene() {
           this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
 
           this.data.tissues.forEach(tissue => {
-            const traitsByTissue = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue)
-            const colocIds = traitsByTissue.map(coloc => coloc.id)
-            let colocs = {}
-            if (traitsByTissue.length === 0) {
-              colocs = {None: [{}]}
-            } else {
-              const phenotypeColocs = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id) && coloc.data_type === 'phenotype')
-              const qtlColocs = traitsByTissue.filter(coloc => coloc.data_type !== 'phenotype')
-              colocs = {Phenotype: phenotypeColocs, 'Other QTLs': qtlColocs}
-            }
-            this.tissueByTraits[tissue] = colocs
+            constants.orderedDataTypes.forEach(dataType => {
+                if (dataType === 'phenotype') return;
+                const tissueColocs = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue && coloc.data_type === dataType)
+                const colocIds = tissueColocs.map(coloc => coloc.id)
+                const allColocsWithTissue = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id))
+                const tissueStudies = this.data.filteredStudies.filter(study => study.tissue == tissue && study.data_type === dataType)
+                const tissueDataTypeResults = allColocsWithTissue.concat(tissueStudies)
+                this.tissueByDataType[dataType][tissue] = tissueDataTypeResults
+            })
           })
 
           this.data.filteredColocs.forEach(coloc => {
@@ -149,19 +151,18 @@ export default function gene() {
             this.getTissueByTraitGraph();
         },
 
-
         getTissueByTraitGraph() {
             const container = document.getElementById('gene-dot-plot');
             container.innerHTML = '';
 
             const graphConstants = {
                 width: container.clientWidth,
-                height: Math.max(400, window.innerHeight * 1.6), // Responsive height
+                height: Math.max(400, window.innerHeight * 0.5), // Responsive height
                 outerMargin: {
                     top: 0,
                     right: 10,
-                    bottom: 100,
-                    left: 220
+                    bottom: 150,
+                    left: 120
                 }
             }
 
@@ -179,16 +180,17 @@ export default function gene() {
                 .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
 
             // Create scales
-            const tissues = Object.keys(this.tissueByTraits);
-            const categories = ['None', 'Phenotype', 'Other QTLs'];
+
+            const tissues = this.data.tissues;
+            const dataTypes = Object.keys(this.tissueByDataType)
 
             const x = d3.scaleBand()
-                .domain(categories)
+                .domain(tissues)
                 .range([0, innerWidth])
                 .padding(0.1);
 
             const y = d3.scaleBand()
-                .domain(tissues.reverse())
+                .domain(dataTypes)
                 .range([innerHeight, 0])
                 .padding(0.1);
 
@@ -196,7 +198,7 @@ export default function gene() {
             this.svg.append('g')
                 .attr('class', 'grid-lines')
                 .selectAll('line')
-                .data(categories)
+                .data(tissues)
                 .enter()
                 .append('line')
                 .attr('x1', d => x(d) + x.bandwidth()/2)
@@ -210,7 +212,7 @@ export default function gene() {
             this.svg.append('g')
                 .attr('class', 'grid-lines')
                 .selectAll('line')
-                .data(tissues)
+                .data(dataTypes)
                 .enter()
                 .append('line')
                 .attr('x1', 0)
@@ -234,40 +236,34 @@ export default function gene() {
 
             // Add dots for each tissue and category
             tissues.forEach(tissue => {
-                categories.forEach(category => {
-                    const colocs = this.tissueByTraits[tissue][category] || [];
+                dataTypes.forEach(dataType => {
+                    const results = this.tissueByDataType[dataType][tissue] || [];
                     const baseRadius = 2;
                     let traitNames = ""
                     let uniqueTraits = []
-                    if (category === 'None' && colocs.length > 0) {
-                        uniqueTraits = ['None'];
-                    }
-                    else if (colocs.length > 1) {
-                        uniqueTraits = [...new Set(colocs.map(t => t.trait))]
-                        traitNames = uniqueTraits.slice(0,9)
-                        traitNames = traitNames.join("<br />")
-                        if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
-                    } 
-                    else if (colocs.length === 0) {
-                        return;
-                    }
+                    if (results.length === 0) return;
+
+                    uniqueTraits = [...new Set(results.map(t => t.trait))]
+                    traitNames = uniqueTraits.slice(0,9)
+                    traitNames = traitNames.join("<br />")
+                    if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
                     const radius = uniqueTraits.length > 0 ? 
                         Math.min(baseRadius + Math.sqrt(uniqueTraits.length) * 2, 8) : // Square root scale with max size
                         0;
                     
                     this.svg.append('circle')
-                        .attr('cx', x(category) + x.bandwidth()/2)
-                        .attr('cy', y(tissue) + y.bandwidth()/2)
+                        .attr('cx', x(tissue) + x.bandwidth()/2)
+                        .attr('cy', y(dataType) + y.bandwidth()/2)
                         .attr('r', radius)
                         .style('fill', 'black')
                         .style('opacity', 0.7)
                         .on('mouseover', (event) => {
-                            // Bold the y-axis label for this tissue
+                            // Bold the x-axis label for this tissue
                             this.svg.selectAll('.tick text')
                                 .filter(d => d === tissue)
                                 .style('font-weight', 'bold');
 
-                            if (category !== 'None') {
+                            if (dataType !== 'None') {
                                 d3.select('#gene-dot-plot')
                                     .append('div')
                                     .attr('class', 'tooltip')

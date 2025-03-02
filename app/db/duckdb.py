@@ -31,11 +31,13 @@ class DuckDBClient:
         return self.studies_conn.execute(query).fetchone()
 
     def _fetch_colocs(self, condition: str):
+        # TODO: Remove this once we filter colocs when creating the db
         query = f"""
             SELECT coloc.*, studies_processed.trait, studies_processed.data_type, studies_processed.tissue 
             FROM coloc 
             JOIN studies_processed ON coloc.study = studies_processed.study_name 
             WHERE coloc.id IN (SELECT DISTINCT id FROM coloc WHERE {condition})
+            AND coloc.posterior_prob IS NOT NULL AND coloc.posterior_prob > 0.5
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -60,6 +62,15 @@ class DuckDBClient:
         return self.studies_conn.execute(
             "SELECT DISTINCT known_gene FROM all_study_blocks"
         ).fetchall()
+
+    def get_study_extractions_for_study(self, study_id: str):
+        query = f"""
+            SELECT all_study_blocks.*, studies_processed.trait, studies_processed.data_type, studies_processed.tissue
+            FROM all_study_blocks 
+            JOIN studies_processed ON all_study_blocks.study = studies_processed.study_name 
+            WHERE all_study_blocks.study = '{study_id}'
+        """
+        return self.studies_conn.execute(query).fetchall()
 
     def get_study_extractions_in_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
         return self.studies_conn.execute(

@@ -43,16 +43,15 @@
                     <div class="is-divider mt-0 mb-2"></div>
                     <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
                     <div x-model="initTraitByPositionGraph" id="gene-network-plot"></div>
-                    <div class="is-divider mt-0 mb-2"></div>
-                    <br />
-                    <h4 class="title is-3 has-text-centered mb-0">Tissue by Trait Type Graph</h3>
-                    <div x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
                 </div>
 
                 <div class="column is-2">
                     <graph-options></graph-options>
                 </div>
             </div>
+                <div class="is-divider mt-0 mb-2"></div>
+                <h4 class="title is-3 has-text-centered mb-0">Tissue by QTL Type</h3>
+                <div class="column is-12" x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
                 <div class="columns mt-0 is-centered">
                     <div class="column is-11">
                         <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">

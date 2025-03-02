@@ -80,8 +80,8 @@
                         <tbody class="is-size-7">
                             <template x-for="[candidate_snp, colocs] in Object.entries(getDataForColocTable)">
                                     <template x-for="(coloc, colocIndex) in colocs">
-                                            <tr x-bind:style="'background-color: ' + coloc.color">
-                                                    <template x-if="colocIndex === 0">
+                                            <tr x-bind:style="!!coloc.posterior_prob ? 'background-color: ' + coloc.color : ''">
+                                                    <template x-if="colocIndex === 0 && !!coloc.posterior_prob">
                                                             <td x-bind:rowspan="colocs.length" style="width: 20%">
                                                                     Causal Variant: <a :href="'snp.html?id=' + coloc.candidate_snp" x-text="coloc.candidate_snp"></a>
                                                                     <br>
@@ -90,6 +90,13 @@
                                                                     Posterior Probability (PP): <b x-text="coloc.posterior_prob"></b>
                                                                     <br>
                                                                     PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp"></b>
+                                                            </td>
+                                                    </template>
+                                                    <template x-if="colocIndex === 0 && !coloc.posterior_prob">
+                                                            <td x-bind:rowspan="colocs.length" style="width: 20%">
+                                                                    LD Region: <a :href="'region.html?id=' + coloc.ld_block" x-text="coloc.ld_block"></a>
+                                                                    <br>
+                                                                    <b>No coloc evidence found.</b>
                                                             </td>
                                                     </template>
                                                     <td x-text="coloc.trait" style="width:40%"></td>

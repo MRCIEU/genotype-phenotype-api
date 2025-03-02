@@ -161,6 +161,7 @@ class VariantResponse(BaseModel):
 class StudyResponse(BaseModel):
     study: Study
     colocs: List[Coloc]
+    study_extractions: List[StudyExtaction]
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
