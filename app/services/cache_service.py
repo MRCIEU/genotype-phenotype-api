@@ -1,9 +1,10 @@
 from functools import lru_cache
 from typing import List, Tuple
-
+from app.models.schemas import Singleton
 from app.db.duckdb import DuckDBClient
 
-class CacheService:
+
+class CacheService(metaclass=Singleton):
     def __init__(self):
         self.db = DuckDBClient()
 

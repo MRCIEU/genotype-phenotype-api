@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ANALYTICS_KEY: str
     LOCAL_DB_DIR: str
+    GWAS_DIR: str
 
     model_config = {
         "env_file": ".env"

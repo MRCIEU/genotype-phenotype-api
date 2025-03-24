@@ -85,20 +85,20 @@ class DuckDBClient:
     def get_gene(self, symbol: str):
         query = f"""
         SELECT DISTINCT ANY_VALUE(symbol) as symbol, ANY_VALUE(chr) as chr, MIN(bp) as min_bp, MAX(bp) as max_bp
-        FROM variant_annotations 
+        FROM snp_annotations 
         WHERE symbol = '{symbol}' 
         GROUP BY symbol
         """
         return self.studies_conn.execute(query).fetchone()
 
     def get_variant(self, variant_id: str):
-        query = f"SELECT * FROM variant_annotations WHERE SNP = '{variant_id}'"
+        query = f"SELECT * FROM snp_annotations WHERE SNP = '{variant_id}'"
         return self.studies_conn.execute(query).fetchone()
 
     def get_gene_ranges(self):
         query = f"""
         SELECT DISTINCT ANY_VALUE(symbol) as symbol, ANY_VALUE(chr) as chr, MIN(bp) as min_bp, MAX(bp) as max_bp
-        FROM variant_annotations 
+        FROM snp_annotations 
         WHERE symbol IS NOT NULL 
         GROUP BY symbol
         """
@@ -126,7 +126,7 @@ class DuckDBClient:
         if not variants and not rsids and not grange:
             return []
 
-        query = "SELECT * FROM variant_annotations WHERE "
+        query = "SELECT * FROM snp_annotations WHERE "
         if variants:
             formatted_variants = ','.join(f"'{variant}'" for variant in variants)
             query += f"SNP IN ({formatted_variants})"

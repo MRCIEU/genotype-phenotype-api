@@ -23,11 +23,25 @@ export default function homepage() {
 
         async loadData() {
             try {
-                const response = await fetch(constants.apiUrl + '/search/options')
+                const response = await fetch(constants.apiUrl + '/search/options', {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache',  // Forces revalidation
+                        'Pragma': 'no-cache'          // For older browsers
+                    },
+                });
+                
                 if (!response.ok) {
                     this.errorMessage = `Failed to load search options: ${response.status} ${constants.apiUrl + '/search/options'}`
+                    return;
                 }
-                this.searchOptionData = await response.json()
+
+                // Check if response was from cache
+                if (response.headers.get('x-cache') === 'HIT') {
+                    console.log('Data loaded from cache');
+                }
+
+                this.searchOptionData = await response.json();
             } catch (error) {
                 console.error('Error loading data:', error);
             }

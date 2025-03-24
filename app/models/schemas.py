@@ -2,24 +2,42 @@ from __future__ import annotations
 from pydantic import BaseModel
 from typing import ForwardRef, List, Optional, Union, Any
 
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class StudySource(BaseModel):
+    id: int
+    name: str
+    source: str
+    url: str
+    doi: str
+
 class Association(BaseModel):
-    SNP: Optional[str] = None
-    BETA: Optional[float] = None
-    SE: Optional[float] = None
-    IMPUTED: Optional[bool] = None
-    P: Optional[float] = None
-    EAF: Optional[float] = None
-    study: Optional[str] = None
+    snp_id: int
+    study_id: int
+    beta: float
+    se: float
+    imputed: bool
+    p: float
+    eaf: float
 
 class Coloc(BaseModel):
-    iteration: Optional[int] = None
-    traits: Optional[str] = None
-    posterior_prob: Optional[float] = None
-    regional_prob: Optional[float] = None
-    candidate_snp: Optional[str] = None
-    posterior_explained_by_snp: Optional[float] = None
+    coloc_group_id: int
+    study_id: int
+    study_extraction_id: int
+    snp_id: int
+    ld_block_id: int
+    iteration: int
+    traits: str
+    posterior_prob: float
+    regional_prob: float
+    candidate_snp: str
+    posterior_explained_by_snp: float
     dropped_trait: Optional[bool] = None
-    id: Optional[int] = None
     study: Optional[str] = None
     chr: Optional[int] = None
     bp: Optional[int] = None
@@ -32,11 +50,19 @@ class Coloc(BaseModel):
     data_type: Optional[str] = None
     tissue: Optional[str] = None
 
-class Ld(BaseModel):
-    lead: str
-    variant: str
-    r: float
+class LdBlock(BaseModel):
+    id: int
     ld_block: str
+    chr: int
+    start: int
+    stop: int
+    ancestry: str
+
+class Ld(BaseModel):
+    lead_snp_id: int
+    variant_snp_id: int
+    ld_block_id: int
+    r: float
 
 class Gene(BaseModel):
     symbol: str
@@ -55,6 +81,8 @@ class ExtendedColoc(Coloc):
     association: Optional[Association] = None
 
 class Study(BaseModel):
+    id: int
+    source_id: int
     data_type: str
     data_format: str
     study_name: str
@@ -69,11 +97,12 @@ class Study(BaseModel):
     gene: Optional[str] = None
     probe: Optional[str] = None
     tissue: Optional[str] = None
-    source: str
     variant_type: Optional[str] = None
 
-
 class StudyExtaction(BaseModel):
+    id: int
+    study_id: int
+    snp_id: int
     study: str
     unique_study_id: str
     file: str
@@ -93,47 +122,48 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     type_id: Optional[str] = None
 
-class RareComparisons(BaseModel):
-    id: Optional[int] = None
-    study_name: str
-    trait: str
-    ancestry: Optional[str] = None
-    sample_size: Optional[int] = None
-    category: Optional[str] = None
-    study_location: str
-    extracted_location: str
-    reference_build: str
-    p_value_threshold: float
-    variant_type: Optional[str] = None
-    gene: Optional[str] = None
+class RareSNPGroups(BaseModel):
+    rare_result_group_id: int
+    study_id: int
+    study_extraction_id: int
+    ld_block_id: int
+    snp_id: int
+    unique_study_id: str
+    candidate_snp: str
+    study: str
+    chr: int
+    bp: int
+    min_p: float
+    cis_trans: Optional[str] = None
+    known_gene: Optional[str] = None
 
 class Variant(BaseModel):
-    SNP: Optional[str] = None
-    CHR: Optional[int] = None
-    BP: Optional[int] = None
-    EA: Optional[str] = None
-    OA: Optional[str] = None
-    Gene: Optional[str] = None
-    Feature_type: Optional[str] = None
-    Consequence: Optional[str] = None
-    cDNA_position: Optional[str] = None
-    CDS_position: Optional[str] = None
-    Protein_position: Optional[str] = None
-    Amino_acids: Optional[str] = None
-    Codons: Optional[str] = None
-    RSID: Optional[str] = None
+    id: int
+    snp: str
+    chr: int
+    bp: int
+    ea: str
+    oa: str
+    gene: str
+    feature_type: str
+    consequence: Optional[str] = None
+    cdna_position: Optional[str] = None
+    cds_position: Optional[str] = None
+    protein_position: Optional[str] = None
+    amino_acids: Optional[str] = None
+    codons: Optional[str] = None
+    rsid: Optional[str] = None
     impact: Optional[str] = None
     symbol: Optional[str] = None
     biotype: Optional[str] = None
     strand: Optional[int] = None
     canonical: Optional[str] = None
-    ALL_AF: Optional[float] = None
-    EUR_AF: Optional[float] = None
-    EAS_AF: Optional[float] = None
-    AMR_AF: Optional[float] = None
-    AFR_AF: Optional[float] = None
-    SAS_AF: Optional[float] = None
-    ld_block: Optional[str] = None
+    all_af: Optional[float] = None
+    eur_af: Optional[float] = None
+    eas_af: Optional[float] = None
+    amr_af: Optional[float] = None
+    afr_af: Optional[float] = None
+    sas_af: Optional[float] = None
 
 
 class GeneResponse(BaseModel):
@@ -162,6 +192,36 @@ class StudyResponse(BaseModel):
     study: Study
     colocs: List[Coloc]
     study_extractions: List[StudyExtaction]
+
+class GwasColumnNames(BaseModel):
+    snp: Optional[str] = None
+    rsid: Optional[str] = None
+    chr: Optional[str] = None
+    bp: Optional[int] = None
+    ea: Optional[str] = None
+    oa: Optional[str] = None
+    p: Optional[float] = None
+    beta: Optional[float] = None
+    se: Optional[float] = None
+    pval: Optional[float] = None
+    af: Optional[float] = None
+    eaf: Optional[float] = None
+    info: Optional[float] = None
+
+class ProccessGwasRequest(BaseModel):
+    gwas_file_path: str
+    gwas_file_hash: str
+    study_name: str
+    p_value_threshold: float
+    ancestry: str
+    sample_size: Optional[int] = None
+    guid: Optional[str] = None
+    doi: Optional[str] = None
+    column_names: GwasColumnNames
+
+class ProcessGwasResponse(BaseModel):
+    guid: str
+    processed: bool
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""

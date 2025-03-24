@@ -1,6 +1,5 @@
 import pytest
 from fastapi.testclient import TestClient
-from app.config import Settings
 from app.main import app
 from app.models.schemas import Ld
 
