@@ -8,10 +8,13 @@ router = APIRouter()
 @router.get("/matrix", response_model=List[Ld])
 async def get_matrix(
     variants: List[str] = Query(None, description="List of variants to filter results"),
+    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
 ):
     try:
         db = DuckDBClient()
-        ld_matrix = db.get_ld_matrix(variants)
+        if variants:
+            snp_ids = db.get_snp_ids_by_variants(variants)
+        ld_matrix = db.get_ld_matrix(snp_ids)
         if ld_matrix is None:
             raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
         response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
@@ -24,12 +27,17 @@ async def get_matrix(
 @router.get("/proxies", response_model=List[Ld])
 async def get_proxies(
     variants: List[str] = Query(None, description="List of variants to filter results"),
+    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
 ):
     try:
         db = DuckDBClient()
-        ld_proxies = db.get_ld_proxies(variants)
+        if variants:
+            snp_ids = db.get_snp_ids_by_variants(variants)
+
+        ld_proxies = db.get_ld_proxies(snp_ids)
+        ld_proxies = db.get_ld_proxies(snp_ids)
         if ld_proxies is None:
-            raise HTTPException(status_code=404, detail=f"LD proxies for variants {variants} not found")
+            raise HTTPException(status_code=404, detail=f"LD proxies for snp_ids {snp_ids} not found")
         response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
         return response
 

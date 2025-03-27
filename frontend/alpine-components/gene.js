@@ -17,7 +17,8 @@ export default function gene() {
             try {
                 const response = await fetch(constants.apiUrl + '/genes/' + geneId);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load gene: ${response.status} ${constants.apiUrl + '/genes/' + geneId}`
+                    this.errorMessage = `Failed to load gene: ${geneId}. Please try again later.`
+                    console.log(this.errorMessage)
                     return
                 }
                 this.data = await response.json();
@@ -79,8 +80,8 @@ export default function gene() {
             return this.data ? `${this.data.gene.chr}:${this.data.gene.min_bp}-${this.data.gene.max_bp}` : '...';
         },
 
-        get ldRegion() {
-            return this.data && this.data.colocs ? this.data.colocs[0].ld_block : null
+        get ldBlockId() {
+            return this.data && this.data.colocs ? this.data.colocs[0].ld_block_id : null
         },
 
         get colocsForTable() {
@@ -134,7 +135,12 @@ export default function gene() {
         },
 
         initTissueByTraitGraph() {
-            if (!this.data) {
+            if (this.errorMessage) {
+                const chartContainer = document.getElementById("gene-dot-plot");
+                chartContainer.innerHTML = '<div />'
+                return;
+            }
+            else if (!this.data) {
                 const chartContainer = document.getElementById("gene-dot-plot");
                 chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
                 return;
@@ -320,20 +326,25 @@ export default function gene() {
         },
 
         initTraitByPositionGraph() {
-          if (!this.data || !this.data.groupedColocs) {
-            const chartContainer = document.getElementById("gene-network-plot");
-            chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
-            return;
-          }
-          // listen to resize events to redraw the graph
-          window.addEventListener('resize', () => {
-              clearTimeout(this.resizeTimer);
-              this.resizeTimer = setTimeout(() => {
-                  this.getTraitByPositionGraph();
-              }, 250);
-          });
+            if (this.errorMessage) {
+                const chartContainer = document.getElementById("gene-network-plot");
+                chartContainer.innerHTML = '<div class="notification is-danger is-light mt-4">' + this.errorMessage + '</div>'
+                return
+            }
+            else if (!this.data || !this.data.groupedColocs) {
+                const chartContainer = document.getElementById("gene-network-plot");
+                chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
+                return
+            }
+            // listen to resize events to redraw the graph
+            window.addEventListener('resize', () => {
+                clearTimeout(this.resizeTimer);
+                this.resizeTimer = setTimeout(() => {
+                    this.getTraitByPositionGraph();
+                }, 250);
+            });
 
-          this.getTraitByPositionGraph();
+            this.getTraitByPositionGraph();
         },
 
         getTraitByPositionGraph() {

@@ -14,17 +14,13 @@
         <div id="gene" x-data="gene" x-init="loadData">
             <navigation-bar></navigation-bar>
 
-            <div x-show="errorMessage" class="notification is-danger is-light mt-4">
-                <span x-text="errorMessage"></span>
-            </div>
-
             <div class="columns mt-4 mb-0">
                 <div class="column is-10">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
                     <h6 class="has-text-centered mb-0 mt-0">
                         Range: <span x-text="genomicRange"></span>
                     </h6>
-                    <h6 class="has-text-centered mb-0"><a x-bind:href="'region.html?id='+ ldRegion">LD Region</a></h6>
+                    <h6 class="has-text-centered mb-0"><a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a></h6>
                     <h6 class="has-text-centered mb-0">
                         <a class="button is-link is-small is-centered is-light" x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName" target="_blank">
                             <span>NCBI Gene</span>
@@ -78,13 +74,13 @@
                                                 <tr x-bind:style="'background-color: ' + coloc.color">
                                                         <template x-if="colocIndex === 0">
                                                                 <td x-bind:rowspan="colocs.length" style="width: 20%">
-                                                                        Causal Variant: <a :href="'snp.html?id=' + coloc.candidate_snp" x-text="coloc.candidate_snp"></a>
+                                                                        Causal Variant: <a :href="'snp.html?id=' + coloc.snp_id" x-text="coloc.candidate_snp"></a>
                                                                         <br>
-                                                                        LD Region: <a :href="'region.html?id=' + coloc.ld_block" x-text="coloc.ld_block"></a>
+                                                                        LD Region: <a :href="'region.html?id=' + coloc.ld_block_id" x-text="coloc.ld_block"></a>
                                                                         <br>
-                                                                        Posterior Probability (PP): <b x-text="coloc.posterior_prob"></b>
+                                                                        Posterior Probability (PP): <b x-text="coloc.posterior_prob.toFixed(3)"></b>
                                                                         <br>
-                                                                        PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp"></b>
+                                                                        PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp.toFixed(3)"></b>
                                                                 </td>
                                                         </template>
                                                         <td x-text="coloc.trait" style="width:40%"></td>

@@ -6,7 +6,7 @@ from app.models.schemas import GeneResponse
 client = TestClient(app)
 
 def test_get_genes_with_colocs():
-    response = client.get("/v1/genes/TTLL10")
+    response = client.get("/v1/genes/ZNF419")
     assert response.status_code == 200
     genes = response.json()
     assert len(genes) > 0
@@ -20,8 +20,8 @@ def test_get_genes_with_colocs():
     assert gene_response.colocs is not None
 
     for coloc in gene_response.colocs:
-        assert coloc.id is not None
-        assert coloc.study is not None
+        assert coloc.coloc_group_id is not None
+        assert coloc.study_extraction_id is not None
         assert coloc.chr is not None
         assert coloc.bp is not None
         assert coloc.min_p is not None

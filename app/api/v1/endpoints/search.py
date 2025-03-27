@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from app.models.schemas import SearchTerm
 from typing import List
 
@@ -8,8 +8,9 @@ from app.services.cache_service import CacheService
 router = APIRouter()
 
 @router.get("/options", response_model=List[SearchTerm])
-async def get_search_options(response: Response):
+async def get_search_options(request: Request, response: Response):
     try:
+        print('headers', request.headers)
         # Add cache control headers
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
         response.headers['Pragma'] = 'no-cache'

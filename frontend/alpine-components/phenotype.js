@@ -18,13 +18,18 @@ export default function pheontype() {
             let studyId = (new URLSearchParams(location.search).get('id'))
             try {
                 const response = await fetch(constants.apiUrl + '/studies/' + studyId)
+                if (!response.ok) {
+                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
+                    return
+                }
+                
                 this.data = await response.json()
 
                 // Count frequency of each id in colocs and scale between 2 and 10
                 const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
                 const idFrequencies = this.data.colocs.reduce((acc, obj) => {
-                    if (obj.id) {
-                        acc[obj.id] = (acc[obj.id] || 0) + 1;
+                    if (obj.coloc_group_id) {
+                        acc[obj.coloc_group_id] = (acc[obj.coloc_group_id] || 0) + 1;
                     }
                     return acc;
                 }, {});
@@ -48,14 +53,14 @@ export default function pheontype() {
                     if (minNumStudies === maxNumStudies) {
                         c.scaledNumStudies = 4 
                     } else {
-                        c.scaledNumStudies = ((idFrequencies[c.id] - minNumStudies) / (maxNumStudies- minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
+                        c.scaledNumStudies = ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies- minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
                     }
                     return c
                 })
                 this.data.colocs.sort((a, b) => a.chr > b.chr);
 
                 // order traits by frequency in order to display in dropdown for filtering
-                let allTraits = this.data.colocs.map(s => s.trait)
+                let allTraits = this.data.colocs.map(c => c.trait)
                 let frequency = {};
                 allTraits.forEach(item => {
                     frequency[item] = (frequency[item] || 0) + 1;
@@ -83,7 +88,7 @@ export default function pheontype() {
         filterByOptions(graphOptions) {
             let colocIdsWithTraits = []
             if (this.displayFilters.trait) {
-                colocIdsWithTraits = this.data.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.id)
+                colocIdsWithTraits = this.data.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.coloc_group_id)
             } 
             this.filteredColocData = this.data.colocs.filter(coloc => {
                 const graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
@@ -92,7 +97,7 @@ export default function pheontype() {
                     (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
                  || coloc.rare)
 
-                const traitFilter = this.displayFilters.trait ? colocIdsWithTraits.includes(coloc.id) : true
+                const traitFilter = this.displayFilters.trait ? colocIdsWithTraits.includes(coloc.coloc_group_id) : true
 
                 return graphOptionFilters && traitFilter
             })
@@ -151,7 +156,12 @@ export default function pheontype() {
         },
 
         initPhenotypeGraph() {
-            if (this.filteredColocData === null) {
+            if (this.errorMessage) {
+                const chartContainer = document.getElementById("phenotype-chart");
+                chartContainer.innerHTML = '<div class="notification is-danger is-light mt-4">' + this.errorMessage + '</div>'
+                return
+            }
+            else if (this.filteredColocData === null) {
                 const chartContainer = document.getElementById("phenotype-chart");
                 chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>'
                 return
@@ -322,7 +332,21 @@ export default function pheontype() {
                 .attr('transform', 'translate(' + innerWidth / 2 + ',' + -2 + ')')
                 .attr("font-size", "12px")
                 .on('mouseover', function (d, i) {
-                    d3.select(this).style("cursor", "pointer"); 
+                    d3.select(this).style("cursor", "pointer");
+                    // Get parent g element and find its background rect
+                    d3.select(this.parentNode)
+                        .select('rect:first-of-type')  // Select the main background rectangle
+                        .transition()
+                        .duration(200)
+                        .attr('fill', '#ececec');  // Darker shade when hovering
+                })
+                .on('mouseout', function(d, i) {
+                    // Restore original background color
+                    d3.select(this.parentNode)
+                        .select('rect:first-of-type')
+                        .transition()
+                        .duration(200)
+                        .attr('fill', '#f9f9f9');
                 })
                 .on('click', function(d, i) {
                     let chr = parseInt(i[0].slice(4))
