@@ -6,8 +6,23 @@ from app.api.v1.router import api_router
 from app.config import get_settings
 from app.db.duckdb import DuckDBClient
 from app.db.redis import RedisClient
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 settings = get_settings()
+
+class LoggingCORSMiddleware(CORSMiddleware):
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":  # pragma: no cover
+            return await super().__call__(scope, receive, send)
+            
+        # Extract headers from scope
+        headers = dict(scope.get("headers", []))
+        origin = headers.get(b"origin", b"").decode()
+        print(f"CORS Check - Incoming request from origin: {origin}")
+        print(f"CORS Check - Headers: {headers}")
+        
+        return await super().__call__(scope, receive, send)
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -19,16 +34,8 @@ def create_app() -> FastAPI:
 
     app.add_middleware(SecurityMiddleware)
 
-    # Add logging for CORS
-    @app.middleware("http")
-    async def log_requests(request: Request, call_next):
-        print("Incoming request from origin:", request.headers.get("origin"))
-        print("Request headers:", dict(request.headers))
-        response = await call_next(request)
-        return response
-
     app.add_middleware(
-        CORSMiddleware,
+        LoggingCORSMiddleware,
         allow_origins=[
             "http://localhost",
             "http://localhost:80",
