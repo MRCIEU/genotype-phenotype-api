@@ -28,9 +28,7 @@ def create_app() -> FastAPI:
             "http://127.0.0.1",
             "http://127.0.0.1:80",
             "https://gpmap.opengwas.io",
-            "https://opengwas.io",
-            "https://www.opengwas.io",
-            "https://www.gpmap.opengwas.io"
+            "http://gpmap.opengwas.io"
         ],
         allow_credentials=True,
         allow_methods=["*"],
