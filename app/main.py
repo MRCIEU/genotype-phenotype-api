@@ -19,6 +19,14 @@ def create_app() -> FastAPI:
 
     app.add_middleware(SecurityMiddleware)
 
+    # Add logging for CORS
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        print("Incoming request from origin:", request.headers.get("origin"))
+        print("Request headers:", dict(request.headers))
+        response = await call_next(request)
+        return response
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
@@ -28,7 +36,8 @@ def create_app() -> FastAPI:
             "http://127.0.0.1",
             "http://127.0.0.1:80",
             "https://gpmap.opengwas.io",
-            "http://gpmap.opengwas.io"
+            "http://gpmap.opengwas.io",
+            "http://gpmap.opengwas.io/"
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -37,8 +46,8 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health_check(request: Request):
-        # print("Origin:", request.headers.get("origin"))
-        # print("All headers:", dict(request.headers))
+        print("Origin:", request.headers.get("origin"))
+        print("All headers:", dict(request.headers))
         
         redis_client = RedisClient()
         db_client = DuckDBClient()
