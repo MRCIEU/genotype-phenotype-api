@@ -14,15 +14,9 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    profiles:
-      - frontend
-      - backend
-      - all
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: mrcieu/genotype-phenotype-api:prod
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
@@ -39,24 +33,16 @@ services:
       retries: 3
     depends_on:
       - redis
-    profiles:
-      - backend
-      - all
 
   web:
-    build:
-      context: frontend
-      dockerfile: Dockerfile
+    image: mrcieu/genotype-phenotype-frontend:prod
     env_file:
-      - .env
+      - frontend/.env
     ports:
       - "80:80"
     restart: unless-stopped
     depends_on:
       - api
-    profiles:
-      - frontend
-      - all
 
   # gwas_upload_pipeline:
   #   image: mrcieu/genotype-phenotype-map:prod

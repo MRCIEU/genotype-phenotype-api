@@ -53,7 +53,7 @@ export default function pheontype() {
                     if (minNumStudies === maxNumStudies) {
                         c.scaledNumStudies = 4 
                     } else {
-                        c.scaledNumStudies = ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies- minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
+                        c.scaledNumStudies = ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies- minStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
                     }
                     return c
                 })
@@ -269,7 +269,7 @@ export default function pheontype() {
             const svg = chartContainer
                 .append("svg")
                 .attr('width', graphConstants.width + graphConstants.outerMargin.left)
-                .attr('height', graphConstants.height + graphConstants.outerMargin.top + graphConstants.outerMargin.bottom + graphConstants.noColocMargin.bottom)
+                .attr('height', graphConstants.height + graphConstants.outerMargin.top + graphConstants.outerMargin.bottom + graphConstants.noColocMargin.bottom + graphConstants.rareMargin.top)
                 .append('g')
                 .attr('transform', 'translate(' + graphConstants.outerMargin.left + ',' + (graphConstants.outerMargin.top) + ')');
 
@@ -295,7 +295,7 @@ export default function pheontype() {
 
             // inner dimensions of chart based on bandwidth of outer scale
             const innerWidth = outerXScale.bandwidth()
-            const innerHeight = graphConstants.height + graphConstants.rareMargin.top - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
+            const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
             // creating each inner graph 
             const innerGraph = svg
@@ -312,8 +312,21 @@ export default function pheontype() {
             innerGraph
                 .append('rect')
                 .attr('width', innerWidth)
-                .attr('height', innerHeight - graphConstants.rareMargin.top)
+                .attr('height', innerHeight + graphConstants.rareMargin.top + graphConstants.noColocMargin.bottom)
                 .attr('fill', '#f9f9f9');
+
+            // Add vertical separator lines between chromosomes
+            svg.selectAll('.chr-separator')
+                .data(chromosomes.slice(1))  // Skip first chromosome since we don't need a line before it
+                .enter()
+                .append('line')
+                .attr('class', 'chr-separator')
+                .attr('x1', d => outerXScale(d))
+                .attr('x2', d => outerXScale(d))
+                .attr('y1', -15)  // Start from the header
+                .attr('y2', innerHeight + graphConstants.rareMargin.top + graphConstants.noColocMargin.bottom)  // Extend to bottom
+                .attr('stroke', '#000000')
+                .attr('stroke-width', 1);
 
             // CHR header box
             innerGraph
@@ -323,6 +336,15 @@ export default function pheontype() {
                 .attr('transform', 'translate(' + 0 + ',' + -15 + ')')
                 .attr('fill', '#d6d6d6');
 
+            // Add horizontal line below headers
+            svg.append('line')
+                .attr('x1', 0)
+                .attr('x2', graphConstants.width)
+                .attr('y1', 0)  // Position at y=0 (where the main plot starts)
+                .attr('y2', 0)
+                .attr('stroke', '#000000')
+                .attr('stroke-width', 2);
+
             // CHR header text
             innerGraph
                 .append('text')
@@ -331,22 +353,25 @@ export default function pheontype() {
                 .attr('text-anchor', 'middle')
                 .attr('transform', 'translate(' + innerWidth / 2 + ',' + -2 + ')')
                 .attr("font-size", "12px")
+                // Highlight the column of the header when hovering over it
                 .on('mouseover', function (d, i) {
                     d3.select(this).style("cursor", "pointer");
-                    // Get parent g element and find its background rect
                     d3.select(this.parentNode)
-                        .select('rect:first-of-type')  // Select the main background rectangle
+                        .selectAll('rect')
                         .transition()
                         .duration(200)
-                        .attr('fill', '#ececec');  // Darker shade when hovering
+                        .attr('fill', '#ececec')
                 })
+                // Restore original background color for all rectangles
                 .on('mouseout', function(d, i) {
-                    // Restore original background color
                     d3.select(this.parentNode)
-                        .select('rect:first-of-type')
+                        .selectAll('rect')
                         .transition()
                         .duration(200)
-                        .attr('fill', '#f9f9f9');
+                        .attr('fill', function() {
+                            // Keep header background color for the header rect
+                            return d3.select(this).attr('height') === '15' ? '#d6d6d6' : '#f9f9f9';
+                        });
                 })
                 .on('click', function(d, i) {
                     let chr = parseInt(i[0].slice(4))
@@ -381,7 +406,7 @@ export default function pheontype() {
                         .call(d3.axisBottom(scale)
                             .tickValues(tickValues)
                             .tickSize(-innerHeight))
-                        .attr('transform', `translate(0,${innerHeight + graphConstants.noColocMargin.bottom})`)
+                        .attr('transform', `translate(0,${innerHeight + graphConstants.noColocMargin.bottom + graphConstants.rareMargin.top})`)
                         .selectAll("text")    
                         .style("text-anchor", "end")
                         .attr("dx", "-.8em")
@@ -392,12 +417,12 @@ export default function pheontype() {
             // inner y scales
             let innerYScale = d3.scaleLinear()
                 .domain([lowerYScale, 1.01])
-                .range([innerHeight - graphConstants.rareMargin.top, 0]);
+                .range([innerHeight, 0]);
 
             // inner y axis
             svg.append('g')
                 .call(d3.axisLeft(innerYScale).tickValues(yAxisValues).tickSize(-innerWidth))
-                .attr('transform', `translate(0,${graphConstants.rareMargin.top})`);
+                .attr('transform', `translate(0,0)`);
 
             // drawing the dots, as well as the code to display the tooltip
             innerGraph
@@ -408,7 +433,7 @@ export default function pheontype() {
                 .attr("cx", function (d) { 
                     return innerXScales[d.chrText](d.MbP); 
                 })
-                .attr("cy", d => innerYScale(d.posterior_prob) + graphConstants.rareMargin.top) 
+                .attr("cy", d => innerYScale(d.posterior_prob)) 
                 .attr("r", d => d.scaledNumStudies+1)
                 .attr('fill', d => d.annotationColor )
                 .on('mouseover', function(d, i) {
@@ -456,8 +481,8 @@ export default function pheontype() {
                 .attr('class', 'grid-line')
                 .attr('x1', 0)
                 .attr('x2', innerWidth)
-                .attr('y1', d => innerYScale(d) + graphConstants.rareMargin.top)
-                .attr('y2', d => innerYScale(d) + graphConstants.rareMargin.top)
+                .attr('y1', d => innerYScale(d))
+                .attr('y2', d => innerYScale(d))
                 .attr('stroke', '#e0e0e0')
                 .attr('opacity', 0.5)
                 .attr('stroke-width', 1);
@@ -471,23 +496,24 @@ export default function pheontype() {
         },
 
         displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight) {
+            // Remove the previous margin adjustment
             innerGraph
                 .select('rect')
-                .attr('y', graphConstants.rareMargin.top);
+                .attr('y', 0);  // Main plot starts at top now
 
-            // Add background for rare variants section
+            // Add background for rare variants section below main plot
             innerGraph
                 .append('rect')
                 .attr('width', innerWidth)
                 .attr('height', graphConstants.rareMargin.top)
                 .attr('fill', '#f9f9f9')
-                .attr('y', 0);
+                .attr('y', innerHeight);  // Position after main plot
 
             let tooltip = d3.select("body").append("div")
                 .attr("class", "tooltip")
                 .style("opacity", 0);
 
-            // Add rare variant dots with stroke outline and no fill
+            // Update rare variant dots position
             innerGraph
                 .selectAll('.rare-dot')
                 .data(d => d[1].filter(item => item.rare))
@@ -495,7 +521,7 @@ export default function pheontype() {
                 .append('circle')
                 .attr('class', 'rare-dot')
                 .attr("cx", d => innerXScales[d.chrText](d.MbP))
-                .attr("cy", graphConstants.rareMargin.top / 2)
+                .attr("cy", innerHeight)  // Position in middle of rare section
                 .attr("fill", "transparent")
                 .attr("stroke", "black")
                 .attr("r", 4)
@@ -534,69 +560,48 @@ export default function pheontype() {
                     self.colocDisplayFilters.chr = null;
                 });
 
-            // Adjust the position of the main plot circles
-            innerGraph.selectAll('circle:not(.rare-dot)')
-                .attr('y', d => d.y + graphConstants.rareMargin.top);
-
-            // Update y-axis position for each chromosome group separately
-            svg.selectAll('.y-axis')
-                .attr('transform', `translate(0, ${graphConstants.rareMargin.top})`);
-
-            innerGraph
-                .append('line')
-                .attr('class', 'separator-line')
-                .attr('x1', 0)
-                .attr('x2', innerWidth)
-                .attr('y1', innerHeight)
-                .attr('y2', innerHeight)
-                .attr('stroke', '#000000')
-                .attr('stroke-width', 2);
-
             // Add "Rare Variants" text to y-axis
             svg.append('text')
                 .attr('class', 'rare-variants-label')
                 .attr('x', -35)
-                .attr('y', graphConstants.outerMargin.top)
+                .attr('y', innerHeight + (graphConstants.rareMargin.top / 2))  // Update position
                 .attr('dy', '0.35em')
                 .attr('text-anchor', 'start')
                 .style('font-size', '12px')
                 .text('Rare:');
 
-            // Adjust existing y-axis labels position
-            svg.selectAll('.y-axis-label')
-                .attr('transform', d => `translate(${graphConstants.outerMargin.left - 50}, ${graphConstants.outerMargin.top + graphConstants.rareMargin.top + (d.height / 2)}) rotate(-90)`);
-
-            // Add separator line in each inner graph
+            // Add separator lines
             innerGraph
                 .append('line')
                 .attr('class', 'separator-line')
                 .attr('x1', 0)
                 .attr('x2', innerWidth)
-                .attr('y1', graphConstants.rareMargin.top)
-                .attr('y2', graphConstants.rareMargin.top)
+                .attr('y1', innerHeight)  // Line between main plot and rare variants
+                .attr('y2', innerHeight)
                 .attr('stroke', '#000000')
-                .attr('stroke-width', 2);
+                .attr('stroke-width', 1);
 
-            // Adjust main coloc data rect position
             innerGraph
-                .select('.coloc-background-rect')
-                .attr('y', graphConstants.rareMargin.top);
+                .append('line')
+                .attr('class', 'separator-line')
+                .attr('x1', 0)
+                .attr('x2', innerWidth)
+                .attr('y1', innerHeight + graphConstants.rareMargin.top)  // Line between rare variants and no-coloc
+                .attr('y2', innerHeight + graphConstants.rareMargin.top)
+                .attr('stroke', '#000000')
+                .attr('stroke-width', 1);
         },
 
         displayNoColocVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight) {
-            // Add background for no-coloc variants section
+            // Update position of no-coloc section to be below rare variants
             innerGraph
                 .append('rect')
                 .attr('width', innerWidth)
                 .attr('height', graphConstants.noColocMargin.bottom)
                 .attr('fill', '#f9f9f9')
-                .attr('y', innerHeight);
+                .attr('y', innerHeight + graphConstants.rareMargin.top);  // Position after rare variants section
 
-            let tooltip = d3.select("body").append("div")
-                .attr("class", "tooltip")
-                .style("opacity", 0);
-
-            // Add no-coloc variant dots
+            // Update no-coloc dots position
             innerGraph
                 .selectAll('.no-coloc-dot')
                 .data(d => {
@@ -607,7 +612,7 @@ export default function pheontype() {
                 .append('circle')
                 .attr('class', 'no-coloc-dot')
                 .attr("cx", d => innerXScales[`CHR ${d.chr}`](d.bp / 1000000))
-                .attr("cy", innerHeight + (graphConstants.noColocMargin.bottom / 2))
+                .attr("cy", innerHeight + graphConstants.rareMargin.top + (graphConstants.noColocMargin.bottom / 2))  // Update position
                 .attr("fill", "#666666")
                 .attr("r", 3)
                 .on('mouseover', function(d, i) {
@@ -638,26 +643,15 @@ export default function pheontype() {
                     self.colocDisplayFilters.chr = null;
                 });
 
-            // Add "No coloc" text to y-axis
+            // Update "No coloc" label position
             svg.append('text')
                 .attr('class', 'no-coloc-label')
                 .attr('x', -55)
-                .attr('y', innerHeight + graphConstants.rareMargin.top - (graphConstants.noColocMargin.bottom / 2)) 
+                .attr('y', innerHeight + graphConstants.rareMargin.top + (graphConstants.noColocMargin.bottom / 2))  // Update position
                 .attr('dy', '0.35em')
                 .attr('text-anchor', 'start')
                 .style('font-size', '12px')
                 .text('No coloc:');
-
-            // Add separator line in each inner graph
-            innerGraph
-                .append('line')
-                .attr('class', 'separator-line')
-                .attr('x1', 0)
-                .attr('x2', innerWidth)
-                .attr('y1', innerHeight)
-                .attr('y2', innerHeight)
-                .attr('stroke', '#000000')
-                .attr('stroke-width', 2);
         },
 
         // Clean up the resize listener when the component is destroyed
