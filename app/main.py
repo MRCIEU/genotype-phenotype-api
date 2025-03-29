@@ -8,6 +8,7 @@ from app.db.duckdb import DuckDBClient
 from app.db.redis import RedisClient
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+from fastapi.responses import JSONResponse
 
 settings = get_settings()
 
@@ -34,22 +35,37 @@ def create_app() -> FastAPI:
 
     app.add_middleware(SecurityMiddleware)
 
+    @app.options("/{rest_of_path:path}")
+    async def preflight_handler(request: Request, rest_of_path: str):
+        response = JSONResponse(content={})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
     app.add_middleware(
         LoggingCORSMiddleware,
-        allow_origins=[
-            "http://localhost",
-            "http://localhost:80",
-            "http://localhost:5173",
-            "http://127.0.0.1",
-            "http://127.0.0.1:80",
-            "https://gpmap.opengwas.io",
-            "http://gpmap.opengwas.io",
-            "http://gpmap.opengwas.io/"
-        ],
-        allow_credentials=True,
+        allow_origins=["*"],
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
+        allow_origin_regex=None,
+        max_age=3600,
     )
+
+    @app.middleware("http")
+    async def add_cors_headers(request: Request, call_next):
+        if request.method == "OPTIONS":
+            # Handle preflight requests
+            response = JSONResponse(content={})
+        else:
+            response = await call_next(request)
+            
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
 
     @app.get("/health")
     async def health_check(request: Request):
