@@ -1,4 +1,4 @@
-from duckdb import HTTPException
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.security import SecurityMiddleware
@@ -6,9 +6,6 @@ from app.api.v1.router import api_router
 from app.config import get_settings
 from app.db.duckdb import DuckDBClient
 from app.db.redis import RedisClient
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
-from fastapi.responses import JSONResponse
 
 settings = get_settings()
 
@@ -26,6 +23,9 @@ class LoggingCORSMiddleware(CORSMiddleware):
         return await super().__call__(scope, receive, send)
 
 def create_app() -> FastAPI:
+    if settings.DEBUG:
+        sentry_sdk.init(dsn=settings.SENTRY_DSN, send_default_pii=True)
+
     app = FastAPI(
         title="Genotype Phenotype API",
         description="API for accessing genotype-phenotype data",
@@ -34,14 +34,6 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(SecurityMiddleware)
-
-    @app.options("/{rest_of_path:path}")
-    async def preflight_handler(request: Request, rest_of_path: str):
-        response = JSONResponse(content={})
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
 
     app.add_middleware(
         LoggingCORSMiddleware,
@@ -54,18 +46,9 @@ def create_app() -> FastAPI:
         max_age=3600,
     )
 
-    @app.middleware("http")
-    async def add_cors_headers(request: Request, call_next):
-        if request.method == "OPTIONS":
-            # Handle preflight requests
-            response = JSONResponse(content={})
-        else:
-            response = await call_next(request)
-            
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
+    @app.get("/sentry-debug")
+    async def trigger_error():
+        division_by_zero = 1 / 0
 
     @app.get("/health")
     async def health_check(request: Request):

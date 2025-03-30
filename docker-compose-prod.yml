@@ -5,7 +5,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --save 60 1 --loglevel warning --dir /oradiskvdb1/db/redis.rdb
+    command: redis-server --save 60 1 --loglevel warning
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   api:
-    image: mrcieu/genotype-phenotype-api:prod
+    image: mrcieu/genotype-phenotype-api:latest
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
@@ -22,7 +22,7 @@ services:
     environment:
       - PYTHONPATH=/workspace
     env_file:
-      - .env
+      - .env.backend
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -33,9 +33,9 @@ services:
       - redis
 
   web:
-    image: mrcieu/genotype-phenotype-frontend:prod
+    image: mrcieu/genotype-phenotype-frontend:latest
     env_file:
-      - frontend/.env
+      - .env.frontend
     ports:
       - "80:80"
     restart: unless-stopped

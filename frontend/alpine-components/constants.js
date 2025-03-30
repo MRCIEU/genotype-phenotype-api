@@ -1,5 +1,5 @@
 export default {
-        apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8000/v1',
+        apiUrl: import.meta.env.VITE_API_URL,
         maxBpPerChr: {
             1: 249250621,
             2: 243199373,

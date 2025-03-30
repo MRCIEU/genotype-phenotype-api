@@ -26,15 +26,42 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-    - uses: actions/checkout@v2
+
+    - name: Set up SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/oracle_gpmap.key
+        chmod 600 ~/.ssh/oracle_gpmap.key
+        ssh-keyscan -H $ORACLE_HOST >> ~/.ssh/known_hosts
+    $ORACLE_HOSTons/checkout@v2
+
     - name: Build and push Docker image
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       run: |
-        docker build -t explodecomputer/genotype-phenotype-api:latest .
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-        docker push explodecomputer/genotype-phenotype-api:latest
-    # Add deployment steps here
+        export SHORT_SHA=$(git rev-parse --short HEAD)
+
+        docker build -t mrcieu/genotype-phenotype-api:${SHORT_SHA} -t mrcieu/genotype-phenotype-api:latest .
+        docker push mrcieu/genotype-phenotype-api:${SHORT_SHA}
+        docker push mrcieu/genotype-phenotype-api:latest
+
+        cd frontend
+        docker build -t mrcieu/genotype-phenotype-frontend:${SHORT_SHA} -t mrcieu/genotype-phenotype-frontend:latest .
+        docker push mrcieu/genotype-phenotype-frontend:${SHORT_SHA}
+        docker push mrcieu/genotype-phenotype-frontend:latest
+
+    -name: Populate .env files and copy deployment files to server
+      run: |
+        cp .env.prod .env.backend
+        echo SENTRY_DSN=$SENTRY_DSN >> .env.backend
+        cp frontend/.env.prod .env.frontend
+        cp docker-compose-prod.yml docker-compose.yml
+
+        FILES="docker-compose-prod.yml .env.backend .env.frontend frontend/nginx.prod.conf"
+        scp -i ~/.ssh/oracle_gpmap.key $FILES opc@$ORACLE_HOST:/home/opc/genotype-phenotype-api/
+

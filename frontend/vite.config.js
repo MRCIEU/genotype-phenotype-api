@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
 // import glob from 'glob'
@@ -6,7 +7,9 @@ export default defineConfig({
     css: {
         devSourcemap: true,    // Enable CSS source maps
     },
+
     base: './',
+
     build: {
         sourcemap: true,    // Enable source maps for production
         chunkSizeWarningLimit: 1024, // kB
@@ -28,7 +31,9 @@ export default defineConfig({
             }
         }
     },
-    define: {
-        'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL)
-    }
+
+    plugins: [sentryVitePlugin({
+        org: "university-of-bristol-sj",
+        project: "genotype-phenotype-frontend"
+    })]
 })

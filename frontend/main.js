@@ -13,12 +13,21 @@ import homepage from './alpine-components/homepage.js';
 import snp from './alpine-components/snp.js';
 window.Alpine = Alpine;
 
-// Register Web Components
 import { NavigationBar } from './web-components/navigation-bar.js';
 import { GraphOptions } from './web-components/graph-options.js';
 
 customElements.define('navigation-bar', NavigationBar);
 customElements.define('graph-options', GraphOptions);
+
+import * as Sentry from "@sentry/browser";
+
+if (import.meta.env.VITE_DEBUG === 'false') {
+    console.log('init sentry')
+    Sentry.init({
+        dsn: import.meta.env.VITE_SENTRY_DSN,
+        tracesSampleRate: 1.0,
+    });
+}
 
 const graphOptions = {
     coloc: 0.8,
