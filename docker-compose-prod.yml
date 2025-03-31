@@ -35,12 +35,10 @@ services:
     depends_on:
       - redis
 
-  web:
+  frontend:
     image: mrcieu/genotype-phenotype-frontend:latest
     volumes:
       - /oradiskvdb1:/oradiskvdb1
-    env_file:
-      - .env.frontend
     ports:
       - "80:80"
     restart: unless-stopped

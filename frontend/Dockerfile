@@ -1,5 +1,11 @@
-FROM node:20 as build
+FROM node:20-bullseye as build
+
 WORKDIR /app
+
+# Increase Node.js memory limit
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Install dependencies first (better layer caching)
 COPY package*.json ./
 RUN npm install
 COPY . .

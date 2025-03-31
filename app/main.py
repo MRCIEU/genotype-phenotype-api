@@ -46,10 +46,6 @@ def create_app() -> FastAPI:
         max_age=3600,
     )
 
-    @app.get("/sentry-debug")
-    async def trigger_error():
-        division_by_zero = 1 / 0
-
     @app.get("/health")
     async def health_check(request: Request):
         print("Origin:", request.headers.get("origin"))

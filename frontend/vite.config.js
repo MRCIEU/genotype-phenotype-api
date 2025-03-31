@@ -1,4 +1,3 @@
-import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
 // import glob from 'glob'
@@ -30,10 +29,5 @@ export default defineConfig({
             // )
             }
         }
-    },
-
-    plugins: [sentryVitePlugin({
-        org: "university-of-bristol-sj",
-        project: "genotype-phenotype-frontend"
-    })]
+    }
 })

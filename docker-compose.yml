@@ -41,7 +41,8 @@ services:
       - backend
       - all
 
-  web:
+  frontend:
+    # platform: linux/amd64
     build:
       context: frontend
       dockerfile: Dockerfile

@@ -1,5 +1,5 @@
 {
-  "name": "genotype-phenotype-website",
+  "name": "genotype-phenotype-frontend",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -19,8 +19,6 @@
     "vite": "^5.1.4"
   },
   "dependencies": {
-    "@sentry/browser": "^9.10.1",
-    "@sentry/vite-plugin": "^3.2.4",
     "alpinejs": "^3.13.5",
     "bulma": "^1.0.2",
     "bulma-divider": "^0.2.0",
