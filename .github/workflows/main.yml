@@ -55,7 +55,7 @@ jobs:
         docker push mrcieu/genotype-phenotype-frontend:${SHORT_SHA}
         docker push mrcieu/genotype-phenotype-frontend:latest
 
-    -name: Populate .env files and copy deployment files to server
+    - name: Populate .env files and copy deployment files to server
       run: |
         cp .env.prod .env.backend
         echo SENTRY_DSN=$SENTRY_DSN >> .env.backend
