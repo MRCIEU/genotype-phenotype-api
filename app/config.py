@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     ANALYTICS_KEY: str
     LOCAL_DB_DIR: str
     GWAS_DIR: str
+    DATA_DIR: str
+    RESULTS_DIR: str
     SENTRY_DSN: str
 
     model_config = {
