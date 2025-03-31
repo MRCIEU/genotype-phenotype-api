@@ -33,7 +33,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/oracle_gpmap.key
         chmod 600 ~/.ssh/oracle_gpmap.key
-        ssh-keyscan -H $ORACLE_HOST >> ~/.ssh/known_hosts
+        ssh-keyscan -H $ORACLE_SERVER >> ~/.ssh/known_hosts
 
     - name: Build and push Docker image
       env:
@@ -61,4 +61,4 @@ jobs:
         cp docker-compose-prod.yml docker-compose.yml
 
         FILES="docker-compose-prod.yml .env.backend .env.frontend frontend/nginx.prod.conf"
-        scp -i ~/.ssh/oracle_gpmap.key $FILES opc@$ORACLE_HOST:/home/opc/genotype-phenotype-api/
+        scp -i ~/.ssh/oracle_gpmap.key $FILES opc@$ORACLE_SERVER:/home/opc/genotype-phenotype-api/
