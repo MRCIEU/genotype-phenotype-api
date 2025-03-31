@@ -45,17 +45,19 @@ jobs:
         context: .
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: mrcieu/genotype-phenotype-api:latest,mrcieu/genotype-phenotype-api:${SHORT_SHA}
+        tags: |
+          mrcieu/genotype-phenotype-api:latest
+          mrcieu/genotype-phenotype-api:${{ github.sha }}
 
     - name: Build and push frontend image
       uses: docker/build-push-action@v2
-      env:
-        SHORT_SHA: ${{ github.sha }}
       with:
         context: frontend
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: mrcieu/genotype-phenotype-frontend:latest,mrcieu/genotype-phenotype-frontend:${SHORT_SHA}
+        tags: |
+          mrcieu/genotype-phenotype-frontend:latest
+          mrcieu/genotype-phenotype-frontend:${{ github.sha }}
 
     - name: Populate .env files and copy deployment files to server
       env:
