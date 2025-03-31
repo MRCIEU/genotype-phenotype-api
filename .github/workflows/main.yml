@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
+    - uses: actions/checkout@v2
 
     - name: Set up SSH Key
       run: |
@@ -35,7 +36,6 @@ jobs:
         echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/oracle_gpmap.key
         chmod 600 ~/.ssh/oracle_gpmap.key
         ssh-keyscan -H $ORACLE_HOST >> ~/.ssh/known_hosts
-    $ORACLE_HOSTons/checkout@v2
 
     - name: Build and push Docker image
       env:
