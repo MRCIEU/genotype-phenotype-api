@@ -38,7 +38,6 @@ jobs:
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
         export SHORT_SHA=$(git rev-parse --short HEAD)
@@ -53,12 +52,14 @@ jobs:
         docker push mrcieu/genotype-phenotype-frontend:latest
 
     - name: Populate .env files and copy deployment files to server
+      env:
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        ORACLE_HOST: ${{ secrets.ORACLE_HOST }}
       run: |
         cp .env.prod .env.backend
-        echo $SENTRY_DSN
-        echo "\nSENTRY_DSN=$SENTRY_DSN" >> .env.backend
+        echo "SENTRY_DSN=${SENTRY_DSN}" >> .env.backend
         cp frontend/.env.prod .env.frontend
         cp docker-compose-prod.yml docker-compose.yml
 
         FILES="docker-compose.yml .env.backend .env.frontend frontend/nginx.prod.conf"
-        scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${{ secrets.ORACLE_SERVER }}:/home/opc/genotype-phenotype-api/
+        scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${ORACLE_HOST}:/home/opc/genotype-phenotype-api/
