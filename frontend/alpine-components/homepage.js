@@ -23,6 +23,7 @@ export default function homepage() {
 
         async loadData() {
             try {
+                console.log(import.meta.env)
                 const response = await fetch(constants.apiUrl + '/search/options', {
                     method: 'GET',
                     headers: {
