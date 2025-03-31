@@ -64,4 +64,3 @@ jobs:
 
         FILES="docker-compose-prod.yml .env.backend .env.frontend frontend/nginx.prod.conf"
         scp -i ~/.ssh/oracle_gpmap.key $FILES opc@$ORACLE_HOST:/home/opc/genotype-phenotype-api/
-
