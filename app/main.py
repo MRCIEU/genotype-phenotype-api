@@ -23,7 +23,7 @@ class LoggingCORSMiddleware(CORSMiddleware):
         return await super().__call__(scope, receive, send)
 
 def create_app() -> FastAPI:
-    if settings.DEBUG:
+    if not settings.DEBUG:
         sentry_sdk.init(dsn=settings.SENTRY_DSN, send_default_pii=True)
 
     app = FastAPI(
