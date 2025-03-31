@@ -53,7 +53,7 @@ export default function pheontype() {
                     if (minNumStudies === maxNumStudies) {
                         c.scaledNumStudies = 4 
                     } else {
-                        c.scaledNumStudies = ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies- minStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
+                        c.scaledNumStudies = ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies - minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
                     }
                     return c
                 })

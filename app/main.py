@@ -37,13 +37,19 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         LoggingCORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
+        allow_origins=[
+            "http://localhost:80",
+            "http://localhost",
+            "http://localhost:5173",
+            "http://127.0.0.1",
+            "http://127.0.0.1:80",
+            "http://127.0.0.1:5173",
+            "http://gpmap.opengwas.io",
+            "https://gpmap.opengwas.io/"
+        ],
+        allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-        allow_origin_regex=None,
-        max_age=3600,
+        allow_headers=["*"]
     )
 
     @app.get("/health")
