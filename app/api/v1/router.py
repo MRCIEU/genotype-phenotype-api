@@ -23,7 +23,7 @@ api_router.include_router(
 
 api_router.include_router(
     gwas.router,
-    prefix="/gwases",
+    prefix="/gwas",
     tags=["gwas"]
 )
 

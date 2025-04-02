@@ -7,10 +7,12 @@ export default function homepage() {
         searchText: '',
         searchOptionData: [],
         uploadMetadata: {
+            currentlyUploading: false,
             modalOpen: false,
-            gwasUploadData: null,
-            uploadFileName: null,
-            uploadPValue: 7.3,
+            successModalOpen: false,
+            successMessage: '',
+            formData: {},
+            validationErrors: {},
         },
         searchMetadata: {
             searchOpen: false,
@@ -73,82 +75,121 @@ export default function homepage() {
         },
 
         get getItemsForSearch() {
-            // Clear the previous timeout if it exists
             if (this.searchMetadata.searchTimeout) {
                 clearTimeout(this.searchMetadata.searchTimeout);
             }
 
-            // Return the current filtered items
             if (this.searchText.length < this.searchMetadata.minSearchChars) {
-                this.filteredItems = []; // Clear filtered items if not enough characters
+                this.filteredItems = [];
                 return this.filteredItems;
             }
 
-            // Set a new timeout
             this.searchMetadata.searchTimeout = setTimeout(() => {
                 this.filteredItems = this.searchOptionData.filter((item) => {
                     return item.name.toLowerCase().includes(this.searchText.toLowerCase());
                 });
-                console.log(this.filteredItems);
-                this.searchMetadata.searchOpen = this.filteredItems.length > 0; // Update searchOpen based on filtered items
-            }, this.searchMetadata.searchDelay); // Delay execution by this.searchDelay milliseconds
+                this.searchMetadata.searchOpen = this.filteredItems.length > 0;
+            }, this.searchMetadata.searchDelay);
 
-            return this.filteredItems; // Return the filtered items
+            return this.filteredItems;
         },
 
-        // look into npm library called pako
-        filterAndUploadFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const contents = e.target.result;
+        doesUploadHaveErrors() {
+            this.uploadMetadata.validationErrors = {};
+            let hasErrors = false;
+            const requiredFields = [
+                'traitName',
+                'file',
+                'email',
+                'sampleSize',
+                'genomeBuild',
+                'chr',
+                'bp',
+                'ea',
+                'oa',
+                'beta',
+                'se',
+                'pval',
+                'eaf'
+            ];
+            console.log('genomeBuild')
+            console.log(this.uploadMetadata.formData.genomeBuild)
 
-                // Process CSV data
-                const filteredData = filterCSVData(contents);
-                
-                // Display filtered data in <pre> tag for preview
-                // document.getElementById('output').textContent = filteredData.join('\n');
-
-                // Attach filtered data to upload button
-                // document.getElementById('uploadBtn').onclick = function() {
-                        // uploadFilteredData(filteredData);
-                // };
-            }; 
-            reader.readAsText(file);
-        },
-
-        filterCSVData(csvText) {
-            const lines = csvText.split('\n');
-            
-            // Extract header and filter conditions
-            const header = lines[0].split(',');
-            const dataRows = lines.slice(1);
-    
-            // Example filter: Keep rows where column 2 value > 100
-            const filteredRows = dataRows.filter(row => {
-                    const cols = row.split(',');
-                    return cols[1] && parseFloat(cols[1]) > 100;    // Change condition as needed
+            requiredFields.forEach((field) => {
+                if (!this.uploadMetadata.formData[field]) {
+                    this.uploadMetadata.validationErrors[field] = true;
+                    hasErrors = true;
+                }
             });
-    
-            return [header.join(',')].concat(filteredRows);    // Keep header, return filtered data
+            console.log(this.uploadMetadata.validationErrors)
+
+            if (this.uploadMetadata.formData.isPublished && !this.uploadMetadata.formData.doi) {
+                this.uploadMetadata.validationErrors.doi = true 
+                hasErrors = true;
+            }
+
+            return hasErrors;
         },
-    
-        uploadFilteredData(filteredData) {
-            const csvBlob = new Blob([filteredData.join('\n')], { type: 'text/csv' });
-    
+
+        async uploadGWAS() {
+            if (this.doesUploadHaveErrors()) {
+                return;
+            }
+
+            this.uploadMetadata.currentlyUploading = true;
+
+            const gwasRequest = {
+                trait_name: this.uploadMetadata.formData.traitName,
+                reference_build: this.uploadMetadata.formData.genomeBuild,
+                email: this.uploadMetadata.formData.email,
+                study_type: this.uploadMetadata.formData.studyType.toLowerCase(),
+                is_published: !!this.uploadMetadata.formData.isPublished,
+                doi: this.uploadMetadata.formData.doi,
+                permanent: !!this.uploadMetadata.formData.permanent,
+                sample_size: this.uploadMetadata.formData.sampleSize,
+                study_name: this.uploadMetadata.formData.studyName,
+                ancestry: this.uploadMetadata.formData.ancestry,
+                column_names: {
+                    chr: this.uploadMetadata.formData.chr,
+                    bp: this.uploadMetadata.formData.bp,
+                    ea: this.uploadMetadata.formData.ea,
+                    oa: this.uploadMetadata.formData.oa,
+                    beta: this.uploadMetadata.formData.beta,
+                    se: this.uploadMetadata.formData.se,
+                    pval: this.uploadMetadata.formData.pval,
+                    eaf: this.uploadMetadata.formData.eaf,
+                    rsid: this.uploadMetadata.formData.rsid
+                }
+            };
+
             const formData = new FormData();
-            formData.append('file', csvBlob, 'filtered-data.csv');
-    
-            fetch('/upload-endpoint', {
+            formData.append('file', this.uploadMetadata.formData.file);
+            formData.append('request', JSON.stringify(gwasRequest));
+
+            try {
+                const response = await fetch(constants.apiUrl + '/gwas/', {
                     method: 'POST',
                     body: formData
-            })
-            .then(response => response.json())
-            .then(result => {
-                    alert('Upload successful: ' + JSON.stringify(result));
-            })
-            .catch(error => {
-                    alert('Error uploading file: ' + error.message);
-            });
-        }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+                const result = await response.json();
+                this.uploadMetadata.currentlyUploading = false;
+                this.uploadMetadata.modalOpen = false;
+                this.uploadMetadata.successMessage = 'Upload successful: ' + JSON.stringify(result);
+                this.uploadMetadata.successModalOpen = true;
+            } catch (error) {
+                alert('Error uploading file: ' + error.message);
+                this.uploadMetadata.currentlyUploading = false;
+            }
+        },
+
+        closeSuccessModal() {
+            this.uploadMetadata.successModalOpen = false;
+            this.uploadMetadata.successMessage = '';
+        },
     }
 }

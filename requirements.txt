@@ -10,3 +10,4 @@ redis==5.0.0
 pydantic-settings==2.7.1
 fastapi-cors==0.0.6
 sentry-sdk==2.24.1
+python-multipart==0.0.20 

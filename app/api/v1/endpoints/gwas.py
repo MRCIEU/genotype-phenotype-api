@@ -1,67 +1,83 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
-from app.db.redis import RedisClient
-from app.models.schemas import ProcessGwasResponse, StudyResponse, ProccessGwasRequest
+import shutil
+from fastapi import APIRouter, HTTPException, Form, UploadFile, File, Depends
 import uuid
 import os
+import hashlib
+
 from app.config import get_settings
-import shutil
-import json
-from typing import Annotated
+from app.db.duckdb import DuckDBClient
+from app.db.gwas_db import GwasDBClient
+from app.db.redis import RedisClient
+from app.models.schemas import StudyResponse, ProcessGwasRequest, GwasState, GwasStatus
 
 settings = get_settings()
 router = APIRouter()
 
-# @router.post("/", response_model=ProcessGwasResponse)
-# async def upload_gwas(
-#     file: UploadFile = File(...),
-#     metadata: Annotated[ProccessGwasRequest, Form()] = Form(...),
-# ):
-#     try:
-#         # Parse metadata if it's a string, or use directly if already parsed
-#         if isinstance(metadata, str):
-#             metadata_dict = json.loads(metadata)
-#             metadata = ProccessGwasRequest(**metadata_dict)
+@router.post("/")
+async def upload_gwas(
+    request: ProcessGwasRequest,
+    file: UploadFile
+):
+    try:
+        sha256_hash = hashlib.sha256()
+        file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
         
-#         redis = RedisClient()
-#         guid = str(uuid.uuid4())
+        with open(file_path, "wb") as buffer:
+            while chunk := file.file.read(8192):
+                buffer.write(chunk)
+                sha256_hash.update(chunk)
         
-#         # Create directory if it doesn't exist
-#         os.makedirs(settings.GWAS_DIR, exist_ok=True)
-        
-#         # Save file to disk
-#         file_path = os.path.join(settings.GWAS_DIR, f"{guid}.gwas")
-#         with open(file_path, "wb") as buffer:
-#             shutil.copyfileobj(file.file, buffer)
-        
-#         # Close the file
-#         await file.close()
+        hash_bytes = sha256_hash.digest()[:16]
+        file_guid = str(uuid.UUID(bytes=hash_bytes))
 
-#         # Add to processing queue
-#         request_json = {
-#             "guid": guid,
-#             "file_path": file_path,
-#             "file_name": file.filename,
-#             "metadata": metadata.model_dump()  # Convert Pydantic model to dict
-#         }
-#         redis.add_to_queue(redis.process_gwas_queue, request_json)
-        
-#         return ProcessGwasResponse(guid=guid, processed=False)
-        
-#     except json.JSONDecodeError:
-#         if 'file_path' in locals() and os.path.exists(file_path):
-#             os.remove(file_path)
-#         raise HTTPException(status_code=400, detail="Invalid JSON in metadata")
-#     except Exception as e:
-#         # Clean up file if there's an error
-#         if 'file_path' in locals() and os.path.exists(file_path):
-#             os.remove(file_path)
-#         raise HTTPException(status_code=500, detail=str(e))
+        db = GwasDBClient()
+        gwas = db.get_gwas(file_guid)
+        if gwas is not None:
+            # TODO: change state when it's populated
+            return GwasState(guid=file_guid, state=GwasStatus.PROCESSING, message="gwas_already_exists")
 
-# @router.get("/{guid}", response_model=StudyResponse)
-# async def get_gwas(guid: str):
-#     try:
-#         redis = RedisClient()
-#         gwas = redis.get_from_queue(redis.process_gwas_queue, guid)
-#         return gwas
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
+        redis_json = {
+            "guid": file_guid,
+            "file_path": file_path,
+            "metadata": request.model_dump()
+        }
+
+        redis = RedisClient()
+        redis.add_to_queue(redis.process_gwas_queue, redis_json)
+
+        db = GwasDBClient()
+        db.upload_gwas(file_guid, request)
+
+        return GwasState(guid=file_guid, state=GwasStatus.PROCESSING)
+        
+    except Exception as e:
+        # Clean up file if there's an error
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/{guid}")
+async def update_gwas(guid: str, state: GwasStatus):
+    try:
+        db = GwasDBClient()
+        db.update_gwas_status(guid, state)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{guid}", response_model=StudyResponse)
+async def get_gwas(guid: str):
+    try:
+        db = GwasDBClient()
+        gwas = db.get_gwas(guid)
+        if gwas is None:
+            raise HTTPException(status_code=404, detail="GWAS not found")
+
+        if gwas.status == GwasStatus.COMPLETED:
+            gwas_data = db.get_gwas_data(guid)
+            return gwas_data
+        else:
+            return gwas
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

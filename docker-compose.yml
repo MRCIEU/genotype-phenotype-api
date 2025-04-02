@@ -13,6 +13,7 @@ services:
       retries: 3
     restart: unless-stopped
     profiles:
+      - redis 
       - frontend
       - backend
       - all

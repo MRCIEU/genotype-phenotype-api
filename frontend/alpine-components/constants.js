@@ -1,5 +1,5 @@
 export default {
-        apiUrl: import.meta.env.PROD ? 'http://gpmap.opengwas.io/api/v1' : 'http://localhost:8000/api/v1',
+        apiUrl: import.meta.env.PROD ? 'http://gpmap.opengwas.io/api/v1' : 'http://localhost:8000/v1',
         maxBpPerChr: {
             1: 249250621,
             2: 243199373,

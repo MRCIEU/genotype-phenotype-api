@@ -1,5 +1,7 @@
 from __future__ import annotations
-from pydantic import BaseModel
+from enum import Enum
+import json
+from pydantic import BaseModel, model_validator
 from typing import ForwardRef, List, Optional, Union, Any
 
 class Singleton(type):
@@ -190,35 +192,47 @@ class StudyResponse(BaseModel):
     colocs: List[Coloc]
     study_extractions: List[StudyExtraction]
 
-class ProccessGwasRequest(BaseModel):
-    gwas_filename: str
-    gwas_file_hash: str
-    study_name: str
-    p_value_threshold: float
-    ancestry: str
-    sample_size: Optional[int] = None
-    guid: Optional[str] = None
+class GwasStatus(Enum):
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class ProcessGwasRequest(BaseModel):
+    file: Optional[str] = None
+    file_hash: Optional[str] = None
+    trait_name: Optional[str] = None
+    study_type: Optional[str] = None
+    reference_build: Optional[str] = None
+    email: Optional[str] = None
+    is_published: Optional[bool] = None
     doi: Optional[str] = None
-    column_names: GwasColumnNames
+    permanent: Optional[bool] = None
+    ancestry: Optional[str] = None
+    sample_size: Optional[int] = None
+    column_names: Optional[GwasColumnNames] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def to_py_dict(cls, data):
+        return json.loads(data)
 
 class GwasColumnNames(BaseModel):
     snp: Optional[str] = None
     rsid: Optional[str] = None
     chr: Optional[str] = None
-    bp: Optional[int] = None
+    bp: Optional[str] = None
     ea: Optional[str] = None
     oa: Optional[str] = None
-    p: Optional[float] = None
-    beta: Optional[float] = None
-    se: Optional[float] = None
-    pval: Optional[float] = None
-    af: Optional[float] = None
-    eaf: Optional[float] = None
-    info: Optional[float] = None
+    p: Optional[str] = None
+    beta: Optional[str] = None
+    odds_ratio: Optional[str] = None
+    se: Optional[str] = None
+    eaf: Optional[str] = None
 
-class ProcessGwasResponse(BaseModel):
+class GwasState(BaseModel):
     guid: str
-    processed: bool
+    state: Optional[GwasStatus] = None
+    message: Optional[str] = None
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""

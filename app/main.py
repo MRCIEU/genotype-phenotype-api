@@ -9,19 +9,6 @@ from app.db.redis import RedisClient
 
 settings = get_settings()
 
-class LoggingCORSMiddleware(CORSMiddleware):
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":  # pragma: no cover
-            return await super().__call__(scope, receive, send)
-            
-        # Extract headers from scope
-        headers = dict(scope.get("headers", []))
-        origin = headers.get(b"origin", b"").decode()
-        print(f"CORS Check - Incoming request from origin: {origin}")
-        print(f"CORS Check - Headers: {headers}")
-        
-        return await super().__call__(scope, receive, send)
-
 def create_app() -> FastAPI:
     if not settings.DEBUG:
         sentry_sdk.init(dsn=settings.SENTRY_DSN, send_default_pii=True)
@@ -36,7 +23,7 @@ def create_app() -> FastAPI:
     app.add_middleware(SecurityMiddleware)
 
     app.add_middleware(
-        LoggingCORSMiddleware,
+        CORSMiddleware,
         allow_origins=[
             "http://localhost:80",
             "http://localhost",
@@ -59,28 +46,21 @@ def create_app() -> FastAPI:
         
         redis_client = RedisClient()
         db_client = DuckDBClient()
-
         db_client.get_studies(1)
 
-        # await redis_client.peek_queue(redis_client.process_gwas_queue)
-        # dead_letter_queue = await redis_client.peek_queue(redis_client.process_gwas_dlq)
-        # if not dead_letter_queue.empty():
-        #     error_message = {
-        #         "message": "Dead letter queue is not empty",
-        #         "queue_size": len(dead_letter_queue)
-        #     }
-        # else:
-        #     error_message = {}
+        peeked_queue = redis_client.peek_queue(redis_client.process_gwas_queue)
+        dead_letter_queue = redis_client.peek_queue(redis_client.process_gwas_dlq)
+        if not len(dead_letter_queue) == 0:
+            error_message = {
+                "message": "Dead letter queue is not empty",
+                "queue_size": len(dead_letter_queue)
+            }
+        else:
+            error_message = {}
 
+        return {"status": "healthy", "queue_size": len(peeked_queue), "peeked_queue": peeked_queue, "dead_letter_queue": len(dead_letter_queue)}
 
-        # if error_message:
-            # raise HTTPException(status_code=500, detail=error_message)
-        # else:
-        return {"status": "healthy"}
-
-    # Include the v1 router with prefix
     app.include_router(api_router, prefix="/v1")
-
     return app
 
 app = create_app()
