@@ -234,6 +234,18 @@ class GwasState(BaseModel):
     state: Optional[GwasStatus] = None
     message: Optional[str] = None
 
+class GwasUpload(BaseModel):
+    guid: str
+    name: str
+    sample_size: int
+    p_value_threshold: float
+    ancestry: str
+    category: str
+    is_published: bool
+    doi: str
+    permanent: bool
+    status: GwasStatus
+
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):

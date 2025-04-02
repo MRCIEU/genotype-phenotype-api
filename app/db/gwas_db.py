@@ -7,7 +7,7 @@ settings = get_settings()
 
 class GwasDBClient:
 
-    def get_gwas(self, guid: str) -> GwasStatus:
+    def get_gwas(self, guid: str):
         conn = duckdb.connect(settings.GWAS_UPLOAD_DB_PATH)
         result = conn.execute(f"SELECT * FROM gwas_upload WHERE guid = '{guid}'").fetchone()
         conn.close()

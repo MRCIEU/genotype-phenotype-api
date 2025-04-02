@@ -9,9 +9,13 @@ export default function homepage() {
         uploadMetadata: {
             currentlyUploading: false,
             modalOpen: false,
-            successModalOpen: false,
-            successMessage: '',
-            formData: {},
+            postUploadModalOpen: false,
+            uploadSuccess: null,
+            message: '',
+            formData: {
+                studyType: 'continuous',
+                ancestry: 'EUR'
+            },
             validationErrors: {},
         },
         searchMetadata: {
@@ -25,23 +29,11 @@ export default function homepage() {
 
         async loadData() {
             try {
-                console.log(import.meta.env)
-                const response = await fetch(constants.apiUrl + '/search/options', {
-                    method: 'GET',
-                    headers: {
-                        'Cache-Control': 'no-cache',  // Forces revalidation
-                        'Pragma': 'no-cache'          // For older browsers
-                    },
-                });
+                const response = await fetch(constants.apiUrl + '/search/options');
                 
                 if (!response.ok) {
                     this.errorMessage = `Failed to load search options: ${response.status} ${constants.apiUrl + '/search/options'}`
                     return;
-                }
-
-                // Check if response was from cache
-                if (response.headers.get('x-cache') === 'HIT') {
-                    console.log('Data loaded from cache');
                 }
 
                 this.searchOptionData = await response.json();
@@ -61,12 +53,10 @@ export default function homepage() {
 
         openModal() {
             this.uploadMetadata.modalOpen = true
-            console.log(this.uploadMetadata.modalOpen)
         },
 
         closeModal() {
             this.uploadMetadata.modalOpen = false 
-            console.log(this.uploadMetadata.modalOpen)
         },
 
         closeSearch() {
@@ -94,7 +84,7 @@ export default function homepage() {
             return this.filteredItems;
         },
 
-        doesUploadHaveErrors() {
+        doesUploadDataHaveErrors() {
             this.uploadMetadata.validationErrors = {};
             let hasErrors = false;
             const requiredFields = [
@@ -112,8 +102,6 @@ export default function homepage() {
                 'pval',
                 'eaf'
             ];
-            console.log('genomeBuild')
-            console.log(this.uploadMetadata.formData.genomeBuild)
 
             requiredFields.forEach((field) => {
                 if (!this.uploadMetadata.formData[field]) {
@@ -121,7 +109,6 @@ export default function homepage() {
                     hasErrors = true;
                 }
             });
-            console.log(this.uploadMetadata.validationErrors)
 
             if (this.uploadMetadata.formData.isPublished && !this.uploadMetadata.formData.doi) {
                 this.uploadMetadata.validationErrors.doi = true 
@@ -132,7 +119,7 @@ export default function homepage() {
         },
 
         async uploadGWAS() {
-            if (this.doesUploadHaveErrors()) {
+            if (this.doesUploadDataHaveErrors()) {
                 return;
             }
 
@@ -173,23 +160,38 @@ export default function homepage() {
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    this.openPostUploadModal(false);
                 }
-                const result = await response.json();
-                this.uploadMetadata.currentlyUploading = false;
-                this.uploadMetadata.modalOpen = false;
-                this.uploadMetadata.successMessage = 'Upload successful: ' + JSON.stringify(result);
-                this.uploadMetadata.successModalOpen = true;
+                else {
+                    const result = await response.json();
+                    this.openPostUploadModal(true, result);
+                }
             } catch (error) {
-                alert('Error uploading file: ' + error.message);
-                this.uploadMetadata.currentlyUploading = false;
+                this.openPostUploadModal(false);
             }
         },
 
-        closeSuccessModal() {
-            this.uploadMetadata.successModalOpen = false;
-            this.uploadMetadata.successMessage = '';
+        openPostUploadModal(isSuccess, result) {
+            this.uploadMetadata.currentlyUploading = false;
+            this.uploadMetadata.modalOpen = false;
+            this.uploadMetadata.postUploadModalOpen = true;
+
+            if (isSuccess) {
+                this.uploadMetadata.uploadSuccess = true;
+                this.uploadMetadata.message = 'Upload successful!  An email will be sent to ' + this.uploadMetadata.formData.email +
+                    ' once the analysis has been completed.  Or, you can check the status of your upload ' + 
+                    '<a href="upload.html?id=' + result.guid + '">here</a>.';
+            }
+            else {
+                this.uploadMetadata.uploadSuccess = false;
+                this.uploadMetadata.message = 'There was an error uploading your file. Please try again later.';
+            }
+        },
+
+        closePostUploadModal() {
+            this.uploadMetadata.postUploadModalOpen = false;
+            this.uploadMetadata.message = '';
+            this.uploadMetadata.uploadSuccess = null;
         },
     }
 }

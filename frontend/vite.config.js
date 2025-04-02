@@ -19,6 +19,7 @@ export default defineConfig({
                 phenotype: resolve(__dirname, 'phenotype.html'),
                 region: resolve(__dirname, 'region.html'),
                 snp: resolve(__dirname, 'snp.html'),
+                upload: resolve(__dirname, 'upload.html'),
                 about: resolve(__dirname, 'about.html'),
                 "navigation-bar": resolve(__dirname, 'web-components/navigation-bar.html'),
                 "graph-options": resolve(__dirname, 'web-components/graph-options.html'),

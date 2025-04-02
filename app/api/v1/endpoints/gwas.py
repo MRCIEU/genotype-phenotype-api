@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.db.duckdb import DuckDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
-from app.models.schemas import StudyResponse, ProcessGwasRequest, GwasState, GwasStatus
+from app.models.schemas import GwasUpload, StudyResponse, ProcessGwasRequest, GwasState, GwasStatus, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
@@ -65,7 +65,7 @@ async def update_gwas(guid: str, state: GwasStatus):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{guid}", response_model=StudyResponse)
+@router.get("/{guid}", response_model=GwasUpload)
 async def get_gwas(guid: str):
     try:
         db = GwasDBClient()
@@ -73,9 +73,12 @@ async def get_gwas(guid: str):
         if gwas is None:
             raise HTTPException(status_code=404, detail="GWAS not found")
 
+        gwas = gwas + (GwasStatus.PROCESSING,)
+        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+        
         if gwas.status == GwasStatus.COMPLETED:
-            gwas_data = db.get_gwas_data(guid)
-            return gwas_data
+            #TODO: get gwas data
+            return gwas
         else:
             return gwas
 

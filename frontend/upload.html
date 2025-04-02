@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+    <title>GPM</title>
+    <script type="module" src="/main.js"></script>
+</head>
+
+<body>
+    <div id="wait-to-load" style="display:none;">
+        <div id="upload" x-data="upload" x-init="loadData">
+            <navigation-bar></navigation-bar>
+
+            <div class="columns mt-4 mb-0">
+                <div class="column is-10">
+                    <h3 class="title is-2 has-text-centered mb-0" x-text="'Upload: '+ gwasName"></h3>
+                    <p class="has-text-centered mb-0">
+                        <span x-text="'Status: '+ gwasUpload.status"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html> 
