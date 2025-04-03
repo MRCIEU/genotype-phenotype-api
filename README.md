@@ -36,24 +36,24 @@ You will need to have the following installed:
 3. Run the code using docker compose:
 
    ```
-   docker compose --profile all up --build --detach
+   docker-compose --profile all up --build --detach
    ```
-   This will start the backend and frontend services.
+   This will start all services. 
 
    If you are making changes to the frontend or backend, you can run docker-compose for everything except the bit you want to change.
    
    For example, if you are making changes to the frontend
-   * `docker compose --profile backend up --build --detach`
+   * `docker-compose --profile backend up --build --detach`
    * `npm install #only needed once`
    * `npm run dev #to run the frontend service`
    
    Note, for `npm run dev`, the frontend will be available at `http://localhost:5173`
 
    Alternately, if you want to make changeses to the backend
-   * `docker compose --profile frontend up --build --detach`
+   * `docker-compose --profile frontend up --build --detach`
    * `python -m venv .venv #only needed once`
    * `source .venv/bin/activate #every time you open a new terminal`
-   * `pip install -r requirements.txt #only needed once`
+   * `pip install -r requirements.txt #only needed once, or every time requirements.txt changes`
    * `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
 
 The docker compose will start the following services:
@@ -61,6 +61,12 @@ The docker compose will start the following services:
 * The API will be available at `http://localhost:8000`
 * Redis will be available at `redis://redis:6379`
 * A pipeline worker, which will be built from [this repository](https://github.com/MRCIEU/genotype-phenotype-map), and pulled from docker hub
+
+**Possible Issues:**
+
+Segmentation fault: If you are getting segmentation fault errors when building the frontend, try running docker compose with BUILDKIT disabled: `DOCKER_BUILDKIT=0 docker-compose --profile all up --build`
+
+strconv.Atoi: parsing "": invalid syntax: If you are getting this error, try running `docker system prune`, then rebuild and remove orphans: `docker-compose --profile all up --build --remove-orphans`
 
 ## Production
 

@@ -198,18 +198,16 @@ class GwasStatus(Enum):
     FAILED = "failed"
 
 class ProcessGwasRequest(BaseModel):
-    file: Optional[str] = None
-    file_hash: Optional[str] = None
-    trait_name: Optional[str] = None
-    study_type: Optional[str] = None
-    reference_build: Optional[str] = None
-    email: Optional[str] = None
+    guid: Optional[str] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
     is_published: Optional[bool] = None
     doi: Optional[str] = None
-    permanent: Optional[bool] = None
+    should_be_added: Optional[bool] = None
     ancestry: Optional[str] = None
     sample_size: Optional[int] = None
     column_names: Optional[GwasColumnNames] = None
+    status: Optional[GwasStatus] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -235,15 +233,15 @@ class GwasState(BaseModel):
     message: Optional[str] = None
 
 class GwasUpload(BaseModel):
+    id: int
     guid: str
     name: str
     sample_size: int
-    p_value_threshold: float
     ancestry: str
     category: str
     is_published: bool
-    doi: str
-    permanent: bool
+    doi: Optional[str] = None
+    should_be_added: bool
     status: GwasStatus
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:

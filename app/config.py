@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int
     DEBUG: bool = False
-    LOCAL_DB_DIR: str
     GWAS_DIR: str
     DATA_DIR: str
     RESULTS_DIR: str

@@ -1,5 +1,4 @@
-import Alpine from 'alpinejs'
-import constants from './constants.js'
+import constants from './constants'
 
 export default function upload() {
     return {
@@ -23,6 +22,5 @@ export default function upload() {
         get gwasName() {
             return this.gwasUpload ? `${this.gwasUpload.name}` : '...';
         }
-        
     }
 } 

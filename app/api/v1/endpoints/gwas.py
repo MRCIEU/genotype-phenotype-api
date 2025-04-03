@@ -13,12 +13,13 @@ from app.models.schemas import GwasUpload, StudyResponse, ProcessGwasRequest, Gw
 settings = get_settings()
 router = APIRouter()
 
-@router.post("/")
+@router.post("/", response_model=GwasUpload)
 async def upload_gwas(
     request: ProcessGwasRequest,
     file: UploadFile
 ):
     try:
+        print(request)
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
         
@@ -30,25 +31,33 @@ async def upload_gwas(
         hash_bytes = sha256_hash.digest()[:16]
         file_guid = str(uuid.UUID(bytes=hash_bytes))
 
+        os.makedirs(os.path.join(settings.GWAS_DIR, file_guid), exist_ok=True)
+        os.rename(file_path, os.path.join(settings.GWAS_DIR, file_guid, file.filename))
+
         db = GwasDBClient()
         gwas = db.get_gwas(file_guid)
         if gwas is not None:
-            # TODO: change state when it's populated
-            return GwasState(guid=file_guid, state=GwasStatus.PROCESSING, message="gwas_already_exists")
+            print("GWAS already exists")
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+            return gwas
+        
+        request.guid = file_guid
+        request.status = GwasStatus.PROCESSING
+
+        db = GwasDBClient()
+        gwas = db.upload_gwas(request)
+        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         redis_json = {
             "guid": file_guid,
             "file_path": file_path,
-            "metadata": request.model_dump()
+            "metadata": request.model_dump(mode="json")
         }
 
         redis = RedisClient()
         redis.add_to_queue(redis.process_gwas_queue, redis_json)
 
-        db = GwasDBClient()
-        db.upload_gwas(file_guid, request)
-
-        return GwasState(guid=file_guid, state=GwasStatus.PROCESSING)
+        return gwas 
         
     except Exception as e:
         # Clean up file if there's an error
@@ -58,10 +67,10 @@ async def upload_gwas(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{guid}")
-async def update_gwas(guid: str, state: GwasStatus):
+async def update_gwas(guid: str):
     try:
         db = GwasDBClient()
-        db.update_gwas_status(guid, state)
+        db.update_gwas_status(guid, GwasStatus.COMPLETED)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

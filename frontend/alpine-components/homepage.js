@@ -28,6 +28,7 @@ export default function homepage() {
         errorMessage: null,
 
         async loadData() {
+            console.log(import.meta.env)
             try {
                 const response = await fetch(constants.apiUrl + '/search/options');
                 
@@ -126,15 +127,14 @@ export default function homepage() {
             this.uploadMetadata.currentlyUploading = true;
 
             const gwasRequest = {
-                trait_name: this.uploadMetadata.formData.traitName,
+                name: this.uploadMetadata.formData.traitName,
                 reference_build: this.uploadMetadata.formData.genomeBuild,
                 email: this.uploadMetadata.formData.email,
-                study_type: this.uploadMetadata.formData.studyType.toLowerCase(),
+                category: this.uploadMetadata.formData.studyType.toLowerCase(),
                 is_published: !!this.uploadMetadata.formData.isPublished,
                 doi: this.uploadMetadata.formData.doi,
-                permanent: !!this.uploadMetadata.formData.permanent,
+                should_be_added: !!this.uploadMetadata.formData.shouldBeAdded,
                 sample_size: this.uploadMetadata.formData.sampleSize,
-                study_name: this.uploadMetadata.formData.studyName,
                 ancestry: this.uploadMetadata.formData.ancestry,
                 column_names: {
                     chr: this.uploadMetadata.formData.chr,

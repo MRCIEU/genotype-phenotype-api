@@ -57,3 +57,6 @@ venv.bak/
 dist
 node_modules
 .vite
+
+#test data
+tests/test_data/gwas_upload/

@@ -36,7 +36,7 @@
                     <div class="is-divider" data-content="OR"></div>
                     <div class="columns mt-6 is-centered">
                         <button class="button is-success" data-target="modal-js-example" @click="openModal()">Upload GWAS for Comparison</button>
-                        <div x-show="uploadMetadata.postUploadModalOpen" class="modal is-active">
+                        <div x-show="uploadMetadata.postUploadModalOpen" x-cloak class="modal" :class="{ 'is-active': uploadMetadata.postUploadModalOpen }">
                             <div class="modal-background" @click="closePostUploadModal"></div>
                             <div class="modal-content">
                                 <div class="box">
@@ -233,7 +233,7 @@
                                             <div class="field">
                                                 <div class="control">
                                                     <label class="checkbox">
-                                                        <input type="checkbox" x-model="uploadMetadata.formData.permanent">
+                                                        <input type="checkbox" x-model="uploadMetadata.formData.shouldBeAdded">
                                                         You think this study should be permanently included in the Genotype-Phenotype Map
                                                     </label>
                                                 </div>

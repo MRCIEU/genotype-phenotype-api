@@ -10,7 +10,6 @@ router = APIRouter()
 @router.get("/options", response_model=List[SearchTerm])
 async def get_search_options(request: Request, response: Response):
     try:
-        print('headers', request.headers)
         # Add cache control headers
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
