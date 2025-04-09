@@ -1,5 +1,5 @@
 export default {
-        apiUrl: import.meta.env.VITE_API_URL,
+        apiUrl: import.meta.env.MODE === 'development' || !import.meta.env.PROD ? 'http://localhost:8000/v1' : 'http://gpmap.opengwas.io/api/v1',
         maxBpPerChr: {
             1: 249250621,
             2: 243199373,

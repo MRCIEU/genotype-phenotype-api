@@ -6,7 +6,7 @@ from app.models.schemas import Coloc, GeneMetadata, RegionResponse
 client = TestClient(app)
 
 def test_get_region():
-    response = client.get("/v1/regions/EUR/1/16103/1170341")
+    response = client.get("/v1/regions/1309")
     assert response.status_code == 200
     region = response.json()
     region_model = RegionResponse(**region)
@@ -17,8 +17,8 @@ def test_get_region():
 
     for coloc in region_model.colocs:
         assert isinstance(coloc, Coloc)
-        assert coloc.id is not None
-        assert coloc.study is not None
+        assert coloc.coloc_group_id is not None
+        assert coloc.study_extraction_id is not None
         assert coloc.chr is not None
         assert coloc.bp is not None
         assert coloc.min_p is not None

@@ -6,7 +6,7 @@ from app.models.schemas import Association, ExtendedColoc, Variant, VariantRespo
 client = TestClient(app)
 
 def test_get_variants_by_variants():
-    response = client.get("/v1/variants?variants=1:796652_A_C")
+    response = client.get("/v1/variants?snp_ids=5249777")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -18,7 +18,7 @@ def test_get_variants_by_variants():
 
 
 def test_get_variants_by_rsids():
-    response = client.get("/v1/variants?rsids=rs61770163&rsids=rs11240777")
+    response = client.get("/v1/variants?rsids=rs6063382&rsids=rs73116127")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -28,7 +28,7 @@ def test_get_variants_by_rsids():
             assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 def test_get_variants_by_grange():
-    response = client.get("/v1/variants?grange=1:796652-796653")
+    response = client.get("/v1/variants?grange=20:49273420-49273422")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -38,7 +38,7 @@ def test_get_variants_by_grange():
             assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 def test_get_variant_by_id():
-    response = client.get("/v1/variants/1:796652_A_C")
+    response = client.get("/v1/variants/5253114")
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None
@@ -48,8 +48,8 @@ def test_get_variant_by_id():
 
     for coloc in variant_response.colocs:
         assert isinstance(coloc, ExtendedColoc)
-        assert coloc.id is not None
-        assert coloc.study is not None
+        assert coloc.coloc_group_id is not None
+        assert coloc.study_extraction_id is not None
         assert coloc.chr is not None
         assert coloc.bp is not None
         assert coloc.min_p is not None

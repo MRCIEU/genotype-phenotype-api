@@ -11,14 +11,22 @@ import region from './alpine-components/region.js';
 import phenotype from './alpine-components/phenotype.js';
 import homepage from './alpine-components/homepage.js';
 import snp from './alpine-components/snp.js';
+import upload from './alpine-components/upload.js';
 window.Alpine = Alpine;
 
-// Register Web Components
 import { NavigationBar } from './web-components/navigation-bar.js';
 import { GraphOptions } from './web-components/graph-options.js';
 
 customElements.define('navigation-bar', NavigationBar);
 customElements.define('graph-options', GraphOptions);
+
+// import * as Sentry from "@sentry/browser";
+// if (!import.meta.env.VITE_DEBUG === 'true') {
+//     Sentry.init({
+//         dsn: import.meta.env.VITE_SENTRY_DSN,
+//         tracesSampleRate: 1.0,
+//     });
+// }
 
 const graphOptions = {
     coloc: 0.8,
@@ -51,4 +59,5 @@ Alpine.data('gene', gene)
 Alpine.data('about', about)
 Alpine.data('region', region)
 Alpine.data('snp', snp)
+Alpine.data('upload', upload)
 Alpine.start();

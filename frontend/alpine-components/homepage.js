@@ -7,10 +7,16 @@ export default function homepage() {
         searchText: '',
         searchOptionData: [],
         uploadMetadata: {
+            currentlyUploading: false,
             modalOpen: false,
-            gwasUploadData: null,
-            uploadFileName: null,
-            uploadPValue: 7.3,
+            postUploadModalOpen: false,
+            uploadSuccess: null,
+            message: '',
+            formData: {
+                studyType: 'continuous',
+                ancestry: 'EUR'
+            },
+            validationErrors: {},
         },
         searchMetadata: {
             searchOpen: false,
@@ -22,12 +28,16 @@ export default function homepage() {
         errorMessage: null,
 
         async loadData() {
+            console.log(import.meta.env)
             try {
-                const response = await fetch(constants.apiUrl + '/search/options')
+                const response = await fetch(constants.apiUrl + '/search/options');
+                
                 if (!response.ok) {
                     this.errorMessage = `Failed to load search options: ${response.status} ${constants.apiUrl + '/search/options'}`
+                    return;
                 }
-                this.searchOptionData = await response.json()
+
+                this.searchOptionData = await response.json();
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -44,12 +54,10 @@ export default function homepage() {
 
         openModal() {
             this.uploadMetadata.modalOpen = true
-            console.log(this.uploadMetadata.modalOpen)
         },
 
         closeModal() {
             this.uploadMetadata.modalOpen = false 
-            console.log(this.uploadMetadata.modalOpen)
         },
 
         closeSearch() {
@@ -58,82 +66,133 @@ export default function homepage() {
         },
 
         get getItemsForSearch() {
-            // Clear the previous timeout if it exists
             if (this.searchMetadata.searchTimeout) {
                 clearTimeout(this.searchMetadata.searchTimeout);
             }
 
-            // Return the current filtered items
             if (this.searchText.length < this.searchMetadata.minSearchChars) {
-                this.filteredItems = []; // Clear filtered items if not enough characters
+                this.filteredItems = [];
                 return this.filteredItems;
             }
 
-            // Set a new timeout
             this.searchMetadata.searchTimeout = setTimeout(() => {
                 this.filteredItems = this.searchOptionData.filter((item) => {
                     return item.name.toLowerCase().includes(this.searchText.toLowerCase());
                 });
-                console.log(this.filteredItems);
-                this.searchMetadata.searchOpen = this.filteredItems.length > 0; // Update searchOpen based on filtered items
-            }, this.searchMetadata.searchDelay); // Delay execution by this.searchDelay milliseconds
+                this.searchMetadata.searchOpen = this.filteredItems.length > 0;
+            }, this.searchMetadata.searchDelay);
 
-            return this.filteredItems; // Return the filtered items
+            return this.filteredItems;
         },
 
-        // look into npm library called pako
-        filterAndUploadFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const contents = e.target.result;
+        doesUploadDataHaveErrors() {
+            this.uploadMetadata.validationErrors = {};
+            let hasErrors = false;
+            const requiredFields = [
+                'traitName',
+                'file',
+                'email',
+                'sampleSize',
+                'genomeBuild',
+                'chr',
+                'bp',
+                'ea',
+                'oa',
+                'beta',
+                'se',
+                'pval',
+                'eaf'
+            ];
 
-                // Process CSV data
-                const filteredData = filterCSVData(contents);
-                
-                // Display filtered data in <pre> tag for preview
-                // document.getElementById('output').textContent = filteredData.join('\n');
-
-                // Attach filtered data to upload button
-                // document.getElementById('uploadBtn').onclick = function() {
-                        // uploadFilteredData(filteredData);
-                // };
-            }; 
-            reader.readAsText(file);
-        },
-
-        filterCSVData(csvText) {
-            const lines = csvText.split('\n');
-            
-            // Extract header and filter conditions
-            const header = lines[0].split(',');
-            const dataRows = lines.slice(1);
-    
-            // Example filter: Keep rows where column 2 value > 100
-            const filteredRows = dataRows.filter(row => {
-                    const cols = row.split(',');
-                    return cols[1] && parseFloat(cols[1]) > 100;    // Change condition as needed
+            requiredFields.forEach((field) => {
+                if (!this.uploadMetadata.formData[field]) {
+                    this.uploadMetadata.validationErrors[field] = true;
+                    hasErrors = true;
+                }
             });
-    
-            return [header.join(',')].concat(filteredRows);    // Keep header, return filtered data
+
+            if (this.uploadMetadata.formData.isPublished && !this.uploadMetadata.formData.doi) {
+                this.uploadMetadata.validationErrors.doi = true 
+                hasErrors = true;
+            }
+
+            return hasErrors;
         },
-    
-        uploadFilteredData(filteredData) {
-            const csvBlob = new Blob([filteredData.join('\n')], { type: 'text/csv' });
-    
+
+        async uploadGWAS() {
+            if (this.doesUploadDataHaveErrors()) {
+                return;
+            }
+
+            this.uploadMetadata.currentlyUploading = true;
+
+            const gwasRequest = {
+                name: this.uploadMetadata.formData.traitName,
+                reference_build: this.uploadMetadata.formData.genomeBuild,
+                email: this.uploadMetadata.formData.email,
+                category: this.uploadMetadata.formData.studyType.toLowerCase(),
+                is_published: !!this.uploadMetadata.formData.isPublished,
+                doi: this.uploadMetadata.formData.doi,
+                should_be_added: !!this.uploadMetadata.formData.shouldBeAdded,
+                sample_size: this.uploadMetadata.formData.sampleSize,
+                ancestry: this.uploadMetadata.formData.ancestry,
+                column_names: {
+                    CHR: this.uploadMetadata.formData.chr,
+                    BP: this.uploadMetadata.formData.bp,
+                    EA: this.uploadMetadata.formData.ea,
+                    OA: this.uploadMetadata.formData.oa,
+                    BETA: this.uploadMetadata.formData.beta,
+                    OR: this.uploadMetadata.formData.or,
+                    SE: this.uploadMetadata.formData.se,
+                    P: this.uploadMetadata.formData.p,
+                    EAF: this.uploadMetadata.formData.eaf,
+                    RSID: this.uploadMetadata.formData.rsid
+                }
+            };
+
             const formData = new FormData();
-            formData.append('file', csvBlob, 'filtered-data.csv');
-    
-            fetch('/upload-endpoint', {
+            formData.append('file', this.uploadMetadata.formData.file);
+            formData.append('request', JSON.stringify(gwasRequest));
+
+            try {
+                const response = await fetch(constants.apiUrl + '/gwas/', {
                     method: 'POST',
                     body: formData
-            })
-            .then(response => response.json())
-            .then(result => {
-                    alert('Upload successful: ' + JSON.stringify(result));
-            })
-            .catch(error => {
-                    alert('Error uploading file: ' + error.message);
-            });
-        }
+                });
+
+                if (!response.ok) {
+                    this.openPostUploadModal(false);
+                }
+                else {
+                    const result = await response.json();
+                    this.openPostUploadModal(true, result);
+                }
+            } catch (error) {
+                this.openPostUploadModal(false);
+            }
+        },
+
+        openPostUploadModal(isSuccess, result) {
+            this.uploadMetadata.currentlyUploading = false;
+            this.uploadMetadata.modalOpen = false;
+            this.uploadMetadata.postUploadModalOpen = true;
+
+            if (isSuccess) {
+                this.uploadMetadata.uploadSuccess = true;
+                this.uploadMetadata.message = 'Upload successful!  An email will be sent to ' + this.uploadMetadata.formData.email +
+                    ' once the analysis has been completed.  Or, you can check the status of your upload ' + 
+                    '<a href="upload.html?id=' + result.guid + '">here</a>.';
+            }
+            else {
+                this.uploadMetadata.uploadSuccess = false;
+                this.uploadMetadata.message = 'There was an error uploading your file. Please try again later.';
+            }
+        },
+
+        closePostUploadModal() {
+            this.uploadMetadata.postUploadModalOpen = false;
+            this.uploadMetadata.message = '';
+            this.uploadMetadata.uploadSuccess = null;
+        },
     }
 }

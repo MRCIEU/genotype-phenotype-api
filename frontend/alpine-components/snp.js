@@ -32,7 +32,7 @@ export default function snp() {
         },
 
         getSNPName() {
-                return this.data ? `RSID: ${this.data.variant.RSID}` : 'RSID: ...';
+                return this.data ? this.data.variant.RSID.split(',')[0] : '...'
         },
 
         getVariantData() {
@@ -212,7 +212,7 @@ export default function snp() {
                             .style('left', `${event.pageX + 10}px`)
                             .style('top', `${event.pageY - 10}px`)
                             .html(`Trait: ${coloc.trait}<br>
-                                        p-value: ${coloc.min_p}<br>
+                                        P-value: ${coloc.min_p.toExponential(2)}<br>
                                         Cis/Trans: ${coloc.cis_trans}<br>
                                         BETA: ${coloc.association ? coloc.association.BETA : "N/A"}
                                         `);

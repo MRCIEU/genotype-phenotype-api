@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 
+
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -23,7 +24,7 @@
             <div class="columns mt-1 is-centered">
                 <div class="column is-three-quarters">
                     <div class="dropdown is-active level">
-                        <input class="input" type="text" @input="getItemsForSearch" placeholder="Search..." x-model="searchText">
+                        <input class="input" type="text" @input="getItemsForSearch" placeholder="Search for a trait or gene..." x-model="searchText">
                         <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
                             <div class="dropdown-content" style="max-height: 320px; overflow-y: auto;">
                                 <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.type_id">
@@ -36,6 +37,24 @@
                     <div class="is-divider" data-content="OR"></div>
                     <div class="columns mt-6 is-centered">
                         <button class="button is-success" data-target="modal-js-example" @click="openModal()">Upload GWAS for Comparison</button>
+                        <div x-show="uploadMetadata.postUploadModalOpen" x-cloak class="modal" :class="{ 'is-active': uploadMetadata.postUploadModalOpen }">
+                            <div class="modal-background" @click="closePostUploadModal"></div>
+                            <div class="modal-content">
+                                <div class="box">
+                                    <div x-show="uploadMetadata.uploadSuccess" class="notification">
+                                        <h3 class="title is-4">Upload Successful</h3>
+                                        <p x-html="uploadMetadata.message"></p>
+                                    </div>
+                                    <div x-show="!uploadMetadata.uploadSuccess" class="notification">
+                                        <h3 class="title is-4">Upload Failed</h3>
+                                        <p x-html="uploadMetadata.message"></p>
+                                    </div>
+                                    <button class="button mt-4" 
+                                            :class="uploadMetadata.uploadSuccess ? 'is-success' : 'is-danger'"
+                                            @click="closePostUploadModal">Close</button>
+                                </div>
+                            </div>
+                        </div>
                         <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': uploadMetadata.modalOpen }" @keydown.window.escape="closeModal()">
                             <div class="modal-background" @click="closeModal()"></div>
                             <div class="modal-card is-large" style="width: 900px; max-width: 90%;">
@@ -43,91 +62,204 @@
                                     <p class="modal-card-title">Upload GWAS for Comparison</p>
                                 </header>
                                 <section class="modal-card-body">
-                                    Upload a GWAS, and we will send you an email once the analysis has been completed. <br/><br />
-                                    All GWASes must be using hg38.
-                                    <br />
-                                    <br />
                                     <div class="field">
-                                        <label class="label">Name of GWAS</label>
+                                        <label class="label">Name of Trait</label>
                                         <div class="control">
-                                            <input class="input" type="text" placeholder="Text input">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.traitName}"
+                                                   type="text" 
+                                                   x-model="uploadMetadata.formData.traitName">
                                         </div>
                                     </div>
-                                    <!-- <div class="field">
-                                        <label class="label">P-value </label>
-
-                                        <span x-text="uploadPValue"></span> <br />
-                                        <input class="slider mt-0 mb-0"
-                                            step="0.1" min="3.7" max="7.3" value="7.3" type="range">
-                                    </div> -->
-                                    
                                     <div class="field">
                                         <label class="label">File</label>
-                                        <div class="file has-name">
+                                        <div class="file has-name" :class="{'is-danger': uploadMetadata.validationErrors.file}">
                                             <label class="file-label">
-                                                <input class="file-input" type="file" name="file" @change="uploadMetadata.uploadFileName = $event.target.files[0]?.name; filterAndUploadFile($event.target.files[0])"/>
+                                                <input class="file-input" 
+                                                       type="file" 
+                                                       @change="uploadMetadata.formData.file = $event.target.files[0]" 
+                                                       accept=".tsv,.csv,.txt,.gz,.zip,.vcf">
                                                 <span class="file-cta">
-                                                    <span class="file-label"> Choose a file… </span>
+                                                    <span class="file-label">Choose a file…</span>
                                                 </span>
-                                                <span class="file-name" x-text="uploadMetadata.uploadFileName || 'No file selected'"></span>
+                                                <span class="file-name" x-text="uploadMetadata.formData.file ? uploadMetadata.formData.file.name : 'No file selected'"></span>
                                             </label>
                                         </div>
-                                        <br />
-                                        <label class="label">GWAS Column Names</label>
-                                        N can be either a column name or the sample size
+                                    </div>
+                                    
+                                    <div class="columns">
+                                        <div class="column is-one-quarter">
+                                        <label class="label">Genome Reference Build</label>
+                                            <label class="radio" :class="{'has-text-danger': uploadMetadata.validationErrors.genomeBuild}">
+                                                <input type="radio" 
+                                                       name="genome-build"
+                                                       value="GRCh37"
+                                                       x-model="uploadMetadata.formData.genomeBuild">
+                                                    GRCh37 
+                                            </label>
+                                            <label class="radio" :class="{'has-text-danger': uploadMetadata.validationErrors.genomeBuild}">
+                                                <input type="radio" 
+                                                       name="genome-build"
+                                                       value="GRCh38"
+                                                       x-model="uploadMetadata.formData.genomeBuild">
+                                                    GRCh38
+                                            </label>
+                                        </div>
+                                        <div class="column is-one-quarter">
+                                            <label class="label">Sample Size</label>
+                                            <div class="control">
+                                                <input class="input" 
+                                                       :class="{'is-danger': uploadMetadata.validationErrors.sampleSize}"
+                                                       type="number" 
+                                                       placeholder="Enter sample size" 
+                                                       x-model="uploadMetadata.formData.sampleSize">
+                                            </div>
+                                        </div>
+                                        <div class="column is-one-quarter">
+                                            <label class="label">Ancestry</label>
+                                            <div class="select">
+                                                <select x-model="uploadMetadata.formData.ancestry">
+                                                    <option value="EUR">EUR</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="column is-one-quarter">
+                                            <label class="label">Trait Type</label>
+                                            <div class="select">
+                                                <select x-model="uploadMetadata.formData.studyType">
+                                                    <option value="continuous">Continuous</option>
+                                                    <option value="categorical">Categorical / Binary</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <label class="label">GWAS Column Names</label>
+                                    <div class="field is-grouped">
+                                        <p class="control">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.chr}"
+                                                   type="text" 
+                                                   placeholder="CHR" 
+                                                   x-model="uploadMetadata.formData.chr">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.bp}"
+                                                   type="text" 
+                                                   placeholder="BP" 
+                                                   x-model="uploadMetadata.formData.bp">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.pval}"
+                                                   type="text" 
+                                                   placeholder="P" 
+                                                   x-model="uploadMetadata.formData.pval">
+                                        </p>
                                     </div>
                                     <div class="field is-grouped">
                                         <p class="control">
-                                            <input class="input" type="text" placeholder="CHR">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.ea}"
+                                                   type="text" 
+                                                   placeholder="EA" 
+                                                   x-model="uploadMetadata.formData.ea">
                                         </p>
                                         <p class="control">
-                                            <input class="input" type="text" placeholder="BP">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.oa}"
+                                                   type="text" 
+                                                   placeholder="OA" x-model="uploadMetadata.formData.oa">
                                         </p>
                                         <p class="control">
-                                            <input class="input" type="email" placeholder="P">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.eaf}"
+                                                   type="text" 
+                                                   placeholder="EAF" 
+                                                   x-model="uploadMetadata.formData.eaf">
                                         </p>
                                     </div>
                                     <div class="field is-grouped">
                                         <p class="control">
-                                            <input class="input" type="text" placeholder="EA">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.beta}"
+                                                   type="text" 
+                                                   placeholder="BETA" 
+                                                   x-model="uploadMetadata.formData.beta">
                                         </p>
                                         <p class="control">
-                                            <input class="input" type="text" placeholder="OA">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.or}"
+                                                   type="text" 
+                                                   placeholder="OR" x-model="uploadMetadata.formData.or">
                                         </p>
                                         <p class="control">
-                                            <input class="input" type="email" placeholder="EAF">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.se}"
+                                                   type="text" 
+                                                   placeholder="SE" 
+                                                   x-model="uploadMetadata.formData.se">
                                         </p>
                                     </div>
                                     <div class="field is-grouped">
                                         <p class="control">
-                                            <input class="input" type="text" placeholder="BETA">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" type="email" placeholder="OR">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" type="text" placeholder="SE">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.rsid}"
+                                                   type="text" 
+                                                   placeholder="RSID" 
+                                                   x-model="uploadMetadata.formData.rsid">
                                         </p>
                                     </div>
-                                    <div class="field is-grouped">
-                                        <p class="control">
-                                            <input class="input" type="text" placeholder="N">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" type="email" placeholder="RSID">
-                                        </p>
+                                    <br />
+                                    <div class="field">
+                                        <div class="control">
+                                            <label class="checkbox">
+                                                <input type="checkbox" x-model="uploadMetadata.formData.isPublished">
+                                                This study is published
+                                            </label>
+                                        </div>
                                     </div>
+                                    <template x-if="uploadMetadata.formData.isPublished">
+                                        <div>
+                                            <div class="field">
+                                                <label class="label">DOI</label>
+                                                <div class="control">
+                                                    <input class="input" 
+                                                           :class="{'is-danger': uploadMetadata.validationErrors.doi}"
+                                                           type="text" 
+                                                           placeholder="DOI" 
+                                                           x-model="uploadMetadata.formData.doi">
+                                                </div>
+                                            </div>
+                                            <div class="field">
+                                                <div class="control">
+                                                    <label class="checkbox">
+                                                        <input type="checkbox" x-model="uploadMetadata.formData.shouldBeAdded">
+                                                        You think this study should be permanently included in the Genotype-Phenotype Map
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <br />
                                     <div class="field">
                                         <label class="label">Email</label>
                                         <div class="control">
-                                            <input class="input" type="email" placeholder="Email input">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.email}"
+                                                   type="email" 
+                                                   placeholder="Email input" 
+                                                   x-model="uploadMetadata.formData.email">
                                         </div>
                                     </div>
+                                    We will send you an email once the analysis has been completed.
                                 </section>
                                 <footer class="modal-card-foot">
                                     <div class="buttons">
-                                        <button class="button is-success">Upload</button>
+                                        <button class="button is-success" @click="uploadGWAS()" :disabled="uploadMetadata.currentlyUploading">Upload</button>
                                         <button class="button" @click="closeModal()">Cancel</button>
+                                        <div x-show="uploadMetadata.currentlyUploading" class="button is-loading">Uploading</div>
+                                        <div x-show="uploadMetadata.currentlyUploading">Please wait, this may take a few minutes if the file is large.</div>
                                     </div>
                                 </footer>
                             </div>
@@ -147,6 +279,7 @@
             </div>
         </div>
     </div>
+
 </body>
 
 </html>

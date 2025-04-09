@@ -2,9 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
   test:
@@ -21,20 +19,62 @@ jobs:
         pip install -r requirements.txt
     - name: Run tests
       run: |
-        cp .env.test .env && pytest -vs
+        cp .env.test .env
+        export $(cat .env | xargs)
+        mkdir -p $GWAS_DIR
+        pytest -vs
 
-  deploy:
+  build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
     - uses: actions/checkout@v2
-    - name: Build and push Docker image
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Set up SSH Key
       run: |
-        docker build -t explodecomputer/genotype-phenotype-api:latest .
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-        docker push explodecomputer/genotype-phenotype-api:latest
-    # Add deployment steps here
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/oracle_gpmap.key
+        chmod 600 ~/.ssh/oracle_gpmap.key
+        ssh-keyscan -H "${{ secrets.ORACLE_SERVER }}" >> ~/.ssh/known_hosts
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push API image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          mrcieu/genotype-phenotype-api:latest
+          mrcieu/genotype-phenotype-api:${{ github.sha }}
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v2
+      with:
+        context: frontend
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          mrcieu/genotype-phenotype-frontend:latest
+          mrcieu/genotype-phenotype-frontend:${{ github.sha }}
+
+    - name: Populate .env files and copy deployment files to server
+      env:
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        ORACLE_SERVER: ${{ secrets.ORACLE_SERVER }}
+      run: |
+        cp .env.prod .env.backend
+        echo "SENTRY_DSN=${SENTRY_DSN}" >> .env.backend
+        cp frontend/.env.prod .env.frontend
+        cp docker-compose-prod.yml docker-compose.yml
+
+        FILES="docker-compose.yml .env.backend .env.frontend frontend/nginx.prod.conf"
+        scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${ORACLE_SERVER}:/home/opc/genotype-phenotype-api/

@@ -13,13 +13,11 @@
     <div id = "wait-to-load" style="display:none;">
         <div id="region" x-data="region" x-init="loadData">
             <navigation-bar></navigation-bar>
-            <div x-show="errorMessage" class="notification is-danger is-light mt-4">
-                <span x-text="errorMessage"></span>
-            </div>
 
             <div class="columns mt-4 mb-0">
                 <div class="column">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="'Region: ' + regionName"></h1>
+                    <p class="is-size-7 has-text-centered">Displays all colocalising results in an LD region.  Use your cursor to select and zoom in to a smaller region on the graph</p>
                 </div>
             </div>
 
@@ -72,9 +70,9 @@
                                                                     <br>
                                                                     LD Region: <a :href="'region.html?id=' + coloc.ld_block" x-text="coloc.ld_block"></a>
                                                                     <br>
-                                                                    Posterior Probability (PP): <b x-text="coloc.posterior_prob"></b>
+                                                                    Posterior Probability (PP): <b x-text="coloc.posterior_prob.toFixed(3)"></b>
                                                                     <br>
-                                                                    PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp"></b>
+                                                                    PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp.toFixed(3)"></b>
                                                             </td>
                                                     </template>
                                                     <td x-text="coloc.trait" style="width:40%"></td>

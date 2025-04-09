@@ -1,17 +1,22 @@
 {
-  "name": "genotype-phenotype-website",
+  "name": "genotype-phenotype-frontend",
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --mode production",
+    "build:dev": "vite build --mode development",
     "preview": "vite preview"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.6.1"
   },
   "devDependencies": {
+    "glob": "^11.0.1",
     "vite": "^5.1.4"
   },
   "dependencies": {

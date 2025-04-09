@@ -1,42 +1,67 @@
 from __future__ import annotations
-from pydantic import BaseModel
-from typing import ForwardRef, List, Optional, Union, Any
+from enum import Enum
+import json
+from pydantic import BaseModel, model_validator
+from typing import List, Optional, Union
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class StudySource(BaseModel):
+    id: int
+    name: str
+    source: str
+    url: str
+    doi: str
 
 class Association(BaseModel):
-    SNP: Optional[str] = None
-    BETA: Optional[float] = None
-    SE: Optional[float] = None
-    IMPUTED: Optional[bool] = None
-    P: Optional[float] = None
-    EAF: Optional[float] = None
-    study: Optional[str] = None
+    snp_id: int
+    study_id: int
+    beta: float
+    se: float
+    imputed: bool
+    p: float
+    eaf: float
 
 class Coloc(BaseModel):
-    iteration: Optional[int] = None
-    traits: Optional[str] = None
-    posterior_prob: Optional[float] = None
-    regional_prob: Optional[float] = None
-    candidate_snp: Optional[str] = None
-    posterior_explained_by_snp: Optional[float] = None
-    dropped_trait: Optional[bool] = None
-    id: Optional[int] = None
-    study: Optional[str] = None
+    study_extraction_id: int
+    snp_id: int
+    ld_block_id: int
+    coloc_group_id: int
+    iteration: int
+    unique_study_id: str
+    posterior_prob: float
+    regional_prob: float
+    posterior_explained_by_snp: float
+    candidate_snp: str
+    study_id: int
     chr: Optional[int] = None
     bp: Optional[int] = None
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
     known_gene: Optional[str] = None
-    file: Optional[str] = None
     trait: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
 
-class Ld(BaseModel):
-    lead: str
-    variant: str
-    r: float
+class LdBlock(BaseModel):
+    id: int
+    chr: int
+    start: int
+    stop: int
+    ancestry: str
     ld_block: str
+
+class Ld(BaseModel):
+    lead_snp_id: int
+    variant_snp_id: int
+    ld_block_id: int
+    r: float
 
 class Gene(BaseModel):
     symbol: str
@@ -55,6 +80,7 @@ class ExtendedColoc(Coloc):
     association: Optional[Association] = None
 
 class Study(BaseModel):
+    id: int
     data_type: str
     data_format: str
     study_name: str
@@ -64,18 +90,21 @@ class Study(BaseModel):
     category: Optional[str] = None
     study_location: str
     extracted_location: str
-    reference_build: str
-    p_value_threshold: float
-    gene: Optional[str] = None
     probe: Optional[str] = None
     tissue: Optional[str] = None
-    source: str
+    source_id: Optional[int] = None
     variant_type: Optional[str] = None
+    p_value_threshold: float
+    gene: Optional[str] = None
 
-
-class StudyExtaction(BaseModel):
-    study: str
+class StudyExtraction(BaseModel):
+    id: int
+    study_id: int
+    snp_id: int
+    snp: str
+    ld_block_id: int
     unique_study_id: str
+    study: str
     file: str
     chr: int 
     bp: int
@@ -83,7 +112,8 @@ class StudyExtaction(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: str
     known_gene: Optional[str] = None
-    candidate_snp: Optional[str] = None
+
+class ExtendedStudyExtraction(StudyExtraction):
     trait: str
     data_type: str
     tissue: Optional[str] = None
@@ -91,56 +121,57 @@ class StudyExtaction(BaseModel):
 class SearchTerm(BaseModel):
     type: str
     name: Optional[str] = None
-    type_id: Optional[str] = None
+    type_id: Optional[int | str] = None
 
-class RareComparisons(BaseModel):
-    id: Optional[int] = None
-    study_name: str
-    trait: str
-    ancestry: Optional[str] = None
-    sample_size: Optional[int] = None
-    category: Optional[str] = None
-    study_location: str
-    extracted_location: str
-    reference_build: str
-    p_value_threshold: float
-    variant_type: Optional[str] = None
-    gene: Optional[str] = None
+class RareSNPGroups(BaseModel):
+    rare_result_group_id: int
+    study_id: int
+    study_extraction_id: int
+    ld_block_id: int
+    snp_id: int
+    unique_study_id: str
+    candidate_snp: str
+    study: str
+    chr: int
+    bp: int
+    min_p: float
+    cis_trans: Optional[str] = None
+    known_gene: Optional[str] = None
 
 class Variant(BaseModel):
-    SNP: Optional[str] = None
-    CHR: Optional[int] = None
-    BP: Optional[int] = None
-    EA: Optional[str] = None
-    OA: Optional[str] = None
-    Gene: Optional[str] = None
-    Feature_type: Optional[str] = None
-    Consequence: Optional[str] = None
-    cDNA_position: Optional[str] = None
-    CDS_position: Optional[str] = None
-    Protein_position: Optional[str] = None
-    Amino_acids: Optional[str] = None
-    Codons: Optional[str] = None
-    RSID: Optional[str] = None
+    id: int
+    snp: str
+    chr: int
+    bp: int
+    ea: str
+    oa: str
+    gene: str
+    feature_type: str
+    consequence: Optional[str] = None
+    cdna_position: Optional[str] = None
+    cds_position: Optional[str] = None
+    protein_position: Optional[str] = None
+    amino_acids: Optional[str] = None
+    codons: Optional[str] = None
+    rsid: Optional[str] = None
     impact: Optional[str] = None
     symbol: Optional[str] = None
     biotype: Optional[str] = None
     strand: Optional[int] = None
     canonical: Optional[str] = None
-    ALL_AF: Optional[float] = None
-    EUR_AF: Optional[float] = None
-    EAS_AF: Optional[float] = None
-    AMR_AF: Optional[float] = None
-    AFR_AF: Optional[float] = None
-    SAS_AF: Optional[float] = None
-    ld_block: Optional[str] = None
+    all_af: Optional[float] = None
+    eur_af: Optional[float] = None
+    eas_af: Optional[float] = None
+    amr_af: Optional[float] = None
+    afr_af: Optional[float] = None
+    sas_af: Optional[float] = None
 
 
 class GeneResponse(BaseModel):
     gene: Gene
     colocs: List[Coloc]
     variants: List[Variant]
-    study_extractions: List[StudyExtaction]
+    study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
 
 class Region(BaseModel):
@@ -161,20 +192,142 @@ class VariantResponse(BaseModel):
 class StudyResponse(BaseModel):
     study: Study
     colocs: List[Coloc]
+    study_extractions: List[ExtendedStudyExtraction]
+
+class GwasStatus(Enum):
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class ProcessGwasRequest(BaseModel):
+    guid: Optional[str] = None
+    reference_build: str
+    email: str
+    name: str
+    category: str
+    is_published: bool
+    doi: Optional[str] = None
+    should_be_added: bool
+    ancestry: str
+    sample_size: int
+    column_names: GwasColumnNames
+    status: Optional[GwasStatus] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def to_py_dict(cls, data):
+        return json.loads(data)
+
+class GwasColumnNames(BaseModel):
+    SNP: Optional[str] = None
+    RSID: Optional[str] = None
+    CHR: Optional[str] = None
+    BP: Optional[str] = None
+    EA: Optional[str] = None
+    OA: Optional[str] = None
+    P: Optional[str] = None
+    BETA: Optional[str] = None
+    OR: Optional[str] = None
+    SE: Optional[str] = None
+    EAF: Optional[str] = None
+
+class GwasState(BaseModel):
+    guid: str
+    state: Optional[GwasStatus] = None
+    message: Optional[str] = None
+
+class GwasUpload(BaseModel):
+    id: int
+    guid: Optional[str] = None
+    email: str
+    name: str
+    sample_size: int
+    ancestry: str
+    category: str
+    is_published: bool
+    doi: str
+    should_be_added: bool
+    status: GwasStatus
+
+class GwasUploadResponse(BaseModel):
+    gwas: GwasUpload
+    existing_study_extractions: List[StudyExtraction]
+    upload_study_extractions: List[UploadStudyExtraction]
+    colocalisations: List[UploadColoc]
+
+class UploadStudyExtraction(BaseModel):
+    id: Optional[int] = None
+    gwas_upload_id: Optional[int] = None
+    snp_id: Optional[int] = None
+    snp: Optional[str] = None
+    ld_block_id: Optional[int] = None
+    unique_study_id: Optional[str] = None
+    study: Optional[str] = None
+    file: Optional[str] = None
+    chr: Optional[int] = None
+    bp: Optional[int] = None
+    min_p: Optional[float] = None
+    cis_trans: Optional[str] = None
+    ld_block: Optional[str] = None
+    known_gene: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class UploadColoc(BaseModel):
+    gwas_upload_id: Optional[int] = None
+    upload_study_extraction_id: Optional[int] = None
+    existing_study_extraction_id: Optional[int] = None
+    snp_id: Optional[int] = None
+    ld_block_id: Optional[int] = None
+    coloc_group_id: Optional[int] = None
+    iteration: Optional[int] = None
+    unique_study_id: Optional[str] = None
+    posterior_prob: Optional[float] = None
+    regional_prob: Optional[float] = None
+    posterior_explained_by_snp: Optional[float] = None
+    candidate_snp: Optional[str] = None
+    study_id: Optional[int] = None
+    chr: Optional[int] = None
+    bp: Optional[int] = None
+    min_p: Optional[float] = None
+    cis_trans: Optional[str] = None
+    ld_block: Optional[str] = None
+    known_gene: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):
         if len(results) == 0: return []
-        return [model(**{
-            field: row[idx] for idx, field in enumerate(model.model_fields.keys())
-            if idx < len(row)  # Only include fields that exist in the tuple
-        }) for row in results]
+        converted = []
+        for row in results:
+            if row and not all(v is None for v in row):
+                model_dict = {
+                    field: row[idx] 
+                    for idx, field in enumerate(model.model_fields.keys())
+                    if idx < len(row)
+                }
+                converted.append(model(**model_dict))
+            else:
+                converted.append(None)
+        return converted
+
+    # Handle single tuple case
     elif isinstance(results, tuple):
-        return model(**{
-            field: results[idx] for idx, field in enumerate(model.model_fields.keys())
-            if idx < len(results)  # Only include fields that exist in the tuple
-        })
+        if results and not all(v is None for v in results):
+            return model(**{
+                field: results[idx] 
+                for idx, field in enumerate(model.model_fields.keys())
+                if idx < len(results)
+            })
+        return None
     else:
         raise ValueError("Results must be a list of tuples or a single tuple.")
 

@@ -6,7 +6,7 @@ export default function gene() {
     return {
         data: null,
         svg: null,
-        tissueByTraits: {},
+        tissueByDataType: {},
         variantTypes: null, 
         minMbp: null,
         maxMbp: null,
@@ -17,7 +17,8 @@ export default function gene() {
             try {
                 const response = await fetch(constants.apiUrl + '/genes/' + geneId);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load gene: ${response.status} ${constants.apiUrl + '/genes/' + geneId}`
+                    this.errorMessage = `Failed to load gene: ${geneId}. Please try again later.`
+                    console.log(this.errorMessage)
                     return
                 }
                 this.data = await response.json();
@@ -54,6 +55,10 @@ export default function gene() {
                     mbp : study.bp / 1000000,
                 }))
 
+                constants.orderedDataTypes.forEach(dataType => {
+                    if (dataType !== 'phenotype') this.tissueByDataType[dataType] = {}
+                })
+
                 let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
                 let filteredVariantTypes = constants.variantTypes.filter(variantType => variantTypesInData.includes(variantType))
                 this.variantTypes = Object.fromEntries(filteredVariantTypes.map((key, index) => [key, constants.colors[index]]));
@@ -75,8 +80,8 @@ export default function gene() {
             return this.data ? `${this.data.gene.chr}:${this.data.gene.min_bp}-${this.data.gene.max_bp}` : '...';
         },
 
-        get ldRegion() {
-            return this.data && this.data.colocs ? this.data.colocs[0].ld_block : null
+        get ldBlockId() {
+            return this.data && this.data.colocs ? this.data.colocs[0].ld_block_id : null
         },
 
         get colocsForTable() {
@@ -90,39 +95,39 @@ export default function gene() {
         },
 
         filterByOptions(graphOptions) {
-          this.data.filteredColocs = this.data.colocs.filter(coloc => {
-            return(coloc.min_p <= graphOptions.pValue &&
+            this.data.filteredColocs = this.data.colocs.filter(coloc => {
+                return(coloc.min_p <= graphOptions.pValue &&
                    coloc.posterior_prob >= graphOptions.coloc &&
                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                    (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
                    // && rare variants in the future...
-          })
-          this.data.filteredStudies = this.data.study_extractions.filter(study => {
-            return(study.min_p <= graphOptions.pValue && 
+            })
+            this.data.filteredStudies = this.data.study_extractions.filter(study => {
+                return(study.min_p <= graphOptions.pValue && 
                    (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
                    (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true))
-          })
-          this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
+            })
+            this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
+            this.minMbp = Math.min(...this.data.filteredColocs.map(d => d.mbp), ...this.data.filteredStudies.map(d => d.mbp))
+            this.maxMbp = Math.max(...this.data.filteredColocs.map(d => d.mbp), ...this.data.filteredStudies.map(d => d.mbp))
 
-          this.data.tissues.forEach(tissue => {
-            const traitsByTissue = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue)
-            const colocIds = traitsByTissue.map(coloc => coloc.id)
-            let colocs = {}
-            if (traitsByTissue.length === 0) {
-              colocs = {None: [{}]}
-            } else {
-              const phenotypeColocs = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id) && coloc.data_type === 'phenotype')
-              const qtlColocs = traitsByTissue.filter(coloc => coloc.data_type !== 'phenotype')
-              colocs = {Phenotype: phenotypeColocs, 'Other QTLs': qtlColocs}
-            }
-            this.tissueByTraits[tissue] = colocs
-          })
+            this.data.tissues.forEach(tissue => {
+                constants.orderedDataTypes.forEach(dataType => {
+                    if (dataType === 'phenotype') return;
+                    const tissueColocs = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue && coloc.data_type === dataType)
+                    const colocIds = tissueColocs.map(coloc => coloc.id)
+                    const allColocsWithTissue = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id))
+                    const tissueStudies = this.data.filteredStudies.filter(study => study.tissue == tissue && study.data_type === dataType)
+                    const tissueDataTypeResults = allColocsWithTissue.concat(tissueStudies)
+                    this.tissueByDataType[dataType][tissue] = tissueDataTypeResults
+                })
+            })
 
-          this.data.filteredColocs.forEach(coloc => {
-            const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
-            coloc.color = constants.tableColors[hash]
-          })
-          this.data.groupedColocs = Object.groupBy(this.data.filteredColocs, ({ candidate_snp }) => candidate_snp);
+            this.data.filteredColocs.forEach(coloc => {
+                const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+                coloc.color = constants.tableColors[hash]
+            })
+            this.data.groupedColocs = Object.groupBy(this.data.filteredColocs, ({ candidate_snp }) => candidate_snp);
         },
 
         getVariantTypeColor(variantType) {
@@ -130,7 +135,12 @@ export default function gene() {
         },
 
         initTissueByTraitGraph() {
-            if (!this.data) {
+            if (this.errorMessage) {
+                const chartContainer = document.getElementById("gene-dot-plot");
+                chartContainer.innerHTML = '<div />'
+                return;
+            }
+            else if (!this.data) {
                 const chartContainer = document.getElementById("gene-dot-plot");
                 chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
                 return;
@@ -149,19 +159,18 @@ export default function gene() {
             this.getTissueByTraitGraph();
         },
 
-
         getTissueByTraitGraph() {
             const container = document.getElementById('gene-dot-plot');
             container.innerHTML = '';
 
             const graphConstants = {
                 width: container.clientWidth,
-                height: Math.max(400, window.innerHeight * 1.6), // Responsive height
+                height: Math.max(400, window.innerHeight * 0.5), // Responsive height
                 outerMargin: {
                     top: 0,
                     right: 10,
-                    bottom: 100,
-                    left: 220
+                    bottom: 150,
+                    left: 120
                 }
             }
 
@@ -178,17 +187,16 @@ export default function gene() {
                 .append('g')
                 .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
 
-            // Create scales
-            const tissues = Object.keys(this.tissueByTraits);
-            const categories = ['None', 'Phenotype', 'Other QTLs'];
+            const tissues = this.data.tissues;
+            const dataTypes = Object.keys(this.tissueByDataType)
 
             const x = d3.scaleBand()
-                .domain(categories)
+                .domain(tissues)
                 .range([0, innerWidth])
                 .padding(0.1);
 
             const y = d3.scaleBand()
-                .domain(tissues.reverse())
+                .domain(dataTypes)
                 .range([innerHeight, 0])
                 .padding(0.1);
 
@@ -196,7 +204,7 @@ export default function gene() {
             this.svg.append('g')
                 .attr('class', 'grid-lines')
                 .selectAll('line')
-                .data(categories)
+                .data(tissues)
                 .enter()
                 .append('line')
                 .attr('x1', d => x(d) + x.bandwidth()/2)
@@ -210,7 +218,7 @@ export default function gene() {
             this.svg.append('g')
                 .attr('class', 'grid-lines')
                 .selectAll('line')
-                .data(tissues)
+                .data(dataTypes)
                 .enter()
                 .append('line')
                 .attr('x1', 0)
@@ -234,40 +242,34 @@ export default function gene() {
 
             // Add dots for each tissue and category
             tissues.forEach(tissue => {
-                categories.forEach(category => {
-                    const colocs = this.tissueByTraits[tissue][category] || [];
+                dataTypes.forEach(dataType => {
+                    const results = this.tissueByDataType[dataType][tissue] || [];
                     const baseRadius = 2;
                     let traitNames = ""
                     let uniqueTraits = []
-                    if (category === 'None' && colocs.length > 0) {
-                        uniqueTraits = ['None'];
-                    }
-                    else if (colocs.length > 1) {
-                        uniqueTraits = [...new Set(colocs.map(t => t.trait))]
-                        traitNames = uniqueTraits.slice(0,9)
-                        traitNames = traitNames.join("<br />")
-                        if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
-                    } 
-                    else if (colocs.length === 0) {
-                        return;
-                    }
+                    if (results.length === 0) return;
+
+                    uniqueTraits = [...new Set(results.map(t => t.trait))]
+                    traitNames = uniqueTraits.slice(0,9)
+                    traitNames = traitNames.join("<br />")
+                    if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
                     const radius = uniqueTraits.length > 0 ? 
                         Math.min(baseRadius + Math.sqrt(uniqueTraits.length) * 2, 8) : // Square root scale with max size
                         0;
                     
                     this.svg.append('circle')
-                        .attr('cx', x(category) + x.bandwidth()/2)
-                        .attr('cy', y(tissue) + y.bandwidth()/2)
+                        .attr('cx', x(tissue) + x.bandwidth()/2)
+                        .attr('cy', y(dataType) + y.bandwidth()/2)
                         .attr('r', radius)
                         .style('fill', 'black')
                         .style('opacity', 0.7)
                         .on('mouseover', (event) => {
-                            // Bold the y-axis label for this tissue
+                            // Bold the x-axis label for this tissue
                             this.svg.selectAll('.tick text')
                                 .filter(d => d === tissue)
                                 .style('font-weight', 'bold');
 
-                            if (category !== 'None') {
+                            if (dataType !== 'None') {
                                 d3.select('#gene-dot-plot')
                                     .append('div')
                                     .attr('class', 'tooltip')
@@ -296,14 +298,14 @@ export default function gene() {
                 .attr('x', innerWidth/2)
                 .attr('y', innerHeight + graphConstants.outerMargin.bottom - 10)
                 .style('text-anchor', 'middle')
-                .text('Category');
+                .text('Tissue');
 
             this.svg.append('text')
                 .attr('transform', 'rotate(-90)')
                 .attr('x', -innerHeight/2)
                 .attr('y', -graphConstants.outerMargin.left + 30)
                 .style('text-anchor', 'middle')
-                .text('Tissue');
+                .text('QTL Type');
 
             // Add window resize listener
             const resizeGraph = () => {
@@ -324,20 +326,25 @@ export default function gene() {
         },
 
         initTraitByPositionGraph() {
-          if (!this.data || !this.data.groupedColocs) {
-            const chartContainer = document.getElementById("gene-network-plot");
-            chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
-            return;
-          }
-          // listen to resize events to redraw the graph
-          window.addEventListener('resize', () => {
-              clearTimeout(this.resizeTimer);
-              this.resizeTimer = setTimeout(() => {
-                  this.getTraitByPositionGraph();
-              }, 250);
-          });
+            if (this.errorMessage) {
+                const chartContainer = document.getElementById("gene-network-plot");
+                chartContainer.innerHTML = '<div class="notification is-danger is-light mt-4">' + this.errorMessage + '</div>'
+                return
+            }
+            else if (!this.data || !this.data.groupedColocs) {
+                const chartContainer = document.getElementById("gene-network-plot");
+                chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
+                return
+            }
+            // listen to resize events to redraw the graph
+            window.addEventListener('resize', () => {
+                clearTimeout(this.resizeTimer);
+                this.resizeTimer = setTimeout(() => {
+                    this.getTraitByPositionGraph();
+                }, 250);
+            });
 
-          this.getTraitByPositionGraph();
+            this.getTraitByPositionGraph();
         },
 
         getTraitByPositionGraph() {
@@ -493,8 +500,11 @@ export default function gene() {
 
             // Add gene track
             const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top;
-            const genes = [...this.data.gene.genes_in_region];
+            const genes = this.data.gene.genes_in_region.filter(gene =>
+                gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp
+            )
             genes.push({
+                focus: true,
                 symbol: this.data.gene.symbol,
                 min_bp: this.data.gene.min_bp,
                 max_bp: this.data.gene.max_bp,
@@ -523,7 +533,7 @@ export default function gene() {
                 return levels;
             }
 
-            const geneLevels = assignLevels(genes);
+            assignLevels(genes);
             const geneGroup = svg.append("g")
                 .attr("class", "gene-track");
 
@@ -537,6 +547,8 @@ export default function gene() {
                 .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000))
                 .attr("height", graphConstants.geneTrackMargin.height)
                 .attr("fill", (d, i) => constants.colors[i % constants.colors.length])
+                .attr("stroke", (d) => d.focus ? "black": null)
+                .attr("stroke-width", 3) 
                 .attr("opacity", 0.7)
                 .on('mouseover', (event, d) => {
                     d3.select('#gene-network-plot')

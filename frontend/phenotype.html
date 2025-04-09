@@ -7,21 +7,19 @@
     <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
     <title>GPM Phenotype</title>
     <script type="module" src="/main.js"></script>
-    <script src="web-components/navigation-bar.js"></script>
-    <script src="web-components/graph-options.js"></script>
 </head>
 
 <body>
     <div id = "wait-to-load" style="display:none;">
         <div id="phenotype" x-data="phenotype" x-init="loadData">
             <navigation-bar></navigation-bar>
-            <div x-show="errorMessage" class="notification is-danger is-light mt-4">
-                <span x-text="errorMessage"></span>
-            </div>
 
             <div class="columns mt-4 mb-0">
                 <div class="column is-10">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
+                    <p class="is-size-7 has-text-centered">Displays colocalised results of the study in question, and shows all studies which colocalise with it</p>
+                    <p class="is-size-7 has-text-centered">Also displays significant rare and non-colocalising results</p>
+                    <p class="is-size-7 has-text-centered">To compare 2 specific traits, please use the 'Filter Results By' dropdown</p>
                 </div>
                 <div class="column is-2">
                     <div x-show="filteredColocData && filteredColocData.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
@@ -80,16 +78,23 @@
                         <tbody class="is-size-7">
                             <template x-for="[candidate_snp, colocs] in Object.entries(getDataForColocTable)">
                                     <template x-for="(coloc, colocIndex) in colocs">
-                                            <tr x-bind:style="'background-color: ' + coloc.color">
-                                                    <template x-if="colocIndex === 0">
+                                            <tr x-bind:style="!!coloc.posterior_prob ? 'background-color: ' + coloc.color : ''">
+                                                    <template x-if="colocIndex === 0 && !!coloc.posterior_prob">
                                                             <td x-bind:rowspan="colocs.length" style="width: 20%">
-                                                                    Causal Variant: <a :href="'snp.html?id=' + coloc.candidate_snp" x-text="coloc.candidate_snp"></a>
+                                                                    Causal Variant: <a :href="'snp.html?id=' + coloc.snp_id" x-text="coloc.candidate_snp"></a>
                                                                     <br>
+                                                                    LD Region: <a :href="'region.html?id=' + coloc.ld_block_id" x-text="coloc.ld_block"></a>
+                                                                    <br>
+                                                                    Posterior Probability (PP): <b x-text="coloc.posterior_prob.toFixed(3)"></b>
+                                                                    <br>
+                                                                    PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp.toFixed(3)"></b>
+                                                            </td>
+                                                    </template>
+                                                    <template x-if="colocIndex === 0 && !coloc.posterior_prob">
+                                                            <td x-bind:rowspan="colocs.length" style="width: 20%">
                                                                     LD Region: <a :href="'region.html?id=' + coloc.ld_block" x-text="coloc.ld_block"></a>
                                                                     <br>
-                                                                    Posterior Probability (PP): <b x-text="coloc.posterior_prob"></b>
-                                                                    <br>
-                                                                    PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp"></b>
+                                                                    <b>No coloc evidence found.</b>
                                                             </td>
                                                     </template>
                                                     <td x-text="coloc.trait" style="width:40%"></td>

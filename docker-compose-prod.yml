@@ -1,0 +1,62 @@
+services:
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - /oradiskvdb1:/oradiskvdb1
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  api:
+    image: mrcieu/genotype-phenotype-api:latest
+    working_dir: /workspace
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - /oradiskvdb1:/oradiskvdb1
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/workspace
+    env_file:
+      - .env.backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - redis
+
+  frontend:
+    image: mrcieu/genotype-phenotype-frontend:latest
+    volumes:
+      - /oradiskvdb1:/oradiskvdb1
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # gwas_upload_pipeline:
+  #   image: mrcieu/genotype-phenotype-map:latest
+  #   environment:
+  #     - PYTHONPATH=/workspace
+  #   env_file:
+  #     - .env
+  #   restart: unless-stopped
+  #   command: ["Rscript", "worker/pipeline_worker.R"]
+  #   profile: ["backend", "gwas_upload_pipeline"]
+
+volumes:
+  redis_data: 
+    external: true
+  oradiskvdb1:
+    external: true

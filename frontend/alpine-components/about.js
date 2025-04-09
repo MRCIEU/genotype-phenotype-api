@@ -1,5 +1,8 @@
+import pipeline from '../assets/images/pipeline.png'
+
 export default function about() {
     return {
+        pipeline,
         datasets: null,
 
         loadData() {

@@ -1,0 +1,9 @@
+frontend
+.git*
+README.md
+.env
+.env.* 
+.pytest_cache
+.DS_Store
+.venv
+venv

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import colocs, ld, regions, studies, search, gwas, variants, genes
+from app.api.v1.endpoints import ld, regions, studies, search, gwas, variants, genes
 
 api_router = APIRouter()
 
@@ -22,14 +22,8 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    colocs.router,
-    prefix="/colocs",
-    tags=["coloc"]
-)
-
-api_router.include_router(
     gwas.router,
-    prefix="/gwases",
+    prefix="/gwas",
     tags=["gwas"]
 )
 
