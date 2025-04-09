@@ -10,7 +10,7 @@ Using [fastapi](http://fastapi.tiangolo.com) framework with a postgres database 
 
 ## Overview
 
-![alt text](strategy.png)
+![General Architecture of the Genotype-phenotype Map](architecture.jpg)
 
 ## Setup and Running
 
@@ -29,38 +29,42 @@ You will need to have the following installed:
    cd genotype-phenotype-api
    ```
 
-2. Create a `.env` file
+2. Create the `.env` files
+
+   There are 2 `.env` files, one for frontend and one for backend.
 
    It's easiest to use the `.env.test` file as a template.  This will use a small curated test database in `tests/test_data/gpm_small.db`
 
+   * `cp .env.test .env`
+   * `cp frontend/.env.test frontend/.env`
+
 3. Run the code using docker compose:
 
-   ```
-   docker-compose --profile all up --build --detach
-   ```
-   This will start all services. 
+   The are two docker compose profiles, `web` and `all`.
 
-   If you are making changes to the frontend or backend, you can run docker-compose for everything except the bit you want to change.
+   * `docker-compose --profile web up --build --detach`: runs the website, API, and redis
+   * `docker-compose --profile all up --build --detach`: runs above and the gwas upload worker
+
+   Docker compose will start the following services:
+   * The frontend will be available at `http://localhost:5173`
+   * The API will be available at `http://localhost:8000`
+   * Redis will be available at `redis://redis:6379`
+   * A pipeline worker, which will be built from [this repository](https://github.com/MRCIEU/genotype-phenotype-map), and pulled from docker hub
+
+   Both the frontend and backend will reload when code changes are detected.
+
+   If you don't want to use docker, you can run the frontend and backend separately.
    
-   For example, if you are making changes to the frontend
-   * `docker-compose --profile backend up --build --detach`
+   Frontend: 
    * `npm install #only needed once`
    * `npm run dev #to run the frontend service`
-   
-   Note, for `npm run dev`, the frontend will be available at `http://localhost:5173`
 
-   Alternately, if you want to make changeses to the backend
-   * `docker-compose --profile frontend up --build --detach`
+   Backend:
    * `python -m venv .venv #only needed once`
    * `source .venv/bin/activate #every time you open a new terminal`
    * `pip install -r requirements.txt #only needed once, or every time requirements.txt changes`
    * `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
 
-The docker compose will start the following services:
-* The frontend will be available at `http://localhost:80`
-* The API will be available at `http://localhost:8000`
-* Redis will be available at `redis://redis:6379`
-* A pipeline worker, which will be built from [this repository](https://github.com/MRCIEU/genotype-phenotype-map), and pulled from docker hub
 
 **Possible Issues:**
 
@@ -70,22 +74,7 @@ strconv.Atoi: parsing "": invalid syntax: If you are getting this error, try run
 
 ## Production
 
-No production yet but a dev version is available - 
-
-Setup a tunnel (need to be on vpn):
-
-```
-ssh -L 8000:localhost:8000 <username>@ieu-p1.epi.bris.ac.uk
-```
-
-Then check e.g.
-
-```bash
-curl http://localhost:8000/health
-```
-
-Or connect to http://localhost:8000/docs on your browser.
-
+Fill me in later.  There is some instructions in the [wiki](https://github.com/MRCIEU/genotype-phenotype-api/wiki/Public-Website-and-Oracle-Cloud).
 
 * [Frontend README can be found here](frontend/README.md)
 
@@ -95,7 +84,7 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 
 1. Run the unit tests
 2. Build a Docker image
-3. Push the image to Docker Hub (using secrets DOCKER_USERNAME and DOCKER_PASSWORD configured in github repo)
+3. Push the image to Docker Hub
 
 ## Contributing
 

@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /workspace
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --reload --reload-delay 2 --port 8000
     ports:
       - "8000:8000"
     environment:
@@ -32,6 +32,7 @@ services:
       - .env
     volumes:
       - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
+      - ./app:/workspace/app
     restart: unless-stopped
     depends_on:
       - redis
@@ -42,13 +43,14 @@ services:
   frontend:
     build:
       context: frontend
-      dockerfile: Dockerfile
-      args:
-        MODE: development
+      dockerfile: Dockerfile-dev
     env_file:
       - frontend/.env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "80:80"
+      - "5173:5173"
     restart: unless-stopped
     depends_on:
       - api
@@ -56,20 +58,20 @@ services:
       - frontend
       - all
 
-  gwas_upload_pipeline:
-    image: mrcieu/genotype-phenotype-map:1.0.0
-    working_dir: /home/pipeline
-    volumes:
-      - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
-      - ../genotype-phenotype-map:/home/pipeline
-    environment:
-      - PYTHONPATH=/workspace
-    env_file:
-      - ../genotype-phenotype-map/.env
-    restart: unless-stopped
-    command: ["Rscript", "worker/pipeline_worker.R"]
-    profiles:
-      - all
+  # gwas_upload_pipeline:
+  #   image: mrcieu/genotype-phenotype-map:latest
+  #   working_dir: /home/pipeline
+  #   volumes:
+  #     - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
+  #     - ../genotype-phenotype-map:/home/pipeline
+  #   environment:
+  #     - PYTHONPATH=/workspace
+  #   env_file:
+  #     - ../genotype-phenotype-map/.env
+  #   restart: unless-stopped
+  #   command: ["Rscript", "worker/pipeline_worker.R"]
+  #   profiles:
+  #     - all
 
 volumes:
   redis_data: 

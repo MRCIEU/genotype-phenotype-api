@@ -6,9 +6,10 @@ export default defineConfig({
     css: {
         devSourcemap: true,    // Enable CSS source maps
     },
-
+    watch: {
+        usePolling: true,
+    },
     base: './',
-
     build: {
         sourcemap: true,    // Enable source maps for production
         chunkSizeWarningLimit: 1024, // kB

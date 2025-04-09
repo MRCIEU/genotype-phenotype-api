@@ -5,3 +5,4 @@ dist
 README.md
 .env*
 docker-compose*
+.DS_Store

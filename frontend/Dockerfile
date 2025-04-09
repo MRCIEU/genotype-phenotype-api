@@ -4,18 +4,13 @@ WORKDIR /app
 
 # Increase Node.js memory limit
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-ARG MODE
 
 # Install dependencies first (better layer caching)
 COPY package*.json ./
 RUN npm install
 COPY . .
 
-RUN if [ "$MODE" = "development" ] ; then \
-        npm run build:dev ; \
-    else \
-        npm run build ; \
-    fi
+RUN npm run build
 
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html

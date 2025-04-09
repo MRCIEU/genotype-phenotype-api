@@ -1,0 +1,10 @@
+FROM node:20-bullseye
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --force --platform=linux --arch=x64
+COPY . .
+
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host"] 

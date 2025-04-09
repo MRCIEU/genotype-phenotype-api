@@ -78,6 +78,7 @@ class StudiesDBClient:
             """
         return self.studies_conn.execute(query).fetchall()
 
+
     def get_study_extractions_by_id(self, ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in ids)
         query = f"""
