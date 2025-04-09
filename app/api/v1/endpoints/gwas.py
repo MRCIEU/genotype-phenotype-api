@@ -1,18 +1,15 @@
-import csv
 import shutil
-from fastapi import APIRouter, HTTPException, Form, UploadFile, File, Depends, Body
+from fastapi import APIRouter, HTTPException, UploadFile
 import uuid
 import os
 import hashlib
-from io import StringIO
 from typing import List
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
-from app.models.schemas import GwasUpload, ProcessGwasRequest, GwasStatus, StudyExtraction, UploadColoc, UploadStudyExtraction, Variant, convert_duckdb_to_pydantic_model
-from app.services.email_service import EmailService
+from app.models.schemas import GwasUpload, GwasUploadResponse, ProcessGwasRequest, GwasStatus, StudyExtraction, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
@@ -130,36 +127,50 @@ async def update_gwas(
                 coloc.ld_block = existing_study_extractions[i].ld_block
                 coloc.known_gene = existing_study_extractions[i].known_gene
 
-
         gwas_upload_db.populate_colocs(coloc_results)
-        gwas_upload_db.update_gwas_status(guid, GwasStatus.COMPLETED.value)
+        updated_gwas = gwas_upload_db.update_gwas_status(guid, GwasStatus.COMPLETED)
+        updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
 
         # email_service = EmailService()
         # await email_service.send_results_email(gwas.email, guid)
 
-        return {"status": "success"}
+        return updated_gwas
     except HTTPException as e:
         raise e
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{guid}", response_model=GwasUpload)
+@router.get("/{guid}", response_model=GwasUploadResponse)
 async def get_gwas(guid: str):
     try:
-        db = GwasDBClient()
-        gwas = db.get_gwas_by_guid(guid)
+        studies_db = StudiesDBClient()
+        gwas_upload_db = GwasDBClient()
+        gwas = gwas_upload_db.get_gwas_by_guid(guid)
         if gwas is None:
             raise HTTPException(status_code=404, detail="GWAS not found")
 
-        gwas = gwas + (GwasStatus.PROCESSING,)
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-        
-        if gwas.status == GwasStatus.COMPLETED:
-            #TODO: get gwas data
+
+        if gwas.status != GwasStatus.COMPLETED:
             return gwas
-        else:
-            return gwas
+
+        colocalisations = gwas_upload_db.get_colocs_by_gwas_upload_id(gwas.id)
+        colocalisations = convert_duckdb_to_pydantic_model(UploadColoc, colocalisations)
+
+        upload_study_extractions = gwas_upload_db.get_study_extractions_by_gwas_upload_id(gwas.id)
+        upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
+
+        existing_study_extraction_ids = [coloc.existing_study_extraction_id for coloc in colocalisations if coloc.existing_study_extraction_id is not None]
+        existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
+        existing_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, existing_study_extractions)
+
+        return GwasUploadResponse(
+            gwas=gwas,
+            existing_study_extractions=existing_study_extractions,
+            upload_study_extractions=upload_study_extractions,
+            colocalisations=colocalisations
+        )
 
     except HTTPException as e:
         raise e

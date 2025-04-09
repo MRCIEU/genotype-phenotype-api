@@ -38,6 +38,22 @@ class GwasDBClient:
             return result
         finally:
             conn.close()
+    
+    def get_colocs_by_gwas_upload_id(self, gwas_upload_id: int):
+        conn = self.connect()
+        try:
+            result = conn.execute(f"SELECT * FROM colocalisations WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
+            return result
+        finally:
+            conn.close()
+
+    def get_study_extractions_by_gwas_upload_id(self, gwas_upload_id: int):
+        conn = self.connect()
+        try:
+            result = conn.execute(f"SELECT * FROM study_extractions WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
+            return result
+        finally:
+            conn.close()
 
     def create_gwas_upload(self, gwas_request: ProcessGwasRequest):
         conn = self.connect()
@@ -111,5 +127,9 @@ class GwasDBClient:
         conn = self.connect()
         try:
             conn.execute(f"UPDATE gwas_upload SET status = '{status.value}' WHERE guid = '{guid}'")
+            conn.commit()
+
+            result = conn.execute(f"SELECT * FROM gwas_upload WHERE guid = '{guid}'")
+            return result.fetchone()
         finally:
             conn.close()

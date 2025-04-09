@@ -1,0 +1,89 @@
+{
+  "coloc_results": [
+    {
+      "iteration": 2,
+      "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR_1_103423003_1",
+      "posterior_prob": 0.6738,
+      "regional_prob": 0.7143,
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 0.3646,
+      "coloc_group_id": 1
+    },
+    {
+      "iteration": 2,
+      "unique_study_id": "GTEx-eQTL-v10-Breast-Mammary-Tissue-ENSG00000105136-22_EUR_19_57490144_1",
+      "posterior_prob": 0.6738,
+      "regional_prob": 0.7143,
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 0.3646,
+      "coloc_group_id": 1
+    },
+    {
+      "iteration": 1,
+      "unique_study_id": "ebi-a-GCST90018994_EUR_19_58383088_1",
+      "posterior_prob": 0.7676,
+      "regional_prob": 0.8601,
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 1,
+      "coloc_group_id": 2
+    },
+    {
+      "iteration": 1,
+      "unique_study_id": "ebi-a-GCST003766_EUR_19_57004872_3",
+      "posterior_prob": 0.7676,
+      "regional_prob": 0.8601,
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 1,
+      "coloc_group_id": 2
+    },
+    {
+      "iteration": 1,
+      "unique_study_id": "GTEx-eQTL-v10-Artery-Coronary-ENSG00000198466-12_EUR_19_57844874_2",
+      "posterior_prob": 0.7676,
+      "regional_prob": 0.8601,
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 1,
+      "coloc_group_id": 2
+    },
+    {
+      "iteration": 2,
+      "unique_study_id": "GTEx-eQTL-v10-Artery-Tibial-ENSG00000105136-22_EUR_19_57490144_1",
+      "posterior_prob": 0.6738,
+      "regional_prob": 0.7143,       
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 0.3646,
+      "coloc_group_id": 1
+    },
+    {
+      "iteration": 2,
+      "unique_study_id": "GTEx-eQTL-v10-Brain-Caudate-basal-ganglia-ENSG00000268545-1_EUR_19_57488345_1",
+      "posterior_prob": 0.6738,
+      "regional_prob": 0.7143,
+      "candidate_snp": "19:57488345_C_G",
+      "posterior_explained_by_snp": 0.3646,
+      "coloc_group_id": 1
+    }
+  ],
+  "study_extractions": [
+    {
+      "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b",
+      "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR_1_103423003_1",
+      "snp": "19:57488345_C_G",
+      "file": "/local-scratch/projects/genotype-phenotype-map/test/data/study/gwas_upload/22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b//finemapped/EUR_1_101950949_1.tsv.gz",
+      "chr": "1",
+      "bp": 103423003,
+      "min_p": 3.0203e-22,
+      "ld_block": "EUR/1/101384499-103762931"
+    },
+    {
+      "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b",
+      "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR_1_103430485_2",
+      "snp": "19:57488345_C_G",
+      "file": "/local-scratch/projects/genotype-phenotype-map/test/data/study/gwas_upload/22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b//finemapped/EUR_1_101950949_2.tsv.gz",
+      "chr": "1",
+      "bp": 103430485,
+      "min_p": 3.4851e-18,
+      "ld_block": "EUR/1/101384499-103762931"
+    }
+  ]
+}

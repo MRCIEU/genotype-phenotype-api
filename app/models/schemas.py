@@ -206,7 +206,7 @@ class ProcessGwasRequest(BaseModel):
     name: str
     category: str
     is_published: bool
-    doi: str
+    doi: Optional[str] = None
     should_be_added: bool
     ancestry: str
     sample_size: int
@@ -248,6 +248,12 @@ class GwasUpload(BaseModel):
     doi: str
     should_be_added: bool
     status: GwasStatus
+
+class GwasUploadResponse(BaseModel):
+    gwas: GwasUpload
+    existing_study_extractions: List[StudyExtraction]
+    upload_study_extractions: List[UploadStudyExtraction]
+    colocalisations: List[UploadColoc]
 
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None
