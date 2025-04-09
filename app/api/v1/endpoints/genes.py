@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Path
-from app.db.duckdb import DuckDBClient
+from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
 from typing import List
 
@@ -13,7 +13,7 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
         cache_service = CacheService()
         tissues = cache_service.get_tissues()
 
-        db = DuckDBClient()
+        db = StudiesDBClient()
         gene = db.get_gene(symbol)
 
         if gene is None:
@@ -33,7 +33,7 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
         studies = db.get_study_extractions_in_region(gene.chr, gene.min_bp, gene.max_bp, symbol)
 
         if studies is not None:
-            studies = convert_duckdb_to_pydantic_model(StudyExtraction, studies)
+            studies = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, studies)
 
         colocs = db.get_all_colocs_for_gene(symbol)
         if colocs is not None:

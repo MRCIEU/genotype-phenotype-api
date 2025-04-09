@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Path
-from app.db.duckdb import DuckDBClient
+from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
 from typing import List
 
@@ -10,7 +10,7 @@ router = APIRouter()
 @router.get("/{ld_block_id}", response_model=RegionResponse)
 async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) -> RegionResponse:
     try:
-        db = DuckDBClient()
+        db = StudiesDBClient()
         cache_service = CacheService()
 
         ld_block = db.get_ld_block(ld_block_id)
@@ -42,7 +42,7 @@ async def get_region(ancestry: str = Path(..., description="Ancestry"),
                      stop: int = Path(..., description="End BP of region")) -> RegionResponse:
     try:
         ld_block = f"{ancestry}/{chr}/{start}-{stop}"
-        db = DuckDBClient()
+        db = StudiesDBClient()
         cache_service = CacheService()
 
         colocs = db.get_all_colocs_for_ld_block(ld_block)

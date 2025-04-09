@@ -9,14 +9,9 @@ settings = get_settings()
 def get_gpm_db_connection():
     return duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)
 
-@lru_cache()
-def get_associations_db_connection():
-    return duckdb.connect(settings.ASSOCIATIONS_DB_PATH, read_only=True)
-
-class DuckDBClient:
+class StudiesDBClient:
     def __init__(self):
         self.studies_conn = get_gpm_db_connection()
-        self.associations_conn = get_associations_db_connection()
 
     def get_studies(self, limit: int = None):
         if (limit is None):
@@ -72,6 +67,30 @@ class DuckDBClient:
         """
         return self.studies_conn.execute(query).fetchall()
 
+    def get_study_extractions(self, unique_study_id: str = None):
+        if unique_study_id:
+            query = f"""
+                SELECT * FROM study_extractions WHERE unique_study_id = '{unique_study_id}'
+            """
+        else:
+            query = f"""
+                SELECT * FROM study_extractions
+            """
+        return self.studies_conn.execute(query).fetchall()
+
+    def get_study_extractions_by_unique_study_id(self, unique_study_ids: List[str]):
+        values_list = ", ".join([f"({i}, '{v}')" for i, v in enumerate(unique_study_ids)])
+        query = f"""
+            WITH input_studies AS (
+                SELECT * FROM (VALUES {values_list}) as t(row_num, unique_study_id)
+            )
+            SELECT study_extractions.*
+            FROM input_studies 
+            LEFT JOIN study_extractions ON input_studies.unique_study_id = study_extractions.unique_study_id
+            ORDER BY input_studies.row_num
+        """
+        return self.studies_conn.execute(query).fetchall()
+
     def get_study_extractions_in_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
         return self.studies_conn.execute(
             """SELECT study_extractions.*, studies.trait, studies.data_type, studies.tissue
@@ -86,6 +105,19 @@ class DuckDBClient:
     def get_ld_block(self, ld_block_id: int):
         query = f"SELECT * FROM ld_blocks WHERE id = {ld_block_id}"
         return self.studies_conn.execute(query).fetchone()
+
+    def get_ld_blocks_by_ld_block(self, ld_blocks: List[str]):
+        values_list = ", ".join([f"({i}, '{v}')" for i, v in enumerate(ld_blocks)])
+        query = f"""
+            WITH input_blocks AS (
+                SELECT * FROM (VALUES {values_list}) as t(row_num, ld_block)
+            )
+            SELECT ld_blocks.* 
+            FROM input_blocks 
+            LEFT JOIN ld_blocks ON input_blocks.ld_block = ld_blocks.ld_block
+            ORDER BY input_blocks.row_num
+        """
+        return self.studies_conn.execute(query).fetchall()
 
     def get_gene(self, symbol: str):
         query = f"""
@@ -160,34 +192,21 @@ class DuckDBClient:
     def get_tissues(self):
         return self.studies_conn.execute("SELECT DISTINCT tissue FROM studies WHERE tissue IS NOT NULL").fetchall()
 
-    def get_snp_ids_by_variants(self, variants: List[str]):
-        formatted_variants = ','.join(f"'{variant}'" for variant in variants)
-        query = f"SELECT id FROM snp_annotations WHERE rsid IN ({formatted_variants})"
-        return self.studies_conn.execute(query).fetchall()
-
-    def get_associations_for_variant_and_studies(self, snp_id: int, study_ids: List[int]):
-        formatted_study_ids = ','.join(f"{study_id}" for study_id in study_ids)
+    def get_variants_by_snp_strings(self, variants: List[str]):
+        values_list = ", ".join([f"({i}, '{v}')" for i, v in enumerate(variants)])
         query = f"""
-            SELECT * FROM associations 
-            WHERE study_id IN ({formatted_study_ids}) AND snp_id = {snp_id}
+            WITH input_variants AS (
+                SELECT * FROM (VALUES {values_list}) as t(row_num, variant)
+            )
+            SELECT snp_annotations.* 
+            FROM input_variants 
+            LEFT JOIN snp_annotations ON input_variants.variant = snp_annotations.snp 
+            ORDER BY input_variants.row_num
         """
-        return self.associations_conn.execute(query).fetchall()
-
-    def get_associations(self, snp_ids: List[int], study_ids: List[int], p_value_threshold: float):
-        if not snp_ids and not study_ids:
-            return []
-
-        query = "SELECT * FROM associations WHERE 1=1"
-        if snp_ids:
-            formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
-            query += f" AND snp_id IN ({formatted_snp_ids})"
         
-        if study_ids:
-            formatted_study_ids = ','.join(f"{study_id}" for study_id in study_ids)
-            query += f" AND study_id IN ({formatted_study_ids})"
-
-        if p_value_threshold is not None:
-            query += f" AND p <= {p_value_threshold}"
-        
-        return self.associations_conn.execute(query).fetchall()
-        
+        return self.studies_conn.execute(query).fetchall()
+    
+    def get_snp_ids_by_snps(self, snps: List[str]):
+        formatted_snps = ','.join(f"'{snp}'" for snp in snps)
+        query = f"SELECT id FROM snp_annotations WHERE id IN ({formatted_snps})"
+        return self.studies_conn.execute(query).fetchall()

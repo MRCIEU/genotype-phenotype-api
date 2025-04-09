@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.security import SecurityMiddleware
 from app.api.v1.router import api_router
 from app.config import get_settings
-from app.db.duckdb import DuckDBClient
+from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
 
 settings = get_settings()
@@ -45,7 +45,7 @@ def create_app() -> FastAPI:
         print("All headers:", dict(request.headers))
         
         redis_client = RedisClient()
-        db_client = DuckDBClient()
+        db_client = StudiesDBClient()
         db_client.get_studies(1)
 
         peeked_queue = redis_client.peek_queue(redis_client.process_gwas_queue)

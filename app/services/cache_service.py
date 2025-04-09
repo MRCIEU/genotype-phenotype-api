@@ -1,12 +1,12 @@
 from functools import lru_cache
 from typing import List, Tuple
 from app.models.schemas import Singleton
-from app.db.duckdb import DuckDBClient
+from app.db.studies_db import StudiesDBClient
 
 
 class CacheService(metaclass=Singleton):
     def __init__(self):
-        self.db = DuckDBClient()
+        self.db = StudiesDBClient()
 
     @lru_cache(maxsize=1)
     def get_study_names_for_search(self) -> List[Tuple[str, str]]:

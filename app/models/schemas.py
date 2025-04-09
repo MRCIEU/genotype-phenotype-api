@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum
 import json
 from pydantic import BaseModel, model_validator
-from typing import ForwardRef, List, Optional, Union, Any
+from typing import List, Optional, Union
 
 class Singleton(type):
     _instances = {}
@@ -112,6 +112,8 @@ class StudyExtraction(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: str
     known_gene: Optional[str] = None
+
+class ExtendedStudyExtraction(StudyExtraction):
     trait: str
     data_type: str
     tissue: Optional[str] = None
@@ -169,7 +171,7 @@ class GeneResponse(BaseModel):
     gene: Gene
     colocs: List[Coloc]
     variants: List[Variant]
-    study_extractions: List[StudyExtraction]
+    study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
 
 class Region(BaseModel):
@@ -190,7 +192,7 @@ class VariantResponse(BaseModel):
 class StudyResponse(BaseModel):
     study: Study
     colocs: List[Coloc]
-    study_extractions: List[StudyExtraction]
+    study_extractions: List[ExtendedStudyExtraction]
 
 class GwasStatus(Enum):
     PROCESSING = "processing"
@@ -199,14 +201,16 @@ class GwasStatus(Enum):
 
 class ProcessGwasRequest(BaseModel):
     guid: Optional[str] = None
-    name: Optional[str] = None
-    category: Optional[str] = None
-    is_published: Optional[bool] = None
-    doi: Optional[str] = None
-    should_be_added: Optional[bool] = None
-    ancestry: Optional[str] = None
-    sample_size: Optional[int] = None
-    column_names: Optional[GwasColumnNames] = None
+    reference_build: str
+    email: str
+    name: str
+    category: str
+    is_published: bool
+    doi: str
+    should_be_added: bool
+    ancestry: str
+    sample_size: int
+    column_names: GwasColumnNames
     status: Optional[GwasStatus] = None
 
     @model_validator(mode="before")
@@ -215,17 +219,17 @@ class ProcessGwasRequest(BaseModel):
         return json.loads(data)
 
 class GwasColumnNames(BaseModel):
-    snp: Optional[str] = None
-    rsid: Optional[str] = None
-    chr: Optional[str] = None
-    bp: Optional[str] = None
-    ea: Optional[str] = None
-    oa: Optional[str] = None
-    p: Optional[str] = None
-    beta: Optional[str] = None
-    odds_ratio: Optional[str] = None
-    se: Optional[str] = None
-    eaf: Optional[str] = None
+    SNP: Optional[str] = None
+    RSID: Optional[str] = None
+    CHR: Optional[str] = None
+    BP: Optional[str] = None
+    EA: Optional[str] = None
+    OA: Optional[str] = None
+    P: Optional[str] = None
+    BETA: Optional[str] = None
+    OR: Optional[str] = None
+    SE: Optional[str] = None
+    EAF: Optional[str] = None
 
 class GwasState(BaseModel):
     guid: str
@@ -234,29 +238,90 @@ class GwasState(BaseModel):
 
 class GwasUpload(BaseModel):
     id: int
-    guid: str
+    guid: Optional[str] = None
+    email: str
     name: str
     sample_size: int
     ancestry: str
     category: str
     is_published: bool
-    doi: Optional[str] = None
+    doi: str
     should_be_added: bool
     status: GwasStatus
+
+class UploadStudyExtraction(BaseModel):
+    id: Optional[int] = None
+    gwas_upload_id: Optional[int] = None
+    snp_id: Optional[int] = None
+    snp: Optional[str] = None
+    ld_block_id: Optional[int] = None
+    unique_study_id: Optional[str] = None
+    study: Optional[str] = None
+    file: Optional[str] = None
+    chr: Optional[int] = None
+    bp: Optional[int] = None
+    min_p: Optional[float] = None
+    cis_trans: Optional[str] = None
+    ld_block: Optional[str] = None
+    known_gene: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+class UploadColoc(BaseModel):
+    gwas_upload_id: Optional[int] = None
+    upload_study_extraction_id: Optional[int] = None
+    existing_study_extraction_id: Optional[int] = None
+    snp_id: Optional[int] = None
+    ld_block_id: Optional[int] = None
+    coloc_group_id: Optional[int] = None
+    iteration: Optional[int] = None
+    unique_study_id: Optional[str] = None
+    posterior_prob: Optional[float] = None
+    regional_prob: Optional[float] = None
+    posterior_explained_by_snp: Optional[float] = None
+    candidate_snp: Optional[str] = None
+    study_id: Optional[int] = None
+    chr: Optional[int] = None
+    bp: Optional[int] = None
+    min_p: Optional[float] = None
+    cis_trans: Optional[str] = None
+    ld_block: Optional[str] = None
+    known_gene: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):
         if len(results) == 0: return []
-        return [model(**{
-            field: row[idx] for idx, field in enumerate(model.model_fields.keys())
-            if idx < len(row)  # Only include fields that exist in the tuple
-        }) for row in results]
+        converted = []
+        for row in results:
+            if row and not all(v is None for v in row):
+                model_dict = {
+                    field: row[idx] 
+                    for idx, field in enumerate(model.model_fields.keys())
+                    if idx < len(row)
+                }
+                converted.append(model(**model_dict))
+            else:
+                converted.append(None)
+        return converted
+
+    # Handle single tuple case
     elif isinstance(results, tuple):
-        return model(**{
-            field: results[idx] for idx, field in enumerate(model.model_fields.keys())
-            if idx < len(results)  # Only include fields that exist in the tuple
-        })
+        if results and not all(v is None for v in results):
+            return model(**{
+                field: results[idx] 
+                for idx, field in enumerate(model.model_fields.keys())
+                if idx < len(results)
+            })
+        return None
     else:
         raise ValueError("Results must be a list of tuples or a single tuple.")
 

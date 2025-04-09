@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from app.db.duckdb import DuckDBClient
+from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Ld, convert_duckdb_to_pydantic_model
 from typing import List
 
@@ -11,7 +11,7 @@ async def get_matrix(
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
 ):
     try:
-        db = DuckDBClient()
+        db = StudiesDBClient()
         if variants:
             snp_ids = db.get_snp_ids_by_variants(variants)
         ld_matrix = db.get_ld_matrix(snp_ids)
@@ -30,7 +30,7 @@ async def get_proxies(
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
 ):
     try:
-        db = DuckDBClient()
+        db = StudiesDBClient()
         if variants:
             snp_ids = db.get_snp_ids_by_variants(variants)
 

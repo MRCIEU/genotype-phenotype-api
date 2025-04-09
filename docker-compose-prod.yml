@@ -46,7 +46,7 @@ services:
       - api
 
   # gwas_upload_pipeline:
-  #   image: mrcieu/genotype-phenotype-map:prod
+  #   image: mrcieu/genotype-phenotype-map:latest
   #   environment:
   #     - PYTHONPATH=/workspace
   #   env_file:
@@ -57,3 +57,6 @@ services:
 
 volumes:
   redis_data: 
+    external: true
+  oradiskvdb1:
+    external: true

@@ -40,7 +40,6 @@ services:
       - all
 
   frontend:
-    # image: mrcieu/genotype-phenotype-frontend:latest
     build:
       context: frontend
       dockerfile: Dockerfile
@@ -61,15 +60,15 @@ services:
     image: mrcieu/genotype-phenotype-map:1.0.0
     working_dir: /home/pipeline
     volumes:
+      - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
       - ../genotype-phenotype-map:/home/pipeline
     environment:
       - PYTHONPATH=/workspace
     env_file:
-      - .env
+      - ../genotype-phenotype-map/.env
     restart: unless-stopped
     command: ["Rscript", "worker/pipeline_worker.R"]
     profiles:
-      - backend
       - all
 
 volumes:

@@ -137,15 +137,16 @@ export default function homepage() {
                 sample_size: this.uploadMetadata.formData.sampleSize,
                 ancestry: this.uploadMetadata.formData.ancestry,
                 column_names: {
-                    chr: this.uploadMetadata.formData.chr,
-                    bp: this.uploadMetadata.formData.bp,
-                    ea: this.uploadMetadata.formData.ea,
-                    oa: this.uploadMetadata.formData.oa,
-                    beta: this.uploadMetadata.formData.beta,
-                    se: this.uploadMetadata.formData.se,
-                    pval: this.uploadMetadata.formData.pval,
-                    eaf: this.uploadMetadata.formData.eaf,
-                    rsid: this.uploadMetadata.formData.rsid
+                    CHR: this.uploadMetadata.formData.chr,
+                    BP: this.uploadMetadata.formData.bp,
+                    EA: this.uploadMetadata.formData.ea,
+                    OA: this.uploadMetadata.formData.oa,
+                    BETA: this.uploadMetadata.formData.beta,
+                    OR: this.uploadMetadata.formData.or,
+                    SE: this.uploadMetadata.formData.se,
+                    P: this.uploadMetadata.formData.p,
+                    EAF: this.uploadMetadata.formData.eaf,
+                    RSID: this.uploadMetadata.formData.rsid
                 }
             };
 
