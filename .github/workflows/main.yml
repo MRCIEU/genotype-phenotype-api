@@ -19,7 +19,10 @@ jobs:
         pip install -r requirements.txt
     - name: Run tests
       run: |
-        cp .env.test .env && pytest -vs
+        cp .env.test .env
+        export $(cat .env | xargs)
+        mkdir -p $GWAS_DIR
+        pytest -vs
 
   build:
     needs: test
