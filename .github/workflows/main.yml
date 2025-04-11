@@ -76,5 +76,5 @@ jobs:
         cp frontend/.env.prod .env.frontend
         cp docker-compose-prod.yml docker-compose.yml
 
-        FILES="docker-compose.yml .env.backend .env.frontend frontend/nginx.prod.conf"
+        FILES="docker-compose.yml .env.backend .env.frontend"
         scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${ORACLE_SERVER}:/home/opc/genotype-phenotype-api/
