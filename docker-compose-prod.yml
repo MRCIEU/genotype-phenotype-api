@@ -38,6 +38,8 @@ services:
     image: mrcieu/genotype-phenotype-frontend:latest
     volumes:
       - /oradiskvdb1:/oradiskvdb1
+      - ./certbot/webroot:/var/www/certbot
+      - ./certbot/letsencrypt:/etc/letsencrypt
     ports:
       - "80:80"
     restart: unless-stopped
@@ -51,13 +53,7 @@ services:
       - ./certbot/webroot:/var/www/certbot
       - ./certbot/letsencrypt:/etc/letsencrypt
     entrypoint: /bin/sh -c
-    command: >
-      "certbot certonly --webroot
-       --webroot-path=/var/www/certbot
-       --email andrew.elmore@bristol.ac.uk
-       --agree-tos
-       --no-eff-email
-       -d gpm.opengwas.io"
+    command: certbot certonly --webroot --webroot-path=/var/www/certbot --email andrew.elmore@bristol.ac.uk --agree-tos --no-eff-email -d gpmap.opengwas.io && cat /var/log/letsencrypt/letsencrypt.log
 
   gwas_upload_pipeline:
     image: mrcieu/genotype-phenotype-map:latest
@@ -67,7 +63,6 @@ services:
       - .env.pipeline_worker
     restart: unless-stopped
     command: ["Rscript", "worker/pipeline_worker.R"]
-    profile: ["backend", "gwas_upload_pipeline"]
 
 volumes:
   oradiskvdb1: 
