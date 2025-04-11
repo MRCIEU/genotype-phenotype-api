@@ -2,11 +2,10 @@ services:
   redis:
     image: redis:7-alpine
     volumes:
-      - /oradiskvdb1:/oradiskvdb1
-      - redis_data:/data
+      - oradiskvdb1:/oradiskvdb1
     ports:
       - "6379:6379"
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --save 60 1 --loglevel warning --dir /oradiskvdb1/redis --dbfilename redis.rdb
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -19,7 +18,7 @@ services:
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
-      - /oradiskvdb1:/oradiskvdb1
+      - oradiskvdb1:/oradiskvdb1
     ports:
       - "8000:8000"
     environment:
@@ -38,25 +37,39 @@ services:
   frontend:
     image: mrcieu/genotype-phenotype-frontend:latest
     volumes:
-      - /oradiskvdb1:/oradiskvdb1
+      - oradiskvdb1:/oradiskvdb1
+      - ./certbot/webroot:/var/www/certbot
+      - ./certbot/letsencrypt:/etc/letsencrypt
     ports:
       - "80:80"
+      - "443:443"
     restart: unless-stopped
     depends_on:
       - api
 
-  # gwas_upload_pipeline:
-  #   image: mrcieu/genotype-phenotype-map:latest
-  #   environment:
-  #     - PYTHONPATH=/workspace
-  #   env_file:
-  #     - .env
-  #   restart: unless-stopped
-  #   command: ["Rscript", "worker/pipeline_worker.R"]
-  #   profile: ["backend", "gwas_upload_pipeline"]
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/webroot:/var/www/certbot
+      - ./certbot/letsencrypt:/etc/letsencrypt
+    command: renew --webroot --webroot-path=/var/www/certbot
+    # command: certbot certonly --webroot --webroot-path=/var/www/certbot --email andrew.elmore@bristol.ac.uk --agree-tos --no-eff-email -d gpmap.opengwas.io
+
+  gwas_upload_pipeline:
+    image: mrcieu/genotype-phenotype-map:latest
+    working_dir: /home/pipeline
+    environment:
+      - PYTHONPATH=/workspace
+    env_file:
+      - .env.pipeline_worker
+    restart: unless-stopped
+    command: ["Rscript", "worker/pipeline_worker.R"]
 
 volumes:
-  redis_data: 
-    external: true
-  oradiskvdb1:
-    external: true
+  oradiskvdb1: 
+    driver: local
+    driver_opts:
+      type: none
+      device: /oradiskvdb1/
+      o: bind

@@ -50,13 +50,6 @@ def create_app() -> FastAPI:
 
         peeked_queue = redis_client.peek_queue(redis_client.process_gwas_queue)
         dead_letter_queue = redis_client.peek_queue(redis_client.process_gwas_dlq)
-        if not len(dead_letter_queue) == 0:
-            error_message = {
-                "message": "Dead letter queue is not empty",
-                "queue_size": len(dead_letter_queue)
-            }
-        else:
-            error_message = {}
 
         return {"status": "healthy", "queue_size": len(peeked_queue), "peeked_queue": peeked_queue, "dead_letter_queue": len(dead_letter_queue)}
 
