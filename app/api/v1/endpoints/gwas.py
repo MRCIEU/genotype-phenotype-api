@@ -154,7 +154,12 @@ async def get_gwas(guid: str):
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         if gwas.status != GwasStatus.COMPLETED:
-            return gwas
+            return GwasUploadResponse(
+                study=gwas,
+                existing_study_extractions=None,
+                upload_study_extractions=None,
+                colocs=None
+            )
 
         colocalisations = gwas_upload_db.get_colocs_by_gwas_upload_id(gwas.id)
         colocalisations = convert_duckdb_to_pydantic_model(UploadColoc, colocalisations)
