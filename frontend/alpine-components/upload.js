@@ -17,10 +17,6 @@ export default function upload() {
             } catch (error) {
                 console.error('Error loading data:', error);
             }
-        },
-
-        get gwasName() {
-            return this.gwasUpload ? `${this.gwasUpload.name}` : '...';
         }
     }
-} 
+}

@@ -28,7 +28,6 @@ export default function homepage() {
         errorMessage: null,
 
         async loadData() {
-            console.log(import.meta.env)
             try {
                 const response = await fetch(constants.apiUrl + '/search/options');
                 

@@ -24,6 +24,8 @@ async def get_search_options(request: Request, response: Response):
         search_terms = [term for term in search_terms if term['name'] is not None]
         return search_terms
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

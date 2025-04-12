@@ -22,6 +22,7 @@ async def upload_gwas(
     try:
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
         with open(file_path, "wb") as buffer:
             while chunk := file.file.read(8192):

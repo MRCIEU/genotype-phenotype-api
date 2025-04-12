@@ -250,10 +250,10 @@ class GwasUpload(BaseModel):
     status: GwasStatus
 
 class GwasUploadResponse(BaseModel):
-    gwas: GwasUpload
-    existing_study_extractions: List[StudyExtraction]
-    upload_study_extractions: List[UploadStudyExtraction]
-    colocalisations: List[UploadColoc]
+    study: GwasUpload
+    existing_study_extractions: Optional[List[StudyExtraction]] = None
+    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
+    colocs: Optional[List[UploadColoc]] = None
 
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None

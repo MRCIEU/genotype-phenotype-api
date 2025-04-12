@@ -20,6 +20,8 @@ async def get_matrix(
         response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
         return response
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -41,6 +43,8 @@ async def get_proxies(
         response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
         return response
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

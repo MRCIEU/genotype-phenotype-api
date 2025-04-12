@@ -59,6 +59,8 @@ services:
   gwas_upload_pipeline:
     image: mrcieu/genotype-phenotype-map:latest
     working_dir: /home/pipeline
+    volumes:
+      - oradiskvdb1:/oradiskvdb1
     environment:
       - PYTHONPATH=/workspace
     env_file:

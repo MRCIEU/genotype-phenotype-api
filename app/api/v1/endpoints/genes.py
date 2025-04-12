@@ -49,5 +49,7 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
             filtered_studies = []
 
         return GeneResponse(tissues=tissues, gene=gene, colocs=colocs, variants=variants, study_extractions=filtered_studies)
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
