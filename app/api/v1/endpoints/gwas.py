@@ -167,10 +167,10 @@ async def get_gwas(guid: str):
         existing_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, existing_study_extractions)
 
         return GwasUploadResponse(
-            gwas=gwas,
+            study=gwas,
             existing_study_extractions=existing_study_extractions,
             upload_study_extractions=upload_study_extractions,
-            colocalisations=colocalisations
+            colocs=colocalisations
         )
 
     except HTTPException as e:

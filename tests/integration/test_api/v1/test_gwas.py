@@ -87,8 +87,8 @@ def test_put_gwas_not_found():
 def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
-    assert response.json()['gwas']['guid'] == test_guid
-    assert response.json()['gwas']['status'] == GwasStatus.COMPLETED.value
+    assert response.json()['study']['guid'] == test_guid
+    assert response.json()['study']['status'] == GwasStatus.COMPLETED.value
     assert len(response.json()['existing_study_extractions']) > 1
     assert len(response.json()['upload_study_extractions']) > 1
-    assert len(response.json()['colocalisations']) > 1
+    assert len(response.json()['colocs']) > 1
