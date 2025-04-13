@@ -19,7 +19,6 @@ export default function region() {
             try {
                 const response = await fetch(constants.apiUrl + '/regions/' + regionId);
                 if (!response.ok) {
-                    console.log('caught error')
                     this.errorMessage = `Failed to load region, please try again later.`
                     return
                 }
@@ -83,13 +82,11 @@ export default function region() {
 
         initGraph() {
             if (this.errorMessage) {
-                console.log('erroring')
                 const chartContainer = document.getElementById("region-chart");
                 chartContainer.innerHTML = '<div class="notification is-danger is-light mt-4">' + this.errorMessage + '</div>'
                 return
             }
             else if (this.data === null || this.data.genes === null) {
-                console.log('loading')
                 const chartContainer = document.getElementById("region-chart");
                 chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>'
                 return

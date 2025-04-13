@@ -159,7 +159,6 @@ export default function pheontype() {
                 else return true
             })
 
-            console.log(tableData)
             tableData.forEach(coloc => {
                 const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % constants.tableColors.length, 0)
                 coloc.color = constants.tableColors[hash]
