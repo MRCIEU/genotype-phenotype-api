@@ -11,7 +11,6 @@ import region from './alpine-components/region.js';
 import phenotype from './alpine-components/phenotype.js';
 import homepage from './alpine-components/homepage.js';
 import snp from './alpine-components/snp.js';
-import upload from './alpine-components/upload.js';
 window.Alpine = Alpine;
 
 import { NavigationBar } from './web-components/navigation-bar.js';
@@ -59,5 +58,4 @@ Alpine.data('gene', gene)
 Alpine.data('about', about)
 Alpine.data('region', region)
 Alpine.data('snp', snp)
-Alpine.data('upload', upload)
 Alpine.start();
