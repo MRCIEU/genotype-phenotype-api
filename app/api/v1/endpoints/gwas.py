@@ -10,7 +10,7 @@ from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
-from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, GwasUploadResponse, ProcessGwasRequest, GwasStatus, Study, StudyDataTypes, StudyExtraction, StudyResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
+from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, Study, StudyDataTypes, StudyExtraction, StudyResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
@@ -158,7 +158,7 @@ async def update_gwas(
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{guid}", response_model=GwasUploadResponse)
+@router.get("/{guid}", response_model=StudyResponse)
 async def get_gwas(guid: str):
     try:
         studies_db = StudiesDBClient()
@@ -170,9 +170,9 @@ async def get_gwas(guid: str):
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         if gwas.status != GwasStatus.COMPLETED:
-            return GwasUploadResponse(
+            return StudyResponse(
                 study=gwas,
-                existing_study_extractions=None,
+                study_extractions=None,
                 upload_study_extractions=None,
                 colocs=None
             )

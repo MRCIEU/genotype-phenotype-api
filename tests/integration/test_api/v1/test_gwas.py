@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from app.db.gwas_db import GwasDBClient
 from app.main import app
-from app.models.schemas import GwasStatus, GwasUploadResponse
+from app.models.schemas import GwasStatus, StudyResponse
 import json
 
 client = TestClient(app)
@@ -94,10 +94,11 @@ def test_put_gwas_not_found():
 def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
+    print(response.json())
 
-    gwas_model = GwasUploadResponse(**response.json())
+    gwas_model = StudyResponse(**response.json())
     assert gwas_model.study.guid == test_guid
     assert gwas_model.study.status == GwasStatus.COMPLETED
-    assert len(gwas_model.existing_study_extractions) > 1
+    assert len(gwas_model.study_extractions) > 1
     assert len(gwas_model.upload_study_extractions) > 1
     assert len(gwas_model.colocs) > 1

@@ -197,7 +197,7 @@ class VariantResponse(BaseModel):
 
 class StudyResponse(BaseModel):
     study: Study | GwasUpload
-    colocs: List[Coloc]
+    colocs: List[Coloc] | List[ExtendedUploadColoc]
     study_extractions: List[ExtendedStudyExtraction]
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
 
@@ -261,12 +261,6 @@ class GwasUpload(BaseModel):
     doi: str
     should_be_added: bool
     status: GwasStatus
-
-class GwasUploadResponse(BaseModel):
-    study: GwasUpload
-    existing_study_extractions: Optional[List[ExtendedStudyExtraction]] = None
-    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
-    colocs: Optional[List[ExtendedUploadColoc]] = None
 
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None
