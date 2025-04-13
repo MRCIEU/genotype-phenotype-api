@@ -180,7 +180,7 @@ export default function homepage() {
                 this.uploadMetadata.uploadSuccess = true;
                 this.uploadMetadata.message = 'Upload successful!  An email will be sent to ' + this.uploadMetadata.formData.email +
                     ' once the analysis has been completed.  Or, you can check the status of your upload ' + 
-                    '<a href="upload.html?id=' + result.guid + '">here</a>.';
+                    '<a href="phenotype.html?id=' + result.guid + '">here</a>.';
             }
             else {
                 this.uploadMetadata.uploadSuccess = false;

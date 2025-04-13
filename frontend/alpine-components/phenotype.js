@@ -3,6 +3,7 @@ import constants from './constants.js'
 
 export default function pheontype() {
     return {
+        userUpload: false,
         data: null,
         filteredColocData: null,
         filteredGroupedColoc: null,
@@ -16,14 +17,23 @@ export default function pheontype() {
 
         async loadData() {
             let studyId = (new URLSearchParams(location.search).get('id'))
+            let requestUrl = constants.apiUrl + '/studies/' + studyId
+
+            if (studyId && studyId.includes('-')) {
+                this.userUpload = true
+                requestUrl = constants.apiUrl + '/gwas/' + studyId
+            }
+
             try {
-                const response = await fetch(constants.apiUrl + '/studies/' + studyId)
-                if (!response.ok) {
-                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
-                    return
-                }
+                // const response = await fetch(requestUrl)
+                // if (!response.ok) {
+                //     this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
+                //     return
+                // }
                 
-                this.data = await response.json()
+                // this.data = await response.json()
+                this.data = {"study": {"id": 16, "guid": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b", "email": "ae@email.com", "name": "Example Study", "sample_size": 23423, "ancestry": "EUR", "category": "continuous", "is_published": false, "doi": "None", "should_be_added": false, "status": "completed"}, "study_extractions": [{"id": 2931118, "study_id": 1507, "snp_id": 4261896, "snp": "19:58383088_A_G", "ld_block_id": 1287, "unique_study_id": "ebi-a-GCST90018994_EUR_19_58383088_1", "study": "ebi-a-GCST90018994", "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST90018994/finemapped/EUR_19_58383088_1.tsv.gz", "chr": 19, "bp": 58383088, "min_p": 8.405044354731217e-05, "cis_trans": null, "ld_block": "EUR/19/56919549-58607520", "known_gene": null}, {"id": 2931479, "study_id": 2343, "snp_id": 4261880, "snp": "19:58378824_A_G", "ld_block_id": 1287, "unique_study_id": "ebi-a-GCST003766_EUR_19_57004872_3", "study": "ebi-a-GCST003766", "file": "/local-scratch/projects/genotype-phenotype-map/data/study/ebi-a-GCST003766/finemapped/EUR_19_57004872_3.tsv.gz", "chr": 19, "bp": 58378824, "min_p": 3.484585048379826e-30, "cis_trans": null, "ld_block": "EUR/19/56919549-58607520", "known_gene": null}, {"id": 2933060, "study_id": 117701, "snp_id": 4259885, "snp": "19:57844874_A_G", "ld_block_id": 1287, "unique_study_id": "GTEx-eQTL-v10-Artery-Coronary-ENSG00000198466-12_EUR_19_57844874_2", "study": "GTEx-eQTL-v10-Artery-Coronary-ENSG00000198466-12", "file": "/local-scratch/projects/genotype-phenotype-map/data/study/GTEx-eQTL-v10-Artery-Coronary-ENSG00000198466-12/finemapped/EUR_19_57860905_2.tsv.gz", "chr": 19, "bp": 57844874, "min_p": 2.01859101725357e-17, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "ZNF587"}, {"id": 2933094, "study_id": 134358, "snp_id": 4258659, "snp": "19:57490144_A_T", "ld_block_id": 1287, "unique_study_id": "GTEx-eQTL-v10-Artery-Tibial-ENSG00000105136-22_EUR_19_57490144_1", "study": "GTEx-eQTL-v10-Artery-Tibial-ENSG00000105136-22", "file": "/local-scratch/projects/genotype-phenotype-map/data/study/GTEx-eQTL-v10-Artery-Tibial-ENSG00000105136-22/finemapped/EUR_19_57492120_1.tsv.gz", "chr": 19, "bp": 57490144, "min_p": 1.7796490496925177e-43, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "ZNF419"}, {"id": 2933333, "study_id": 172257, "snp_id": 4258648, "snp": "19:57488345_C_G", "ld_block_id": 1287, "unique_study_id": "GTEx-eQTL-v10-Brain-Caudate-basal-ganglia-ENSG00000268545-1_EUR_19_57488345_1", "study": "GTEx-eQTL-v10-Brain-Caudate-basal-ganglia-ENSG00000268545-1", "file": "/local-scratch/projects/genotype-phenotype-map/data/study/GTEx-eQTL-v10-Brain-Caudate-basal-ganglia-ENSG00000268545-1/finemapped/EUR_19_57488345_1.tsv.gz", "chr": 19, "bp": 57488345, "min_p": 7.930009815027006e-06, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "VN1R107P"}, {"id": 2934051, "study_id": 331407, "snp_id": 4258659, "snp": "19:57490144_A_T", "ld_block_id": 1287, "unique_study_id": "GTEx-eQTL-v10-Breast-Mammary-Tissue-ENSG00000105136-22_EUR_19_57490144_1", "study": "GTEx-eQTL-v10-Breast-Mammary-Tissue-ENSG00000105136-22", "file": "/local-scratch/projects/genotype-phenotype-map/data/study/GTEx-eQTL-v10-Breast-Mammary-Tissue-ENSG00000105136-22/finemapped/EUR_19_57524397_1.tsv.gz", "chr": 19, "bp": 57490144, "min_p": 9.753223619360374e-13, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "ZNF419"}], "upload_study_extractions": [{"id": 181, "gwas_upload_id": 16, "snp_id": 4258648, "snp": "19:57488345_C_G", "ld_block_id": 49, "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR_1_103423003_1", "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b", "file": "/local-scratch/projects/genotype-phenotype-map/test/data/study/gwas_upload/22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b//finemapped/EUR_1_101950949_1.tsv.gz", "chr": 1, "bp": 103423003, "min_p": 3.0203e-22, "cis_trans": null, "ld_block": "EUR/1/101384499-103762931", "known_gene": null}, {"id": 182, "gwas_upload_id": 16, "snp_id": 4258648, "snp": "19:57488345_C_G", "ld_block_id": 49, "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR_1_103430485_2", "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b", "file": "/local-scratch/projects/genotype-phenotype-map/test/data/study/gwas_upload/22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b//finemapped/EUR_1_101950949_2.tsv.gz", "chr": 1, "bp": 103430485, "min_p": 3.4851e-18, "cis_trans": null, "ld_block": "EUR/1/101384499-103762931", "known_gene": null}], "colocs": [{"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": null, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 1, "iteration": 2, "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR_1_103423003_1", "posterior_prob": 0.673799991607666, "regional_prob": 0.7142999768257141, "posterior_explained_by_snp": 0.3646000027656555, "candidate_snp": "19:57488345_C_G", "study_id": null, "chr": 1, "bp": 103423003, "min_p": 3.0203e-22, "cis_trans": null, "ld_block": "EUR/1/101384499-103762931", "known_gene": null, "trait": "Example Study", "data_type": "phenotype", "tissue": null}, {"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": 2934051, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 1, "iteration": 2, "unique_study_id": "GTEx-eQTL-v10-Breast-Mammary-Tissue-ENSG00000105136-22_EUR_19_57490144_1", "posterior_prob": 0.673799991607666, "regional_prob": 0.7142999768257141, "posterior_explained_by_snp": 0.3646000027656555, "candidate_snp": "19:57488345_C_G", "study_id": 331407, "chr": 19, "bp": 57490144, "min_p": 9.753223619360374e-13, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "ZNF419", "trait": "GTEx-eQTL-v10 Breast Mammary Tissue ZNF419", "data_type": "gene_expression", "tissue": "Breast Mammary Tissue"}, {"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": 2931118, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 2, "iteration": 1, "unique_study_id": "ebi-a-GCST90018994_EUR_19_58383088_1", "posterior_prob": 0.7675999999046326, "regional_prob": 0.8600999712944031, "posterior_explained_by_snp": 1.0, "candidate_snp": "19:57488345_C_G", "study_id": 1507, "chr": 19, "bp": 58383088, "min_p": 8.405044354731217e-05, "cis_trans": null, "ld_block": "EUR/19/56919549-58607520", "known_gene": null, "trait": "Medication use (opioids)", "data_type": "phenotype", "tissue": null}, {"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": 2931479, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 2, "iteration": 1, "unique_study_id": "ebi-a-GCST003766_EUR_19_57004872_3", "posterior_prob": 0.7675999999046326, "regional_prob": 0.8600999712944031, "posterior_explained_by_snp": 1.0, "candidate_snp": "19:57488345_C_G", "study_id": 2343, "chr": 19, "bp": 58378824, "min_p": 3.484585048379826e-30, "cis_trans": null, "ld_block": "EUR/19/56919549-58607520", "known_gene": null, "trait": "Subjective well-being", "data_type": "phenotype", "tissue": null}, {"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": 2933060, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 2, "iteration": 1, "unique_study_id": "GTEx-eQTL-v10-Artery-Coronary-ENSG00000198466-12_EUR_19_57844874_2", "posterior_prob": 0.7675999999046326, "regional_prob": 0.8600999712944031, "posterior_explained_by_snp": 1.0, "candidate_snp": "19:57488345_C_G", "study_id": 117701, "chr": 19, "bp": 57844874, "min_p": 2.01859101725357e-17, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "ZNF587", "trait": "GTEx-eQTL-v10 Artery Coronary ZNF587", "data_type": "gene_expression", "tissue": "Artery Coronary"}, {"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": 2933094, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 1, "iteration": 2, "unique_study_id": "GTEx-eQTL-v10-Artery-Tibial-ENSG00000105136-22_EUR_19_57490144_1", "posterior_prob": 0.673799991607666, "regional_prob": 0.7142999768257141, "posterior_explained_by_snp": 0.3646000027656555, "candidate_snp": "19:57488345_C_G", "study_id": 134358, "chr": 19, "bp": 57490144, "min_p": 1.7796490496925177e-43, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "ZNF419", "trait": "GTEx-eQTL-v10 Artery Tibial ZNF419", "data_type": "gene_expression", "tissue": "Artery Tibial"}, {"gwas_upload_id": 16, "upload_study_extraction_id": null, "existing_study_extraction_id": 2933333, "snp_id": 4258648, "ld_block_id": null, "coloc_group_id": 1, "iteration": 2, "unique_study_id": "GTEx-eQTL-v10-Brain-Caudate-basal-ganglia-ENSG00000268545-1_EUR_19_57488345_1", "posterior_prob": 0.673799991607666, "regional_prob": 0.7142999768257141, "posterior_explained_by_snp": 0.3646000027656555, "candidate_snp": "19:57488345_C_G", "study_id": 172257, "chr": 19, "bp": 57488345, "min_p": 7.930009815027006e-06, "cis_trans": "cis", "ld_block": "EUR/19/56919549-58607520", "known_gene": "VN1R107P", "trait": "GTEx-eQTL-v10 Brain Caudate basal ganglia VN1R107P", "data_type": "gene_expression", "tissue": "Brain Caudate basal ganglia"}]}
+
 
                 // Count frequency of each id in colocs and scale between 2 and 10
                 const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
@@ -79,10 +89,19 @@ export default function pheontype() {
             }
         },
 
+        get showResults() {
+            if (this.data === null) return false
+            if (this.userUpload) return this.data.study.status === 'completed'
+            return true
+        },
+
         get getStudyToDisplay() {
             if (this.data === null) return '...'
+            if (this.userUpload) {
+                return 'GWAS Upload: ' + this.data.study.name
+            }
 
-            return this.data.study.trait
+            return text + this.data.study.trait
         },
 
         filterByOptions(graphOptions) {
@@ -133,20 +152,16 @@ export default function pheontype() {
         },
 
         get getDataForColocTable() {
-            if (!this.filteredColocData) return []
+            if (!this.filteredColocData || this.filteredColocData.length === 0) return []
             let tableData = this.filteredColocData.filter(coloc => {
                 if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
-                else if (this.displayFilters.candidate_snp !== null)    return coloc.candidate_snp === this.displayFilters.candidate_snp 
+                else if (this.displayFilters.candidate_snp !== null) return coloc.candidate_snp === this.displayFilters.candidate_snp 
                 else return true
             })
-            tableData = this.filteredStudyExtractions.filter(se => {
-                if (this.displayFilters.chr !== null) return se.chr == this.displayFilters.chr
-                else if (this.displayFilters.candidate_snp !== null)    return se.candidate_snp === this.displayFilters.candidate_snp 
-                else return true
-            }).concat(tableData)
 
+            console.log(tableData)
             tableData.forEach(coloc => {
-                const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+                const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % constants.tableColors.length, 0)
                 coloc.color = constants.tableColors[hash]
             })
 

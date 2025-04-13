@@ -1,8 +1,9 @@
 import pytest
 from unittest.mock import Mock
 from fastapi.testclient import TestClient
+from app.db.gwas_db import GwasDBClient
 from app.main import app
-from app.models.schemas import GwasStatus
+from app.models.schemas import GwasStatus, GwasUploadResponse
 import json
 
 client = TestClient(app)
@@ -65,6 +66,12 @@ def test_guid():
     # mock_redis_client.add_to_queue.assert_called_once()
     return response.json()['guid']
 
+@pytest.fixture(scope="module", autouse=True)
+def test_remove_all_data():
+    yield
+    gwas_db = GwasDBClient()
+    gwas_db.remove_all_data()
+
 def test_get_gwas_not_found():
     response = client.get("/v1/gwas/nonexistent-guid")
     assert response.status_code == 404
@@ -87,8 +94,10 @@ def test_put_gwas_not_found():
 def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
-    assert response.json()['study']['guid'] == test_guid
-    assert response.json()['study']['status'] == GwasStatus.COMPLETED.value
-    assert len(response.json()['existing_study_extractions']) > 1
-    assert len(response.json()['upload_study_extractions']) > 1
-    assert len(response.json()['colocs']) > 1
+
+    gwas_model = GwasUploadResponse(**response.json())
+    assert gwas_model.study.guid == test_guid
+    assert gwas_model.study.status == GwasStatus.COMPLETED
+    assert len(gwas_model.existing_study_extractions) > 1
+    assert len(gwas_model.upload_study_extractions) > 1
+    assert len(gwas_model.colocs) > 1

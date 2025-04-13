@@ -217,4 +217,24 @@ class RedisClient:
             ]
         except Exception as e:
             print(f"Error getting scheduled jobs: {e}")
-            return [] 
+            return []
+
+    def update_user_upload(self, email: str, max_daily_uploads: int = 100) -> tuple[bool, int]:
+        """
+        Track user upload attempts and check rate limiting.
+        Returns (is_allowed: bool, recent_uploads: int)
+        """
+        try:
+            email_key = f"email_uploads:{email}"
+            current_time = datetime.datetime.now(UTC).isoformat()
+            
+            self.redis.zadd(email_key, {current_time: current_time})
+            
+            # Get count of uploads in last 24 hours
+            yesterday = (datetime.datetime.now(UTC) - datetime.timedelta(days=1)).timestamp()
+            recent_uploads = self.redis.zcount(email_key, yesterday, '+inf')
+            
+            return recent_uploads <= max_daily_uploads, recent_uploads
+        except Exception as e:
+            print(f"Error tracking user upload: {e}")
+            return True, 0  # Default to allowing upload if Redis fails 

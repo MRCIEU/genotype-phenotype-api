@@ -11,6 +11,12 @@ class Singleton(type):
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
+class StudyDataTypes(Enum):
+    GENE_EXPRESSION = "gene_expression"
+    SPLICE_VARIANT = "splice_variant"
+    PROTEIN = "protein"
+    PHENOTYPE = "phenotype"
+
 class StudySource(BaseModel):
     id: int
     name: str
@@ -190,9 +196,10 @@ class VariantResponse(BaseModel):
     colocs: List[ExtendedColoc]
 
 class StudyResponse(BaseModel):
-    study: Study
+    study: Study | GwasUpload
     colocs: List[Coloc]
     study_extractions: List[ExtendedStudyExtraction]
+    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
 
 class GwasStatus(Enum):
     PROCESSING = "processing"
@@ -217,6 +224,12 @@ class ProcessGwasRequest(BaseModel):
     @classmethod
     def to_py_dict(cls, data):
         return json.loads(data)
+
+class UpdateGwasRequest(BaseModel):
+    success: bool
+    failure_reason: Optional[str] = None
+    coloc_results: Optional[List[UploadColoc]] = None
+    study_extractions: Optional[List[UploadStudyExtraction]] = None
 
 class GwasColumnNames(BaseModel):
     SNP: Optional[str] = None
@@ -251,9 +264,9 @@ class GwasUpload(BaseModel):
 
 class GwasUploadResponse(BaseModel):
     study: GwasUpload
-    existing_study_extractions: Optional[List[StudyExtraction]] = None
+    existing_study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
-    colocs: Optional[List[UploadColoc]] = None
+    colocs: Optional[List[ExtendedUploadColoc]] = None
 
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None
@@ -301,6 +314,11 @@ class UploadColoc(BaseModel):
         "from_attributes": True
     }
 
+class ExtendedUploadColoc(UploadColoc):
+    trait: Optional[str] = None
+    data_type: Optional[str] = None
+    tissue: Optional[str] = None
+    cis_trans: Optional[str] = None
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""

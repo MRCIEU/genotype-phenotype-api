@@ -17,18 +17,36 @@
             <div class="columns mt-4 mb-0">
                 <div class="column is-10">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
-                    <p class="is-size-7 has-text-centered">Displays colocalised results of the study in question, and shows all studies which colocalise with it</p>
-                    <p class="is-size-7 has-text-centered">Also displays significant rare and non-colocalising results</p>
-                    <p class="is-size-7 has-text-centered">To compare 2 specific traits, please use the 'Filter Results By' dropdown</p>
+                    <p class="has-text-centered mb-0" x-show="userUpload">
+                        <span x-text="'Status: '+ (data.study ? data.study.status : '...')"></span>
+                    </p>
+
+                    <div class="columns mt-0 is-centered" x-show="userUpload && data.study.status === 'failed'">
+                        <div class="columns mt-0 is-centered">
+                            <h4 class="title">Upload failed</h4>
+                            <br />
+                            <p>Maybe give error message here?</p>
+                        </div>
+                    </div>
+                    <div class="columns mt-0 is-centered" x-show="userUpload && data.study.status === 'processing'">
+                        This may take a while...
+                    </div>
+
+                    <div x-show="showResults">
+                        <p class="is-size-7 has-text-centered">Displays colocalised results of the study in question, and shows all studies which colocalise with it</p>
+                        <p class="is-size-7 has-text-centered">Also displays significant rare and non-colocalising results</p>
+                        <p class="is-size-7 has-text-centered">To compare 2 specific traits, please use the 'Filter Results By' dropdown</p>
+                    </div>
+
                 </div>
                 <div class="column is-2">
-                    <div x-show="filteredColocData && filteredColocData.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
+                    <div x-show="showResults && filteredColocData && filteredColocData.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
                             Please change current filter settings for results to appear.
                     </div>
                 </div>
             </div>
 
-            <div class="columns mt-0">
+            <div class="columns mt-0" x-show="showResults">
                 <div class="column is-10">
                     <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
                 </div>
@@ -53,7 +71,7 @@
                     <graph-options></graph-options>
                 </div>
             </div>
-            <div class="columns is-centered mb-0 mt-0">
+            <div class="columns is-centered mb-0 mt-0" x-show="showResults">
                 <div class="column is-11">
                     <button class="button is-small" @click="removeDisplayFilters">
                         Remove Display Filters
@@ -61,7 +79,7 @@
                 </div>
             </div>
 
-            <div class="columns mt-0 is-centered">
+            <div class="columns mt-0 is-centered" x-show="showResults">
                 <div class="column is-11">
                     <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
                         <thead>

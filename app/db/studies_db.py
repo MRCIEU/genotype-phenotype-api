@@ -3,6 +3,8 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
+from app.models.schemas import StudyDataTypes
+
 settings = get_settings()
 
 @lru_cache()
@@ -24,6 +26,22 @@ class StudiesDBClient:
     def get_study(self, study_id: str):
         query = f"SELECT * FROM studies WHERE id = '{study_id}'"
         return self.studies_conn.execute(query).fetchone()
+    
+    def get_studies_by_id(self, study_ids: List[int]):
+        formatted_ids = ','.join(
+            f"({i}, {id if id is not None else 'NULL'})" 
+            for i, id in enumerate(study_ids)
+        )
+        query = f"""
+            WITH input_studies AS (
+                SELECT * FROM (VALUES {formatted_ids}) as t(row_num, id)
+            )
+            SELECT studies.*
+            FROM input_studies
+            LEFT JOIN studies ON COALESCE(input_studies.id, -1) = COALESCE(studies.id, -1)
+            ORDER BY input_studies.row_num
+        """
+        return self.studies_conn.execute(query).fetchall()
 
     def _fetch_colocs(self, condition: str):
         # TODO: Remove this once we filter colocs when creating the db
@@ -50,7 +68,7 @@ class StudiesDBClient:
 
     def get_study_names_for_search(self):
         return self.studies_conn.execute(
-            "SELECT id, trait FROM studies WHERE data_type = 'phenotype'"
+            f"SELECT id, trait FROM studies WHERE data_type = '{StudyDataTypes.PHENOTYPE.value}'"
         ).fetchall()
 
     def get_gene_names(self):
@@ -82,7 +100,10 @@ class StudiesDBClient:
     def get_study_extractions_by_id(self, ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in ids)
         query = f"""
-            SELECT * FROM study_extractions WHERE id IN ({formatted_ids})
+            SELECT study_extractions.*, studies.trait, studies.data_type, studies.tissue
+            FROM study_extractions
+            JOIN studies ON study_extractions.study_id = studies.id
+            WHERE study_extractions.id IN ({formatted_ids})
         """
         return self.studies_conn.execute(query).fetchall()
 
