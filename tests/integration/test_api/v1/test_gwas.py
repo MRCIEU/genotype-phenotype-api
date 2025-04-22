@@ -31,7 +31,7 @@ guid = None
 
 @pytest.fixture(scope="module")
 def test_guid():
-    with open('tests/test_data/test.tsv.gz', 'rb') as f:
+    with open('tests/test_data/test_upload.tsv.gz', 'rb') as f:
         request_data = {
             "reference_build": "GRCh38",
             "email": "ae@email.com",
