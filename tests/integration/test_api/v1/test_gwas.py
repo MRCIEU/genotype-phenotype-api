@@ -1,3 +1,5 @@
+from os import system
+import os
 import pytest
 from unittest.mock import Mock
 from fastapi.testclient import TestClient
@@ -66,11 +68,11 @@ def test_guid():
     # mock_redis_client.add_to_queue.assert_called_once()
     return response.json()['guid']
 
+# Sorry for the hack for resetting the database, couldn't think of a better way to do it
 @pytest.fixture(scope="module", autouse=True)
 def test_remove_all_data():
     yield
-    gwas_db = GwasDBClient()
-    gwas_db.remove_all_data()
+    system("git checkout tests/test_data/gwas_upload_small.db")
 
 def test_get_gwas_not_found():
     response = client.get("/v1/gwas/nonexistent-guid")
@@ -94,7 +96,6 @@ def test_put_gwas_not_found():
 def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
-    print(response.json())
 
     gwas_model = StudyResponse(**response.json())
     assert gwas_model.study.guid == test_guid

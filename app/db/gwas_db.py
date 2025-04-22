@@ -133,13 +133,3 @@ class GwasDBClient:
             return result.fetchone()
         finally:
             conn.close()
-
-    def remove_all_data(self):
-        conn = self.connect()
-        try:
-            conn.execute("DELETE FROM gwas_upload")
-            conn.execute("DELETE FROM study_extractions")
-            conn.execute("DELETE FROM colocalisations")
-            conn.commit()
-        finally:
-            conn.close()

@@ -28,6 +28,7 @@ async def get_associations(
 @router.get("/", response_model=List[Variant])
 async def get_variants(
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
+    variants: List[str] = Query(None, description="List of variants to filter results"),
     rsids: List[str] = Query(None, description="List of rsids to filter results"),
     grange: str = Query(None, description="grange to filter results"),
 ) -> List[Variant]:
@@ -36,7 +37,7 @@ async def get_variants(
             raise HTTPException(status_code=400, detail="Only one of snp_ids, rsids, or grange can be provided.")
 
         db = StudiesDBClient()
-        variants = db.get_variants(snp_ids, rsids, grange)
+        variants = db.get_variants(snp_ids=snp_ids, variants=variants, rsids=rsids, grange=grange)
         variants = convert_duckdb_to_pydantic_model(Variant, variants)
 
         return variants

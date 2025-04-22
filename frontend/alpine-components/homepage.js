@@ -6,6 +6,8 @@ export default function homepage() {
         logo,
         searchText: '',
         searchOptionData: [],
+        variantSearchInProgress: false,
+        variantSearchResponse: null,
         uploadMetadata: {
             currentlyUploading: false,
             modalOpen: false,
@@ -27,7 +29,7 @@ export default function homepage() {
         filteredItems: [],
         errorMessage: null,
 
-        async loadData() {
+        async loadSearchOptions() {
             try {
                 const response = await fetch(constants.apiUrl + '/search/options');
                 
@@ -37,6 +39,23 @@ export default function homepage() {
                 }
 
                 this.searchOptionData = await response.json();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        },
+
+        async getVariantSearchResponse(variantText) {
+            try {
+                this.variantSearchInProgress = true;
+                const response = await fetch(constants.apiUrl + '/search/variant/' + variantText);
+                
+                if (!response.ok) {
+                    this.errorMessage = `Failed to load search options: ${response.status} ${constants.apiUrl + '/search/variant/' + variantText}`
+                    return;
+                }
+
+                this.variantSearchResponse = await response.json();
+                this.variantSearchInProgress = false;
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -82,6 +101,21 @@ export default function homepage() {
             }, this.searchMetadata.searchDelay);
 
             return this.filteredItems;
+        },
+
+        searchVariant() {
+            const query = this.searchText.trim();
+            if (!query || query.length < this.searchMetadata.minSearchChars) {
+                return;
+            }
+
+            const isRsid = query.toLowerCase().startsWith('rs');
+            const isChrBp = /^\d+:\d+(_[ACGT]+_[ACGT]+)?$/.test(query);
+            
+            if (isRsid || isChrBp) {
+                this.getVariantSearchResponse(query);
+                this.filteredItems = [];
+            }
         },
 
         doesUploadDataHaveErrors() {

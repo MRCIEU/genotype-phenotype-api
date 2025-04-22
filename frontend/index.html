@@ -14,7 +14,7 @@
     <div id = "wait-to-load" style="display:none;">
         <navigation-bar></navigation-bar>
 
-        <div id="homepage" x-data="homepage" x-init="loadData">
+        <div id="homepage" x-data="homepage" x-init="loadSearchOptions">
             <div class="columns mt-6 is-centered">
                 <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
             </div>
@@ -24,7 +24,12 @@
             <div class="columns mt-1 is-centered">
                 <div class="column is-three-quarters">
                     <div class="dropdown is-active level">
-                        <input class="input" type="text" @input="getItemsForSearch" placeholder="Search for a trait or gene..." x-model="searchText">
+                        <input class="input" 
+                               type="text" 
+                               @input="getItemsForSearch" 
+                               @keyup.enter="searchVariant"
+                               placeholder="Search for a trait (hemoglobin), gene (DRD2), or variant (rs6589381, 11:113508230)" 
+                               x-model="searchText">
                         <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
                             <div class="dropdown-content" style="max-height: 320px; overflow-y: auto;">
                                 <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.type_id">
@@ -33,6 +38,96 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Variant search results section -->
+                    <div x-show="variantSearchResponse !== null || variantSearchInProgress" class="mt-4">
+                        <h4 class="title is-4">Variant Search Results</h4>
+                        
+                        <div x-show="variantSearchInProgress" class="mb-4">
+                            <progress class="progress is-large is-info" max="100">60%</progress>
+                            <p class="has-text-centered">Searching for variants...</p>
+                        </div>
+                        <div x-show="!variantSearchInProgress && variantSearchResponse && variantSearchResponse.original_variants && variantSearchResponse.original_variants.length > 0">
+                            <h5 class="title is-5 mb-2">Exact Matches</h5>
+                            <div class="columns is-multiline">
+                                <template x-for="variant in variantSearchResponse.original_variants" :key="variant.id">
+                                    <div class="column is-12">
+                                        <div class="card">
+                                            <header class="card-header">
+                                                <p class="card-header-title">
+                                                    <a :href="'snp.html?id=' + variant.id" x-text="variant.rsid || variant.snp"></a>
+                                                </p>
+                                            </header>
+                                            <div class="card-content">
+                                                <div class="content">
+                                                    <div class="columns">
+                                                        <div class="column is-3">
+                                                            <strong>Position:</strong> <span x-text="variant.chr + ':' + variant.bp"></span>
+                                                        </div>
+                                                        <div class="column is-3">
+                                                            <strong>Alleles:</strong> <span x-text="variant.ea + '/' + variant.oa"></span>
+                                                        </div>
+                                                        <div class="column is-3">
+                                                            <strong>Colocalizations:</strong> <span x-text="variant.num_colocs || 0"></span>
+                                                        </div>
+                                                        <div class="column is-3">
+                                                            <strong>Gene:</strong> <span x-text="variant.symbol || 'Unknown'"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div x-show="!variantSearchInProgress && variantSearchResponse && variantSearchResponse.proxy_variants && variantSearchResponse.proxy_variants.length > 0" class="mt-4">
+                            <h5 class="title is-5 mb-2">Proxy Variants (LD)</h5>
+                            <div class="columns is-multiline">
+                                <template x-for="variant in variantSearchResponse.proxy_variants" :key="variant.id">
+                                    <div class="column is-12">
+                                        <div class="card">
+                                            <header class="card-header">
+                                                <p class="card-header-title">
+                                                    <a :href="'snp.html?id=' + variant.id" x-text="variant.rsid || variant.snp"></a>
+                                                </p>
+                                            </header>
+                                            <div class="card-content">
+                                                <div class="content">
+                                                    <div class="columns">
+                                                        <div class="column is-2">
+                                                            <strong>Position:</strong> <span x-text="variant.chr + ':' + variant.bp"></span>
+                                                        </div>
+                                                        <div class="column is-2">
+                                                            <strong>Alleles:</strong> <span x-text="variant.ea + '/' + variant.oa"></span>
+                                                        </div>
+                                                        <div class="column is-2">
+                                                            <strong>Colocalizations:</strong> <span x-text="variant.num_colocs || 0"></span>
+                                                        </div>
+                                                        <div class="column is-2">
+                                                            <strong>Gene:</strong> <span x-text="variant.symbol || 'Unknown'"></span>
+                                                        </div>
+                                                        <div class="column is-4">
+                                                            <strong>LD (r):</strong> <span x-text="variant.ld_proxies && variant.ld_proxies.length > 0 ? variant.ld_proxies[0].r.toFixed(3) : 'N/A'"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <!-- No results message -->
+                        <div x-show="!variantSearchInProgress && variantSearchResponse && 
+                                    (!variantSearchResponse.original_variants || variantSearchResponse.original_variants.length === 0) && 
+                                    (!variantSearchResponse.proxy_variants || variantSearchResponse.proxy_variants.length === 0)" 
+                             class="notification">
+                            No variants found matching your search.
+                        </div>
+                    </div>
+
                     <br />
                     <div class="is-divider" data-content="OR"></div>
                     <div class="columns mt-6 is-centered">
@@ -55,6 +150,7 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Upload modal section -->
                         <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': uploadMetadata.modalOpen }" @keydown.window.escape="closeModal()">
                             <div class="modal-background" @click="closeModal()"></div>
                             <div class="modal-card is-large" style="width: 900px; max-width: 90%;">
@@ -266,7 +362,8 @@
                         </div>
                     </div>
                     <div class="block mt-6">
-                        GWAS studies: <strong>2500</strong><br />
+                        GWAS studies: <strong>5,000</strong><br />
+                        Rare variant studies: <strong>10,000</strong><br />
                         Molecular studies: <strong>567,332</strong><br />
                         Colocalised Pairs: <strong>123,456</strong><br />
                         Causal Variants: <strong>12,221</strong><br />

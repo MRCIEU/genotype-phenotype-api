@@ -172,6 +172,10 @@ class Variant(BaseModel):
     afr_af: Optional[float] = None
     sas_af: Optional[float] = None
 
+class ExtendedVariant(Variant):
+    num_colocs: Optional[int] = None
+    num_rare_variants: Optional[int] = None
+    ld_proxies: Optional[List[Ld]] = None
 
 class GeneResponse(BaseModel):
     gene: Gene
@@ -194,6 +198,10 @@ class RegionResponse(BaseModel):
 class VariantResponse(BaseModel):
     variant: Variant
     colocs: List[ExtendedColoc]
+
+class VariantSearchResponse(BaseModel):
+    original_variants: List[ExtendedVariant]
+    proxy_variants: List[ExtendedVariant]
 
 class StudyResponse(BaseModel):
     study: Study | GwasUpload

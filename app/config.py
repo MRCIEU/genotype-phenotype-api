@@ -4,6 +4,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     STUDIES_DB_PATH: str
     ASSOCIATIONS_DB_PATH: str
+    LD_DB_PATH: str
     GWAS_UPLOAD_DB_PATH: str
     REDIS_HOST: str
     REDIS_PORT: int

@@ -57,6 +57,10 @@ class StudiesDBClient:
     def get_colocs_for_variant(self, snp_id: int):
         return self._fetch_colocs(f"snp_id = {snp_id}")
 
+    def get_colocs_for_variants(self, snp_ids: List[int]):
+        formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
+        return self._fetch_colocs(f"snp_id IN ({formatted_snp_ids})")
+
     def get_all_colocs_for_gene(self, symbol: str):
         return self._fetch_colocs(f"known_gene = '{symbol}' AND cis_trans = 'cis'")
 
@@ -165,6 +169,10 @@ class StudiesDBClient:
     def get_variant(self, snp_id: int):
         query = f"SELECT * FROM snp_annotations WHERE id = {snp_id}"
         return self.studies_conn.execute(query).fetchone()
+    
+    def get_variant_prefixes(self):
+        query = f"SELECT id, SPLIT_PART(snp, '_', 1) as prefix FROM snp_annotations"
+        return self.studies_conn.execute(query).fetchall()
 
     def get_gene_ranges(self):
         query = f"""
@@ -180,26 +188,8 @@ class StudiesDBClient:
         """
         return self.studies_conn.execute(query).fetchall()
 
-    def get_ld_proxies(self, snp_ids: List[int]):
-        formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
-        query = f"""
-            SELECT * FROM ld
-            WHERE variant_snp_id IN ({formatted_snp_ids})
-            AND abs(r) > 0.894
-        """
-        return self.studies_conn.execute(query).fetchall()
-
-    def get_ld_matrix(self, snp_ids: List[int]):
-        formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
-        query = f"""
-            SELECT * FROM 
-                (SELECT * FROM ld WHERE lead IN ({formatted_snp_ids}))
-                WHERE variant IN ({formatted_snp_ids}) AND variant > lead
-        """
-        return self.studies_conn.execute(query).fetchall()
-
-    def get_variants(self, snp_ids: List[int] = None, rsids: List[str] = None, grange: List[str] = None):
-        if not snp_ids and not rsids and not grange:
+    def get_variants(self, snp_ids: List[int] = None, variants: List[str] = None, variant_prefixes: List[str] = None, rsids: List[str] = None, grange: List[str] = None):
+        if not snp_ids and not variants and not variant_prefixes and not rsids and not grange:
             return []
 
         query = "SELECT * FROM snp_annotations WHERE "
@@ -213,8 +203,13 @@ class StudiesDBClient:
             chr, position = grange.split(":")
             start_bp, end_bp = position.split("-")
             start_bp, end_bp = int(start_bp), int(end_bp)
-
             query += f"""chr = {chr} AND bp BETWEEN {start_bp} AND {end_bp}"""
+        elif variants:
+            formatted_variants = ','.join(f"'{variant}'" for variant in variants)
+            query += f"snp IN ({formatted_variants})"
+        elif variant_prefixes:
+            formatted_variant_prefixes = ','.join(f"'{variant_prefix}'" for variant_prefix in variant_prefixes)
+            query += f"SPLIT_PART(snp, '_', 1) IN ({formatted_variant_prefixes})"
 
         return self.studies_conn.execute(query).fetchall()
 
@@ -239,3 +234,8 @@ class StudiesDBClient:
         formatted_snps = ','.join(f"'{snp}'" for snp in snps)
         query = f"SELECT id FROM snp_annotations WHERE id IN ({formatted_snps})"
         return self.studies_conn.execute(query).fetchall()
+    
+    # def get_rare_variants(self, snp_ids: List[int]):
+    #     formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
+    #     query = f"SELECT * FROM rare_results WHERE snp_id IN ({formatted_snp_ids})"
+    #     return self.studies_conn.execute(query).fetchall()

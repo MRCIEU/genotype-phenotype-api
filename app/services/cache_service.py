@@ -16,6 +16,14 @@ class CacheService(metaclass=Singleton):
             List of tuples containing (study_name, trait)
         """
         return self.db.get_study_names_for_search()
+    
+    def get_variant_prefixes(self) -> List[str]:
+        """
+        Retrieve variant prefixes from DuckDB with caching.
+        Returns:
+            List of variant prefixes
+        """
+        return self.db.get_variant_prefixes()
 
     @lru_cache(maxsize=1)
     def get_gene_names(self) -> List[Tuple[str, str]]:
