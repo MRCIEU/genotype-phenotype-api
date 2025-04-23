@@ -29,9 +29,9 @@ class Association(BaseModel):
     study_id: int
     beta: float
     se: float
-    imputed: bool
     p: float
     eaf: float
+    imputed: bool
 
 class Coloc(BaseModel):
     study_extraction_id: int
