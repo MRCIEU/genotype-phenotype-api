@@ -47,7 +47,7 @@
                             <progress class="progress is-large is-info" max="100">60%</progress>
                             <p class="has-text-centered">Searching for variants...</p>
                         </div>
-                        <div x-show="!variantSearchInProgress && variantSearchResponse && variantSearchResponse.original_variants && variantSearchResponse.original_variants.length > 0">
+                        <div x-show="!variantSearchInProgress && variantSearchResponse?.original_variants?.length > 0">
                             <h5 class="title is-5 mb-2">Exact Matches</h5>
                             <div class="columns is-multiline">
                                 <template x-for="variant in variantSearchResponse.original_variants" :key="variant.id">
@@ -81,7 +81,7 @@
                                 </template>
                             </div>
                         </div>
-                        <div x-show="!variantSearchInProgress && variantSearchResponse && variantSearchResponse.proxy_variants && variantSearchResponse.proxy_variants.length > 0" class="mt-4">
+                        <div x-show="!variantSearchInProgress && variantSearchResponse?.proxy_variants?.length > 0" class="mt-4">
                             <h5 class="title is-5 mb-2">Proxy Variants (in LD with exact match)</h5>
                             <div class="columns is-multiline">
                                 <template x-for="variant in variantSearchResponse.proxy_variants" :key="variant.id">
@@ -108,7 +108,7 @@
                                                             <strong>Gene:</strong> <span x-text="variant.symbol || 'Unknown'"></span>
                                                         </div>
                                                         <div class="column is-4">
-                                                            <strong>LD (r<sup>2</sup>):</strong> <span x-text="variant.ld_proxies && variant.ld_proxies.length > 0 ? (variant.ld_proxies[0].r)**2.toFixed(3) : 'N/A'"></span>
+                                                            <strong>LD (r<sup>2</sup>):</strong> <span x-text="variant.ld_proxies && variant.ld_proxies.length > 0 ? (variant.ld_proxies[0].r**2).toFixed(3) : 'N/A'"></span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -121,8 +121,8 @@
                         
                         <!-- No results message -->
                         <div x-show="!variantSearchInProgress && variantSearchResponse && 
-                                    (!variantSearchResponse.original_variants || variantSearchResponse.original_variants.length === 0) && 
-                                    (!variantSearchResponse.proxy_variants || variantSearchResponse.proxy_variants.length === 0)" 
+                                    (!variantSearchResponse?.original_variants?.length) && 
+                                    (!variantSearchResponse?.proxy_variants?.length)" 
                              class="notification">
                             No variants found matching your search.
                         </div>

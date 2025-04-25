@@ -1,6 +1,6 @@
 from app.config import get_settings
 from functools import lru_cache
-from typing import List
+from typing import List, Tuple
 import duckdb
 
 from app.models.schemas import StudyDataTypes
@@ -239,3 +239,21 @@ class StudiesDBClient:
     #     formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
     #     query = f"SELECT * FROM rare_results WHERE snp_id IN ({formatted_snp_ids})"
     #     return self.studies_conn.execute(query).fetchall()
+
+    def get_study_metadata(self) -> List[Tuple[str, str, int]]:
+        query = """
+            SELECT data_type, variant_type, COUNT(*) as count
+            FROM studies
+            GROUP BY data_type, variant_type
+            ORDER BY data_type, variant_type
+        """
+        
+        return self.studies_conn.execute(query).fetchall()
+    
+    def get_coloc_metadata(self):
+        query = f"SELECT UNIQUE count(*), coloc_group_id FROM colocalisations GROUP BY coloc_group_id"
+        coloc_metadata = self.studies_conn.execute(query).fetchall()
+
+        query = f"SELECT UNIQUE snp_id FROM colocalisations"
+        unique_snps = self.studies_conn.execute(query).fetchall()
+        return coloc_metadata, unique_snps
