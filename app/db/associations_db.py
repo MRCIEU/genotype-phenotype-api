@@ -1,4 +1,3 @@
-
 from app.config import get_settings
 from functools import lru_cache
 from typing import List
@@ -15,6 +14,9 @@ class AssociationsDBClient:
         self.associations_conn = get_associations_db_connection()
 
     def get_associations_for_variant_and_studies(self, snp_id: int, study_ids: List[int]):
+        if not study_ids or not snp_id:
+            return []
+        
         formatted_study_ids = ','.join(f"{study_id}" for study_id in study_ids)
         query = f"""
             SELECT * FROM associations 
