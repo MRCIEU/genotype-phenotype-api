@@ -57,10 +57,10 @@ logger.add(
 # Add file handler for production
 if not settings.DEBUG:
     logger.add(
-        "logs/app.log",
+        str(log_dir / "app.log"),
         format=Formatter().format,
-        rotation="10 MB",
-        retention="1 week",
+        rotation="100 MB",
+        retention="4 weeks",
         level="WARNING",
         backtrace=True,
         diagnose=True,
