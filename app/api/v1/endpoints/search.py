@@ -65,10 +65,13 @@ async def search(search_term: str):
         # TODO: Add rare variants
         for variant in original_variants:
             variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
+            variant.ld_proxies = [proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id]
         for variant in proxy_variants:
             variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
+            variant.ld_proxies = [proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id]
 
         proxy_variants = [variant for variant in proxy_variants if variant.num_colocs > 0]
+        proxy_variants.sort(key=lambda x: x.num_colocs, reverse=True)
 
         return VariantSearchResponse(original_variants=original_variants, proxy_variants=proxy_variants)
     except HTTPException as e:

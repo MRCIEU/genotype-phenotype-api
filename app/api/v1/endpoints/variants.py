@@ -58,6 +58,11 @@ async def get_variant(
 
         variant = studies_db.get_variant(snp_id)
         colocs = studies_db.get_colocs_for_variant(snp_id)
+
+        if not colocs:
+            variant = convert_duckdb_to_pydantic_model(Variant, variant)
+            return VariantResponse(variant=variant, colocs=[])
+
         colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
 
