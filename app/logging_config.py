@@ -24,24 +24,37 @@ class Formatter:
     def format(self, record):
         return "<green>{time}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
 
+
+
+def path_filter(record):
+    try:
+        exclude_paths = ["/health", "/favicon.ico"]
+        return not any(path in record["message"] for path in exclude_paths)
+    except:
+        return True
+
 # Remove default handlers
 logger.remove()
 
+# Add console handler with filter
 logger.add(
     sys.stderr,
     format=Formatter().format,
+    filter=path_filter,
     level="DEBUG" if settings.DEBUG else "INFO",
     backtrace=True,
     diagnose=True
 )
 
 if not settings.DEBUG:
+    # Add file handler with same filter
     logger.add(
         str(log_dir / "app.log"),
         format=Formatter().format,
-        rotation="100 MB",
-        retention="4 weeks",
-        level="INFO",
+        filter=path_filter,
+        rotation="10 MB",
+        retention="1 week",
+        level="WARNING",
         backtrace=True,
         diagnose=True
     )

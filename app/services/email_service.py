@@ -2,6 +2,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
 from typing import Optional
+from loguru import logger
 from pydantic import EmailStr
 
 class EmailService:
@@ -40,5 +41,5 @@ class EmailService:
             with smtplib.SMTP('localhost') as server:
                 server.send_message(msg)
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            logger.error(f"Failed to send email: {e}")
             raise

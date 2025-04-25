@@ -20,7 +20,7 @@ class GwasDBClient:
             conn.execute("SELECT 1").fetchone()
             return conn
         except Exception as e:
-            print(f"Failed to connect to DuckDB: {e}")
+            logger.error(f"Failed to connect to DuckDB: {e}")
             raise
 
     def get_gwases(self):

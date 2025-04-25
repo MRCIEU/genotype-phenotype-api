@@ -79,7 +79,7 @@ async def get_variant(
             association = next((u for u in associations if u.study_id == coloc.study_id), None)
             if association is None:
                 #TODO: Remove this once we have fixed the data 
-                print(f"Association not found for variant {snp_id} and study {coloc.study_id}")
+                logger.warning(f"Association not found for variant {snp_id} and study {coloc.study_id}")
                 # raise HTTPException(status_code=400, detail="Association not found for variant and study")
             extended_colocs.append(ExtendedColoc(
                 **coloc.model_dump(),

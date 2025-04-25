@@ -47,9 +47,6 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health_check(request: Request):
-        print("Origin:", request.headers.get("origin"))
-        print("All headers:", dict(request.headers))
-        
         redis_client = RedisClient()
         db_client = StudiesDBClient()
         db_client.get_studies(1)

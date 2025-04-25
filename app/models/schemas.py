@@ -205,8 +205,8 @@ class VariantSearchResponse(BaseModel):
 
 class StudyResponse(BaseModel):
     study: Study | GwasUpload
-    colocs: List[Coloc] | List[ExtendedUploadColoc]
-    study_extractions: List[ExtendedStudyExtraction]
+    colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
+    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
 
 class GwasStatus(Enum):
