@@ -6,10 +6,13 @@ from app.api.v1.router import api_router
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
+from app.logging_config import get_logger
 
 settings = get_settings()
+logger = get_logger("app.main")
 
 def create_app() -> FastAPI:
+    logger.info("Starting application")
     if not settings.DEBUG:
         sentry_sdk.init(dsn=settings.SENTRY_DSN, send_default_pii=True)
 

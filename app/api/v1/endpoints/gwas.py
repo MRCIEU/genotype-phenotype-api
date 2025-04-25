@@ -1,19 +1,19 @@
-import shutil
 from fastapi import APIRouter, HTTPException, UploadFile
 import uuid
 import os
 import hashlib
-from typing import List
-import datetime
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
+from app.logging_config import get_logger
 from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, Study, StudyDataTypes, StudyExtraction, StudyResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
+
+logger = get_logger(__name__)
 
 @router.post("/", response_model=GwasUpload)
 async def upload_gwas(
@@ -74,7 +74,7 @@ async def upload_gwas(
         # Clean up file if there's an error
         if 'file_path' in locals() and os.path.exists(file_path):
             os.remove(file_path)
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{guid}")
@@ -155,7 +155,7 @@ async def update_gwas(
     except HTTPException as e:
         raise e
     except Exception as e:
-        print(e)
+        logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{guid}", response_model=StudyResponse)
@@ -213,5 +213,5 @@ async def get_gwas(guid: str):
     except HTTPException as e:
         raise e
     except Exception as e:
-        print(e)
+        logger.error(f"Error in get_gwas: {e}")
         raise HTTPException(status_code=500, detail=str(e))

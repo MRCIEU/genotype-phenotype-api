@@ -4,6 +4,9 @@ from app.models.schemas import *
 from typing import List
 
 from app.services.cache_service import CacheService
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -52,4 +55,5 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_gene: {e}")
         raise HTTPException(status_code=500, detail=str(e))

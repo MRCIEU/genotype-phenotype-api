@@ -3,8 +3,11 @@ from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Ld, Variant, convert_duckdb_to_pydantic_model
 from typing import List
+from app.logging_config import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
+
 
 @router.get("/matrix", response_model=List[Ld])
 async def get_matrix(
@@ -32,6 +35,7 @@ async def get_matrix(
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_matrix: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -58,4 +62,5 @@ async def get_proxies(
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_proxies: {e}")
         raise HTTPException(status_code=500, detail=str(e))

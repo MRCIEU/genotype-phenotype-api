@@ -3,7 +3,9 @@ from app.db.associations_db import AssociationsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Association, Coloc, ExtendedColoc, Variant, VariantResponse, convert_duckdb_to_pydantic_model
 from typing import List
+from app.logging_config import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/associations", response_model=List[Association])
@@ -22,6 +24,7 @@ async def get_associations(
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_associations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -45,6 +48,7 @@ async def get_variants(
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_variants: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -87,5 +91,6 @@ async def get_variant(
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_variant: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

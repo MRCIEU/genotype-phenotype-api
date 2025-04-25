@@ -3,7 +3,9 @@ from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Coloc, Study, ExtendedStudyExtraction, StudyResponse, convert_duckdb_to_pydantic_model
 from typing import List
+from app.logging_config import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/", response_model=List[Study])
@@ -16,6 +18,7 @@ async def get_studies() -> List[Study]:
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_studies: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -43,5 +46,5 @@ async def get_study(study_id: str = Path(..., description="Study ID")) -> StudyR
     except HTTPException as e:
         raise e
     except Exception as e:
-        print(traceback.format_exc())
+        logger.error(f"Error in get_study: {e}")
         raise HTTPException(status_code=500, detail=traceback.format_exc())

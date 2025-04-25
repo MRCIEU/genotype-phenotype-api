@@ -5,9 +5,11 @@ from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, Variant, 
 from typing import List
 
 from app.services.cache_service import CacheService
+from app.logging_config import get_logger
 
-
+logger = get_logger(__name__)
 router = APIRouter()
+
 
 @router.get("/options", response_model=List[SearchTerm])
 async def get_search_options(request: Request, response: Response):
@@ -29,6 +31,7 @@ async def get_search_options(request: Request, response: Response):
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_search_options: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -77,4 +80,5 @@ async def search(search_term: str):
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in search variant: {e}")
         raise HTTPException(status_code=500, detail=str(e))
