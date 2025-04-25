@@ -50,7 +50,9 @@
                         <div x-show="!variantSearchInProgress && variantSearchResponse?.original_variants?.length > 0">
                             <h5 class="title is-5 mb-2">Exact Matches</h5>
                             <div class="columns is-multiline">
-                                <template x-for="variant in variantSearchResponse.original_variants" :key="variant.id">
+                                <template x-if="variantSearchResponse?.original_variants"
+                                          x-for="variant in variantSearchResponse.original_variants" 
+                                          :key="variant.id">
                                     <div class="column is-12">
                                         <div class="card">
                                             <header class="card-header">
@@ -84,7 +86,9 @@
                         <div x-show="!variantSearchInProgress && variantSearchResponse?.proxy_variants?.length > 0" class="mt-4">
                             <h5 class="title is-5 mb-2">Proxy Variants (in LD with exact match)</h5>
                             <div class="columns is-multiline">
-                                <template x-for="variant in variantSearchResponse.proxy_variants" :key="variant.id">
+                                <template x-if="variantSearchResponse?.proxy_variants"
+                                          x-for="variant in variantSearchResponse.proxy_variants" 
+                                          :key="variant.id">
                                     <div class="column is-12">
                                         <div class="card">
                                             <header class="card-header">

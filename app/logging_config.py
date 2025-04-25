@@ -9,8 +9,8 @@ from app.config import get_settings
 settings = get_settings()
 
 # Create logs directory if it doesn't exist
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
+log_dir = Path(settings.DATA_DIR, "logs")
+log_dir.mkdir(exist_ok=True, parents=True)
 
 # Configure Loguru
 class Formatter:
