@@ -28,13 +28,13 @@ class Formatter:
         # Format for JSON in production, colored text in development
         if not settings.DEBUG:
             log_dict = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": record["time"].isoformat(),
                 "level": record["level"].name,
                 "message": record["message"],
                 "name": record["name"],
                 "function": record["function"],
                 "line": record["line"],
-                "extra": {**record["extra"]},
+                "extra": record["extra"],
             }
             if "exception" in record:
                 log_dict["exception"] = str(record["exception"])
