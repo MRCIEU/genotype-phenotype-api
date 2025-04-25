@@ -17,7 +17,10 @@ def create_app() -> FastAPI:
         title="Genotype Phenotype API",
         description="API for accessing genotype-phenotype data",
         version="0.0.1",
-        debug=settings.DEBUG
+        debug=settings.DEBUG,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json"
     )
 
     app.add_middleware(SecurityMiddleware)

@@ -214,7 +214,7 @@ export default function snp() {
                             .html(`Trait: ${coloc.trait}<br>
                                         P-value: ${coloc.min_p.toExponential(2)}<br>
                                         Cis/Trans: ${coloc.cis_trans}<br>
-                                        BETA: ${coloc.association ? coloc.association.BETA : "N/A"}
+                                        BETA: ${coloc.association ? coloc.association.beta: "N/A"}
                                         `);
                 })
                 .on('mouseout', function(event, d) {

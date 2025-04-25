@@ -16,6 +16,8 @@ RUN pip --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requi
 COPY app /workspace/app
 COPY tests /workspace/tests
 
+ENV OPENAPI_URL=/openapi.json
+
 ARG USERNAME=api
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
