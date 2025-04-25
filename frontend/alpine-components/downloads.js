@@ -5,8 +5,7 @@ export default {
    * @param {Object} colocData - The JSON object to convert to CSV.
    * @param {string} filename - The name of the file to save.
    */
-  downloadToCSV(snpData, colocData, filename = 'coloc_data.csv') {
-    // Define the CSV headers based on the coloc and association properties
+  downloadColocsToCSV(snpData, colocData, filename = 'coloc_data.csv') {
     const headers = [
       'candidate_snp', 'rsid', 'chr', 'bp', 'ea', 'oa', 'posterior_prob', 
       'regional_prob', 'posterior_explained_by_snp', 'min_p', 'cis_trans',
@@ -14,10 +13,7 @@ export default {
       'beta', 'se', 'p', 'eaf', 'imputed'
     ];
     
-    // Create CSV content starting with headers
     let csvContent = headers.join(',') + '\n';
-    
-    // Add each row of data
     colocData.forEach(coloc => {
       const row = [
         coloc.candidate_snp || '',
@@ -35,7 +31,6 @@ export default {
         coloc.data_type || '',
         coloc.tissue || '',
         coloc.known_gene || '',
-        // Association data if available
         coloc.association ? coloc.association.beta || '' : '',
         coloc.association ? coloc.association.se || '' : '',
         coloc.association ? coloc.association.p || '' : '',
@@ -43,9 +38,7 @@ export default {
         coloc.association ? (coloc.association.imputed ? 'true' : 'false') : ''
       ];
       
-      // Handle values that might contain commas by quoting them
       const formattedRow = row.map(value => {
-        // Convert to string and check if it needs quotes
         const stringValue = String(value);
         return stringValue.includes(',') ? `"${stringValue}"` : stringValue;
       });
@@ -53,26 +46,18 @@ export default {
       csvContent += formattedRow.join(',') + '\n';
     });
     
-    // Create a Blob with the CSV content
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    
-    // Create a download link and trigger the download
     const link = document.createElement('a');
     
-    // Create a URL for the blob
     const url = URL.createObjectURL(blob);
-    
-    // Set link properties
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     
-    // Add to document, click to download, then remove
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Clean up by revoking the object URL
     URL.revokeObjectURL(url);
   }
 }

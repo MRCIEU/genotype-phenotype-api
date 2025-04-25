@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs'
 import * as d3 from "d3";
 import constants from './constants.js'
+import downloads from './downloads.js'
 
 export default function snp() {
     return {
@@ -32,7 +33,7 @@ export default function snp() {
         },
 
         getSNPName() {
-                return this.data ? this.data.variant.RSID.split(',')[0] : '...'
+                return this.data ? this.data.variant.rsid.split(',')[0] : '...'
         },
 
         getVariantData() {
@@ -41,6 +42,20 @@ export default function snp() {
 
         getDataForTable() {
                 return this.data ? this.data.filteredColocs: {};
+        },
+
+        downloadData() {
+            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+                return;
+            }
+            
+            const filename = `${this.getSNPName()}_coloc_data.csv`;
+            
+            downloads.downloadColocsToCSV(
+                this.data.variant,
+                this.data.filteredColocs,
+                filename
+            );
         },
 
         filterByOptions(graphOptions) {

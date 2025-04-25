@@ -103,6 +103,14 @@ export default function homepage() {
             return this.filteredItems;
         },
 
+        get proxyVariants() {
+            return this.variantSearchResponse && this.variantSearchResponse.proxy_variants || [];
+        },
+
+        get originalVariants() {
+            return this.variantSearchResponse && this.variantSearchResponse.original_variants || [];
+        },
+
         searchVariant() {
             const query = this.searchText.trim();
             if (!query || query.length < this.searchMetadata.minSearchChars) {

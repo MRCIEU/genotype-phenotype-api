@@ -47,11 +47,11 @@
                             <progress class="progress is-large is-info" max="100">60%</progress>
                             <p class="has-text-centered">Searching for variants...</p>
                         </div>
-                        <div x-show="!variantSearchInProgress && variantSearchResponse?.original_variants?.length > 0">
+                        <div x-show="!variantSearchInProgress && variantSearchResponse && originalVariants && originalVariants.length > 0">
                             <h5 class="title is-5 mb-2">Exact Matches</h5>
                             <div class="columns is-multiline">
-                                <template x-if="variantSearchResponse?.original_variants"
-                                          x-for="variant in variantSearchResponse.original_variants" 
+                                <template x-if="variantSearchResponse && originalVariants"
+                                          x-for="variant in originalVariants" 
                                           :key="variant.id">
                                     <div class="column is-12">
                                         <div class="card">
@@ -83,11 +83,11 @@
                                 </template>
                             </div>
                         </div>
-                        <div x-show="!variantSearchInProgress && variantSearchResponse?.proxy_variants?.length > 0" class="mt-4">
+                        <div x-show="!variantSearchInProgress && proxyVariants && proxyVariants.length > 0" class="mt-4">
                             <h5 class="title is-5 mb-2">Proxy Variants (in LD with exact match)</h5>
                             <div class="columns is-multiline">
-                                <template x-if="variantSearchResponse?.proxy_variants"
-                                          x-for="variant in variantSearchResponse.proxy_variants" 
+                                <template x-if="variantSearchResponse && proxyVariants"
+                                          x-for="variant in proxyVariants" 
                                           :key="variant.id">
                                     <div class="column is-12">
                                         <div class="card">
@@ -125,8 +125,8 @@
                         
                         <!-- No results message -->
                         <div x-show="!variantSearchInProgress && variantSearchResponse && 
-                                    (!variantSearchResponse?.original_variants?.length) && 
-                                    (!variantSearchResponse?.proxy_variants?.length)" 
+                                    (!originalVariants.length) && 
+                                    (!proxyVariants.length)" 
                              class="notification">
                             No variants found matching your search.
                         </div>
@@ -183,12 +183,11 @@
                                                     <span class="file-label">Choose a file…</span>
                                                 </span>
                                                 <span class="file-name" x-text="uploadMetadata.formData.file ? uploadMetadata.formData.file.name : 'No file selected'"></span>
-                                                <br />
-                                                <p class="is-size-7">Size limit is 1GB. Please use zip/gzip to compress.</p>
                                             </label>
                                         </div>
                                     </div>
-                                    
+                                    <p class="is-size-7">Size limit is 1GB. Please use zip/gzip to compress.</p>
+                                    <br />
                                     <div class="columns">
                                         <div class="column is-one-quarter">
                                         <label class="label">Genome Reference Build</label>

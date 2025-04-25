@@ -50,21 +50,21 @@
                                 <div class="is-divider" style="margin: 0;"></div>
                                 <p><strong>CDS Position:</strong> <span x-text="getVariantData().cds_position"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>EUR EAF:</strong> <span x-text="getVariantData().eur_af"></span></p>
-                                <p><strong>AFR EAF:</strong> <span x-text="getVariantData().afr_af"></span></p>
-                                <p><strong>EAS EAF:</strong> <span x-text="getVariantData().eas_af"></span></p>
-                                <p><strong>SAS EAF:</strong> <span x-text="getVariantData().sas_af"></span></p>
-                                <p><strong>AMR EAF:</strong> <span x-text="getVariantData().amr_af"></span></p>
+                                <p><strong>EUR EAF:</strong> <span x-text="getVariantData().eur_af?.toFixed(2)"></span></p>
+                                <p><strong>AFR EAF:</strong> <span x-text="getVariantData().afr_af?.toFixed(2)"></span></p>
+                                <p><strong>EAS EAF:</strong> <span x-text="getVariantData().eas_af?.toFixed(2)"></span></p>
+                                <p><strong>SAS EAF:</strong> <span x-text="getVariantData().sas_af?.toFixed(2)"></span></p>
+                                <p><strong>AMR EAF:</strong> <span x-text="getVariantData().amr_af?.toFixed(2)"></span></p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="column is-7">
-                    <div x-model="initChordDiagram" id="snp-chord-diagram" x-show="data.colocs.length > 0"></div>
-                    <h4 x-show="data.colocs.length === 0" class="title is-3 has-text-centered">
+                    <h4 x-show="data && data.colocs.length === 0" class="title is-3 has-text-centered">
                         No colocalization information to display for this variant.
                     </h4>
+                    <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
                 </div>
 
                 <div class="column is-2">
@@ -74,6 +74,16 @@
 
             <div class="columns mt-2 is-centered">
                 <div class="column is-11">
+                    <div class="level mb-2">
+                        <div class="level-left">
+                            <h4 class="title is-4">Colocalization Results</h4>
+                        </div>
+                        <div class="level-right">
+                            <button class="button is-success" @click="downloadData" :disabled="!data || data.colocs.length === 0">
+                                <span>Download Data</span>
+                            </button>
+                        </div>
+                    </div>
                     <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
                         <thead>
                             <tr>
@@ -93,7 +103,7 @@
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
                                     <td class="py-1 px-2" x-text="item.data_type"></td>
-                                    <td class="py-1 px-2" x-text="item.association ? item.association.BETA.toExponential(2) : 'N/A'"></td>
+                                    <td class="py-1 px-2" x-text="item.association ? item.association.beta.toExponential(2) : 'N/A'"></td>
                                 </tr>
                             </template>
                         </tbody>
