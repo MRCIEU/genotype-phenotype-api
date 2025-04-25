@@ -2,8 +2,6 @@ import logging
 import sys
 from pathlib import Path
 from loguru import logger
-import json
-from datetime import datetime
 from app.config import get_settings
 
 settings = get_settings()
@@ -12,7 +10,6 @@ settings = get_settings()
 log_dir = Path(settings.DATA_DIR, "logs")
 log_dir.mkdir(exist_ok=True, parents=True)
 
-# Configure Loguru
 class Formatter:
     def __init__(self):
         self.padding = 0
@@ -25,45 +22,28 @@ class Formatter:
         }
 
     def format(self, record):
-        # Format for JSON in production, colored text in development
-        if not settings.DEBUG:
-            log_dict = {
-                "timestamp": record["time"].isoformat(),
-                "level": record["level"].name,
-                "message": record["message"],
-                "name": record["name"],
-                "function": record["function"],
-                "line": record["line"],
-                "extra": record["extra"],
-            }
-            if "exception" in record:
-                log_dict["exception"] = str(record["exception"])
-            return json.dumps(log_dict)
-        else:
-            return "<green>{time}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        return "<green>{time}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
 
 # Remove default handlers
 logger.remove()
 
-# Add console handler
 logger.add(
     sys.stderr,
     format=Formatter().format,
     level="DEBUG" if settings.DEBUG else "INFO",
     backtrace=True,
-    diagnose=True,
+    diagnose=True
 )
 
-# Add file handler for production
 if not settings.DEBUG:
     logger.add(
         str(log_dir / "app.log"),
         format=Formatter().format,
         rotation="100 MB",
         retention="4 weeks",
-        level="WARNING",
+        level="INFO",
         backtrace=True,
-        diagnose=True,
+        diagnose=True
     )
 
 # Intercept standard library logging
