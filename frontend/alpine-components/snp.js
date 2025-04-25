@@ -60,11 +60,11 @@ export default function snp() {
 
         filterByOptions(graphOptions) {
             this.data.filteredColocs = this.data.colocs.filter(coloc => {
-                return(coloc.min_p <= graphOptions.pValue) &&
-                            (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
-                        //        study.posterior_prob >= graphOptions.coloc &&
-                             (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true)
-                             // && rare variants in the future...
+                return(coloc.min_p <= graphOptions.pValue &&
+                    coloc.posterior_prob >= graphOptions.coloc &&
+                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
+                    (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true)
+                )
             })
         },
 
