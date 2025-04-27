@@ -141,7 +141,7 @@ export default function homepage() {
                 'oa',
                 'beta',
                 'se',
-                'pval',
+                'p',
                 'eaf'
             ];
 

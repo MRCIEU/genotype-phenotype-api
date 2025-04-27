@@ -49,7 +49,7 @@ def test_guid():
                 "oa": "OA",
                 "beta": "BETA",
                 "se": "SE",
-                "pval": "P",
+                "p": "P",
                 "eaf": "EAF",
                 "rsid": "RSID"
             }
