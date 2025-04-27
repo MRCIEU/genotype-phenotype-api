@@ -186,8 +186,7 @@ export default function homepage() {
                     OR: this.uploadMetadata.formData.or,
                     SE: this.uploadMetadata.formData.se,
                     P: this.uploadMetadata.formData.p,
-                    EAF: this.uploadMetadata.formData.eaf,
-                    RSID: this.uploadMetadata.formData.rsid
+                    EAF: this.uploadMetadata.formData.eaf
                 }
             };
 

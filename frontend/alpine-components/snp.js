@@ -214,7 +214,7 @@ export default function snp() {
                     const coloc = self.data.filteredColocs.find(coloc => coloc.trait === nodes[d.target.index]);
                     let tooltipColor = "white";
                     if (coloc.association) {
-                        tooltipColor = coloc.association.BETA > 0 ? "#afe1af" : "#ee4b2b";
+                        tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
                     }
                     d3.select('#snp-chord-diagram')
                             .append('div')

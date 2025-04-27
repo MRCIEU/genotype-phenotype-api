@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 import uuid
 import os
 import hashlib
+import sentry_sdk
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
@@ -92,10 +93,27 @@ async def update_gwas(
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         if not update_gwas_request.success:
+            # Log the failure to Sentry without raising an exception
+            error_context = {
+                "guid": guid,
+                "failure_reason": update_gwas_request.failure_reason,
+                "user_email": gwas.email if hasattr(gwas, 'email') else "unknown"
+            }
+
+            logger.error(f"GWAS processing failed: {update_gwas_request.failure_reason}", extra=error_context)
+
+            sentry_sdk.set_context("gwas_upload", error_context)
+            sentry_sdk.capture_message(
+                f"GWAS processing failed: {update_gwas_request.failure_reason}",
+                level="error"
+            )
+
             gwas.status = GwasStatus.FAILED
             gwas.failure_reason = update_gwas_request.failure_reason
             updated_gwas = gwas_upload_db.update_gwas_status(guid, GwasStatus.FAILED)
             updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
+            # email_service = EmailService()
+            # await email_service.send_failure_email(gwas.email, guid)
             return updated_gwas
 
         ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
