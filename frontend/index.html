@@ -349,7 +349,7 @@
                                 <footer class="modal-card-foot">
                                     <div class="buttons">
                                         <button class="button is-success" @click="uploadGWAS()" :disabled="uploadMetadata.currentlyUploading">Upload</button>
-                                        <button class="button" @click="closeModal()">Cancel</button>
+                                        <button class="button" @click="closeModal()" :disabled="uploadMetadata.currentlyUploading">Cancel</button>
                                         <div x-show="uploadMetadata.currentlyUploading" class="button is-loading">Uploading</div>
                                         <div x-show="uploadMetadata.currentlyUploading">Please wait, this may take a few minutes if the file is large.</div>
                                     </div>
