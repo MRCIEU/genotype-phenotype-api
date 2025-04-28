@@ -6,7 +6,6 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# Create logs directory if it doesn't exist
 log_dir = Path(settings.DATA_DIR, "logs")
 log_dir.mkdir(exist_ok=True, parents=True)
 
@@ -25,7 +24,6 @@ class Formatter:
         return "<green>{time}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
 
 
-
 def path_filter(record):
     try:
         exclude_paths = ["/health", "/favicon.ico"]
@@ -36,7 +34,6 @@ def path_filter(record):
 # Remove default handlers
 logger.remove()
 
-# Add console handler with filter
 logger.add(
     sys.stderr,
     format=Formatter().format,
@@ -47,22 +44,19 @@ logger.add(
 )
 
 if not settings.DEBUG:
-    # Add file handler with same filter
     logger.add(
-        str(log_dir / "app.log"),
+        str(log_dir / "fastapi.log"),
         format=Formatter().format,
         filter=path_filter,
         rotation="10 MB",
-        retention="1 week",
+        retention="1 month",
         level="INFO",
         backtrace=True,
         diagnose=True
     )
 
-# Intercept standard library logging
 class InterceptHandler(logging.Handler):
     def emit(self, record):
-        # Get corresponding Loguru level if it exists
         try:
             level = logger.level(record.levelname).name
         except ValueError:
@@ -86,6 +80,5 @@ for name in logging.root.manager.loggerDict.keys():
     logging.getLogger(name).handlers = []
     logging.getLogger(name).propagate = True
 
-# Get logger instance
 def get_logger(name):
     return logger.bind(name=name) 

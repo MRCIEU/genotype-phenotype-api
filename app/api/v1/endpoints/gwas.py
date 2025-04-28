@@ -113,7 +113,6 @@ async def update_gwas(
             )
 
             gwas.status = GwasStatus.FAILED
-            gwas.failure_reason = update_gwas_request.failure_reason
             updated_gwas = gwas_upload_db.update_gwas_status(guid, GwasStatus.FAILED)
             updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
             # email_service = EmailService()
