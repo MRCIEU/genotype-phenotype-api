@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     GWAS_DIR: str
     DATA_DIR: str
-    RESULTS_DIR: str
     SENTRY_DSN: str
 
     model_config = {
