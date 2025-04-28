@@ -75,7 +75,9 @@ export default function homepage() {
         },
 
         closeModal() {
-            this.uploadMetadata.modalOpen = false 
+            if (!this.uploadMetadata.currentlyUploading) {
+                this.uploadMetadata.modalOpen = false 
+            }
         },
 
         closeSearch() {

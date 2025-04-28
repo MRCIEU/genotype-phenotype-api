@@ -51,7 +51,7 @@ async def upload_gwas(
         #TODO: change this to FAILED once we are done testing
         if gwas is not None:
             gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-            if gwas.status != GwasStatus.COMPLETED:
+            if gwas.status == GwasStatus.COMPLETED:
                 logger.info(f"GWAS already exists: {file_guid}")
                 return gwas
         
