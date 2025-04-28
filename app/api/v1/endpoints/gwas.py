@@ -54,6 +54,8 @@ async def upload_gwas(
             if gwas.status == GwasStatus.COMPLETED:
                 logger.info(f"GWAS already exists: {file_guid}")
                 return gwas
+            else:
+                db.delete_gwas_upload(file_guid)
         
         request.guid = file_guid
         request.status = GwasStatus.PROCESSING

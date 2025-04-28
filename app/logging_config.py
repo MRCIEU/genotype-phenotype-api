@@ -54,7 +54,7 @@ if not settings.DEBUG:
         filter=path_filter,
         rotation="10 MB",
         retention="1 week",
-        level="WARNING",
+        level="INFO",
         backtrace=True,
         diagnose=True
     )
