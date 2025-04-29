@@ -4,18 +4,18 @@ from app.models.schemas import Singleton
 from app.db.studies_db import StudiesDBClient
 
 
-class CacheService(metaclass=Singleton):
+class DBCacheService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
 
     @lru_cache(maxsize=1)
-    def get_study_names_for_search(self) -> List[Tuple[str, str]]:
+    def get_trait_names_for_search(self) -> List[Tuple[str, str]]:
         """
         Retrieve study names for search from DuckDB with caching.
         Returns:
             List of tuples containing (study_name, trait)
         """
-        return self.db.get_study_names_for_search()
+        return self.db.get_trait_names_for_search()
     
     def get_variant_prefixes(self) -> List[str]:
         """
@@ -83,5 +83,5 @@ class CacheService(metaclass=Singleton):
         """Clear the LRU cache for gene ranges"""
         self.get_gene_ranges.cache_clear()
         self.get_gene_names.cache_clear()
-        self.get_study_names_for_search.cache_clear()
+        self.get_trait_names_for_search.cache_clear()
         self.get_tissues.cache_clear()

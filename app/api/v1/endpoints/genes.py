@@ -3,7 +3,7 @@ from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
 from typing import List
 
-from app.services.cache_service import CacheService
+from app.services.cache_service import DBCacheService
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/{symbol}", response_model=GeneResponse)
 async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneResponse:
     try:
-        cache_service = CacheService()
+        cache_service = DBCacheService()
         tissues = cache_service.get_tissues()
 
         db = StudiesDBClient()

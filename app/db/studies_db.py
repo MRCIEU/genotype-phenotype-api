@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List, Tuple
 import duckdb
 
-from app.models.schemas import StudyDataTypes
+from app.models.schemas import StudyDataTypes, VariantTypes
 
 settings = get_settings()
 
@@ -14,6 +14,10 @@ def get_gpm_db_connection():
 class StudiesDBClient:
     def __init__(self):
         self.studies_conn = get_gpm_db_connection()
+
+    def get_trait(self, trait_id: str):
+        query = f"SELECT * FROM traits WHERE id = '{trait_id}'"
+        return self.studies_conn.execute(query).fetchone()
 
     def get_studies(self, limit: int = None):
         if (limit is None):
@@ -27,6 +31,10 @@ class StudiesDBClient:
         query = f"SELECT * FROM studies WHERE id = '{study_id}'"
         return self.studies_conn.execute(query).fetchone()
     
+    def get_studies_by_trait_id(self, trait_id: str):
+        query = f"SELECT * FROM studies WHERE trait_id = '{trait_id}'"
+        return self.studies_conn.execute(query).fetchall()
+
     def get_studies_by_id(self, study_ids: List[int]):
         formatted_ids = ','.join(
             f"({i}, {id if id is not None else 'NULL'})" 
@@ -46,9 +54,10 @@ class StudiesDBClient:
     def _fetch_colocs(self, condition: str):
         # TODO: Remove this once we filter colocs when creating the db
         query = f"""
-            SELECT colocalisations.*, studies.trait, studies.data_type, studies.tissue 
+            SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue 
             FROM colocalisations 
             JOIN studies ON colocalisations.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
             WHERE colocalisations.coloc_group_id IN (SELECT DISTINCT coloc_group_id FROM colocalisations WHERE {condition})
             AND colocalisations.posterior_prob IS NOT NULL AND colocalisations.posterior_prob > 0.5
         """
@@ -70,10 +79,13 @@ class StudiesDBClient:
     def get_all_colocs_for_study(self, study_id: str):
         return self._fetch_colocs(f"study_id = '{study_id}'")
 
-    def get_study_names_for_search(self):
-        return self.studies_conn.execute(
-            f"SELECT id, trait FROM studies WHERE data_type = '{StudyDataTypes.PHENOTYPE.value}'"
-        ).fetchall()
+    def get_trait_names_for_search(self):
+        return self.studies_conn.execute(f"""
+            SELECT traits.id, traits.trait_name
+            FROM traits
+            JOIN studies ON traits.id = studies.trait_id 
+            WHERE traits.data_type = '{StudyDataTypes.PHENOTYPE.value}' AND studies.variant_type = '{VariantTypes.COMMON.value}'
+        """).fetchall()
 
     def get_gene_names(self):
         return self.studies_conn.execute(
@@ -82,10 +94,11 @@ class StudiesDBClient:
 
     def get_study_extractions_for_study(self, study_id: str):
         query = f"""
-            SELECT study_extractions.*, studies.trait, studies.data_type, studies.tissue
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
             FROM study_extractions 
-            JOIN studies ON study_extractions.study = studies.id
-            WHERE study_extractions.study = '{study_id}'
+            JOIN studies ON study_extractions.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            WHERE study_extractions.study_id = '{study_id}'
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -104,9 +117,10 @@ class StudiesDBClient:
     def get_study_extractions_by_id(self, ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in ids)
         query = f"""
-            SELECT study_extractions.*, studies.trait, studies.data_type, studies.tissue
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
             FROM study_extractions
             JOIN studies ON study_extractions.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
             WHERE study_extractions.id IN ({formatted_ids})
         """
         return self.studies_conn.execute(query).fetchall()
@@ -126,9 +140,10 @@ class StudiesDBClient:
 
     def get_study_extractions_in_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
         return self.studies_conn.execute(
-            """SELECT study_extractions.*, studies.trait, studies.data_type, studies.tissue
+            """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
             WHERE (study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ?)
                OR (study_extractions.known_gene = ? AND study_extractions.cis_trans = 'cis')
             """,

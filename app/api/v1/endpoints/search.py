@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, Variant, VariantResponse, VariantSearchResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
 from typing import List
 
-from app.services.cache_service import CacheService
 from app.logging_config import get_logger
+from app.services.cache_service import DBCacheService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -18,8 +18,8 @@ async def get_search_options(request: Request, response: Response):
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         
-        cache_service = CacheService()
-        search_terms = cache_service.get_study_names_for_search()
+        cache_service = DBCacheService()
+        search_terms = cache_service.get_trait_names_for_search()
         genes = cache_service.get_gene_names()
 
         search_terms = [{"type": "study", "name": term[1], "type_id": term[0]} for term in search_terms]
@@ -38,7 +38,7 @@ async def get_search_options(request: Request, response: Response):
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 async def search(search_term: str):
     try:
-        cache_service = CacheService()
+        cache_service = DBCacheService()
         studies_db = StudiesDBClient()
         ld_db = LdDBClient()
 

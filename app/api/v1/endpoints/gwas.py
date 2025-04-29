@@ -9,7 +9,7 @@ from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger
-from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, Study, StudyDataTypes, StudyExtraction, StudyResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
+from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, Study, StudyDataTypes, StudyExtraction, TraitResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
@@ -180,7 +180,7 @@ async def update_gwas(
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{guid}", response_model=StudyResponse)
+@router.get("/{guid}", response_model=TraitResponse)
 async def get_gwas(guid: str):
     try:
         studies_db = StudiesDBClient()
@@ -192,7 +192,7 @@ async def get_gwas(guid: str):
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         if gwas.status != GwasStatus.COMPLETED:
-            return StudyResponse(
+            return TraitResponse(
                 study=gwas,
                 study_extractions=None,
                 upload_study_extractions=None,
@@ -225,7 +225,7 @@ async def get_gwas(guid: str):
                 coloc.tissue = None
                 coloc.cis_trans = None
 
-        return StudyResponse(
+        return TraitResponse(
             study=gwas,
             study_extractions=existing_study_extractions,
             upload_study_extractions=upload_study_extractions,

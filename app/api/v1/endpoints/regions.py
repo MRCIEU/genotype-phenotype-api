@@ -3,8 +3,8 @@ from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
 from typing import List
 
-from app.services.cache_service import CacheService
 from app.logging_config import get_logger
+from app.services.cache_service import DBCacheService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -13,7 +13,7 @@ router = APIRouter()
 async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) -> RegionResponse:
     try:
         db = StudiesDBClient()
-        cache_service = CacheService()
+        cache_service = DBCacheService()
 
         ld_block = db.get_ld_block(ld_block_id)
         if ld_block is None:
@@ -48,7 +48,7 @@ async def get_region(ancestry: str = Path(..., description="Ancestry"),
     try:
         ld_block = f"{ancestry}/{chr}/{start}-{stop}"
         db = StudiesDBClient()
-        cache_service = CacheService()
+        cache_service = DBCacheService()
 
         colocs = db.get_all_colocs_for_ld_block(ld_block)
         if colocs is None:

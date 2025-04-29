@@ -17,6 +17,11 @@ class StudyDataTypes(Enum):
     PROTEIN = "protein"
     PHENOTYPE = "phenotype"
 
+class VariantTypes(Enum):
+    COMMON = "common"
+    RARE_EXOME = "rare_exome"
+    RARE_WGS = "rare_wgs"
+
 class StudySource(BaseModel):
     id: int
     name: str
@@ -51,7 +56,8 @@ class Coloc(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
     known_gene: Optional[str] = None
-    trait: Optional[str] = None
+    trait_id: Optional[int] = None
+    trait_name: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
 
@@ -85,12 +91,20 @@ class GeneMetadata(BaseModel):
 class ExtendedColoc(Coloc):
     association: Optional[Association] = None
 
+class Trait(BaseModel):
+    id: int
+    data_type: str
+    trait: str
+    trait_name: str
+    common_study: Optional[Study] = None
+    rare_study: Optional[Study] = None
+
 class Study(BaseModel):
     id: int
     data_type: str
     data_format: str
     study_name: str
-    trait: str
+    trait_id: int
     ancestry: Optional[str] = None
     sample_size: Optional[int] = None
     category: Optional[str] = None
@@ -203,8 +217,8 @@ class VariantSearchResponse(BaseModel):
     original_variants: List[ExtendedVariant]
     proxy_variants: List[ExtendedVariant]
 
-class StudyResponse(BaseModel):
-    study: Study | GwasUpload
+class TraitResponse(BaseModel):
+    trait: Trait| GwasUpload
     colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None

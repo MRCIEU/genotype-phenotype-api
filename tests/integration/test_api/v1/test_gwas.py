@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from app.db.gwas_db import GwasDBClient
 from app.main import app
-from app.models.schemas import GwasStatus, StudyResponse
+from app.models.schemas import GwasStatus, TraitResponse
 import json
 
 client = TestClient(app)
@@ -97,7 +97,7 @@ def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
 
-    gwas_model = StudyResponse(**response.json())
+    gwas_model = TraitResponse(**response.json())
     assert gwas_model.study.guid == test_guid
     assert gwas_model.study.status == GwasStatus.COMPLETED
     assert len(gwas_model.study_extractions) > 1
