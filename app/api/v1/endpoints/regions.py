@@ -4,7 +4,9 @@ from app.models.schemas import *
 from typing import List
 
 from app.services.cache_service import CacheService
+from app.logging_config import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/{ld_block_id}", response_model=RegionResponse)
@@ -32,7 +34,10 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
                           ]
 
         return RegionResponse(region=region, colocs=colocs, genes=filtered_genes)
+    except HTTPException as e:
+        raise e
     except Exception as e:
+        logger.error(f"Error in get_region: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{ancestry}/{chr}/{start}/{stop}", response_model=RegionResponse)
@@ -56,5 +61,8 @@ async def get_region(ancestry: str = Path(..., description="Ancestry"),
         filtered_genes = [gene for gene in genes if gene.chr == chr and gene.min_bp >= start - 1000000 and gene.max_bp <= stop + 1000000]
 
         return RegionResponse(region=region, colocs=colocs, genes=filtered_genes)
+    except HTTPException as e:
+        raise e
     except Exception as e:
+        logger.error(f"Error in get_region: {e}")
         raise HTTPException(status_code=500, detail=str(e))

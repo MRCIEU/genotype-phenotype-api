@@ -1,9 +1,10 @@
 from typing import List
 import duckdb
+from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
-from app.models.schemas import Coloc, GwasStatus, ProcessGwasRequest, StudyExtraction, UploadColoc, UploadStudyExtraction
+from app.models.schemas import GwasStatus, ProcessGwasRequest, UploadColoc, UploadStudyExtraction
 
 settings = get_settings()
 
@@ -20,7 +21,7 @@ class GwasDBClient:
             conn.execute("SELECT 1").fetchone()
             return conn
         except Exception as e:
-            print(f"Failed to connect to DuckDB: {e}")
+            logger.error(f"Failed to connect to DuckDB: {e}")
             raise
 
     def get_gwases(self):
@@ -83,6 +84,14 @@ class GwasDBClient:
             ) RETURNING *""").fetchone()
             conn.commit()
             return result
+        finally:
+            conn.close()
+
+    def delete_gwas_upload(self, guid: str):
+        conn = self.connect()
+        try:
+            conn.execute(f"DELETE FROM gwas_upload WHERE guid = '{guid}'")
+            conn.commit()
         finally:
             conn.close()
 

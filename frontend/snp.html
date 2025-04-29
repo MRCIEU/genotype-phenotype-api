@@ -30,33 +30,40 @@
                         <div class="card-content">
                             <div class="content">
                                 <p class="title is-4">VEP Annotation</p>
-                                <p><strong>Position:</strong> <span x-text="`${getVariantData().CHR}:${getVariantData().BP}`"></span></p>
+                                <p><strong>Position:</strong> <span x-text="`${getVariantData().chr}:${getVariantData().bp}`"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>Alleles:</strong> <span x-text="`EA: ${getVariantData().EA} / OA:${getVariantData().OA}`"></span></p>
+                                <p><strong>Alleles:</strong> <span x-text="`EA: ${getVariantData().ea} / OA:${getVariantData().oa}`"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
                                 <p><strong>Gene:</strong> <span x-text="getVariantData().symbol"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>Consequence:</strong> <span x-text="getVariantData().Consequence ? getVariantData().Consequence.split(',').join(', ') : ''"></span></p>
+                                <p><strong>Consequence:</strong> <span x-text="getVariantData().consequence ? getVariantData().consequence.split(',').join(', ') : ''"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
                                 <p><strong>Impact:</strong> <span x-text="getVariantData().impact"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>Amino Acid Change:</strong> <span x-text="getVariantData().Amino_acids"></span></p>
+                                <p><strong>Amino Acid Change:</strong> <span x-text="getVariantData().amino_acids"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>Codon Change:</strong> <span x-text="getVariantData().Codons"></span></p>
+                                <p><strong>Codon Change:</strong> <span x-text="getVariantData().codons"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>Protein Position:</strong> <span x-text="getVariantData().Protein_position"></span></p>
+                                <p><strong>Protein Position:</strong> <span x-text="getVariantData().protein_position"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>cDNA Position:</strong> <span x-text="getVariantData().cDNA_position"></span></p>
+                                <p><strong>cDNA Position:</strong> <span x-text="getVariantData().cdna_position"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>CDS Position:</strong> <span x-text="getVariantData().CDS_position"></span></p>
+                                <p><strong>CDS Position:</strong> <span x-text="getVariantData().cds_position"></span></p>
                                 <div class="is-divider" style="margin: 0;"></div>
-                                <p><strong>EUR EAF:</strong> <span x-text="getVariantData().EUR_AF"></span></p>
+                                <p><strong>EUR EAF:</strong> <span x-text="getVariantData().eur_af?.toFixed(2)"></span></p>
+                                <p><strong>AFR EAF:</strong> <span x-text="getVariantData().afr_af?.toFixed(2)"></span></p>
+                                <p><strong>EAS EAF:</strong> <span x-text="getVariantData().eas_af?.toFixed(2)"></span></p>
+                                <p><strong>SAS EAF:</strong> <span x-text="getVariantData().sas_af?.toFixed(2)"></span></p>
+                                <p><strong>AMR EAF:</strong> <span x-text="getVariantData().amr_af?.toFixed(2)"></span></p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="column is-7">
+                    <h4 x-show="data && data.colocs.length === 0" class="title is-3 has-text-centered">
+                        No colocalization information to display for this variant.
+                    </h4>
                     <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
                 </div>
 
@@ -67,6 +74,16 @@
 
             <div class="columns mt-2 is-centered">
                 <div class="column is-11">
+                    <div class="level mb-2">
+                        <div class="level-left">
+                            <h4 class="title is-4">Colocalization Results</h4>
+                        </div>
+                        <div class="level-right">
+                            <button class="button is-success" @click="downloadData" :disabled="!data || data.colocs.length === 0">
+                                <span>Download Data</span>
+                            </button>
+                        </div>
+                    </div>
                     <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
                         <thead>
                             <tr>
@@ -86,7 +103,7 @@
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
                                     <td class="py-1 px-2" x-text="item.data_type"></td>
-                                    <td class="py-1 px-2" x-text="item.association ? item.association.BETA.toExponential(2) : 'N/A'"></td>
+                                    <td class="py-1 px-2" x-text="item.association ? item.association.beta.toExponential(2) : 'N/A'"></td>
                                 </tr>
                             </template>
                         </tbody>

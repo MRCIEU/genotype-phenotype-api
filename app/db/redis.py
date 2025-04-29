@@ -1,3 +1,4 @@
+from loguru import logger
 from redis import Redis
 from app.config import get_settings
 import json
@@ -40,10 +41,9 @@ class RedisClient:
         try:
             serialized_message = json.dumps(message)
             self.redis.lpush(queue_name, serialized_message)
-            print(f"Added to queue: {queue_name}")
             return True
         except Exception as e:
-            print(f"Error adding to queue: {e}")
+            logger.error(f"Error adding to queue: {e}")
             return False
 
     def get_from_queue(self, queue_name: str, timeout: int = 0) -> Optional[Any]:
@@ -70,7 +70,7 @@ class RedisClient:
             
             return json.loads(message)
         except Exception as e:
-            print(f"Error getting from queue: {e}")
+            logger.error(f"Error getting from queue: {e}")
             return None
 
     def get_queue_size(self, queue_name: str) -> int:
@@ -93,7 +93,7 @@ class RedisClient:
             messages = self.redis.lrange(queue_name, start, end)
             return [json.loads(msg) for msg in messages]
         except Exception as e:
-            print(f"Error peeking queue: {e}")
+            logger.error(f"Error peeking queue: {e}")
             return []
 
     def move_to_dlq(self, queue_name: str, message: Any, error: str) -> bool:
@@ -115,7 +115,7 @@ class RedisClient:
             self.redis.lpush(dlq_name, serialized_message)
             return True
         except Exception as e:
-            print(f"Error moving message to DLQ: {e}")
+            logger.error(f"Error moving message to DLQ: {e}")
             return False
 
     def retry_from_dlq(self, queue_name: str, count: int = 1) -> int:
@@ -148,7 +148,7 @@ class RedisClient:
                     
             return retried_count
         except Exception as e:
-            print(f"Error retrying messages from DLQ: {e}")
+            logger.error(f"Error retrying messages from DLQ: {e}")
             return retried_count
 
     def schedule_job(self, job_data: dict, run_at: datetime.datetime) -> bool:
@@ -167,7 +167,7 @@ class RedisClient:
             self.redis.zadd(self.scheduled_jobs_key, {json.dumps(job_entry): timestamp})
             return True
         except Exception as e:
-            print(f"Error scheduling job: {e}")
+            logger.error(f"Error scheduling job: {e}")
             return False
 
     def get_due_jobs(self) -> list:
@@ -193,7 +193,7 @@ class RedisClient:
             
             return [json.loads(job)["job_data"] for job in due_jobs]
         except Exception as e:
-            print(f"Error getting due jobs: {e}")
+            logger.error(f"Error getting due jobs: {e}")
             return []
 
     def get_scheduled_jobs(self, start: int = 0, end: int = -1) -> list:
@@ -216,5 +216,25 @@ class RedisClient:
                 for job, score in jobs_with_scores
             ]
         except Exception as e:
-            print(f"Error getting scheduled jobs: {e}")
-            return [] 
+            logger.error(f"Error getting scheduled jobs: {e}")
+            return []
+
+    def update_user_upload(self, email: str, max_daily_uploads: int = 100) -> tuple[bool, int]:
+        """
+        Track user upload attempts and check rate limiting.
+        Returns (is_allowed: bool, recent_uploads: int)
+        """
+        try:
+            email_key = f"email_uploads:{email}"
+            current_time = datetime.datetime.now(UTC).isoformat()
+            
+            self.redis.zadd(email_key, {current_time: current_time})
+            
+            # Get count of uploads in last 24 hours
+            yesterday = (datetime.datetime.now(UTC) - datetime.timedelta(days=1)).timestamp()
+            recent_uploads = self.redis.zcount(email_key, yesterday, '+inf')
+            
+            return recent_uploads <= max_daily_uploads, recent_uploads
+        except Exception as e:
+            logger.error(f"Error tracking user upload: {e}")
+            return True, 0  # Default to allowing upload if Redis fails 

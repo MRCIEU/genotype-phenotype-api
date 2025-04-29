@@ -6,6 +6,8 @@ export default function homepage() {
         logo,
         searchText: '',
         searchOptionData: [],
+        variantSearchInProgress: false,
+        variantSearchResponse: null,
         uploadMetadata: {
             currentlyUploading: false,
             modalOpen: false,
@@ -27,8 +29,7 @@ export default function homepage() {
         filteredItems: [],
         errorMessage: null,
 
-        async loadData() {
-            console.log(import.meta.env)
+        async loadSearchOptions() {
             try {
                 const response = await fetch(constants.apiUrl + '/search/options');
                 
@@ -38,6 +39,23 @@ export default function homepage() {
                 }
 
                 this.searchOptionData = await response.json();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        },
+
+        async getVariantSearchResponse(variantText) {
+            try {
+                this.variantSearchInProgress = true;
+                const response = await fetch(constants.apiUrl + '/search/variant/' + variantText);
+                
+                if (!response.ok) {
+                    this.errorMessage = `Failed to load search options: ${response.status} ${constants.apiUrl + '/search/variant/' + variantText}`
+                    return;
+                }
+
+                this.variantSearchResponse = await response.json();
+                this.variantSearchInProgress = false;
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -57,7 +75,9 @@ export default function homepage() {
         },
 
         closeModal() {
-            this.uploadMetadata.modalOpen = false 
+            if (!this.uploadMetadata.currentlyUploading) {
+                this.uploadMetadata.modalOpen = false 
+            }
         },
 
         closeSearch() {
@@ -85,6 +105,29 @@ export default function homepage() {
             return this.filteredItems;
         },
 
+        get proxyVariants() {
+            return this.variantSearchResponse && this.variantSearchResponse.proxy_variants || [];
+        },
+
+        get originalVariants() {
+            return this.variantSearchResponse && this.variantSearchResponse.original_variants || [];
+        },
+
+        searchVariant() {
+            const query = this.searchText.trim();
+            if (!query || query.length < this.searchMetadata.minSearchChars) {
+                return;
+            }
+
+            const isRsid = query.toLowerCase().startsWith('rs');
+            const isChrBp = /^\d+:\d+(_[ACGT]+_[ACGT]+)?$/.test(query);
+            
+            if (isRsid || isChrBp) {
+                this.getVariantSearchResponse(query);
+                this.filteredItems = [];
+            }
+        },
+
         doesUploadDataHaveErrors() {
             this.uploadMetadata.validationErrors = {};
             let hasErrors = false;
@@ -100,7 +143,7 @@ export default function homepage() {
                 'oa',
                 'beta',
                 'se',
-                'pval',
+                'p',
                 'eaf'
             ];
 
@@ -145,8 +188,7 @@ export default function homepage() {
                     OR: this.uploadMetadata.formData.or,
                     SE: this.uploadMetadata.formData.se,
                     P: this.uploadMetadata.formData.p,
-                    EAF: this.uploadMetadata.formData.eaf,
-                    RSID: this.uploadMetadata.formData.rsid
+                    EAF: this.uploadMetadata.formData.eaf
                 }
             };
 
@@ -181,7 +223,7 @@ export default function homepage() {
                 this.uploadMetadata.uploadSuccess = true;
                 this.uploadMetadata.message = 'Upload successful!  An email will be sent to ' + this.uploadMetadata.formData.email +
                     ' once the analysis has been completed.  Or, you can check the status of your upload ' + 
-                    '<a href="upload.html?id=' + result.guid + '">here</a>.';
+                    '<a href="phenotype.html?id=' + result.guid + '">here</a>.';
             }
             else {
                 this.uploadMetadata.uploadSuccess = false;

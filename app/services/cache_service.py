@@ -16,6 +16,14 @@ class CacheService(metaclass=Singleton):
             List of tuples containing (study_name, trait)
         """
         return self.db.get_study_names_for_search()
+    
+    def get_variant_prefixes(self) -> List[str]:
+        """
+        Retrieve variant prefixes from DuckDB with caching.
+        Returns:
+            List of variant prefixes
+        """
+        return self.db.get_variant_prefixes()
 
     @lru_cache(maxsize=1)
     def get_gene_names(self) -> List[Tuple[str, str]]:
@@ -45,6 +53,31 @@ class CacheService(metaclass=Singleton):
         tissues = self.db.get_tissues()
         tissues =[tissue[0] for tissue in tissues]
         return sorted(tissues)
+    
+    @lru_cache(maxsize=1)
+    def get_study_metadata(self) -> dict:
+        """
+        Retrieve study metadata from DuckDB with caching, grouped by data_type and variant_type.
+        Returns:
+            Dictionary with nested structure: {data_type: {variant_type: count}}
+        """
+        study_data = self.db.get_study_metadata()
+        coloc_metadata, unique_snps = self.db.get_coloc_metadata()
+        
+        # Create a nested dictionary to group by data_type and variant_type
+        grouped_data = {}
+        
+        for row in study_data:
+            data_type = row[0] if row[0] else "unknown"
+            variant_type = row[1] if row[1] else "unknown"
+            count = row[2]
+            
+            if data_type not in grouped_data:
+                grouped_data[data_type] = {}
+            
+            grouped_data[data_type][variant_type] = count
+        
+        return grouped_data
 
     def clear_cache(self):
         """Clear the LRU cache for gene ranges"""

@@ -1,4 +1,6 @@
 {
+  "success": true,
+  "failure_reason": null,
   "coloc_results": [
     {
       "iteration": 2,

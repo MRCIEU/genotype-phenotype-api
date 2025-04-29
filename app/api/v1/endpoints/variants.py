@@ -3,8 +3,9 @@ from app.db.associations_db import AssociationsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Association, Coloc, ExtendedColoc, Variant, VariantResponse, convert_duckdb_to_pydantic_model
 from typing import List
+from app.logging_config import get_logger
 
-
+logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/associations", response_model=List[Association])
@@ -20,13 +21,17 @@ async def get_associations(
 
         return associations
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
+        logger.error(f"Error in get_associations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/", response_model=List[Variant])
 async def get_variants(
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
+    variants: List[str] = Query(None, description="List of variants to filter results"),
     rsids: List[str] = Query(None, description="List of rsids to filter results"),
     grange: str = Query(None, description="grange to filter results"),
 ) -> List[Variant]:
@@ -35,12 +40,15 @@ async def get_variants(
             raise HTTPException(status_code=400, detail="Only one of snp_ids, rsids, or grange can be provided.")
 
         db = StudiesDBClient()
-        variants = db.get_variants(snp_ids, rsids, grange)
+        variants = db.get_variants(snp_ids=snp_ids, variants=variants, rsids=rsids, grange=grange)
         variants = convert_duckdb_to_pydantic_model(Variant, variants)
 
         return variants
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
+        logger.error(f"Error in get_variants: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -54,6 +62,11 @@ async def get_variant(
 
         variant = studies_db.get_variant(snp_id)
         colocs = studies_db.get_colocs_for_variant(snp_id)
+
+        if not colocs:
+            variant = convert_duckdb_to_pydantic_model(Variant, variant)
+            return VariantResponse(variant=variant, colocs=[])
+
         colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
 
@@ -66,7 +79,7 @@ async def get_variant(
             association = next((u for u in associations if u.study_id == coloc.study_id), None)
             if association is None:
                 #TODO: Remove this once we have fixed the data 
-                print(f"Association not found for variant {snp_id} and study {coloc.study_id}")
+                logger.warning(f"Association not found for variant {snp_id} and study {coloc.study_id}")
                 # raise HTTPException(status_code=400, detail="Association not found for variant and study")
             extended_colocs.append(ExtendedColoc(
                 **coloc.model_dump(),
@@ -75,6 +88,9 @@ async def get_variant(
 
         return VariantResponse(variant=variant, colocs=extended_colocs)
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
+        logger.error(f"Error in get_variant: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,7 +1,9 @@
 from app.config import get_settings
 from functools import lru_cache
-from typing import List
+from typing import List, Tuple
 import duckdb
+
+from app.models.schemas import StudyDataTypes
 
 settings = get_settings()
 
@@ -24,6 +26,22 @@ class StudiesDBClient:
     def get_study(self, study_id: str):
         query = f"SELECT * FROM studies WHERE id = '{study_id}'"
         return self.studies_conn.execute(query).fetchone()
+    
+    def get_studies_by_id(self, study_ids: List[int]):
+        formatted_ids = ','.join(
+            f"({i}, {id if id is not None else 'NULL'})" 
+            for i, id in enumerate(study_ids)
+        )
+        query = f"""
+            WITH input_studies AS (
+                SELECT * FROM (VALUES {formatted_ids}) as t(row_num, id)
+            )
+            SELECT studies.*
+            FROM input_studies
+            LEFT JOIN studies ON COALESCE(input_studies.id, -1) = COALESCE(studies.id, -1)
+            ORDER BY input_studies.row_num
+        """
+        return self.studies_conn.execute(query).fetchall()
 
     def _fetch_colocs(self, condition: str):
         # TODO: Remove this once we filter colocs when creating the db
@@ -39,6 +57,10 @@ class StudiesDBClient:
     def get_colocs_for_variant(self, snp_id: int):
         return self._fetch_colocs(f"snp_id = {snp_id}")
 
+    def get_colocs_for_variants(self, snp_ids: List[int]):
+        formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
+        return self._fetch_colocs(f"snp_id IN ({formatted_snp_ids})")
+
     def get_all_colocs_for_gene(self, symbol: str):
         return self._fetch_colocs(f"known_gene = '{symbol}' AND cis_trans = 'cis'")
 
@@ -50,7 +72,7 @@ class StudiesDBClient:
 
     def get_study_names_for_search(self):
         return self.studies_conn.execute(
-            "SELECT id, trait FROM studies WHERE data_type = 'phenotype'"
+            f"SELECT id, trait FROM studies WHERE data_type = '{StudyDataTypes.PHENOTYPE.value}'"
         ).fetchall()
 
     def get_gene_names(self):
@@ -82,7 +104,10 @@ class StudiesDBClient:
     def get_study_extractions_by_id(self, ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in ids)
         query = f"""
-            SELECT * FROM study_extractions WHERE id IN ({formatted_ids})
+            SELECT study_extractions.*, studies.trait, studies.data_type, studies.tissue
+            FROM study_extractions
+            JOIN studies ON study_extractions.study_id = studies.id
+            WHERE study_extractions.id IN ({formatted_ids})
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -144,6 +169,10 @@ class StudiesDBClient:
     def get_variant(self, snp_id: int):
         query = f"SELECT * FROM snp_annotations WHERE id = {snp_id}"
         return self.studies_conn.execute(query).fetchone()
+    
+    def get_variant_prefixes(self):
+        query = f"SELECT id, SPLIT_PART(snp, '_', 1) as prefix FROM snp_annotations"
+        return self.studies_conn.execute(query).fetchall()
 
     def get_gene_ranges(self):
         query = f"""
@@ -159,26 +188,8 @@ class StudiesDBClient:
         """
         return self.studies_conn.execute(query).fetchall()
 
-    def get_ld_proxies(self, snp_ids: List[int]):
-        formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
-        query = f"""
-            SELECT * FROM ld
-            WHERE variant_snp_id IN ({formatted_snp_ids})
-            AND abs(r) > 0.894
-        """
-        return self.studies_conn.execute(query).fetchall()
-
-    def get_ld_matrix(self, snp_ids: List[int]):
-        formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
-        query = f"""
-            SELECT * FROM 
-                (SELECT * FROM ld WHERE lead IN ({formatted_snp_ids}))
-                WHERE variant IN ({formatted_snp_ids}) AND variant > lead
-        """
-        return self.studies_conn.execute(query).fetchall()
-
-    def get_variants(self, snp_ids: List[int] = None, rsids: List[str] = None, grange: List[str] = None):
-        if not snp_ids and not rsids and not grange:
+    def get_variants(self, snp_ids: List[int] = None, variants: List[str] = None, variant_prefixes: List[str] = None, rsids: List[str] = None, grange: List[str] = None):
+        if not snp_ids and not variants and not variant_prefixes and not rsids and not grange:
             return []
 
         query = "SELECT * FROM snp_annotations WHERE "
@@ -192,8 +203,13 @@ class StudiesDBClient:
             chr, position = grange.split(":")
             start_bp, end_bp = position.split("-")
             start_bp, end_bp = int(start_bp), int(end_bp)
-
             query += f"""chr = {chr} AND bp BETWEEN {start_bp} AND {end_bp}"""
+        elif variants:
+            formatted_variants = ','.join(f"'{variant}'" for variant in variants)
+            query += f"snp IN ({formatted_variants})"
+        elif variant_prefixes:
+            formatted_variant_prefixes = ','.join(f"'{variant_prefix}'" for variant_prefix in variant_prefixes)
+            query += f"SPLIT_PART(snp, '_', 1) IN ({formatted_variant_prefixes})"
 
         return self.studies_conn.execute(query).fetchall()
 
@@ -218,3 +234,26 @@ class StudiesDBClient:
         formatted_snps = ','.join(f"'{snp}'" for snp in snps)
         query = f"SELECT id FROM snp_annotations WHERE id IN ({formatted_snps})"
         return self.studies_conn.execute(query).fetchall()
+    
+    # def get_rare_variants(self, snp_ids: List[int]):
+    #     formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
+    #     query = f"SELECT * FROM rare_results WHERE snp_id IN ({formatted_snp_ids})"
+    #     return self.studies_conn.execute(query).fetchall()
+
+    def get_study_metadata(self) -> List[Tuple[str, str, int]]:
+        query = """
+            SELECT data_type, variant_type, COUNT(*) as count
+            FROM studies
+            GROUP BY data_type, variant_type
+            ORDER BY data_type, variant_type
+        """
+        
+        return self.studies_conn.execute(query).fetchall()
+    
+    def get_coloc_metadata(self):
+        query = f"SELECT UNIQUE count(*), coloc_group_id FROM colocalisations GROUP BY coloc_group_id"
+        coloc_metadata = self.studies_conn.execute(query).fetchall()
+
+        query = f"SELECT UNIQUE snp_id FROM colocalisations"
+        unique_snps = self.studies_conn.execute(query).fetchall()
+        return coloc_metadata, unique_snps

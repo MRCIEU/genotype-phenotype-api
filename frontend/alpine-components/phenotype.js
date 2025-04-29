@@ -3,6 +3,7 @@ import constants from './constants.js'
 
 export default function pheontype() {
     return {
+        userUpload: false,
         data: null,
         filteredColocData: null,
         filteredGroupedColoc: null,
@@ -16,8 +17,15 @@ export default function pheontype() {
 
         async loadData() {
             let studyId = (new URLSearchParams(location.search).get('id'))
+            let requestUrl = constants.apiUrl + '/studies/' + studyId
+
+            if (studyId && studyId.includes('-')) {
+                this.userUpload = true
+                requestUrl = constants.apiUrl + '/gwas/' + studyId
+            }
+
             try {
-                const response = await fetch(constants.apiUrl + '/studies/' + studyId)
+                const response = await fetch(requestUrl)
                 if (!response.ok) {
                     this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
                     return
@@ -79,10 +87,19 @@ export default function pheontype() {
             }
         },
 
+        get showResults() {
+            if (this.data === null) return false
+            if (this.userUpload) return this.data.study.status === 'completed'
+            return true
+        },
+
         get getStudyToDisplay() {
             if (this.data === null) return '...'
+            if (this.userUpload) {
+                return 'GWAS Upload: ' + this.data.study.name
+            }
 
-            return this.data.study.trait
+            return text + this.data.study.trait
         },
 
         filterByOptions(graphOptions) {
@@ -133,20 +150,15 @@ export default function pheontype() {
         },
 
         get getDataForColocTable() {
-            if (!this.filteredColocData) return []
+            if (!this.filteredColocData || this.filteredColocData.length === 0) return []
             let tableData = this.filteredColocData.filter(coloc => {
                 if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
-                else if (this.displayFilters.candidate_snp !== null)    return coloc.candidate_snp === this.displayFilters.candidate_snp 
+                else if (this.displayFilters.candidate_snp !== null) return coloc.candidate_snp === this.displayFilters.candidate_snp 
                 else return true
             })
-            tableData = this.filteredStudyExtractions.filter(se => {
-                if (this.displayFilters.chr !== null) return se.chr == this.displayFilters.chr
-                else if (this.displayFilters.candidate_snp !== null)    return se.candidate_snp === this.displayFilters.candidate_snp 
-                else return true
-            }).concat(tableData)
 
             tableData.forEach(coloc => {
-                const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 7, 0)
+                const hash = [...coloc.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % constants.tableColors.length, 0)
                 coloc.color = constants.tableColors[hash]
             })
 

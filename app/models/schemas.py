@@ -11,6 +11,12 @@ class Singleton(type):
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
+class StudyDataTypes(Enum):
+    GENE_EXPRESSION = "gene_expression"
+    SPLICE_VARIANT = "splice_variant"
+    PROTEIN = "protein"
+    PHENOTYPE = "phenotype"
+
 class StudySource(BaseModel):
     id: int
     name: str
@@ -23,9 +29,9 @@ class Association(BaseModel):
     study_id: int
     beta: float
     se: float
-    imputed: bool
     p: float
     eaf: float
+    imputed: bool
 
 class Coloc(BaseModel):
     study_extraction_id: int
@@ -166,6 +172,10 @@ class Variant(BaseModel):
     afr_af: Optional[float] = None
     sas_af: Optional[float] = None
 
+class ExtendedVariant(Variant):
+    num_colocs: Optional[int] = None
+    num_rare_variants: Optional[int] = None
+    ld_proxies: Optional[List[Ld]] = None
 
 class GeneResponse(BaseModel):
     gene: Gene
@@ -189,10 +199,15 @@ class VariantResponse(BaseModel):
     variant: Variant
     colocs: List[ExtendedColoc]
 
+class VariantSearchResponse(BaseModel):
+    original_variants: List[ExtendedVariant]
+    proxy_variants: List[ExtendedVariant]
+
 class StudyResponse(BaseModel):
-    study: Study
-    colocs: List[Coloc]
-    study_extractions: List[ExtendedStudyExtraction]
+    study: Study | GwasUpload
+    colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
+    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
+    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
 
 class GwasStatus(Enum):
     PROCESSING = "processing"
@@ -217,6 +232,12 @@ class ProcessGwasRequest(BaseModel):
     @classmethod
     def to_py_dict(cls, data):
         return json.loads(data)
+
+class UpdateGwasRequest(BaseModel):
+    success: bool
+    failure_reason: Optional[str] = None
+    coloc_results: Optional[List[UploadColoc]] = None
+    study_extractions: Optional[List[UploadStudyExtraction]] = None
 
 class GwasColumnNames(BaseModel):
     SNP: Optional[str] = None
@@ -248,12 +269,6 @@ class GwasUpload(BaseModel):
     doi: str
     should_be_added: bool
     status: GwasStatus
-
-class GwasUploadResponse(BaseModel):
-    gwas: GwasUpload
-    existing_study_extractions: List[StudyExtraction]
-    upload_study_extractions: List[UploadStudyExtraction]
-    colocalisations: List[UploadColoc]
 
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None
@@ -301,6 +316,11 @@ class UploadColoc(BaseModel):
         "from_attributes": True
     }
 
+class ExtendedUploadColoc(UploadColoc):
+    trait: Optional[str] = None
+    data_type: Optional[str] = None
+    tissue: Optional[str] = None
+    cis_trans: Optional[str] = None
 
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""

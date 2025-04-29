@@ -1,8 +1,11 @@
+from os import system
+import os
 import pytest
 from unittest.mock import Mock
 from fastapi.testclient import TestClient
+from app.db.gwas_db import GwasDBClient
 from app.main import app
-from app.models.schemas import GwasStatus
+from app.models.schemas import GwasStatus, StudyResponse
 import json
 
 client = TestClient(app)
@@ -28,7 +31,7 @@ guid = None
 
 @pytest.fixture(scope="module")
 def test_guid():
-    with open('tests/test_data/test.tsv.gz', 'rb') as f:
+    with open('tests/test_data/test_upload.tsv.gz', 'rb') as f:
         request_data = {
             "reference_build": "GRCh38",
             "email": "ae@email.com",
@@ -46,7 +49,7 @@ def test_guid():
                 "oa": "OA",
                 "beta": "BETA",
                 "se": "SE",
-                "pval": "P",
+                "p": "P",
                 "eaf": "EAF",
                 "rsid": "RSID"
             }
@@ -64,6 +67,12 @@ def test_guid():
     assert 'guid' in response.json()
     # mock_redis_client.add_to_queue.assert_called_once()
     return response.json()['guid']
+
+# Sorry for the hack for resetting the database, couldn't think of a better way to do it
+@pytest.fixture(scope="module", autouse=True)
+def test_remove_all_data():
+    yield
+    system("git checkout tests/test_data/gwas_upload_small.db")
 
 def test_get_gwas_not_found():
     response = client.get("/v1/gwas/nonexistent-guid")
@@ -87,8 +96,10 @@ def test_put_gwas_not_found():
 def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
-    assert response.json()['gwas']['guid'] == test_guid
-    assert response.json()['gwas']['status'] == GwasStatus.COMPLETED.value
-    assert len(response.json()['existing_study_extractions']) > 1
-    assert len(response.json()['upload_study_extractions']) > 1
-    assert len(response.json()['colocalisations']) > 1
+
+    gwas_model = StudyResponse(**response.json())
+    assert gwas_model.study.guid == test_guid
+    assert gwas_model.study.status == GwasStatus.COMPLETED
+    assert len(gwas_model.study_extractions) > 1
+    assert len(gwas_model.upload_study_extractions) > 1
+    assert len(gwas_model.colocs) > 1

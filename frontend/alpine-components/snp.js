@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs'
 import * as d3 from "d3";
 import constants from './constants.js'
+import downloads from './downloads.js'
 
 export default function snp() {
     return {
@@ -32,7 +33,7 @@ export default function snp() {
         },
 
         getSNPName() {
-                return this.data ? this.data.variant.RSID.split(',')[0] : '...'
+                return this.data ? this.data.variant.rsid.split(',')[0] : '...'
         },
 
         getVariantData() {
@@ -43,13 +44,27 @@ export default function snp() {
                 return this.data ? this.data.filteredColocs: {};
         },
 
+        downloadData() {
+            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+                return;
+            }
+            
+            const filename = `${this.getSNPName()}_coloc_data.csv`;
+            
+            downloads.downloadColocsToCSV(
+                this.data.variant,
+                this.data.filteredColocs,
+                filename
+            );
+        },
+
         filterByOptions(graphOptions) {
             this.data.filteredColocs = this.data.colocs.filter(coloc => {
-                return(coloc.min_p <= graphOptions.pValue) &&
-                            (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
-                        //        study.posterior_prob >= graphOptions.coloc &&
-                             (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true)
-                             // && rare variants in the future...
+                return(coloc.min_p <= graphOptions.pValue &&
+                    coloc.posterior_prob >= graphOptions.coloc &&
+                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
+                    (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true)
+                )
             })
         },
 
@@ -199,7 +214,7 @@ export default function snp() {
                     const coloc = self.data.filteredColocs.find(coloc => coloc.trait === nodes[d.target.index]);
                     let tooltipColor = "white";
                     if (coloc.association) {
-                        tooltipColor = coloc.association.BETA > 0 ? "#afe1af" : "#ee4b2b";
+                        tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
                     }
                     d3.select('#snp-chord-diagram')
                             .append('div')
@@ -214,7 +229,7 @@ export default function snp() {
                             .html(`Trait: ${coloc.trait}<br>
                                         P-value: ${coloc.min_p.toExponential(2)}<br>
                                         Cis/Trans: ${coloc.cis_trans}<br>
-                                        BETA: ${coloc.association ? coloc.association.BETA : "N/A"}
+                                        BETA: ${coloc.association ? coloc.association.beta: "N/A"}
                                         `);
                 })
                 .on('mouseout', function(event, d) {

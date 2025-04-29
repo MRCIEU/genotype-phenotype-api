@@ -27,7 +27,7 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
     - uses: actions/checkout@v2
     - name: Set up SSH Key
@@ -71,5 +71,5 @@ jobs:
         cp frontend/.env.prod .env.frontend
         cp docker-compose-prod.yml docker-compose.yml
 
-        FILES="docker-compose.yml .env.backend .env.frontend"
+        FILES="docker-compose.yml .env.backend .env.frontend scripts/*"
         scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${ORACLE_SERVER}:/home/opc/genotype-phenotype-api/
