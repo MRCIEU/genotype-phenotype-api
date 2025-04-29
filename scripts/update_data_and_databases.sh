@@ -17,6 +17,7 @@ cp /oradiskvdb1/db/ld_new.db /oradiskvdb1/db/ld.db
 echo "Swapping to new study information for gwas upload"
 mv /oradiskvdb1/data/ld_blocks /oradiskvdb1/data/ld_blocks_backup
 mv /oradiskvdb1/data/ld_blocks_new /oradiskvdb1/data/ld_blocks
+mkdir -p /oradiskvdb1/data/ld_blocks_new
 
 sudo docker compose up -d
 
