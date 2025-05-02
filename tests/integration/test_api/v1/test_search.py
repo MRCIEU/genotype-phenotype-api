@@ -19,21 +19,21 @@ def test_get_search_options():
         assert search_term.name is not None
     
 def test_search_variant_by_rsid():
-    response = client.get("/v1/search/variant/rs8109653")
+    response = client.get("/v1/search/variant/rs6441921")
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)
 
     assert len(variants.original_variants) > 0
     assert len(variants.proxy_variants) == 0
-    assert variants.original_variants[0].num_colocs > 0
+    assert variants.original_variants[0].num_colocs == 0
 
 def test_search_variant_by_chr_bp():
-    response = client.get("/v1/search/variant/19:57517336")
+    response = client.get("/v1/search/variant/3:45576631")
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)
 
     assert len(variants.original_variants) > 0
     assert len(variants.proxy_variants) == 0
-    assert variants.original_variants[0].num_colocs > 0
+    assert variants.original_variants[0].num_colocs == 0

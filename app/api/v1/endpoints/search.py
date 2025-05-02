@@ -17,15 +17,9 @@ async def get_search_options(request: Request, response: Response):
         # Add cache control headers
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
-        
-        cache_service = DBCacheService()
-        search_terms = cache_service.get_trait_names_for_search()
-        genes = cache_service.get_gene_names()
 
-        search_terms = [{"type": "study", "name": term[1], "type_id": term[0]} for term in search_terms]
-        genes = [{"type": "gene", "name": gene[0], "type_id": gene[0]} for gene in genes]
-        search_terms.extend(genes)
-        search_terms = [term for term in search_terms if term['name'] is not None]
+        cache_service = DBCacheService()
+        search_terms = cache_service.get_search_terms()
         return search_terms
 
     except HTTPException as e:
@@ -46,7 +40,6 @@ async def search(search_term: str):
         if search_term.startswith("rs"):
             original_variants = studies_db.get_variants(rsids=[search_term])
         elif any(c.isdigit() for c in search_term) and ":" in search_term:
-            cache_service.get_variant_prefixes()
             original_variants = studies_db.get_variants(variant_prefixes=[search_term])
         
         if not original_variants: return VariantSearchResponse(original_variants=[], proxy_variants=[]) 

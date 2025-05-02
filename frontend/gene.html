@@ -49,11 +49,11 @@
                 </div>
             </div>
                 <div class="is-divider mt-0 mb-2"></div>
-                <h4 class="title is-3 has-text-centered mb-0">Tissue by QTL Type</h4>
-                <p class="is-size-7 has-text-centered" x-text="'Displays every tissue in which the gene '+ geneName +' is expressed.'"></p>
-                <p class="is-size-7 has-text-centered">If there is no circle, the gene is not expressed at the selected p-value threshold</p>
+                <h4 class="title is-3 has-text-centered mb-0">Associated Genes</h4>
+                <p class="is-size-7 has-text-centered" x-text="'Displays every gene that has been associated with '+ geneName +' in the selected studies.'"></p>
+                <p class="is-size-7 has-text-centered">The association can come by means of colocalization with a causal variant associated with the gene, or by proximity to gene region</p>
 
-                <div class="column is-12" x-model="initTissueByTraitGraph" id="gene-dot-plot"></div>
+                <div class="column is-10" x-model="initAssociatedGenesGraph" id="associated-genes-plot"></div>
                 <div class="columns mt-0 is-centered">
                     <div class="column is-11">
                         <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">

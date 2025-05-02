@@ -132,6 +132,7 @@ class StudyExtraction(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: str
     known_gene: Optional[str] = None
+    trait_id: Optional[int] = None
 
 class ExtendedStudyExtraction(StudyExtraction):
     trait: str
@@ -143,20 +144,26 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     type_id: Optional[int | str] = None
 
-class RareSNPGroups(BaseModel):
+class RareResult(BaseModel):
     rare_result_group_id: int
-    study_id: int
     study_extraction_id: int
-    ld_block_id: int
     snp_id: int
+    ld_block_id: int
     unique_study_id: str
     candidate_snp: str
-    study: str
+    study_id: int
+    file: str
     chr: int
     bp: int
     min_p: float
-    cis_trans: Optional[str] = None
     known_gene: Optional[str] = None
+    trait_id: Optional[int] = None
+    trait_name: Optional[str] = None
+    data_type: Optional[str] = None
+    tissue: Optional[str] = None
+
+class ExtendedRareResult(RareResult):
+    association: Optional[Association] = None
 
 class Variant(BaseModel):
     id: int
@@ -194,6 +201,7 @@ class ExtendedVariant(Variant):
 class GeneResponse(BaseModel):
     gene: Gene
     colocs: List[Coloc]
+    rare_results: List[RareResult]
     variants: List[Variant]
     study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
@@ -207,11 +215,12 @@ class Region(BaseModel):
 class RegionResponse(BaseModel):
     region: Region
     colocs: List[Coloc]
-    genes: List[GeneMetadata] 
+    genes: List[Gene] 
 
 class VariantResponse(BaseModel):
     variant: Variant
     colocs: List[ExtendedColoc]
+    rare_results: List[ExtendedRareResult]
 
 class VariantSearchResponse(BaseModel):
     original_variants: List[ExtendedVariant]
@@ -220,6 +229,7 @@ class VariantSearchResponse(BaseModel):
 class TraitResponse(BaseModel):
     trait: Trait| GwasUpload
     colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
+    rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
 

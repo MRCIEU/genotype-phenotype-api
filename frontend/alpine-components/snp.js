@@ -126,7 +126,7 @@ export default function snp() {
             const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
 
             // Extract unique traits
-            const traits = colocs.map(d => d.trait);
+            const traits = colocs.map(d => d.trait_name);
 
             // Combine candidate_snp and traits into nodes
             const nodes = [candidate_snp, ...traits];
@@ -134,7 +134,7 @@ export default function snp() {
             // Create data_type mapping for coloring
             const dataTypeMap = {};
             colocs.forEach(coloc => {
-                dataTypeMap[coloc.trait] = coloc.data_type;
+                dataTypeMap[coloc.trait_name] = coloc.data_type;
             });
 
             // Create color scale based on data_type
@@ -154,7 +154,7 @@ export default function snp() {
             // Populate matrix: connections from candidate_snp to each trait
             colocs.forEach(coloc => {
                 const source = indexMap[candidate_snp];
-                const target = indexMap[coloc.trait];
+                const target = indexMap[coloc.trait_name];
                 matrix[source][target] = 1; // Each trait connects once to the SNP
             });
 
@@ -211,7 +211,7 @@ export default function snp() {
                 .attr('opacity', 0.7)
                 .on('mouseover', function(event, d) {
                     d3.select(this).transition().duration(200).attr('opacity', 1);
-                    const coloc = self.data.filteredColocs.find(coloc => coloc.trait === nodes[d.target.index]);
+                    const coloc = self.data.filteredColocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
                     let tooltipColor = "white";
                     if (coloc.association) {
                         tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
@@ -226,7 +226,7 @@ export default function snp() {
                             .style('border-radius', '5px')
                             .style('left', `${event.pageX + 10}px`)
                             .style('top', `${event.pageY - 10}px`)
-                            .html(`Trait: ${coloc.trait}<br>
+                            .html(`Trait: ${coloc.trait_name}<br>
                                         P-value: ${coloc.min_p.toExponential(2)}<br>
                                         Cis/Trans: ${coloc.cis_trans}<br>
                                         BETA: ${coloc.association ? coloc.association.beta: "N/A"}

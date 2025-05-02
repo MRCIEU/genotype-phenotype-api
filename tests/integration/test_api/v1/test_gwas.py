@@ -98,8 +98,8 @@ def test_get_gwas(test_guid):
     assert response.status_code == 200
 
     gwas_model = TraitResponse(**response.json())
-    assert gwas_model.study.guid == test_guid
-    assert gwas_model.study.status == GwasStatus.COMPLETED
+    assert gwas_model.trait.guid == test_guid
+    assert gwas_model.trait.status == GwasStatus.COMPLETED
     assert len(gwas_model.study_extractions) > 1
     assert len(gwas_model.upload_study_extractions) > 1
     assert len(gwas_model.colocs) > 1

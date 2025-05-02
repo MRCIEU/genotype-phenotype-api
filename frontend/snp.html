@@ -87,8 +87,8 @@
                     <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
                         <thead>
                             <tr>
-                                <th class="has-text-centered py-2"><abbr title="Tissue">Tissue</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Trait">Trait</abbr></th>
+                                <th class="has-text-centered py-2"><abbr title="Tissue">Tissue</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Cis / Trans">Cis / Trans</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Data Type">Data Type</abbr></th>
@@ -98,8 +98,8 @@
                         <tbody>
                             <template x-for="item in getDataForTable">
                                 <tr>
+                                    <td class="py-1 px-2" x-text="item.trait_name"></td>
                                     <td class="py-1 px-2" x-text="item.tissue"></td>
-                                    <td class="py-1 px-2" x-text="item.trait"></td>
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
                                     <td class="py-1 px-2" x-text="item.data_type"></td>
