@@ -3,13 +3,14 @@ from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Ld, Variant, convert_duckdb_to_pydantic_model
 from typing import List
-from app.logging_config import get_logger
+from app.logging_config import get_logger, time_endpoint
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
 @router.get("/matrix", response_model=List[Ld])
+@time_endpoint
 async def get_matrix(
     variants: List[str] = Query(None, description="List of variants to filter results"),
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
@@ -40,6 +41,7 @@ async def get_matrix(
 
 
 @router.get("/proxies", response_model=List[Ld])
+@time_endpoint
 async def get_proxies(
     variants: List[str] = Query(None, description="List of variants to filter results"),
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")

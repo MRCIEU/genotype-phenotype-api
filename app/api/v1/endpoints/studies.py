@@ -1,14 +1,15 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, Study, ExtendedStudyExtraction, StudyResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import Coloc, Study, ExtendedStudyExtraction, TraitResponse, convert_duckdb_to_pydantic_model
 from typing import List
-from app.logging_config import get_logger
+from app.logging_config import get_logger, time_endpoint
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/", response_model=List[Study])
+@time_endpoint
 async def get_studies() -> List[Study]:
     try:
         db = StudiesDBClient()
@@ -22,8 +23,9 @@ async def get_studies() -> List[Study]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{study_id}", response_model=StudyResponse)
-async def get_study(study_id: str = Path(..., description="Study ID")) -> StudyResponse:
+@router.get("/{study_id}", response_model=TraitResponse)
+@time_endpoint
+async def get_study(study_id: str = Path(..., description="Study ID")) -> TraitResponse:
     try:
         db = StudiesDBClient()
         study = db.get_study(study_id)
@@ -42,7 +44,7 @@ async def get_study(study_id: str = Path(..., description="Study ID")) -> StudyR
         else:
             filtered_studies = study_extractions
 
-        return StudyResponse(study=study, colocs=colocs, study_extractions=filtered_studies)
+        return TraitResponse(trait=study, colocs=colocs, study_extractions=filtered_studies)
     except HTTPException as e:
         raise e
     except Exception as e:

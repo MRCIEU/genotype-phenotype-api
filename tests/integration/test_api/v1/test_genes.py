@@ -6,10 +6,10 @@ from app.models.schemas import GeneResponse
 client = TestClient(app)
 
 def test_get_genes_with_colocs():
-    response = client.get("/v1/genes/ZNF419")
+    response = client.get("/v1/genes/WNT7B")
     assert response.status_code == 200
     genes = response.json()
-    assert len(genes) > 0
+    assert genes is not None
 
     gene_response = GeneResponse(**genes)
     assert gene_response.gene is not None
@@ -30,6 +30,11 @@ def test_get_genes_with_colocs():
         assert study.chr is not None
         assert study.bp is not None
         assert study.min_p is not None
+    for rare_result in gene_response.rare_results:
+        assert rare_result.study_extraction_id is not None
+        assert rare_result.chr is not None
+        assert rare_result.bp is not None
+        assert rare_result.min_p is not None
 
 
 

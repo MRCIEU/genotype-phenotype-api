@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, Variant, VariantResponse, VariantSearchResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
 from typing import List
 
-from app.services.cache_service import CacheService
 from app.logging_config import get_logger
+from app.services.cache_service import DBCacheService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -17,15 +17,9 @@ async def get_search_options(request: Request, response: Response):
         # Add cache control headers
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
-        
-        cache_service = CacheService()
-        search_terms = cache_service.get_study_names_for_search()
-        genes = cache_service.get_gene_names()
 
-        search_terms = [{"type": "study", "name": term[1], "type_id": term[0]} for term in search_terms]
-        genes = [{"type": "gene", "name": gene[0], "type_id": gene[0]} for gene in genes]
-        search_terms.extend(genes)
-        search_terms = [term for term in search_terms if term['name'] is not None]
+        cache_service = DBCacheService()
+        search_terms = cache_service.get_search_terms()
         return search_terms
 
     except HTTPException as e:
@@ -38,7 +32,7 @@ async def get_search_options(request: Request, response: Response):
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 async def search(search_term: str):
     try:
-        cache_service = CacheService()
+        cache_service = DBCacheService()
         studies_db = StudiesDBClient()
         ld_db = LdDBClient()
 
@@ -46,7 +40,6 @@ async def search(search_term: str):
         if search_term.startswith("rs"):
             original_variants = studies_db.get_variants(rsids=[search_term])
         elif any(c.isdigit() for c in search_term) and ":" in search_term:
-            cache_service.get_variant_prefixes()
             original_variants = studies_db.get_variants(variant_prefixes=[search_term])
         
         if not original_variants: return VariantSearchResponse(original_variants=[], proxy_variants=[]) 

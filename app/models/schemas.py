@@ -17,6 +17,11 @@ class StudyDataTypes(Enum):
     PROTEIN = "protein"
     PHENOTYPE = "phenotype"
 
+class VariantTypes(Enum):
+    COMMON = "common"
+    RARE_EXOME = "rare_exome"
+    RARE_WGS = "rare_wgs"
+
 class StudySource(BaseModel):
     id: int
     name: str
@@ -51,7 +56,8 @@ class Coloc(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
     known_gene: Optional[str] = None
-    trait: Optional[str] = None
+    trait_id: Optional[int] = None
+    trait_name: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
 
@@ -85,12 +91,20 @@ class GeneMetadata(BaseModel):
 class ExtendedColoc(Coloc):
     association: Optional[Association] = None
 
+class Trait(BaseModel):
+    id: int
+    data_type: str
+    trait: str
+    trait_name: str
+    common_study: Optional[Study] = None
+    rare_study: Optional[Study] = None
+
 class Study(BaseModel):
     id: int
     data_type: str
     data_format: str
     study_name: str
-    trait: str
+    trait_id: int
     ancestry: Optional[str] = None
     sample_size: Optional[int] = None
     category: Optional[str] = None
@@ -118,6 +132,7 @@ class StudyExtraction(BaseModel):
     cis_trans: Optional[str] = None
     ld_block: str
     known_gene: Optional[str] = None
+    trait_id: Optional[int] = None
 
 class ExtendedStudyExtraction(StudyExtraction):
     trait: str
@@ -129,20 +144,26 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     type_id: Optional[int | str] = None
 
-class RareSNPGroups(BaseModel):
+class RareResult(BaseModel):
     rare_result_group_id: int
-    study_id: int
     study_extraction_id: int
-    ld_block_id: int
     snp_id: int
+    ld_block_id: int
     unique_study_id: str
     candidate_snp: str
-    study: str
+    study_id: int
+    file: str
     chr: int
     bp: int
     min_p: float
-    cis_trans: Optional[str] = None
     known_gene: Optional[str] = None
+    trait_id: Optional[int] = None
+    trait_name: Optional[str] = None
+    data_type: Optional[str] = None
+    tissue: Optional[str] = None
+
+class ExtendedRareResult(RareResult):
+    association: Optional[Association] = None
 
 class Variant(BaseModel):
     id: int
@@ -180,6 +201,7 @@ class ExtendedVariant(Variant):
 class GeneResponse(BaseModel):
     gene: Gene
     colocs: List[Coloc]
+    rare_results: List[RareResult]
     variants: List[Variant]
     study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
@@ -193,19 +215,21 @@ class Region(BaseModel):
 class RegionResponse(BaseModel):
     region: Region
     colocs: List[Coloc]
-    genes: List[GeneMetadata] 
+    genes: List[Gene] 
 
 class VariantResponse(BaseModel):
     variant: Variant
     colocs: List[ExtendedColoc]
+    rare_results: List[ExtendedRareResult]
 
 class VariantSearchResponse(BaseModel):
     original_variants: List[ExtendedVariant]
     proxy_variants: List[ExtendedVariant]
 
-class StudyResponse(BaseModel):
-    study: Study | GwasUpload
+class TraitResponse(BaseModel):
+    trait: Trait| GwasUpload
     colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
+    rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
 

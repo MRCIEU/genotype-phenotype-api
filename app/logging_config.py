@@ -1,13 +1,28 @@
 import logging
 import sys
+import time
 from pathlib import Path
 from loguru import logger
 from app.config import get_settings
+from functools import wraps
 
 settings = get_settings()
 
 log_dir = Path(settings.DATA_DIR, "logs")
 log_dir.mkdir(exist_ok=True, parents=True)
+
+def time_endpoint(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = await func(*args, **kwargs)
+            return result
+        finally:
+            end_time = time.time()
+            execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
+            logger.debug(f"Endpoint {func.__name__} completed in {execution_time:.2f}ms")
+    return wrapper
 
 class Formatter:
     def __init__(self):
@@ -18,10 +33,13 @@ class Formatter:
             "name": {"padding": 25},
             "function": {"padding": 15},
             "message": {},
+            "extra": {"execution_time": {"color": "yellow", "repr": True}},
         }
 
     def format(self, record):
-        return "<green>{time}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>\n"
+        execution_time = record.get("extra", {}).get("execution_time", "")
+        execution_time_str = f" | <yellow>{execution_time}</yellow>" if execution_time else ""
+        return f"<green>{{time}}</green> | <level>{{level: <8}}</level> | <cyan>{{name}}</cyan>:<cyan>{{function}}</cyan>:<cyan>{{line}}</cyan> - <level>{{message}}</level>{execution_time_str}\n"
 
 
 def path_filter(record):
@@ -31,17 +49,21 @@ def path_filter(record):
     except:
         return True
 
+def is_running_tests():
+    return "pytest" in sys.modules
+
 # Remove default handlers
 logger.remove()
 
-logger.add(
-    sys.stderr,
-    format=Formatter().format,
-    filter=path_filter,
-    level="DEBUG" if settings.DEBUG else "INFO",
-    backtrace=True,
-    diagnose=True
-)
+if not is_running_tests():
+    logger.add(
+        sys.stderr,
+        format=Formatter().format,
+        filter=path_filter,
+        level="DEBUG" if settings.DEBUG else "INFO",
+        backtrace=True,
+        diagnose=True
+    )
 
 if not settings.DEBUG:
     logger.add(

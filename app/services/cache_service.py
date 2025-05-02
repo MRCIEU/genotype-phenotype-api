@@ -1,47 +1,53 @@
 from functools import lru_cache
-from typing import List, Tuple
-from app.models.schemas import Singleton
+from app.models.schemas import Gene, SearchTerm, Singleton, convert_duckdb_to_pydantic_model
 from app.db.studies_db import StudiesDBClient
+from typing import List
 
-
-class CacheService(metaclass=Singleton):
+class DBCacheService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
 
     @lru_cache(maxsize=1)
-    def get_study_names_for_search(self) -> List[Tuple[str, str]]:
+    def get_search_terms(self) -> List[SearchTerm]:
         """
         Retrieve study names for search from DuckDB with caching.
         Returns:
             List of tuples containing (study_name, trait)
         """
-        return self.db.get_study_names_for_search()
-    
-    def get_variant_prefixes(self) -> List[str]:
-        """
-        Retrieve variant prefixes from DuckDB with caching.
-        Returns:
-            List of variant prefixes
-        """
-        return self.db.get_variant_prefixes()
+
+        genes = self.db.get_gene_names()
+        gene_search_terms = [
+            SearchTerm(type="gene", name=gene[0], type_id=gene[0])
+            for gene in genes if gene[0] is not None
+        ]
+
+        trait_search_terms = self.db.get_trait_names_for_search()
+        trait_search_terms = [
+            SearchTerm(type="study", name=term[1], type_id=term[0])
+            for term in trait_search_terms if term[1] is not None
+        ]
+
+        return gene_search_terms + trait_search_terms
 
     @lru_cache(maxsize=1)
-    def get_gene_names(self) -> List[Tuple[str, str]]:
+    def get_gene_names(self) -> List[SearchTerm]:
         """
         Retrieve genes from DuckDB with caching.
         Returns:
             List of tuples containing (gene_name, chromosome)
         """
-        return self.db.get_gene_names()
+        genes = self.db.get_gene_names()
+        return [SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes]
 
     @lru_cache(maxsize=1)
-    def get_gene_ranges(self) -> List[Tuple[str, int, int, int]]:
+    def get_gene_ranges(self) -> List[Gene]:
         """
         Retrieve gene ranges for a given chromosome from DuckDB with caching.
         Returns:
-            List of tuples containing (gene_name, chr, start_position, end_position)
+            List of GeneRange models containing gene information
         """
-        return self.db.get_gene_ranges()
+        result = self.db.get_gene_ranges()
+        return convert_duckdb_to_pydantic_model(Gene, result)
 
     @lru_cache(maxsize=1)
     def get_tissues(self, ) -> List[str]:
@@ -54,6 +60,7 @@ class CacheService(metaclass=Singleton):
         tissues =[tissue[0] for tissue in tissues]
         return sorted(tissues)
     
+    #TODO: not used yet, maybe create a study-metadata endpoint for general knowledge about the studies?
     @lru_cache(maxsize=1)
     def get_study_metadata(self) -> dict:
         """
@@ -83,5 +90,5 @@ class CacheService(metaclass=Singleton):
         """Clear the LRU cache for gene ranges"""
         self.get_gene_ranges.cache_clear()
         self.get_gene_names.cache_clear()
-        self.get_study_names_for_search.cache_clear()
         self.get_tissues.cache_clear()
+        self.get_search_terms.cache_clear()
