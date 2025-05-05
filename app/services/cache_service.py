@@ -93,6 +93,7 @@ class DBCacheService(metaclass=Singleton):
 
     def clear_cache(self):
         """Clear the LRU cache for gene ranges"""
+        self.get_gpmap_metadata.cache_clear()
         self.get_gene_ranges.cache_clear()
         self.get_gene_names.cache_clear()
         self.get_tissues.cache_clear()

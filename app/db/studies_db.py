@@ -346,4 +346,3 @@ class StudiesDBClient:
         """
         unique_snps = self.studies_conn.execute(query).fetchone()
         return coloc_groups[0], unique_snps[0]
-    
