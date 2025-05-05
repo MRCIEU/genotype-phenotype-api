@@ -80,7 +80,7 @@ class DBCacheService(metaclass=Singleton):
             elif study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.RARE_EXOME.value:
                 num_rare_studies += study[2]
             elif study[0] != StudyDataTypes.PHENOTYPE.value:
-                num_molecular_studies += 1
+                num_molecular_studies += study[2]
 
         gpmap_metadata = GPMapMetadata(
             num_common_studies=num_common_studies,
