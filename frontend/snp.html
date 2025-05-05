@@ -73,7 +73,7 @@
             </div>
 
             <div class="columns mt-2 is-centered">
-                <div class="column is-11">
+                <div class="column is-9 mr-0 pr-0">
                     <div class="level mb-2">
                         <div class="level-left">
                             <h4 class="title is-4">Colocalization Results</h4>
@@ -84,7 +84,7 @@
                             </button>
                         </div>
                     </div>
-                    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7">
+                    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7 mr-0">
                         <thead>
                             <tr>
                                 <th class="has-text-centered py-2"><abbr title="Trait">Trait</abbr></th>
@@ -103,11 +103,19 @@
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
                                     <td class="py-1 px-2" x-text="item.data_type"></td>
-                                    <td class="py-1 px-2" x-text="item.association ? item.association.beta.toExponential(2) : 'N/A'"></td>
+                                    <td class="py-1 px-2" x-text="item.association ? item.association.beta.toFixed(3) : 'N/A'"></td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
+                </div>
+                <div class="column is-2 ml-0 pl-0 has-text-centered">
+                    <div class="level mb-2">
+                        <div class="level-item">
+                            <h4 class="title is-4">Effect Size</h4>
+                        </div>
+                    </div>
+                    <div id="forest-plot"></div>
                 </div>
             </div>
         </div>

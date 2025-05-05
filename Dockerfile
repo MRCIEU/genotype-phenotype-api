@@ -19,6 +19,8 @@ COPY app /workspace/app
 COPY tests /workspace/tests
 
 ENV OPENAPI_URL=/openapi.json
+ENV DOCS_URL=/docs
+ENV REDOC_URL=/redoc
 
 ARG USERNAME=api
 ARG USER_UID=1000

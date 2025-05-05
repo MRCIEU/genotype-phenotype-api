@@ -9,39 +9,40 @@ export default function snp() {
         errorMessage: null,
 
         async loadData() {
-                let variantId = (new URLSearchParams(location.search).get('id'))
+            let variantId = (new URLSearchParams(location.search).get('id'))
 
-                try {
-                        const response = await fetch(constants.apiUrl + '/variants/' + variantId)
-                        if (!response.ok) {
-                                this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
-                                return
-                        }
-                        this.data = await response.json()
-
-                        this.data.colocs = this.data.colocs.map(coloc => ({
-                                ...coloc,
-                                tissue: coloc.tissue ? coloc.tissue : "N/A",
-                                cis_trans: coloc.cis_trans? coloc.cis_trans : "N/A"
-                        })) 
-                        this.data.colocs.sort((a, b) => a.data_type.localeCompare(b.data_type));
-
-                        this.filterByOptions(Alpine.store('graphOptionStore'));
-                } catch (error) {
-                        console.error('Error loading data:', error);
+            try {
+                const response = await fetch(constants.apiUrl + '/variants/' + variantId)
+                if (!response.ok) {
+                    this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
+                    return
                 }
+                this.data = await response.json()
+
+                this.data.colocs = this.data.colocs.map(coloc => ({
+                    ...coloc,
+                    tissue: coloc.tissue ? coloc.tissue : "N/A",
+                    cis_trans: coloc.cis_trans? coloc.cis_trans : "N/A"
+                })) 
+                this.data.colocs.sort((a, b) => a.data_type.localeCompare(b.data_type));
+
+                this.filterByOptions(Alpine.store('graphOptionStore'));
+                this.initForestPlot();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
         },
 
         getSNPName() {
-                return this.data ? this.data.variant.rsid.split(',')[0] : '...'
+            return this.data ? this.data.variant.rsid.split(',')[0] : '...'
         },
 
         getVariantData() {
-                return this.data ? this.data.variant : {};
+            return this.data ? this.data.variant : {};
         },
 
         getDataForTable() {
-                return this.data ? this.data.filteredColocs: {};
+            return this.data ? this.data.filteredColocs: [];
         },
 
         downloadData() {
@@ -65,7 +66,9 @@ export default function snp() {
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                     (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true)
                 )
-            })
+            });
+            this.data.filteredColocs.sort((a, b) => a.association.beta - b.association.beta);
+            this.initForestPlot();
         },
 
         initChordDiagram() {
@@ -86,7 +89,6 @@ export default function snp() {
                 });
                 this.getChordDiagram();
         },
-
 
         getChordDiagram() {
             if (!this.data) return;
@@ -274,7 +276,98 @@ export default function snp() {
                 .attr("dy", "0.35em")
                 .text("Candidate SNP")
                 .style("font-size", "12px");
-        }
+        },
 
+        initForestPlot() {
+            if (!this.data || !this.data.filteredColocs) return;
+
+            const plotContainer = d3.select("#forest-plot");
+            plotContainer.selectAll("*").remove();
+
+            const margin = { top: 50, right: 20, bottom: 40, left: 10 };
+            // const width = 300 - margin.left - margin.right;
+            let width = plotContainer.node().getBoundingClientRect().width;
+            const height = this.data.filteredColocs.length * 27;
+
+            const svg = plotContainer.append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Filter out items without association data
+            const validData = this.data.filteredColocs.filter(d => d.association && d.association.beta !== null && d.association.se !== null);
+            
+            // Calculate the range for the x-axis
+            const maxAbsBeta = d3.max(validData, d => Math.abs(d.association.beta));
+            const xRange = [-maxAbsBeta * 1.5, maxAbsBeta * 1.5];
+
+            // Create scales
+            const x = d3.scaleLinear()
+                .domain(xRange)
+                .range([0, width]);
+
+            const y = d3.scaleBand()
+                .domain(validData.map(d => d.trait_name))
+                .range([0, height])
+                .padding(0.1);
+
+            // Add x-axis
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .style("font-size", "10px")
+                .attr("transform", "rotate(-65) translate(-15,-10)");
+
+            // Add y-axis
+            svg.append("g")
+                .call(d3.axisLeft(y).tickSize(0).tickFormat(""))
+                .selectAll(".domain")
+                .attr("stroke", "#ddd");
+
+            // Add vertical line at x=0
+            svg.append("line")
+                .attr("x1", x(0))
+                .attr("y1", 0)
+                .attr("x2", x(0))
+                .attr("y2", height)
+                .attr("stroke", "#000")
+                .attr("stroke-width", 1);
+
+            // Add points and confidence intervals
+            validData.forEach(d => {
+                const beta = d.association.beta;
+                const se = d.association.se;
+                const yPos = y(d.trait_name) + y.bandwidth() / 2;
+
+                // Add confidence interval line
+                svg.append("line")
+                    .attr("x1", x(beta - 1.96 * se))
+                    .attr("y1", yPos)
+                    .attr("x2", x(beta + 1.96 * se))
+                    .attr("y2", yPos)
+                    .attr("stroke", beta > 0 ? "#afe1af" : "#ee4b2b")
+                    .attr("stroke-width", 2);
+
+                // Add point estimate
+                svg.append("circle")
+                    .attr("cx", x(beta))
+                    .attr("cy", yPos)
+                    .attr("r", 4)
+                    .attr("fill", beta > 0 ? "#afe1af" : "#ee4b2b");
+
+                // Add tooltip
+                svg.append("title")
+                    .text(`Beta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`);
+            });
+
+            // Add axis labels
+            svg.append("text")
+                .attr("transform", `translate(${width/2}, ${height + margin.bottom})`)
+                .style("text-anchor", "middle")
+                .style("font-size", "12px")
+                .text("Effect Size (Beta)");
+        }
     }
 } 

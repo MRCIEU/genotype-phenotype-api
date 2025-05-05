@@ -1,22 +1,18 @@
-from fastapi import APIRouter, HTTPException, Request, Response
-from app.db.ld_db import LdDBClient
-from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, Variant, VariantResponse, VariantSearchResponse, convert_duckdb_to_pydantic_model
-from typing import List
+from fastapi import APIRouter, HTTPException
+from app.models.schemas import GPMapMetadata, convert_duckdb_to_pydantic_model
 
-from app.services.cache_service import CacheService
+from app.services.cache_service import DBCacheService
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
-
 router = APIRouter()
 
-@router.get("/study_metadata", response_model=StudyMetadata)
-async def get_study_metadata():
+@router.get("/gpmap_metadata", response_model=GPMapMetadata)
+async def get_gpmap_metadata():
     try:
-        cache_service = CacheService()
-        study_metadata = cache_service.get_study_metadata()
-        return study_metadata
+        cache_service = DBCacheService()
+        metadata = cache_service.get_gpmap_metadata()
+        return metadata
     except HTTPException as e:
         raise e
     except Exception as e:

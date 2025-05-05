@@ -1,5 +1,5 @@
 from functools import lru_cache
-from app.models.schemas import Gene, SearchTerm, Singleton, convert_duckdb_to_pydantic_model
+from app.models.schemas import GPMapMetadata, Gene, SearchTerm, Singleton, StudyDataTypes, VariantTypes, convert_duckdb_to_pydantic_model
 from app.db.studies_db import StudiesDBClient
 from typing import List
 
@@ -59,35 +59,41 @@ class DBCacheService(metaclass=Singleton):
         tissues = self.db.get_tissues()
         tissues =[tissue[0] for tissue in tissues]
         return sorted(tissues)
-    
-    #TODO: not used yet, maybe create a study-metadata endpoint for general knowledge about the studies?
+
     @lru_cache(maxsize=1)
-    def get_study_metadata(self) -> dict:
+    def get_gpmap_metadata(self) -> GPMapMetadata:
         """
         Retrieve study metadata from DuckDB with caching, grouped by data_type and variant_type.
         Returns:
             Dictionary with nested structure: {data_type: {variant_type: count}}
         """
-        study_data = self.db.get_study_metadata()
-        coloc_metadata, unique_snps = self.db.get_coloc_metadata()
-        
-        # Create a nested dictionary to group by data_type and variant_type
-        grouped_data = {}
-        
-        for row in study_data:
-            data_type = row[0] if row[0] else "unknown"
-            variant_type = row[1] if row[1] else "unknown"
-            count = row[2]
-            
-            if data_type not in grouped_data:
-                grouped_data[data_type] = {}
-            
-            grouped_data[data_type][variant_type] = count
-        
-        return grouped_data
+        num_common_studies = 0
+        num_rare_studies = 0
+        num_molecular_studies = 0
+
+        coloc_groups, unique_snps = self.db.get_coloc_metadata()
+        common_studies = self.db.get_study_metadata()
+
+        for study in common_studies:
+            if study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.COMMON.value:
+                num_common_studies += study[2]
+            elif study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.RARE_EXOME.value:
+                num_rare_studies += study[2]
+            elif study[0] != StudyDataTypes.PHENOTYPE.value:
+                num_molecular_studies += study[2]
+
+        gpmap_metadata = GPMapMetadata(
+            num_common_studies=num_common_studies,
+            num_rare_studies=num_rare_studies,
+            num_molecular_studies=num_molecular_studies,
+            num_coloc_groups=coloc_groups,
+            num_causal_variants=unique_snps,
+        )
+        return gpmap_metadata
 
     def clear_cache(self):
         """Clear the LRU cache for gene ranges"""
+        self.get_gpmap_metadata.cache_clear()
         self.get_gene_ranges.cache_clear()
         self.get_gene_names.cache_clear()
         self.get_tissues.cache_clear()
