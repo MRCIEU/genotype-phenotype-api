@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import ld, regions, search, gwas, traits, variants, genes
+from app.api.v1.endpoints import ld, regions, search, gwas, traits, variants, genes, info
 
 api_router = APIRouter()
 
@@ -43,4 +43,10 @@ api_router.include_router(
     genes.router,
     prefix="/genes",
     tags=["genes"]
+)
+
+api_router.include_router(
+    info.router,
+    prefix="/info",
+    tags=["info"]
 )

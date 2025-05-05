@@ -346,6 +346,14 @@ class ExtendedUploadColoc(UploadColoc):
     tissue: Optional[str] = None
     cis_trans: Optional[str] = None
 
+class GPMapMetadata(BaseModel):
+    num_common_studies: int
+    num_rare_studies: int
+    num_molecular_studies: int
+    num_coloc_groups: int
+    num_causal_variants: int
+    
+
 def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):

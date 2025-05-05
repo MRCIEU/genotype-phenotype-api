@@ -8,6 +8,7 @@ export default function homepage() {
         searchOptionData: [],
         variantSearchInProgress: false,
         variantSearchResponse: null,
+        gpmapMetadata: null,
         uploadMetadata: {
             currentlyUploading: false,
             modalOpen: false,
@@ -42,6 +43,11 @@ export default function homepage() {
             } catch (error) {
                 console.error('Error loading data:', error);
             }
+        },
+
+        async loadGPMapMetadata() {
+            const response = await fetch(constants.apiUrl + '/info/gpmap_metadata');
+            this.gpmapMetadata = await response.json();
         },
 
         async getVariantSearchResponse(variantText) {
@@ -106,11 +112,17 @@ export default function homepage() {
         },
 
         get proxyVariants() {
-            return this.variantSearchResponse && this.variantSearchResponse.proxy_variants || [];
+            let pv = this.variantSearchResponse && this.variantSearchResponse.proxy_variants || [];
+            return pv
         },
 
         get originalVariants() {
-            return this.variantSearchResponse && this.variantSearchResponse.original_variants || [];
+            let ov = this.variantSearchResponse && this.variantSearchResponse.original_variants || [];
+            return ov
+        },
+
+        get getGPMapMetadata() {
+            return this.gpmapMetadata ? this.gpmapMetadata : {};
         },
 
         searchVariant() {

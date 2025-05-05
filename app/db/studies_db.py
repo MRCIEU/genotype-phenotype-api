@@ -37,6 +37,17 @@ class StudiesDBClient:
     def get_trait(self, trait_id: str):
         query = f"SELECT * FROM traits WHERE id = '{trait_id}'"
         return self.studies_conn.execute(query).fetchone()
+    
+    @log_performance
+    def get_study_metadata(self):
+        query = """
+            SELECT data_type, variant_type, COUNT(*) as count
+            FROM studies
+            GROUP BY data_type, variant_type
+            ORDER BY data_type, variant_type
+        """
+
+        return self.studies_conn.execute(query).fetchall()
 
     def get_studies(self, limit: int = None):
         if (limit is None):
@@ -323,22 +334,16 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
     
     @log_performance
-    def get_study_metadata(self) -> List[Tuple[str, str, int]]:
-        query = """
-            SELECT data_type, variant_type, COUNT(*) as count
-            FROM studies
-            GROUP BY data_type, variant_type
-            ORDER BY data_type, variant_type
-        """
-        
-        return self.studies_conn.execute(query).fetchall()
-    
-    @log_performance
     def get_coloc_metadata(self):
-        query = f"SELECT UNIQUE count(*), coloc_group_id FROM colocalisations GROUP BY coloc_group_id"
-        coloc_metadata = self.studies_conn.execute(query).fetchall()
+        query = """
+            SELECT MAX(coloc_group_id) as count FROM colocalisations 
+        """
+        coloc_groups = self.studies_conn.execute(query).fetchone()
 
-        query = f"SELECT UNIQUE snp_id FROM colocalisations"
-        unique_snps = self.studies_conn.execute(query).fetchall()
-        return coloc_metadata, unique_snps
+        query = """
+            SELECT COUNT(DISTINCT snp_id) as count
+            FROM colocalisations
+        """
+        unique_snps = self.studies_conn.execute(query).fetchone()
+        return coloc_groups[0], unique_snps[0]
     
