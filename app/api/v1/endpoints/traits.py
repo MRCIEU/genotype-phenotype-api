@@ -2,16 +2,26 @@ import traceback
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Coloc, RareResult, Study, ExtendedStudyExtraction, TraitResponse, Trait, VariantTypes, convert_duckdb_to_pydantic_model
-from typing import List
+from typing import List, Union
 from app.logging_config import time_endpoint
+from pydantic import BaseModel, validator
+
+class TraitId(BaseModel):
+    trait_id: Union[int, str]
+
 router = APIRouter()
 
 @router.get("/{trait_id}", response_model=TraitResponse)
 @time_endpoint
-async def get_trait(trait_id: str = Path(..., description="Trait ID")) -> TraitResponse:
+async def get_trait(trait_id: TraitId = Path(..., description="Trait ID (can be integer or string)")) -> TraitResponse:
     try:
         db = StudiesDBClient()
-        trait = db.get_trait(trait_id)
+
+        if isinstance(trait_id, int):
+            trait = db.get_trait(trait_id)
+        else:
+            trait = db.get_trait_by_name(trait_id)
+
         if trait is None:
             raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
         

@@ -99,7 +99,7 @@
                                             <tr x-bind:style="!!coloc.posterior_prob ? 'background-color: ' + coloc.color : ''">
                                                     <template x-if="colocIndex === 0 && !!coloc.posterior_prob">
                                                             <td x-bind:rowspan="colocs.length" style="width: 20%">
-                                                                    Causal Variant: <a :href="'snp.html?id=' + coloc.snp_id" x-text="coloc.candidate_snp"></a>
+                                                                    Causal Variant: <a :href="'/snp/' + coloc.snp_id" x-text="coloc.candidate_snp"></a>
                                                                     <br>
                                                                     LD Region: <a :href="'region.html?id=' + coloc.ld_block_id" x-text="coloc.ld_block"></a>
                                                                     <br>
@@ -115,9 +115,9 @@
                                                                     <b>No coloc evidence found.</b>
                                                             </td>
                                                     </template>
-                                                    <td x-text="coloc.trait_name" style="width:40%"></td>
+                                                    <td><a :href="'/phenotype/' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a></td>
                                                     <td x-text="coloc.data_type"></td>
-                                                    <td><a :href="'gene.html?id=' + coloc.known_gene" x-text="coloc.known_gene"></a></td>
+                                                    <td><a :href="'/gene/' + coloc.known_gene" x-text="coloc.known_gene"></a></td>
                                                     <td x-text="coloc.tissue"></td>
                                                     <td x-text="coloc.cis_trans"></td>
                                                     <td x-text="(coloc.min_p !== null ? coloc.min_p.toExponential(2) : '')"></td>

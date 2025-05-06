@@ -13,14 +13,18 @@ export default function gene() {
         errorMessage: null,
 
         async loadData() {
-            let geneId = (new URLSearchParams(location.search).get('id'))
+            // Extract gene ID from the URL path
+            const pathParts = window.location.pathname.split('/');
+            const geneId = pathParts[pathParts.length - 1];
+            const requestUrl = constants.apiUrl + '/genes/' + geneId;
+
             try {
-                const response = await fetch(constants.apiUrl + '/genes/' + geneId);
+                const response = await fetch(requestUrl);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load gene: ${geneId}. Please try again later.`
-                    console.log(this.errorMessage)
-                    return
+                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
+                    return;
                 }
+                
                 this.data = await response.json();
                 this.data.gene.minMbp = this.data.gene.min_bp / 1000000
                 this.data.gene.maxMbp = this.data.gene.max_bp / 1000000

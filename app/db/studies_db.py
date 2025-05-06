@@ -38,6 +38,10 @@ class StudiesDBClient:
         query = f"SELECT * FROM traits WHERE id = '{trait_id}'"
         return self.studies_conn.execute(query).fetchone()
     
+    def get_trait_by_name(self, trait_name: str):
+        query = f"SELECT * FROM traits WHERE trait_name = '{trait_name}'"
+        return self.studies_conn.execute(query).fetchone()
+    
     @log_performance
     def get_study_metadata(self):
         query = """

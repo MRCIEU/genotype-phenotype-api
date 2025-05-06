@@ -9,15 +9,19 @@ export default function snp() {
         errorMessage: null,
 
         async loadData() {
-            let variantId = (new URLSearchParams(location.search).get('id'))
+            // Extract SNP ID from the URL path
+            const pathParts = window.location.pathname.split('/');
+            const snpId = pathParts[pathParts.length - 1];
+            const requestUrl = constants.apiUrl + '/snps/' + snpId;
 
             try {
-                const response = await fetch(constants.apiUrl + '/variants/' + variantId)
+                const response = await fetch(requestUrl);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
-                    return
+                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
+                    return;
                 }
-                this.data = await response.json()
+                
+                this.data = await response.json();
 
                 this.data.colocs = this.data.colocs.map(coloc => ({
                     ...coloc,

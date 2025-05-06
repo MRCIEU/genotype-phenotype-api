@@ -16,7 +16,7 @@ services:
   api:
     image: mrcieu/genotype-phenotype-api:latest
     working_dir: /workspace
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 3
     volumes:
       - oradiskvdb1:/oradiskvdb1
       - oradiskvdc1:/oradiskvdc1

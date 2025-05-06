@@ -98,7 +98,7 @@
                         <tbody>
                             <template x-for="item in getDataForTable">
                                 <tr>
-                                    <td class="py-1 px-2" x-text="item.trait_name"></td>
+                                    <td class="py-1 px-2"><a :href="'phenotype.html?id=' + item.trait_id" x-text="item.trait_name"></a></td>
                                     <td class="py-1 px-2" x-text="item.tissue"></td>
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>

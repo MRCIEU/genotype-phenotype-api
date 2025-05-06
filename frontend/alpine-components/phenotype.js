@@ -16,22 +16,24 @@ export default function pheontype() {
         errorMessage: null,
 
         async loadData() {
-            let traitId = (new URLSearchParams(location.search).get('id'))
-            let requestUrl = constants.apiUrl + '/traits/' + traitId
+            // Extract trait ID from the URL path
+            const pathParts = window.location.pathname.split('/');
+            const traitId = pathParts[pathParts.length - 1];
+            let requestUrl = constants.apiUrl + '/traits/' + traitId;
 
             if (traitId && traitId.includes('-')) {
-                this.userUpload = true
-                requestUrl = constants.apiUrl + '/gwas/' + traitId
+                this.userUpload = true;
+                requestUrl = constants.apiUrl + '/gwas/' + traitId;
             }
 
             try {
-                const response = await fetch(requestUrl)
+                const response = await fetch(requestUrl);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
-                    return
+                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
+                    return;
                 }
                 
-                this.data = await response.json()
+                this.data = await response.json();
 
                 // Count frequency of each id in colocs and scale between 2 and 10
                 const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
