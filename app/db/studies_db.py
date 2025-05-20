@@ -33,6 +33,16 @@ def get_gpm_db_connection():
 class StudiesDBClient:
     def __init__(self):
         self.studies_conn = get_gpm_db_connection()
+    
+    @log_performance
+    def get_traits(self):
+        query = """
+            SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry
+            FROM traits
+            JOIN studies ON traits.id = studies.trait_id
+            WHERE traits.data_type = '{StudyDataTypes.PHENOTYPE.value}'
+        """
+        return self.studies_conn.execute(query).fetchall()
 
     def get_trait(self, trait_id: str):
         query = f"SELECT * FROM traits WHERE id = '{trait_id}'"
@@ -107,7 +117,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_all_colocs_for_gene(self, symbol: str):
-        return self._fetch_colocs(f"known_gene = '{symbol}' AND cis_trans = 'cis'")
+        return self._fetch_colocs(f"gene = '{symbol}' AND cis_trans = 'cis'")
 
     @log_performance
     def get_all_colocs_for_ld_block(self, ld_block_id: int):
@@ -134,7 +144,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_rare_results_for_gene(self, symbol: str):
-        return self._fetch_rare_results(f"known_gene = '{symbol}'")
+        return self._fetch_rare_results(f"gene = '{symbol}'")
     
     @log_performance
     def get_rare_results_for_study_extraction_ids(self, study_extraction_ids: List[int]):
@@ -163,7 +173,7 @@ class StudiesDBClient:
     @log_performance
     def get_gene_names(self):
         return self.studies_conn.execute(
-            "SELECT DISTINCT known_gene FROM study_extractions"
+            "SELECT gene FROM gene_annotations"
         ).fetchall()
 
     @log_performance
@@ -223,7 +233,7 @@ class StudiesDBClient:
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
             WHERE (study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ?)
-               OR (study_extractions.known_gene = ? AND study_extractions.cis_trans = 'cis')
+               OR (study_extractions.gene = ? AND study_extractions.cis_trans = 'cis')
             """,
             (chr, bp_start, bp_end, symbol)
         ).fetchall()
@@ -248,18 +258,14 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_gene(self, symbol: str):
-        query = f"""
-        SELECT DISTINCT 
-            ANY_VALUE(snp_annotations.symbol) as symbol, 
-            ANY_VALUE(snp_annotations.chr) as chr, 
-            MIN(snp_annotations.bp) as min_bp, 
-            MAX(snp_annotations.bp) as max_bp
-        FROM snp_annotations 
-        JOIN study_extractions ON snp_annotations.symbol = study_extractions.known_gene
-        WHERE snp_annotations.symbol = '{symbol}'
-        GROUP BY snp_annotations.symbol
-        """
+    def get_gene(self, symbol: str = None, id: int = None):
+        if symbol:
+            condition = f"gene = '{symbol}'"
+        elif id:
+            condition = f"id = {id}"
+        else:
+            raise ValueError("Either gene or id must be provided")
+        query = f"SELECT * FROM gene_annotations WHERE {condition}"
         return self.studies_conn.execute(query).fetchone()
 
     @log_performance
@@ -268,18 +274,14 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchone()
     
     @log_performance
-    def get_gene_ranges(self):
-        query = f"""
-        SELECT DISTINCT 
-            ANY_VALUE(snp_annotations.symbol) as symbol, 
-            ANY_VALUE(snp_annotations.chr) as chr, 
-            MIN(snp_annotations.bp) as min_bp, 
-            MAX(snp_annotations.bp) as max_bp
-        FROM snp_annotations 
-        JOIN study_extractions ON snp_annotations.symbol = study_extractions.known_gene
-        WHERE snp_annotations.symbol IS NOT NULL 
-        GROUP BY snp_annotations.symbol
-        """
+    def get_genes(self):
+        query = f"SELECT * FROM gene_annotations"
+        return self.studies_conn.execute(query).fetchall()
+    
+    @log_performance
+    def get_genes_by_gene_ids(self, gene_ids: List[int]):
+        formatted_ids = ','.join(f"{id}" for id in gene_ids)
+        query = f"SELECT * FROM gene_annotations WHERE id IN ({formatted_ids})"
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance

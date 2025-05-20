@@ -13,10 +13,11 @@ def test_get_genes_with_colocs():
 
     gene_response = GeneResponse(**genes)
     assert gene_response.gene is not None
-    assert gene_response.gene.symbol is not None
+    assert gene_response.gene.id is not None
+    assert gene_response.gene.gene is not None
     assert gene_response.gene.chr is not None
-    assert gene_response.gene.min_bp is not None
-    assert gene_response.gene.max_bp is not None
+    assert gene_response.gene.start is not None
+    assert gene_response.gene.stop is not None
     assert gene_response.colocs is not None
 
     for coloc in gene_response.colocs:

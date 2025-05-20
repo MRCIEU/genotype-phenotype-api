@@ -69,10 +69,10 @@ def test_guid():
     return response.json()['guid']
 
 # Sorry for the hack for resetting the database, couldn't think of a better way to do it
-@pytest.fixture(scope="module", autouse=True)
-def test_remove_all_data():
-    yield
-    system("git checkout tests/test_data/gwas_upload_small.db")
+# @pytest.fixture(scope="module", autouse=True)
+# def test_remove_all_data():
+#     yield
+#     system("git checkout tests/test_data/gwas_upload_small.db")
 
 def test_get_gwas_not_found():
     response = client.get("/v1/gwas/nonexistent-guid")

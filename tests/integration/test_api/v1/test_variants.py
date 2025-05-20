@@ -14,7 +14,7 @@ def test_get_variants_by_variants():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical':
+            if field != 'canonical' and field != 'gene_id':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 
@@ -26,7 +26,7 @@ def test_get_variants_by_rsids():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical':
+            if field != 'canonical' and field != 'gene_id':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 def test_get_variants_by_grange():
@@ -37,7 +37,7 @@ def test_get_variants_by_grange():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical':
+            if field != 'canonical' and field != 'gene_id':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 def test_get_variant_by_id():
