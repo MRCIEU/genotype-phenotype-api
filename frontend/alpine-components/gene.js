@@ -165,7 +165,7 @@ export default function gene() {
 
 
             const allData = this.data.filteredColocs.concat(this.data.filteredRareResults)
-            this.data.associatedGenes = Object.groupBy(allData, ({ known_gene }) => known_gene)
+            this.data.associatedGenes = Object.groupBy(allData, ({ gene }) => gene)
             // Remove null and "NA" keys from associatedGenes, fix later
             delete this.data.associatedGenes[null];
             delete this.data.associatedGenes["NA"];

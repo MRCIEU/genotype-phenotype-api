@@ -55,7 +55,8 @@ class Coloc(BaseModel):
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
-    known_gene: Optional[str] = None
+    gene: Optional[str] = None
+    gene_id: Optional[int] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     data_type: Optional[str] = None
@@ -76,10 +77,16 @@ class Ld(BaseModel):
     r: float
 
 class Gene(BaseModel):
-    symbol: str
+    id: int
+    ensembl_id: str
+    gene: str
+    description: str
+    gene_biotype: str
     chr: int 
-    min_bp: int
-    max_bp: int
+    start: int
+    stop: int
+    strand: int
+    source: str
     genes_in_region: Optional[List[Gene]] = None
 
 class GeneMetadata(BaseModel):
@@ -99,6 +106,19 @@ class Trait(BaseModel):
     common_study: Optional[Study] = None
     rare_study: Optional[Study] = None
 
+class BasicTraitResponse(BaseModel):
+    id: int
+    data_type: str
+    trait: str
+    trait_name: str
+    sample_size: int
+    category: str
+    ancestry: str
+
+
+class GetTraitsResponse(BaseModel):
+    traits: List[BasicTraitResponse]
+
 class Study(BaseModel):
     id: int
     data_type: str
@@ -116,6 +136,7 @@ class Study(BaseModel):
     variant_type: Optional[str] = None
     p_value_threshold: float
     gene: Optional[str] = None
+    gene_id: Optional[int] = None
 
 class StudyExtraction(BaseModel):
     id: int
@@ -131,7 +152,8 @@ class StudyExtraction(BaseModel):
     min_p: float
     cis_trans: Optional[str] = None
     ld_block: str
-    known_gene: Optional[str] = None
+    gene: Optional[str] = None
+    gene_id: Optional[int] = None
     trait_id: Optional[int] = None
 
 class ExtendedStudyExtraction(StudyExtraction):
@@ -156,7 +178,8 @@ class RareResult(BaseModel):
     chr: int
     bp: int
     min_p: float
-    known_gene: Optional[str] = None
+    gene: Optional[str] = None
+    gene_id: Optional[int] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     data_type: Optional[str] = None
@@ -172,6 +195,7 @@ class Variant(BaseModel):
     bp: int
     ea: str
     oa: str
+    gene_id: Optional[int] = None
     gene: str
     feature_type: str
     consequence: Optional[str] = None
@@ -192,11 +216,15 @@ class Variant(BaseModel):
     amr_af: Optional[float] = None
     afr_af: Optional[float] = None
     sas_af: Optional[float] = None
+    associations: Optional[List[Association]] = None
 
 class ExtendedVariant(Variant):
     num_colocs: Optional[int] = None
     num_rare_variants: Optional[int] = None
     ld_proxies: Optional[List[Ld]] = None
+
+class GetGenesResponse(BaseModel):
+    genes: List[Gene]
 
 class GeneResponse(BaseModel):
     gene: Gene
@@ -227,11 +255,12 @@ class VariantSearchResponse(BaseModel):
     proxy_variants: List[ExtendedVariant]
 
 class TraitResponse(BaseModel):
-    trait: Trait| GwasUpload
+    trait: Trait | GwasUpload
     colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
+    associations: Optional[List[Association]] = None
 
 class GwasStatus(Enum):
     PROCESSING = "processing"
@@ -308,7 +337,7 @@ class UploadStudyExtraction(BaseModel):
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
-    known_gene: Optional[str] = None
+    gene: Optional[str] = None
 
     model_config = {
         "from_attributes": True
@@ -334,7 +363,8 @@ class UploadColoc(BaseModel):
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
-    known_gene: Optional[str] = None
+    gene: Optional[str] = None
+    gene_id: Optional[int] = None
 
     model_config = {
         "from_attributes": True

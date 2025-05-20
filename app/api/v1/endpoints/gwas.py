@@ -156,7 +156,6 @@ async def update_gwas(
                 coloc.bp = upload_study_extraction.bp
                 coloc.min_p = upload_study_extraction.min_p
                 coloc.ld_block = upload_study_extraction.ld_block
-                coloc.known_gene = upload_study_extraction.known_gene
             else:
                 coloc.existing_study_extraction_id = existing_study_extractions[i].id
                 coloc.study_id = existing_study_extractions[i].study_id
@@ -164,7 +163,8 @@ async def update_gwas(
                 coloc.bp = existing_study_extractions[i].bp
                 coloc.min_p = existing_study_extractions[i].min_p
                 coloc.ld_block = existing_study_extractions[i].ld_block
-                coloc.known_gene = existing_study_extractions[i].known_gene
+                coloc.gene = existing_study_extractions[i].gene
+                coloc.gene_id = existing_study_extractions[i].gene_id
 
         gwas_upload_db.populate_colocs(update_gwas_request.coloc_results)
         updated_gwas = gwas_upload_db.update_gwas_status(guid, GwasStatus.COMPLETED)

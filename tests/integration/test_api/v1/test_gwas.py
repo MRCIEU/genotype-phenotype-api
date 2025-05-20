@@ -68,7 +68,7 @@ def test_guid():
     # mock_redis_client.add_to_queue.assert_called_once()
     return response.json()['guid']
 
-# Sorry for the hack for resetting the database, couldn't think of a better way to do it
+# Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests 
 @pytest.fixture(scope="module", autouse=True)
 def test_remove_all_data():
     yield

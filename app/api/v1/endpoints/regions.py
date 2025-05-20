@@ -23,7 +23,7 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
             raise HTTPException(status_code=404, detail=f"LD Block {ld_block_id} not found")
 
         ld_block = convert_duckdb_to_pydantic_model(LdBlock, ld_block)
-        genes = cache_service.get_gene_ranges()
+        genes = cache_service.get_genes()
 
         colocs = db.get_all_colocs_for_ld_block(ld_block_id)
         region = Region(chr=ld_block.chr, start=ld_block.start, end=ld_block.stop, ancestry=ld_block.ancestry)
@@ -31,8 +31,8 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
 
         filtered_genes = [gene for gene in genes
                           if gene.chr == ld_block.chr and 
-                          gene.min_bp >= ld_block.start - 1000000 and 
-                          gene.max_bp <= ld_block.stop + 1000000
+                          gene.start >= ld_block.start - 1000000 and 
+                          gene.stop <= ld_block.stop + 1000000
                           ]
 
         return RegionResponse(region=region, colocs=colocs, genes=filtered_genes)

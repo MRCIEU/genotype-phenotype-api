@@ -1,16 +1,35 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, RareResult, Study, ExtendedStudyExtraction, TraitResponse, Trait, VariantTypes, convert_duckdb_to_pydantic_model
+from app.db.associations_db import AssociationsDBClient
+from app.models.schemas import BasicTraitResponse, Coloc, GetTraitsResponse, RareResult, Study, ExtendedStudyExtraction, TraitResponse, Trait, VariantTypes, Association, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import time_endpoint
 router = APIRouter()
 
-@router.get("/{trait_id}", response_model=TraitResponse)
+
+@router.get("/", response_model=GetTraitsResponse)
 @time_endpoint
-async def get_trait(trait_id: str = Path(..., description="Trait ID")) -> TraitResponse:
+async def get_traits() -> GetTraitsResponse:
     try:
         db = StudiesDBClient()
+        traits = db.get_traits()
+        traits = convert_duckdb_to_pydantic_model(BasicTraitResponse, traits)
+        return GetTraitsResponse(traits=traits)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+@router.get("/{trait_id}", response_model=TraitResponse)
+@time_endpoint
+async def get_trait(
+    trait_id: str = Path(..., description="Trait ID"),
+    include_associations: bool = Query(False, description="Whether to include associations for SNPs")
+) -> TraitResponse:
+    try:
+        db = StudiesDBClient()
+        associations_db = AssociationsDBClient()
         trait = db.get_trait(trait_id)
         if trait is None:
             raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
@@ -35,8 +54,27 @@ async def get_trait(trait_id: str = Path(..., description="Trait ID")) -> TraitR
             filtered_studies = [s for s in study_extractions if s.id not in study_extraction_ids]
         else:
             filtered_studies = study_extractions
+
+        # Get associations if requested
+        associations = None
+        if include_associations:
+            # Get all SNP IDs from study extractions
+            snp_ids = [s.snp_id for s in study_extractions]
+            # Get all study IDs
+            study_ids = [trait.common_study.id]
+            if trait.rare_study is not None:
+                study_ids.append(trait.rare_study.id)
+            # Get associations
+            associations = associations_db.get_associations(snp_ids, study_ids)
+            associations = convert_duckdb_to_pydantic_model(Association, associations)
         
-        return TraitResponse(trait=trait, colocs=colocs, rare_results=rare_results, study_extractions=filtered_studies)
+        return TraitResponse(
+            trait=trait, 
+            colocs=colocs, 
+            rare_results=rare_results, 
+            study_extractions=filtered_studies,
+            associations=associations
+        )
     except HTTPException as e:
         raise e
     except Exception as e:

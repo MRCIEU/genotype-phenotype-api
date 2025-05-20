@@ -30,6 +30,16 @@ class DBCacheService(metaclass=Singleton):
         return gene_search_terms + trait_search_terms
 
     @lru_cache(maxsize=1)
+    def get_genes(self) -> List[Gene]:
+        """
+        Retrieve genes from DuckDB with caching.
+        Returns:
+            List of Gene instances
+        """
+        genes = self.db.get_genes()
+        return convert_duckdb_to_pydantic_model(Gene, genes)
+
+    @lru_cache(maxsize=1)
     def get_gene_names(self) -> List[SearchTerm]:
         """
         Retrieve genes from DuckDB with caching.
@@ -38,16 +48,6 @@ class DBCacheService(metaclass=Singleton):
         """
         genes = self.db.get_gene_names()
         return [SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes]
-
-    @lru_cache(maxsize=1)
-    def get_gene_ranges(self) -> List[Gene]:
-        """
-        Retrieve gene ranges for a given chromosome from DuckDB with caching.
-        Returns:
-            List of GeneRange models containing gene information
-        """
-        result = self.db.get_gene_ranges()
-        return convert_duckdb_to_pydantic_model(Gene, result)
 
     @lru_cache(maxsize=1)
     def get_tissues(self, ) -> List[str]:
@@ -94,7 +94,7 @@ class DBCacheService(metaclass=Singleton):
     def clear_cache(self):
         """Clear the LRU cache for gene ranges"""
         self.get_gpmap_metadata.cache_clear()
-        self.get_gene_ranges.cache_clear()
+        self.get_gene_info.cache_clear()
         self.get_gene_names.cache_clear()
         self.get_tissues.cache_clear()
         self.get_search_terms.cache_clear()

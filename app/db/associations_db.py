@@ -24,7 +24,7 @@ class AssociationsDBClient:
         """
         return self.associations_conn.execute(query).fetchall()
 
-    def get_associations(self, snp_ids: List[int], study_ids: List[int], p_value_threshold: float):
+    def get_associations(self, snp_ids: List[int] = None, study_ids: List[int] = None, p_value_threshold: float = 1):
         if not snp_ids and not study_ids:
             return []
 

@@ -9,7 +9,7 @@ export default {
     const headers = [
       'candidate_snp', 'rsid', 'chr', 'bp', 'ea', 'oa', 'posterior_prob', 
       'regional_prob', 'posterior_explained_by_snp', 'min_p', 'cis_trans',
-      'trait', 'data_type', 'tissue', 'known_gene',
+      'trait', 'data_type', 'tissue', 'gene',
       'beta', 'se', 'p', 'eaf', 'imputed'
     ];
     
@@ -30,7 +30,7 @@ export default {
         coloc.trait || '',
         coloc.data_type || '',
         coloc.tissue || '',
-        coloc.known_gene || '',
+        coloc.gene || '',
         coloc.association ? coloc.association.beta || '' : '',
         coloc.association ? coloc.association.se || '' : '',
         coloc.association ? coloc.association.p || '' : '',
