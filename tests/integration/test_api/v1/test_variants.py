@@ -14,9 +14,62 @@ def test_get_variants_by_variants():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id':
+            if field != 'canonical' and field != 'gene_id' and field != 'associations':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
+def test_get_variants_by_variants_with_associations():
+    response = client.get("/v1/variants?snp_ids=5758009&include_associations=true")
+    assert response.status_code == 200
+    variants = response.json()
+    assert len(variants) > 0
+
+    for row in variants:
+        variant_model = Variant(**row)
+        for field in variant_model.model_fields:
+            if field != 'canonical' and field != 'gene_id':
+                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.associations is not None
+        assert len(variant_model.associations) > 0
+        for association in variant_model.associations:
+            assert association.snp_id is not None
+            assert association.study_id is not None
+            assert association.p is not None
+            assert association.beta is not None
+            assert association.se is not None
+
+def test_get_variants_by_variants_with_associations_and_possible_p_value_threshold():
+    response = client.get("/v1/variants?snp_ids=5758009&include_associations=true&p_value_threshold=5e-5")
+    assert response.status_code == 200
+    variants = response.json()
+    assert len(variants) > 0
+
+    for row in variants:
+        variant_model = Variant(**row)
+        for field in variant_model.model_fields:
+            if field != 'canonical' and field != 'gene_id':
+                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.associations is not None
+        assert len(variant_model.associations) > 0
+        for association in variant_model.associations:
+            assert association.snp_id is not None
+            assert association.study_id is not None
+            assert association.p is not None
+            assert association.beta is not None
+            assert association.se is not None
+
+def test_get_variants_by_variants_with_associations_and_impossible_p_value_threshold():
+    response = client.get("/v1/variants?snp_ids=5758009&include_associations=true&p_value_threshold=0")
+    assert response.status_code == 200
+    variants = response.json()
+    assert len(variants) > 0
+
+    for row in variants:
+        variant_model = Variant(**row)
+        for field in variant_model.model_fields:
+            if field != 'canonical' and field != 'gene_id':
+                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.associations is not None
+        assert len(variant_model.associations) == 0
 
 def test_get_variants_by_rsids():
     response = client.get("/v1/variants?rsids=rs6441921&rsids=rs17078078")
@@ -26,8 +79,27 @@ def test_get_variants_by_rsids():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
+            if field != 'canonical' and field != 'gene_id' and field != 'associations':
+                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+
+def test_get_variants_by_rsids_with_associations():
+    response = client.get("/v1/variants?rsids=rs6441921&rsids=rs17078078&include_associations=true")
+    assert response.status_code == 200
+    variants = response.json()
+    assert len(variants) > 0
+    for row in variants:
+        variant_model = Variant(**row)
+        for field in variant_model.model_fields:
             if field != 'canonical' and field != 'gene_id':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.associations is not None
+        assert len(variant_model.associations) > 0
+        for association in variant_model.associations:
+            assert association.snp_id is not None
+            assert association.study_id is not None
+            assert association.p is not None
+            assert association.beta is not None
+            assert association.se is not None
 
 def test_get_variants_by_grange():
     response = client.get("/v1/variants?grange=3:45576630-45579689")
@@ -37,8 +109,27 @@ def test_get_variants_by_grange():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
+            if field != 'canonical' and field != 'gene_id' and field != 'associations':
+                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+
+def test_get_variants_by_grange_with_associations():
+    response = client.get("/v1/variants?grange=3:45576630-45579689&include_associations=true")
+    assert response.status_code == 200
+    variants = response.json()
+    assert len(variants) > 0
+    for row in variants:
+        variant_model = Variant(**row)
+        for field in variant_model.model_fields:
             if field != 'canonical' and field != 'gene_id':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.associations is not None
+        assert len(variant_model.associations) > 0
+        for association in variant_model.associations:
+            assert association.snp_id is not None
+            assert association.study_id is not None
+            assert association.p is not None
+            assert association.beta is not None
+            assert association.se is not None
 
 def test_get_variant_by_id():
     response = client.get("/v1/variants/5758009")
@@ -60,4 +151,3 @@ def test_get_variant_by_id():
         if coloc.association is not None:
             assert isinstance(coloc.association, Association)
         
-

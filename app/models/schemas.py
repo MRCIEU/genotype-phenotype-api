@@ -216,6 +216,7 @@ class Variant(BaseModel):
     amr_af: Optional[float] = None
     afr_af: Optional[float] = None
     sas_af: Optional[float] = None
+    associations: Optional[List[Association]] = None
 
 class ExtendedVariant(Variant):
     num_colocs: Optional[int] = None

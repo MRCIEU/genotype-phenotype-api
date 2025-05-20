@@ -65,7 +65,7 @@ async def get_trait(
             if trait.rare_study is not None:
                 study_ids.append(trait.rare_study.id)
             # Get associations
-            associations = associations_db.get_associations(snp_ids, study_ids, None)
+            associations = associations_db.get_associations(snp_ids, study_ids)
             associations = convert_duckdb_to_pydantic_model(Association, associations)
         
         return TraitResponse(
