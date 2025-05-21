@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException, Query
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
@@ -36,7 +37,7 @@ async def get_matrix(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_matrix: {e}")
+        logger.error(f"Error in get_matrix: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -64,5 +65,5 @@ async def get_proxies(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_proxies: {e}")
+        logger.error(f"Error in get_proxies: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

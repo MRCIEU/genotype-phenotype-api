@@ -19,7 +19,7 @@ async def get_studies() -> List[Study]:
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_studies: {e}")
+        logger.error(f"Error in get_studies: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -48,5 +48,5 @@ async def get_study(study_id: str = Path(..., description="Study ID")) -> TraitR
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_study: {e}")
+        logger.error(f"Error in get_study: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=traceback.format_exc())

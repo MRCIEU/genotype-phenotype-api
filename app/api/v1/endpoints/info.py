@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import GPMapMetadata, convert_duckdb_to_pydantic_model
 
@@ -16,5 +17,5 @@ async def get_gpmap_metadata():
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_study_metadata: {e}")
+        logger.error(f"Error in get_study_metadata: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

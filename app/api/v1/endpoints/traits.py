@@ -4,9 +4,10 @@ from app.db.studies_db import StudiesDBClient
 from app.db.associations_db import AssociationsDBClient
 from app.models.schemas import BasicTraitResponse, Coloc, GetTraitsResponse, RareResult, Study, ExtendedStudyExtraction, TraitResponse, Trait, VariantTypes, Association, convert_duckdb_to_pydantic_model
 from typing import List
-from app.logging_config import time_endpoint
+from app.logging_config import get_logger, time_endpoint
 router = APIRouter()
 
+logger = get_logger(__name__)
 
 @router.get("/", response_model=GetTraitsResponse)
 @time_endpoint
@@ -19,6 +20,7 @@ async def get_traits() -> GetTraitsResponse:
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_traits: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 @router.get("/{trait_id}", response_model=TraitResponse)
@@ -78,6 +80,7 @@ async def get_trait(
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error(f"Error in get_trait: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 def populate_trait_studies(trait: Trait, studies: List[Study]):

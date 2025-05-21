@@ -80,13 +80,13 @@ class Gene(BaseModel):
     id: int
     ensembl_id: str
     gene: str
-    description: str
-    gene_biotype: str
+    description: Optional[str] = None
+    gene_biotype: Optional[str] = None
     chr: int 
     start: int
     stop: int
     strand: int
-    source: str
+    source: Optional[str] = None
     genes_in_region: Optional[List[Gene]] = None
 
 class GeneMetadata(BaseModel):

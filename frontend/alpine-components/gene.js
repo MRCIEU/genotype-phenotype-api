@@ -22,8 +22,8 @@ export default function gene() {
                     return
                 }
                 this.data = await response.json();
-                this.data.gene.minMbp = this.data.gene.min_bp / 1000000
-                this.data.gene.maxMbp = this.data.gene.max_bp / 1000000
+                this.data.gene.minMbp = this.data.gene.start/ 1000000
+                this.data.gene.maxMbp = this.data.gene.stop / 1000000
 
                 this.data.colocs = this.data.colocs.map(coloc => {
                     const variantType = this.data.variants.find(variant => variant.SNP === coloc.candidate_snp)
@@ -63,8 +63,8 @@ export default function gene() {
 
                 this.data.gene.genes_in_region = this.data.gene.genes_in_region.map(gene => ({
                     ...gene,
-                    minMbp : gene.min_bp / 1000000,
-                    maxMbp : gene.max_bp / 1000000,
+                    minMbp : gene.start / 1000000,
+                    maxMbp : gene.stop / 1000000,
                 }))
                 this.data.gene.genes_in_region = this.data.gene.genes_in_region.filter(gene => {
                     return gene.minMbp < this.maxMbp && gene.maxMbp > this.minMbp
@@ -89,7 +89,7 @@ export default function gene() {
         },
 
         get geneName() {
-            return this.data ? `${this.data.gene.symbol}` : '...';
+            return this.data ? `${this.data.gene.gene}` : '...';
         },
         
         get filteredColocsExist() {
@@ -97,7 +97,7 @@ export default function gene() {
         },
 
         get genomicRange() {
-            return this.data ? `${this.data.gene.chr}:${this.data.gene.min_bp}-${this.data.gene.max_bp}` : '...';
+            return this.data ? `${this.data.gene.chr}:${this.data.gene.start}-${this.data.gene.stop}` : '...';
         },
 
         get ldBlockId() {
@@ -169,7 +169,7 @@ export default function gene() {
             // Remove null and "NA" keys from associatedGenes, fix later
             delete this.data.associatedGenes[null];
             delete this.data.associatedGenes["NA"];
-            delete this.data.associatedGenes[this.data.gene.symbol];
+            delete this.data.associatedGenes[this.data.gene.gene];
 
             // TODO remove this once we are happier with the non colocing study list
             this.data.filteredStudies = []
@@ -441,7 +441,7 @@ export default function gene() {
                 outerMargin: {
                     top: 50,
                     right: 150,
-                    bottom: 90,
+                    bottom: 120,
                     left: 60,
                 },
                 geneTrackMargin: {
@@ -558,9 +558,9 @@ export default function gene() {
             )
             genes.push({
                 focus: true,
-                symbol: this.data.gene.symbol,
-                min_bp: this.data.gene.min_bp,
-                max_bp: this.data.gene.max_bp,
+                gene: this.data.gene.gene,
+                start: this.data.gene.start,
+                stop: this.data.gene.stop,
                 chr: this.data.gene.chr
             });
 
@@ -571,7 +571,7 @@ export default function gene() {
                     let level = 0;
                     while (true) {
                         const hasOverlap = levels[level]?.some(existingGene => 
-                            !(gene.max_bp < existingGene.min_bp || gene.min_bp > existingGene.max_bp)
+                            !(gene.stop < existingGene.start || gene.start > existingGene.stop)
                         );
                         
                         if (!hasOverlap) {
@@ -595,9 +595,9 @@ export default function gene() {
                 .enter()
                 .append("rect")
                 .attr("class", "gene-rect")
-                .attr("x", d => xScale(d.min_bp / 1000000))
+                .attr("x", d => xScale(d.start / 1000000))
                 .attr("y", d => geneTrackY + (d.level * (graphConstants.geneTrackMargin.height + 5)))
-                .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000))
+                .attr("width", d => xScale(d.stop / 1000000) - xScale(d.start / 1000000))
                 .attr("height", graphConstants.geneTrackMargin.height)
                 .attr("fill", (d, i) => constants.colors[i % constants.colors.length])
                 .attr("stroke", (d) => d.focus ? "black": null)
@@ -614,7 +614,7 @@ export default function gene() {
                         .style('border-radius', '5px')
                         .style('left', `${event.pageX + 10}px`)
                         .style('top', `${event.pageY - 10}px`)
-                        .html(`Gene: ${d.symbol}`);
+                        .html(`Gene: ${d.gene}`);
                 })
                 .on('mouseout', () => {
                     d3.selectAll('.tooltip').remove();
@@ -660,7 +660,7 @@ export default function gene() {
             // Add x-axis label
             svg.append("text")
                 .attr("x", innerWidth/2)
-                .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
+                .attr("y", innerHeight + graphConstants.outerMargin.bottom - 20)
                 .style("text-anchor", "middle")
                 .text("Genomic Position (MB)");
         },
