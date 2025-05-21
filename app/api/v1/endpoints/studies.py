@@ -8,7 +8,7 @@ from app.logging_config import get_logger, time_endpoint
 logger = get_logger(__name__)
 router = APIRouter()
 
-@router.get("/", response_model=List[Study])
+@router.get("", response_model=List[Study])
 @time_endpoint
 async def get_studies() -> List[Study]:
     try:

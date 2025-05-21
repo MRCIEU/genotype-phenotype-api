@@ -17,7 +17,7 @@ router = APIRouter()
 
 logger = get_logger(__name__)
 
-@router.post("/", response_model=GwasUpload)
+@router.post("", response_model=GwasUpload)
 @time_endpoint
 async def upload_gwas(
     request: ProcessGwasRequest,

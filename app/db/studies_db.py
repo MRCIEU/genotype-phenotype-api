@@ -6,6 +6,7 @@ import time
 import logging
 
 from app.models.schemas import StudyDataTypes, VariantTypes
+from app.db.utils import log_performance
 
 settings = get_settings()
 
@@ -36,7 +37,7 @@ class StudiesDBClient:
     
     @log_performance
     def get_traits(self):
-        query = """
+        query = f"""
             SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry
             FROM traits
             JOIN studies ON traits.id = studies.trait_id

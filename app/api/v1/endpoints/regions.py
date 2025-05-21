@@ -4,7 +4,7 @@ from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
 from typing import List
 
-from app.logging_config import get_logger
+from app.logging_config import get_logger, time_endpoint
 from app.services.cache_service import DBCacheService
 
 logger = get_logger(__name__)
@@ -14,6 +14,7 @@ router = APIRouter()
 # TODO: consider getting rid of this whole endpoint.  Is this a valid way to show to data?
 
 @router.get("/{ld_block_id}", response_model=RegionResponse)
+@time_endpoint
 async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) -> RegionResponse:
     try:
         db = StudiesDBClient()

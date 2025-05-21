@@ -3,6 +3,8 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
+from app.db.utils import log_performance
+
 settings = get_settings()
 
 @lru_cache()
@@ -13,6 +15,7 @@ class LdDBClient:
     def __init__(self):
         self.ld_conn = get_gpm_db_connection()
 
+    @log_performance
     def get_ld_proxies(self, snp_ids: List[int]):
         formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
         query = f"""
@@ -22,6 +25,7 @@ class LdDBClient:
         """
         return self.ld_conn.execute(query).fetchall()
     
+    @log_performance
     def get_ld_matrix(self, snp_ids: List[int]):
         formatted_snp_ids = ','.join(f"{snp_id}" for snp_id in snp_ids)
         query = f"""

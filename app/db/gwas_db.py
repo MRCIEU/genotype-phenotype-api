@@ -5,6 +5,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
 from app.models.schemas import GwasStatus, ProcessGwasRequest, UploadColoc, UploadStudyExtraction
+from app.db.utils import log_performance
 
 settings = get_settings()
 
@@ -24,6 +25,7 @@ class GwasDBClient:
             logger.error(f"Failed to connect to DuckDB: {e}")
             raise
 
+    @log_performance
     def get_gwases(self):
         conn = self.connect()
         try:
@@ -32,6 +34,7 @@ class GwasDBClient:
         finally:
             conn.close()
 
+    @log_performance
     def get_gwas_by_guid(self, guid: str):
         conn = self.connect()
         try:
@@ -40,6 +43,7 @@ class GwasDBClient:
         finally:
             conn.close()
     
+    @log_performance
     def get_colocs_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
@@ -48,6 +52,7 @@ class GwasDBClient:
         finally:
             conn.close()
 
+    @log_performance
     def get_study_extractions_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
@@ -56,6 +61,7 @@ class GwasDBClient:
         finally:
             conn.close()
 
+    @log_performance
     def create_gwas_upload(self, gwas_request: ProcessGwasRequest):
         conn = self.connect()
         try:
@@ -87,6 +93,7 @@ class GwasDBClient:
         finally:
             conn.close()
 
+    @log_performance
     def delete_gwas_upload(self, guid: str):
         conn = self.connect()
         try:
@@ -95,6 +102,7 @@ class GwasDBClient:
         finally:
             conn.close()
 
+    @log_performance
     def populate_study_extractions(self, study_extractions: List[UploadStudyExtraction]):
         conn = self.connect()
         results = []
@@ -116,6 +124,7 @@ class GwasDBClient:
             conn.close()
         return results
 
+    @log_performance
     def populate_colocs(self, colocs: List[UploadColoc]):
         conn = self.connect()
         try:
@@ -132,6 +141,7 @@ class GwasDBClient:
         finally:
             conn.close()
 
+    @log_performance
     def update_gwas_status(self, guid: str, status: GwasStatus):
         conn = self.connect()
         try:
