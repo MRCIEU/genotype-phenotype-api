@@ -27,8 +27,5 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 RUN chown nginx:nginx /etc/nginx/conf.d/default.conf \
     && chmod 644 /etc/nginx/conf.d/default.conf
 
-# Switch to non-root user
-USER nginx
-
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"] 
