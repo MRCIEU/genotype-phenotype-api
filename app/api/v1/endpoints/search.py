@@ -4,7 +4,7 @@ from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
 from typing import List
-from app.logging_config import get_logger
+from app.logging_config import get_logger, time_endpoint
 from app.services.cache_service import DBCacheService
 
 logger = get_logger(__name__)
@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 @router.get("/options", response_model=List[SearchTerm])
+@time_endpoint
 async def get_search_options(request: Request, response: Response):
     try:
         # Add cache control headers
@@ -30,6 +31,7 @@ async def get_search_options(request: Request, response: Response):
 
 
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
+@time_endpoint
 async def search(search_term: str):
     try:
         cache_service = DBCacheService()

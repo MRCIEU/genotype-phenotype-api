@@ -9,7 +9,7 @@ from app.logging_config import get_logger, time_endpoint
 logger = get_logger(__name__)
 router = APIRouter()
 
-@router.get("/", response_model=List[Variant])
+@router.get("", response_model=List[Variant])
 @time_endpoint
 async def get_variants(
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
@@ -22,6 +22,8 @@ async def get_variants(
     try:
         if sum([bool(snp_ids), bool(rsids), bool(grange)]) > 1:
             raise HTTPException(status_code=400, detail="Only one of snp_ids, rsids, or grange can be provided.")
+        if sum([bool(snp_ids), bool(variants), bool(rsids), bool(grange)]) == 0:
+            raise HTTPException(status_code=400, detail="One of snp_ids, variants, rsids, or grange must be provided.")
 
         studies_db = StudiesDBClient()
         associations_db = AssociationsDBClient()

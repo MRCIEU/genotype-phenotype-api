@@ -3,12 +3,13 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import GPMapMetadata, convert_duckdb_to_pydantic_model
 
 from app.services.cache_service import DBCacheService
-from app.logging_config import get_logger
+from app.logging_config import get_logger, time_endpoint
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 @router.get("/gpmap_metadata", response_model=GPMapMetadata)
+@time_endpoint
 async def get_gpmap_metadata():
     try:
         cache_service = DBCacheService()

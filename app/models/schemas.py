@@ -111,10 +111,10 @@ class BasicTraitResponse(BaseModel):
     data_type: str
     trait: str
     trait_name: str
+    variant_type: str
     sample_size: int
     category: str
     ancestry: str
-
 
 class GetTraitsResponse(BaseModel):
     traits: List[BasicTraitResponse]

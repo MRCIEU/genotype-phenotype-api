@@ -11,31 +11,36 @@ logger = get_logger(__name__)
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Gene])
+@router.get("", response_model=GetGenesResponse)
 @time_endpoint
-async def get_genes() -> List[Gene]:
+async def get_genes() -> GetGenesResponse:
     try:
         cache_service = DBCacheService()
         genes = cache_service.get_genes()
-        return genes
+        return GetGenesResponse(genes=genes)
     except HTTPException as e:
         raise e
     except Exception as e:
         logger.error(f"Error in get_genes: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{symbol}", response_model=GeneResponse)
+@router.get("/{gene_identifier}", response_model=GeneResponse)
 @time_endpoint
-async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneResponse:
+async def get_gene(gene_identifier: str = Path(..., description="Gene Symbol or ID")) -> GeneResponse:
     try:
         cache_service = DBCacheService()
         tissues = cache_service.get_tissues()
 
         db = StudiesDBClient()
-        gene = db.get_gene(symbol=symbol)
+        gene_id = None
+        try:
+            gene_id = int(gene_identifier)
+            gene = db.get_gene(id=gene_id)
+        except ValueError:
+            gene = db.get_gene(symbol=gene_identifier)
 
         if gene is None:
-            raise HTTPException(status_code=404, detail=f"Gene {symbol} not found")
+            raise HTTPException(status_code=404, detail=f"Gene {gene_identifier} not found")
         gene = convert_duckdb_to_pydantic_model(Gene, gene)
 
         genes = cache_service.get_genes()
@@ -43,7 +48,7 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
         genes_in_region = [g for g in genes
                           if g.chr == gene.chr
                           and g.start <= gene.start+1000000 and g.stop >= gene.stop-1000000
-                          and g.gene != symbol
+                          and (g.gene != gene_identifier or g.id != gene_id)
                           ]
         gene.genes_in_region = genes_in_region
 

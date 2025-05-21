@@ -21,7 +21,8 @@ def time_endpoint(func):
         finally:
             end_time = time.time()
             execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
-            logger.debug(f"Endpoint {func.__name__} completed in {execution_time:.2f}ms")
+            # TODO I can't figure out how to get the execution time into the log (using bind or opt), so just logging it here for now
+            logger.info(f"{func.__name__} completed {execution_time:.2f}ms")
     return wrapper
 
 class Formatter:
@@ -30,6 +31,7 @@ class Formatter:
         self.fmt = {
             "level": {"color": True, "repr": True},
             "time": {"fmt": "%Y-%m-%d %H:%M:%S.%f"},
+            "elapsed": {"fmt": "%Y-%m-%d %H:%M:%S.%f"},
             "name": {"padding": 25},
             "function": {"padding": 15},
             "message": {},
@@ -39,7 +41,7 @@ class Formatter:
     def format(self, record):
         execution_time = record.get("extra", {}).get("execution_time", "")
         execution_time_str = f" | <yellow>{execution_time}</yellow>" if execution_time else ""
-        return f"<green>{{time}}</green> | <level>{{level: <8}}</level> | <cyan>{{name}}</cyan>:<cyan>{{function}}</cyan>:<cyan>{{line}}</cyan> - <level>{{message}}</level>{execution_time_str}\n"
+        return f"<green>{{time}}</green> {{elapsed}} | <level>{{level: <8}}</level> | <cyan>{{name}}</cyan>:<cyan>{{function}}</cyan>:<cyan>{{line}}</cyan> - <level>{{message}}</level>{execution_time_str}\n"
 
 
 def path_filter(record):
@@ -62,7 +64,8 @@ if not is_running_tests():
         filter=path_filter,
         level="DEBUG" if settings.DEBUG else "INFO",
         backtrace=True,
-        diagnose=True
+        diagnose=True,
+        serialize=False
     )
 
 if not settings.DEBUG:
@@ -74,7 +77,8 @@ if not settings.DEBUG:
         retention="1 month",
         level="INFO",
         backtrace=True,
-        diagnose=True
+        diagnose=True,
+        serialize=False
     )
 
 class InterceptHandler(logging.Handler):

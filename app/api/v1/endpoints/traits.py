@@ -9,7 +9,7 @@ router = APIRouter()
 
 logger = get_logger(__name__)
 
-@router.get("/", response_model=GetTraitsResponse)
+@router.get("", response_model=GetTraitsResponse)
 @time_endpoint
 async def get_traits() -> GetTraitsResponse:
     try:

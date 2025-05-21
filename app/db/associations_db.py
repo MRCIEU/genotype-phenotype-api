@@ -3,6 +3,8 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
+from app.db.utils import log_performance
+
 settings = get_settings()
 
 @lru_cache()
@@ -13,6 +15,7 @@ class AssociationsDBClient:
     def __init__(self):
         self.associations_conn = get_associations_db_connection()
 
+    @log_performance
     def get_associations_for_variant_and_studies(self, snp_id: int, study_ids: List[int]):
         if not study_ids or not snp_id:
             return []
@@ -24,6 +27,7 @@ class AssociationsDBClient:
         """
         return self.associations_conn.execute(query).fetchall()
 
+    @log_performance
     def get_associations(self, snp_ids: List[int] = None, study_ids: List[int] = None, p_value_threshold: float = 1):
         if not snp_ids and not study_ids:
             return []
