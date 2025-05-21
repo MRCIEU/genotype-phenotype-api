@@ -31,7 +31,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
+      - ./tests/test_data:/workspace/tests/test_data
       - ./app:/workspace/app
     restart: unless-stopped
     depends_on:

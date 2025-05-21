@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
@@ -39,5 +40,5 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_region: {e}")
+        logger.error(f"Error in get_region: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

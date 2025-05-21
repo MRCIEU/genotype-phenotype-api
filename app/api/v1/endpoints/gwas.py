@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile
+import traceback
 import uuid
 import os
 import hashlib
@@ -80,7 +81,7 @@ async def upload_gwas(
         # Clean up file if there's an error
         if 'file_path' in locals() and os.path.exists(file_path):
             os.remove(file_path)
-        logger.error(f"Error: {e}")
+        logger.error(f"Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{guid}")
@@ -177,7 +178,7 @@ async def update_gwas(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{guid}", response_model=TraitResponse)
@@ -236,5 +237,5 @@ async def get_gwas(guid: str):
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_gwas: {e}")
+        logger.error(f"Error in get_gwas: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

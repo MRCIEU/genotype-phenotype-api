@@ -1,9 +1,9 @@
+import traceback
 from fastapi import APIRouter, HTTPException, Request, Response
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
 from typing import List
-
 from app.logging_config import get_logger
 from app.services.cache_service import DBCacheService
 
@@ -25,7 +25,7 @@ async def get_search_options(request: Request, response: Response):
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_search_options: {e}")
+        logger.error(f"Error in get_search_options: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -73,5 +73,5 @@ async def search(search_term: str):
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in search variant: {e}")
+        logger.error(f"Error in search variant: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

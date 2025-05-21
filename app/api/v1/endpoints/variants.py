@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.associations_db import AssociationsDBClient
 from app.db.studies_db import StudiesDBClient
@@ -41,7 +42,7 @@ async def get_variants(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_variants: {e}")
+        logger.error(f"Error in get_variants: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -100,6 +101,6 @@ async def get_variant(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_variant: {e}")
+        logger.error(f"Error in get_variant: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 

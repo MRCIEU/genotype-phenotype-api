@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
 from typing import List
+import traceback
 
 from app.services.cache_service import DBCacheService
 from app.logging_config import get_logger, time_endpoint
@@ -20,7 +21,7 @@ async def get_genes() -> List[Gene]:
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_genes: {e}")
+        logger.error(f"Error in get_genes: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{symbol}", response_model=GeneResponse)
@@ -78,5 +79,5 @@ async def get_gene(symbol: str = Path(..., description="Gene Symbol")) -> GeneRe
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in get_gene: {e}")
+        logger.error(f"Error in get_gene: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
