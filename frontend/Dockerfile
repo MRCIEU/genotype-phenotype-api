@@ -19,8 +19,16 @@ WORKDIR /usr/share/nginx/html
 # Set default port
 ENV PORT=80
 
+# Copy built files and nginx config
 COPY --from=build /app/dist .
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Set proper permissions for nginx config
+RUN chown nginx:nginx /etc/nginx/conf.d/default.conf \
+    && chmod 644 /etc/nginx/conf.d/default.conf
+
+# Switch to non-root user
+USER nginx
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"] 
