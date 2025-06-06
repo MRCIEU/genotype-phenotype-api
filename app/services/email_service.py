@@ -1,45 +1,82 @@
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import smtplib
-from typing import Optional
-from loguru import logger
+from app.config import get_settings
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import EmailStr
+from loguru import logger
+from typing import Optional
+
+settings = get_settings()
 
 class EmailService:
     def __init__(self):
-        self.from_email = "noreply@bristol.ac.uk"
-        self.base_url = "https://gpmap.opengwas.io"
-        self.contact_url = f"{self.base_url}/contact"
+        self.from_email = settings.EMAIL_FROM
+        self.contact_email = settings.EMAIL_FROM
+        self.contact_url = f"{settings.WEBSITE_URL}/contact"
+
+        self.conf = ConnectionConfig(
+            MAIL_USERNAME = settings.EMAIL_USERNAME,
+            MAIL_PASSWORD = settings.EMAIL_PASSWORD,
+            MAIL_FROM = self.from_email,
+            MAIL_PORT = settings.EMAIL_PORT,
+            MAIL_SERVER = settings.EMAIL_SERVER,
+            MAIL_STARTTLS = settings.EMAIL_TLS,
+            MAIL_SSL_TLS = False,
+            USE_CREDENTIALS = True
+        )
+
+    async def send_contact_email(self, email: EmailStr, reason: str, message: str) -> None:
+        """
+        Send an email to the contact email address from the contact form.
+        """
+
+        send_to = "andrew.elmore@bristol.ac.uk"
+
+        subject = f"Contact Form Submission: {reason}"
+        html = f"""
+        <html>
+        <body>
+            <p><b>From:</b> {email}</p>
+            <p><b>Reason:</b> {reason}</p>
+            <p><b>Message:</b><br>{message}</p>
+        </body>
+        </html>
+        """
+        msg = MessageSchema(
+            subject=subject,
+            recipients=[send_to],
+            body=html,
+            subtype="html"
+        )
+        fm = FastMail(self.conf)
+        try:
+            await fm.send_message(msg)
+        except Exception as e:
+            logger.error(f"Failed to send contact email: {e}")
+            raise
 
     async def send_results_email(self, to_email: EmailStr, guid: str) -> None:
         """
         Send an email notification that results are ready.
-        
-        Args:
-            to_email: Recipient's email address
-            guid: The GUID of the analysis results
         """
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = 'Your Genotype-Phenotype Map Results Are Ready'
-        msg['From'] = self.from_email
-        msg['To'] = to_email
-
+        subject = 'Your Genotype-Phenotype Map Results Are Ready'
         html = f"""
         <html>
         <body>
             <p>Thanks for using the Genotype-Phenotype Map!</p>
-            <p>Your results are ready to view. <a href='{self.base_url}/results/{guid}'>Click here</a> to view your results.</p>
+            <p>Your results are ready to view. <a href='{settings.WEBSITE_URL}/phenotype/{guid}'>Click here</a> to view your results.</p>
             <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
             <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
         </body>
         </html>
         """
-
-        msg.attach(MIMEText(html, 'html'))
-
+        msg = MessageSchema(
+            subject=subject,
+            recipients=[to_email],
+            body=html,
+            subtype="html"
+        )
+        fm = FastMail(self.conf)
         try:
-            with smtplib.SMTP('localhost') as server:
-                server.send_message(msg)
+            await fm.send_message(msg)
         except Exception as e:
-            logger.error(f"Failed to send email: {e}")
+            logger.error(f"Failed to send results email: {e}")
             raise

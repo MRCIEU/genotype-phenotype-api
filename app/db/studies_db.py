@@ -49,6 +49,10 @@ class StudiesDBClient:
         query = f"SELECT * FROM traits WHERE id = '{trait_id}'"
         return self.studies_conn.execute(query).fetchone()
     
+    def get_study_sources(self):
+        query = "SELECT * FROM study_sources"
+        return self.studies_conn.execute(query).fetchall()
+
     @log_performance
     def get_study_metadata(self):
         query = """
@@ -106,6 +110,19 @@ class StudiesDBClient:
             AND colocalisations.posterior_prob IS NOT NULL AND colocalisations.posterior_prob > 0.5
         """
         return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_all_colocs_to_dataframe(self):
+        query = f"""
+            SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
+            FROM colocalisations 
+            JOIN studies ON colocalisations.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            JOIN gene_annotations ON colocalisations.gene_id = gene_annotations.id
+            WHERE colocalisations.posterior_prob IS NOT NULL AND colocalisations.posterior_prob > 0.5
+            AND gene_annotations.gene_biotype = 'protein_coding'
+        """
+        return self.studies_conn.execute(query).df()
 
     @log_performance
     def get_colocs_for_variant(self, snp_id: int):

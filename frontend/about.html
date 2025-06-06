@@ -33,38 +33,9 @@
                             <li>An R package</li>
                             <li>The website, API, database, and GWAS processing queue</li>
                         </ul>
-                        <div class="column is-11">
-                            <h2>Data Processing Pipeline</h2>
-                            <h4>Datasets</h4>
-                            <p>
-                                The datasets that were used to populate the Genotype-Phenotype Map are as follows:
-                            </p>
-                            <div class="columns mt-2 is-centered">
-                                <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-                                    <thead>
-                                        <tr>
-                                            <th><abbr title="Name">Name</abbr></th>
-                                            <th><abbr title="Data Source">Data Source</abbr></th>
-                                            <th><abbr title="Number of Studies">Number of Studies</abbr></th>
-                                            <th><abbr title="Type">Study Type</abbr></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template x-for="dataset in getDatasetsForTable">
-                                            <tr>
-                                                <td x-text="dataset.name"></td>
-                                                <td><a x-bind:href="dataset.source">Source</a></td>
-                                                <td x-text="dataset.number_of_studies"></td>
-                                                <td x-text="dataset.type"></td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-
-                            </div>
-                            <div class="columns mt-6 is-centered">
-                                <img :src="pipeline" class="pipeline" width="400" alt="Data Processing Diagram" />
-                            </div>
+                        <h2>Data Processing Pipeline</h2>
+                        <div class="columns mt-6 is-centered">
+                            <img :src="pipeline" class="pipeline" width="400" alt="Data Processing Diagram" />
                         </div>
 
 

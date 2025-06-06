@@ -12,8 +12,9 @@ class Singleton(type):
         return cls._instances[cls]
 
 class StudyDataTypes(Enum):
-    GENE_EXPRESSION = "gene_expression"
     SPLICE_VARIANT = "splice_variant"
+    GENE_EXPRESSION = "gene_expression"
+    METHYLATION = "methylation"
     PROTEIN = "protein"
     PHENOTYPE = "phenotype"
 
@@ -24,8 +25,8 @@ class VariantTypes(Enum):
 
 class StudySource(BaseModel):
     id: int
-    name: str
     source: str
+    name: str
     url: str
     doi: str
 
@@ -118,6 +119,9 @@ class BasicTraitResponse(BaseModel):
 
 class GetTraitsResponse(BaseModel):
     traits: List[BasicTraitResponse]
+
+class GetStudySourcesResponse(BaseModel):
+    sources: List[StudySource]
 
 class Study(BaseModel):
     id: int
@@ -266,6 +270,11 @@ class GwasStatus(Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+
+class ContactRequest(BaseModel):
+    email: str
+    reason: str
+    message: str
 
 class ProcessGwasRequest(BaseModel):
     guid: Optional[str] = None

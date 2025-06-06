@@ -11,13 +11,17 @@ import region from './alpine-components/region.js';
 import phenotype from './alpine-components/phenotype.js';
 import homepage from './alpine-components/homepage.js';
 import snp from './alpine-components/snp.js';
+import data from './alpine-components/data.js';
+import contact from './alpine-components/contact.js';
 window.Alpine = Alpine;
 
 import { NavigationBar } from './web-components/navigation-bar.js';
 import { GraphOptions } from './web-components/graph-options.js';
+import { PipelineSummary } from './web-components/pipeline-summary.js';
 
 customElements.define('navigation-bar', NavigationBar);
 customElements.define('graph-options', GraphOptions);
+customElements.define('pipeline-summary', PipelineSummary);
 
 // import * as Sentry from "@sentry/browser";
 // if (!import.meta.env.VITE_DEBUG === 'true') {
@@ -56,6 +60,8 @@ Alpine.data('homepage', homepage)
 Alpine.data('phenotype', phenotype)
 Alpine.data('gene', gene)
 Alpine.data('about', about)
+Alpine.data('data', data)
 Alpine.data('region', region)
 Alpine.data('snp', snp)
+Alpine.data('contact', contact)
 Alpine.start();

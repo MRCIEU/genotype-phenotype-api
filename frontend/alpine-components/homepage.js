@@ -30,8 +30,12 @@ export default function homepage() {
         filteredItems: [],
         errorMessage: null,
 
-        async loadSearchOptions() {
+        async loadHomepage() {
             try {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('showUpload') === 'true') {
+                    this.openModal();
+                }
                 const response = await fetch(constants.apiUrl + '/search/options');
                 
                 if (!response.ok) {

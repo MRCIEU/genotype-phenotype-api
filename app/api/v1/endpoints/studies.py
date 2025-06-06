@@ -1,12 +1,13 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, Study, ExtendedStudyExtraction, TraitResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import Coloc, GetStudySourcesResponse, Study, ExtendedStudyExtraction, StudySource, TraitResponse, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 
 logger = get_logger(__name__)
 router = APIRouter()
+
 
 @router.get("", response_model=List[Study])
 @time_endpoint

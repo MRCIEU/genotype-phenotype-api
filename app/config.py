@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     GWAS_DIR: str
     DATA_DIR: str
     SENTRY_DSN: str
+    EMAIL_FROM: str = "gpmap@opengwas.io"
+    EMAIL_SERVER: str = "smtp.email.uk-london-1.oci.oraclecloud.com"
+    EMAIL_PORT: int = 587
+    EMAIL_TLS: bool = True
+    EMAIL_USERNAME: str
+    EMAIL_PASSWORD: str
+    WEBSITE_URL: str = "https://gpmap.opengwas.io"
+
 
     model_config = {
         "env_file": ".env"
