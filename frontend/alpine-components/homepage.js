@@ -1,9 +1,11 @@
 import logo from '../assets/images/logo.png'
+import mrc_logo from '../assets/images/mrc_ieu.svg'
 import constants from './constants'
 
 export default function homepage() {
     return {
         logo,
+        mrc_logo,
         searchText: '',
         searchOptionData: [],
         variantSearchInProgress: false,

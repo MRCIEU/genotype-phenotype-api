@@ -76,7 +76,7 @@
                             </div>
                         </div>
                     </div>
-                    <graph-options></graph-options>
+                    <graph-options :categories='["Category 1", "Category 2"]'></graph-options>
                 </div>
             </div>
             <div class="columns is-centered mb-0 mt-0" x-show="showResults">
@@ -123,8 +123,8 @@
                                                                     <b>No coloc evidence found.</b>
                                                             </td>
                                                     </template>
-                                                    <td x-text="coloc.trait_name" style="width:40%"></td>
-                                                    <td x-text="coloc.data_type"></td>
+                                                    <td><a :href="'phenotype.html?id=' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a></td>
+                                                    <td x-text="(coloc.data_type === 'phenotype' && coloc.trait_category ? 'phenotype (' + coloc.trait_category + ')' : coloc.data_type)"></td>
                                                     <td><a :href="'gene.html?id=' + coloc.gene" x-text="coloc.gene"></a></td>
                                                     <td x-text="coloc.tissue"></td>
                                                     <td x-text="coloc.cis_trans"></td>

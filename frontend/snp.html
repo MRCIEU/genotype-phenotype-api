@@ -110,7 +110,7 @@
                                     <td class="py-1 px-2" x-text="item.tissue"></td>
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
-                                    <td class="py-1 px-2" x-text="item.data_type"></td>
+                                    <td class="py-1 px-2" x-text="(item.data_type === 'phenotype' && item.trait_category ? 'phenotype (' + item.trait_category + ')' : item.data_type)"></td>
                                     <td class="py-1 px-2" x-text="item.association ? item.association.beta.toFixed(3) : 'N/A'"></td>
                                 </tr>
                             </template>

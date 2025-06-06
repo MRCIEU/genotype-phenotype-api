@@ -91,8 +91,8 @@
                                                                         PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp.toFixed(3)"></b>
                                                                 </td>
                                                         </template>
-                                                        <td x-text="coloc.trait_name" style="width:40%"></td>
-                                                        <td x-text="coloc.data_type"></td>
+                                                        <td><a :href="'phenotype.html?id=' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a></td>
+                                                        <td x-text="(coloc.data_type === 'phenotype' && coloc.trait_category ? 'phenotype (' + coloc.trait_category + ')' : coloc.data_type)"></td>
                                                         <td><a :href="'gene.html?id=' + coloc.gene" x-text="coloc.gene"></a></td>
                                                         <td x-text="coloc.tissue"></td>
                                                         <td x-text="coloc.cis_trans"></td>
@@ -103,8 +103,8 @@
                                 <template x-for="study in studyExtractionsForTable">
                                     <tr>
                                         <td>None</td>
-                                        <td x-text="study.trait"></td>
-                                        <td x-text="study.data_type"></td>
+                                        <td><a :href="'phenotype.html?id=' + study.trait_id" x-text="study.trait_name"></a></td>
+                                        <td x-text="(study.data_type === 'phenotype' && study.trait_category ? 'phenotype (' + study.trait_category + ')' : study.data_type)"></td>
                                         <td><a :href="'gene.html?id=' + study.gene" x-text="study.gene"></a></td>
                                         <td x-text="study.tissue"></td>
                                         <td x-text="study.cis_trans"></td>

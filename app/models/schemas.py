@@ -60,6 +60,7 @@ class Coloc(BaseModel):
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
+    trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
 
@@ -104,6 +105,7 @@ class Trait(BaseModel):
     data_type: str
     trait: str
     trait_name: str
+    trait_category: Optional[str] = None
     common_study: Optional[Study] = None
     rare_study: Optional[Study] = None
 
@@ -112,6 +114,7 @@ class BasicTraitResponse(BaseModel):
     data_type: str
     trait: str
     trait_name: str
+    trait_category: Optional[str] = None
     variant_type: str
     sample_size: int
     category: str
@@ -161,7 +164,8 @@ class StudyExtraction(BaseModel):
     trait_id: Optional[int] = None
 
 class ExtendedStudyExtraction(StudyExtraction):
-    trait: str
+    trait_name: str
+    trait_category: Optional[str] = None
     data_type: str
     tissue: Optional[str] = None
 
@@ -186,6 +190,7 @@ class RareResult(BaseModel):
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
+    trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
 
@@ -380,7 +385,8 @@ class UploadColoc(BaseModel):
     }
 
 class ExtendedUploadColoc(UploadColoc):
-    trait: Optional[str] = None
+    trait_name: Optional[str] = None
+    trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
     cis_trans: Optional[str] = None

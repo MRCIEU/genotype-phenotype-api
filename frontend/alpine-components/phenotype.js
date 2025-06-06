@@ -121,11 +121,17 @@ export default function pheontype() {
                 colocIdsWithTraits = this.data.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.coloc_group_id)
             } 
             this.filteredColocData = this.data.colocs.filter(coloc => {
-                const graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
+                let graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
                     coloc.posterior_prob >= graphOptions.coloc &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
-                    (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
+                    (graphOptions.traitType === 'all' ? true : 
+                     graphOptions.traitType === 'molecular' ? coloc.data_type !== 'phenotype' :
+                     graphOptions.traitType === 'phenotype' ? coloc.data_type === 'phenotype' : true))
                 )
+
+                if (Object.values(graphOptions.categories).some(c => c)) {
+                    graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true
+                }
 
                 const traitFilter = this.displayFilters.trait ? colocIdsWithTraits.includes(coloc.coloc_group_id) : true
 
@@ -134,9 +140,15 @@ export default function pheontype() {
             // this.filteredRareResults = this.data.rare_results.filter(r => r.min_p <= graphOptions.pValue)
             this.filteredRareResults = this.data.rare_results
             this.filteredStudyExtractions = this.data.study_extractions.filter(se => {
-                return se.min_p <= graphOptions.pValue &&
+                let graphOptionFilters = (se.min_p <= graphOptions.pValue &&
                     (graphOptions.includeTrans ? true : se.cis_trans !== 'trans') &&
                     (graphOptions.onlyMolecularTraits ? se.data_type !== 'phenotype' : true)
+                )
+                if (Object.values(graphOptions.categories).some(c => c)) {
+                    graphOptionFilters = graphOptionFilters && graphOptions.categories[se.trait_category] === true
+                }
+
+                return graphOptionFilters
             })
 
             // deduplicate studies and sort based on frequency
@@ -279,9 +291,6 @@ export default function pheontype() {
                 }
             }
 
-            if (!graphOptions.includeRareVariants) {
-                graphConstants.rareMargin.top = 0 
-            }
 
             let self = this
 
@@ -523,11 +532,7 @@ export default function pheontype() {
                 .attr('opacity', 0.5)
                 .attr('stroke-width', 1);
 
-            if (graphOptions.includeRareVariants) {
-                this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight)
-            }
-
-            // Add no-coloc variants section
+            this.displayRareVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight)
             this.displayNoColocVariants(self, svg, innerGraph, graphConstants, innerWidth, innerXScales, innerHeight)
         },
 

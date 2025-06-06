@@ -116,18 +116,31 @@ export default function gene() {
 
         filterByOptions(graphOptions) {
             this.data.filteredColocs = this.data.colocs.filter(coloc => {
-                return(coloc.min_p <= graphOptions.pValue &&
+                let graphOptionFilters = (coloc.min_p <= graphOptions.pValue &&
                    coloc.posterior_prob >= graphOptions.coloc &&
                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
-                   (graphOptions.onlyMolecularTraits ? coloc.data_type !== 'phenotype' : true))
-                   // && rare variants in the future...
+                   (graphOptions.traitType === 'all' ? true : 
+                    graphOptions.traitType === 'molecular' ? coloc.data_type !== 'phenotype' :
+                    graphOptions.traitType === 'phenotype' ? coloc.data_type === 'phenotype' : true))
+
+                if (Object.values(graphOptions.categories).some(c => c)) {
+                    graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true
+                }
+
+                return graphOptionFilters
             })
 
             this.data.filteredRareResults = this.data.rare_results
             this.data.filteredStudies = this.data.study_extractions.filter(study => {
-                return(study.min_p <= graphOptions.pValue && 
+                let graphOptionFilters = (study.min_p <= graphOptions.pValue && 
                    (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
                    (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true))
+
+                if (Object.values(graphOptions.categories).some(c => c)) {
+                    graphOptionFilters = graphOptionFilters && graphOptions.categories[study.trait_category] === true
+                }
+
+                return graphOptionFilters
             })
             this.data.filteredStudies.sort((a, b) => a.mbp - b.mbp)
             this.minMbp = Math.min(
