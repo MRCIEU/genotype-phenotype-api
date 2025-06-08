@@ -5,8 +5,8 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
-    <title>GPM</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
+    <title>The Genotype-Phenotype Map</title>
     <script type="module" src="/main.js" async blocking="render"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
     <script>
@@ -184,23 +184,42 @@
                                                    x-model="uploadMetadata.formData.traitName">
                                         </div>
                                     </div>
-                                    <div class="field">
-                                        <label class="label">File</label>
-                                        <div class="file has-name" :class="{'is-danger': uploadMetadata.validationErrors.file}">
-                                            <label class="file-label">
-                                                <input class="file-input" 
-                                                       type="file" 
-                                                       @change="uploadMetadata.formData.file = $event.target.files[0]" 
-                                                       accept=".tsv,.csv,.txt,.gz,.zip,.vcf">
-                                                <span class="file-cta">
-                                                    <span class="file-label">Choose a file…</span>
-                                                </span>
-                                                <span class="file-name" x-text="uploadMetadata.formData.file ? uploadMetadata.formData.file.name : 'No file selected'"></span>
-                                            </label>
+                                    <div class="is-divider"></div>
+                                    <div class="columns">
+                                        <div class="column is-half">
+                                            <div class="field">
+                                                <label class="label">File</label>
+                                                <div class="file has-name" :class="{'is-danger': uploadMetadata.validationErrors.file}">
+                                                    <label class="file-label">
+                                                        <input class="file-input" 
+                                                               type="file" 
+                                                               @change="uploadMetadata.formData.file = $event.target.files[0]" 
+                                                               accept=".tsv,.csv,.txt,.gz,.zip,.vcf">
+                                                        <span class="file-cta">
+                                                            <span class="file-label">Choose a file…</span>
+                                                        </span>
+                                                        <span class="file-name" x-text="uploadMetadata.formData.file ? uploadMetadata.formData.file.name : 'No file selected'"></span>
+                                                    </label>
+                                                </div>
+                                                <p class="is-size-7">Size limit is 1GB. Please use zip/gzip to compress.</p>
+                                            </div>
+                                        </div>
+                                        <div class="column is-half">
+                                            <div class="field">
+                                                <label class="label">P-Value Threshold: <span x-text="Number(uploadMetadata.formData.pValue).toExponential()"></span></label>
+                                                <input class="slider is-fullwidth" 
+                                                       type="range" 
+                                                       x-model="uploadMetadata.formData.pValueIndex" 
+                                                       @input="uploadMetadata.formData.pValue = uploadMetadata.formData.pValueOptions[uploadMetadata.formData.pValueIndex]"
+                                                       step="1" 
+                                                       min="0" 
+                                                       max="7">
+                                                <p class="is-size-7">Only LD Regions with variants with a p-value less than this threshold will be considered.</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <p class="is-size-7">Size limit is 1GB. Please use zip/gzip to compress.</p>
-                                    <br />
+                                    
+                                    <div class="is-divider"></div>
                                     <div class="columns">
                                         <div class="column is-one-quarter">
                                         <label class="label">Genome Reference Build</label>
@@ -293,6 +312,7 @@
                                                    x-model="uploadMetadata.formData.eaf">
                                         </p>
                                     </div>
+                                    Either BETA:
                                     <div class="field is-grouped">
                                         <p class="control">
                                             <input class="input" 
@@ -303,16 +323,33 @@
                                         </p>
                                         <p class="control">
                                             <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.se}"
+                                                   type="text" 
+                                                   placeholder="SE" 
+                                                   x-model="uploadMetadata.formData.se">
+                                        </p>
+                                    </div>
+                                    Or Odds Ratio:
+                                    <div class="field is-grouped">
+                                        <p class="control">
+                                            <input class="input" 
                                                    :class="{'is-danger': uploadMetadata.validationErrors.or}"
                                                    type="text" 
                                                    placeholder="OR" x-model="uploadMetadata.formData.or">
                                         </p>
                                         <p class="control">
                                             <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.se}"
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.lb}"
                                                    type="text" 
-                                                   placeholder="SE" 
-                                                   x-model="uploadMetadata.formData.se">
+                                                   placeholder="LB" 
+                                                   x-model="uploadMetadata.formData.lb">
+                                        </p>
+                                        <p class="control">
+                                            <input class="input" 
+                                                   :class="{'is-danger': uploadMetadata.validationErrors.ub}"
+                                                   type="text" 
+                                                   placeholder="UB" 
+                                                   x-model="uploadMetadata.formData.ub">
                                         </p>
                                     </div>
                                     <br />
