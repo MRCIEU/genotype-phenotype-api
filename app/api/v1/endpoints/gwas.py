@@ -217,12 +217,13 @@ async def get_gwas(guid: str):
                     (se for se in existing_study_extractions if se.id == coloc.existing_study_extraction_id), None
                 )
 
-                coloc.trait = existing_study_extraction.trait
+                coloc.trait_name = existing_study_extraction.trait_name
+                coloc.trait_category = existing_study_extraction.trait_category
                 coloc.data_type = existing_study_extraction.data_type
                 coloc.tissue = existing_study_extraction.tissue
                 coloc.cis_trans = existing_study_extraction.cis_trans
             else:
-                coloc.trait = gwas.name
+                coloc.trait_name = gwas.name
                 coloc.data_type = StudyDataTypes.PHENOTYPE.value
                 coloc.tissue = None
                 coloc.cis_trans = None

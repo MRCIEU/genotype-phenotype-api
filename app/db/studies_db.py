@@ -102,7 +102,7 @@ class StudiesDBClient:
     def _fetch_colocs(self, condition: str):
         # TODO: Remove this once we filter colocs when creating the db
         query = f"""
-            SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue 
+            SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue 
             FROM colocalisations 
             JOIN studies ON colocalisations.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
@@ -152,7 +152,7 @@ class StudiesDBClient:
     
     def _fetch_rare_results(self, condition: str):
         query = f"""
-            SELECT rare_results.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
+            SELECT rare_results.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM rare_results
             JOIN studies ON rare_results.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
@@ -197,7 +197,7 @@ class StudiesDBClient:
     @log_performance
     def get_study_extractions_for_study(self, study_id: str):
         query = f"""
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
@@ -221,7 +221,7 @@ class StudiesDBClient:
     def get_study_extractions_by_id(self, ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in ids)
         query = f"""
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
@@ -246,7 +246,7 @@ class StudiesDBClient:
     @log_performance
     def get_study_extractions_in_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
         return self.studies_conn.execute(
-            """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
+            """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id

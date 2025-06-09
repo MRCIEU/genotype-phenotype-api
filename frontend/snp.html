@@ -4,7 +4,7 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/images/small_logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
     <title>GPM</title>
     <script type="module" src="/main.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
@@ -110,7 +110,7 @@
                                     <td class="py-1 px-2" x-text="item.tissue"></td>
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
-                                    <td class="py-1 px-2" x-text="item.data_type"></td>
+                                    <td class="py-1 px-2" x-text="(item.data_type === 'phenotype' && item.trait_category ? 'phenotype (' + item.trait_category + ')' : item.data_type)"></td>
                                     <td class="py-1 px-2" x-text="item.association ? item.association.beta.toFixed(3) : 'N/A'"></td>
                                 </tr>
                             </template>

@@ -34,9 +34,17 @@ customElements.define('pipeline-summary', PipelineSummary);
 const graphOptions = {
     coloc: 0.8,
     pValue: 0.00000005,
-    includeRareVariants: true,
-    onlyMolecularTraits: false,
+    traitType: 'all',
     includeTrans: false,
+    categories: {
+        "Anthropometric": false,
+        "Blood Cell Measure": false,
+        "Clinical Measure": false,
+        "Health Trait / Disease Outcome": false,
+        "Operation / Treatment": false,
+        "Physiological": false,
+        "Social / Behavioural": false
+    },
     pValueOptions: [
             0.00015,       // 1.5e-4
             0.00005,       // 5e-5
