@@ -73,6 +73,17 @@
                         No colocalization information to display for this variant.
                     </h4>
                     <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
+                    <div id="manhattan-plot" class="is-relative" style="height: 200px; width: 100%; overflow: hidden;"></div>
+                    <!--
+                    <div id="manhattan-plot" class="is-relative" style="height: 600px; width: 100%; overflow: hidden;">
+                        <template x-for="(studyExtractionId, i) in Object.keys(svgs)" :key="i">
+                            <div
+                                x-html="getUnscaledSVG(studyExtractionId)"
+                                style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.3;">
+                            </div>
+                        </template>
+                    </div>
+                    -->
                 </div>
 
                 <div class="column is-2">
@@ -97,7 +108,7 @@
                             <tr>
                                 <th class="has-text-centered py-2"><abbr title="Trait">Trait</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Tissue">Tissue</abbr></th>
-                                <th class="has-text-centered py-2"><abbr title="P-value">P-value</abbr></th>
+                                <th class="has-text-centered py-2"><abbr title="Min P-value">Min P-value</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Cis / Trans">Cis / Trans</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Data Type">Data Type</abbr></th>
                                 <th class="has-text-centered py-2"><abbr title="Effect (BETA)">Effect (BETA)</abbr></th>

@@ -1,5 +1,7 @@
 export default {
+        isLocal: import.meta.env.MODE === 'development' || !import.meta.env.PROD,
         apiUrl: import.meta.env.MODE === 'development' || !import.meta.env.PROD ? 'http://localhost:8000/v1' : 'https://gpmap.opengwas.io/api/v1',
+        assetBaseUrl: import.meta.env.MODE === 'development' || !import.meta.env.PROD ? '/assets/images/' : 'https://gpmap.opengwas.io/assets',
         maxBpPerChr: {
             1: 249250621,
             2: 243199373,
