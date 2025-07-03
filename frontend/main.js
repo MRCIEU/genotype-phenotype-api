@@ -8,7 +8,7 @@ import Alpine from 'alpinejs';
 import about from './alpine-components/about.js';
 import gene from './alpine-components/gene.js';
 import region from './alpine-components/region.js';
-import phenotype from './alpine-components/phenotype2.js';
+import phenotype from './alpine-components/phenotype.js';
 import homepage from './alpine-components/homepage.js';
 import snp from './alpine-components/snp.js';
 import data from './alpine-components/data.js';

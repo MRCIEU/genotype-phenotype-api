@@ -22,8 +22,8 @@
         <div id="phenotype" x-data="phenotype" x-init="loadData">
             <navigation-bar></navigation-bar>
 
-            <div class="columns mt-4 mb-0">
-                <div class="column is-10">
+            <div class="columns mt-4 mb-0 pb-0 pt-0">
+                <div class="column is-10 pb-0 mb-0">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
                     <p class="has-text-centered mb-0" x-show="userUpload">
                         <span x-text="getUploadStatus"></span>
@@ -40,7 +40,7 @@
                         This may take a while...
                     </div>
 
-                    <div x-show="showResults">
+                    <div x-show="showResults" class="mb-0">
                         <p class="is-size-7 has-text-centered">Displays colocalised results of the study in question, and shows all studies which colocalise with it</p>
                         <p class="is-size-7 has-text-centered">Also displays significant rare and non-colocalising results</p>
                         <p class="is-size-7 has-text-centered">To compare 2 specific traits, please use the 'Filter Results By' dropdown</p>
@@ -54,16 +54,15 @@
                 </div>
             </div>
 
-            <div class="columns mt-0" x-show="showResults">
-                <div class="column is-10">
+            <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
+                <div class="column is-10 pb-0 mb-0">
                     <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
-                    <button id="reset-zoom" style="display: none;">Reset Zoom</button>
                 </div>
 
                 <div class="column is-2">
                     <div class="dropdown is-hoverable is-right">
                         <div class="dropdown-trigger">
-                            <button class="button mt-0 mb-4" aria-haspopup="true">
+                            <button class="button is-small mt-0 mb-4" aria-haspopup="true">
                                 <span>Filter Results By:</span>
                             </button>
                         </div>
@@ -80,15 +79,15 @@
                     <graph-options :categories='["Category 1", "Category 2"]'></graph-options>
                 </div>
             </div>
-            <div class="columns is-centered mb-0 mt-0" x-show="showResults">
-                <div class="column is-11">
-                    <button class="button is-small" @click="removeDisplayFilters">
-                        Remove Display Filters
+            <div class="columns is-centered mb-0 mt-0 pb-0 pt-0" x-show="showResults">
+                <div class="column is-11" style="min-height: 0; height: auto; padding-top: 0; padding-bottom: 0;">
+                    <button id="reset-display" class="button is-small mt-0 mb-0" @click="removeDisplayFilters">
+                        Reset Display
                     </button>
                 </div>
             </div>
 
-            <div class="columns mt-0 is-centered" x-show="showResults">
+            <div class="columns mt-0 mb-0 is-centered" x-show="showResults">
                 <div class="column is-11">
                     <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
                         <thead>
