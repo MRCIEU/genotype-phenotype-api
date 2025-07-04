@@ -75,11 +75,11 @@ class DBCacheService(metaclass=Singleton):
         common_studies = self.db.get_study_metadata()
 
         for study in common_studies:
-            if study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.COMMON.value:
+            if study[0] == StudyDataTypes.phenotype.name and study[1] == VariantTypes.COMMON.value:
                 num_common_studies += study[2]
-            elif study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.RARE_EXOME.value:
+            elif study[0] == StudyDataTypes.phenotype.name and study[1] == VariantTypes.RARE_EXOME.value:
                 num_rare_studies += study[2]
-            elif study[0] != StudyDataTypes.PHENOTYPE.value:
+            elif study[0] != StudyDataTypes.phenotype.name:
                 num_molecular_studies += study[2]
 
         gpmap_metadata = GPMapMetadata(

@@ -26,16 +26,23 @@ export default {
             21: 48129895,
             22: 51304566
         },
-        colors: [
-            '#d5a7d6',
-            '#7eb0d5',
-            '#fd7f6f', 
-            '#b2e061',
-            '#ffb55a',
-            '#beb9db',
-            '#fdcce5',
-            '#8bd3c7'
-        ],
+        colors: {
+            palette: [
+                '#d5a7d6',
+                '#7eb0d5',
+                '#fd7f6f', 
+                '#b2e061',
+                '#ffb55a',
+                '#beb9db',
+                '#fdcce5',
+                '#8bd3c7'
+            ],
+            dataTypes: {
+                'common': '#1976d2',
+                'rare': 'red',
+                'highlighted': 'black'
+            }
+        },
         tableColors: [
             'antiquewhite',
             'white',

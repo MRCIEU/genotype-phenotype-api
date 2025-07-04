@@ -224,7 +224,7 @@ async def get_gwas(guid: str):
                 coloc.cis_trans = existing_study_extraction.cis_trans
             else:
                 coloc.trait_name = gwas.name
-                coloc.data_type = StudyDataTypes.PHENOTYPE.value
+                coloc.data_type = StudyDataTypes.phenotype.name
                 coloc.tissue = None
                 coloc.cis_trans = None
 

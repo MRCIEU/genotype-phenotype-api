@@ -81,7 +81,7 @@ export default function gene() {
 
                 let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
                 let filteredVariantTypes = constants.variantTypes.filter(variantType => variantTypesInData.includes(variantType))
-                this.variantTypes = Object.fromEntries(filteredVariantTypes.map((key, index) => [key, constants.colors[index]]));
+                this.variantTypes = Object.fromEntries(filteredVariantTypes.map((key, index) => [key, constants.colors.palette[index]]));
                 this.filterByOptions(Alpine.store('graphOptionStore'));
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -189,9 +189,9 @@ export default function gene() {
         },
 
         getResultColorType(type) {
-            if (type === 'coloc') return 'black'
-            else if (type === 'rare') return 'red'
-            else return 'black'
+            if (type === 'coloc') return constants.colors.dataTypes.common
+            else if (type === 'rare') return constants.colors.dataTypes.rare
+            else return constants.colors.dataTypes.common
         },
 
         getVariantTypeColor(variantType) {
@@ -569,13 +569,6 @@ export default function gene() {
             const genes = this.data.gene.genes_in_region.filter(gene =>
                 gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp
             )
-            genes.push({
-                focus: true,
-                gene: this.data.gene.gene,
-                start: this.data.gene.start,
-                stop: this.data.gene.stop,
-                chr: this.data.gene.chr
-            });
 
             // Function to detect overlaps and assign levels
             function assignLevels(genes) {
@@ -612,7 +605,7 @@ export default function gene() {
                 .attr("y", d => geneTrackY + (d.level * (graphConstants.geneTrackMargin.height + 5)))
                 .attr("width", d => xScale(d.stop / 1000000) - xScale(d.start / 1000000))
                 .attr("height", graphConstants.geneTrackMargin.height)
-                .attr("fill", (d, i) => constants.colors[i % constants.colors.length])
+                .attr("fill", (d, i) => constants.colors.palette[i % constants.colors.palette.length])
                 .attr("stroke", (d) => d.focus ? "black": null)
                 .attr("stroke-width", 3) 
                 .attr("opacity", 0.7)
@@ -642,7 +635,7 @@ export default function gene() {
                 .attr('transform', `translate(${legendX}, 20)`);
 
             const studyTypes = ['Common', 'Rare'];
-            const studyColors = ['black', 'red'];
+            const studyColors = [constants.colors.dataTypes.common, constants.colors.dataTypes.rare];
 
             legend.selectAll('circle')
                 .data(studyTypes)

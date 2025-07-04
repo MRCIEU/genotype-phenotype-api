@@ -12,11 +12,11 @@ class Singleton(type):
         return cls._instances[cls]
 
 class StudyDataTypes(Enum):
-    SPLICE_VARIANT = "splice_variant"
-    GENE_EXPRESSION = "gene_expression"
-    METHYLATION = "methylation"
-    PROTEIN = "protein"
-    PHENOTYPE = "phenotype"
+    splice_variant = "Splice Variant"
+    gene_expression = "Gene Expression"
+    methylation = "Methylation"
+    protein = "Protein"
+    phenotype = "Phenotype"
 
 class VariantTypes(Enum):
     COMMON = "common"

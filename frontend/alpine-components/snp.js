@@ -188,7 +188,7 @@ export default function snp() {
             // Create color scale based on data_type
             const color = d3.scaleOrdinal()
                 .domain(dataTypes)
-                .range(Object.values(constants.colors));
+                .range(constants.colors.palette);
 
             // Create index mapping
             const indexMap = {};

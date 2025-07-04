@@ -8,11 +8,16 @@ export default function pheontype() {
         data: null,
         filteredColocData: null,
         filteredGroupedColoc: null,
-        orderedTraitsToFilterBy: null,
         displayFilters: {
+            view: "full",
             chr: null,
             candidate_snp: null,
-            trait: null
+            trait_name: null
+        },
+        traitSearch: {
+            text: '',
+            showDropDown: false,
+            orderedTraits: null,
         },
         errorMessage: null,
         svgs: {
@@ -69,7 +74,7 @@ export default function pheontype() {
                 this.data.colocs = this.data.colocs.map(c => {
                     c.MbP = c.bp / 1000000
                     c.chrText = 'CHR '.concat(c.chr)
-                    c.annotationColor = constants.colors[Math.floor(Math.random()*Object.keys(constants.colors).length)]
+                    c.annotationColor = constants.colors.palette[Math.floor(Math.random()*constants.colors.palette.length)]
                     c.ignore = false
                     if (minNumStudies === maxNumStudies) {
                         c.scaledNumStudies = 4 
@@ -81,17 +86,15 @@ export default function pheontype() {
                 this.data.colocs.sort((a, b) => a.chr > b.chr);
 
                 // order traits by frequency in order to display in dropdown for filtering
-                let allTraits = this.data.colocs.map(c => c.trait)
+                let allTraits = this.data.colocs.map(c => c.trait_name)
                 let frequency = {};
                 allTraits.forEach(item => {
                     frequency[item] = (frequency[item] || 0) + 1;
                 });
 
-                // sort by frequency
                 let uniqueTraits = [...new Set(allTraits)];
                 uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
-
-                this.orderedTraitsToFilterBy = uniqueTraits.filter(t => t !== this.data.trait.trait)
+                this.traitSearch.orderedTraits = uniqueTraits.filter(t => t !== this.data.trait.trait_name)
 
                 this.filterByOptions(Alpine.store('graphOptionStore')) 
 
@@ -118,9 +121,9 @@ export default function pheontype() {
             for (const [filename, file] of Object.entries(zip.files)) {
                 if (filename.endsWith('.svg')) {
                     const svgContent = await file.async('text')
-                    if (filename.includes('_chr')) {
+                    if (filename.includes('chr')) {
                         // Extract chromosome number from filename
-                        const chrNum = filename.match(/_chr(\d+)\.svg/)[1]
+                        const chrNum = filename.match(/chr(\d+)\.svg/)[1]
                         this.svgs.chromosomes[`chr${chrNum}`] = svgContent
                     } else {
                         // This is the full genome SVG
@@ -154,8 +157,8 @@ export default function pheontype() {
 
         filterByOptions(graphOptions) {
             let colocIdsWithTraits = []
-            if (this.displayFilters.trait) {
-                colocIdsWithTraits = this.data.colocs.filter(c => c.trait === this.displayFilters.trait).map(c => c.coloc_group_id)
+            if (this.displayFilters.trait_name) {
+                colocIdsWithTraits = this.data.colocs.filter(c => c.trait === this.displayFilters.trait_name).map(c => c.coloc_group_id)
             } 
             this.filteredColocData = this.data.colocs.filter(coloc => {
                 let graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
@@ -167,28 +170,33 @@ export default function pheontype() {
                         graphOptions.traitType === 'phenotype' ? coloc.data_type === 'phenotype' : true))
                     )
                 )
+                let displayFilters = this.displayFilters.chr !== null ? coloc.chr == this.displayFilters.chr : true
 
                 if (Object.values(graphOptions.categories).some(c => c)) {
                     graphOptionFilters = graphOptionFilters && (graphOptions.categories[coloc.trait_category] === true || coloc.trait_id === this.data.trait.id)
                 }
 
-                const traitFilter = this.displayFilters.trait ? colocIdsWithTraits.includes(coloc.coloc_group_id) : true
+                const traitFilter = graphOptionFilters && (
+                    this.displayFilters.trait_name ? coloc.trait_name === this.displayFilters.trait_name : true
+                ) || (
+                    this.data.trait.id === coloc.trait_id
+                )
 
-                return graphOptionFilters && traitFilter
+                return graphOptionFilters && displayFilters && traitFilter
             })
             // this.filteredRareResults = this.data.rare_results.filter(r => r.min_p <= graphOptions.pValue)
             this.filteredRareResults = this.data.rare_results
-            this.filteredStudyExtractions = this.data.study_extractions.filter(se => {
-                let graphOptionFilters = (se.min_p <= graphOptions.pValue &&
-                    (graphOptions.includeTrans ? true : se.cis_trans !== 'trans') &&
-                    (graphOptions.onlyMolecularTraits ? se.data_type !== 'phenotype' : true)
-                )
-                if (Object.values(graphOptions.categories).some(c => c)) {
-                    graphOptionFilters = graphOptionFilters && graphOptions.categories[se.trait_category] === true
-                }
+            // this.filteredStudyExtractions = this.data.study_extractions.filter(se => {
+            //     let graphOptionFilters = (se.min_p <= graphOptions.pValue &&
+            //         (graphOptions.includeTrans ? true : se.cis_trans !== 'trans') &&
+            //         (graphOptions.onlyMolecularTraits ? se.data_type !== 'phenotype' : true)
+            //     )
+            //     if (Object.values(graphOptions.categories).some(c => c)) {
+            //         graphOptionFilters = graphOptionFilters && graphOptions.categories[se.trait_category] === true
+            //     }
 
-                return graphOptionFilters
-            })
+            //     return graphOptionFilters
+            // })
 
             // deduplicate studies and sort based on frequency
             this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
@@ -198,32 +206,33 @@ export default function pheontype() {
             );
         },
 
+        getTraitsToFilterBy() {
+            if (this.traitSearch.orderedTraits === null) return []
+            return this.traitSearch.orderedTraits.filter(t => !this.traitSearch.text || t.toLowerCase().includes(this.traitSearch.text.toLowerCase()))
+        },
+
         filterByStudy(trait) {
-            if (trait === null) {
-                this.filteredColocData = this.data
-            } else {
-                this.displayFilters =    {
-                    chr: null,
-                    candidate_snp: null,
-                    trait: trait
-                }
-                this.filterByOptions(Alpine.store('graphOptionStore'))
-            }
+            if (trait !== null) {
+                this.displayFilters.trait_name = trait
+            } 
         },
 
         removeDisplayFilters() {
             this.displayFilters = {
+                view: "full",
                 chr: null,
                 candidate_snp: null,
-                trait: null
+                trait_name: null
             }
+            this.traitSearch.text = ''
         },
 
         get getDataForColocTable() {
             if (!this.filteredColocData || this.filteredColocData.length === 0) return []
+
             let tableData = this.filteredColocData.filter(coloc => {
-                if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
-                else if (this.displayFilters.candidate_snp !== null) return coloc.candidate_snp === this.displayFilters.candidate_snp 
+                if (this.displayFilters.candidate_snp !== null) return coloc.candidate_snp === this.displayFilters.candidate_snp 
+                else if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
                 else return true
             })
 
@@ -232,9 +241,13 @@ export default function pheontype() {
                 coloc.color = constants.tableColors[hash]
             })
 
-            this.filteredGroupedColoc = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
+            tableData = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
+            // Remove entries with only one study
+            tableData = Object.fromEntries(
+                Object.entries(tableData).filter(([_, group]) => group.length > 1)
+            );
 
-            return Object.fromEntries(Object.entries(this.filteredGroupedColoc).slice(0, 100))
+            return Object.fromEntries(Object.entries(tableData).slice(0, 100))
         },
 
         initPhenotypeGraph() {
@@ -281,9 +294,7 @@ export default function pheontype() {
             chartContainer.innerHTML = ''; // Clear existing content
         
             let self = this;
-            let currentView = "full"; // Track current view state
-            let currentChr = null; // Track currently selected chromosome
-            
+        
             // Remove any existing tooltips first
             d3.selectAll(".tooltip").remove();
         
@@ -355,100 +366,38 @@ export default function pheontype() {
                 foreignObject.node().appendChild(importedSvg);
             }
 
-            loadSvg(this.svgs.full)
-        
             // Add chromosome backgrounds for ALL chromosomes
             const chrBackgrounds = plotGroup.append("g")
                 .attr("class", "chr-backgrounds")
-                .style("pointer-events", "all"); // Ensure backgrounds are clickable
-        
-            this.svgs.metadata.x_axis.forEach((chr, i) => {
-                const xStart = (chr.pixel_start / this.svgs.metadata.svg_width) * width;
-                const xEnd = (chr.pixel_end / this.svgs.metadata.svg_width) * width;
-                chrBackgrounds.append("rect")
-                    .datum(chr)  // Bind the chromosome data to the rectangle
-                    .attr("x", xStart)
-                    .attr("y", 0)
-                    .attr("width", xEnd - xStart)
-                    .attr("height", height)
-                    .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff")  // Alternating colors
-                    .attr("opacity", 0.5)
-                    .style("cursor", "pointer")
-                    .on('mouseover', function() {
-                        if (currentView === "full") {
-                            d3.select(this)
-                                .transition()
-                                .duration(200)
-                                .attr("fill", "#e6f3ff");  // Light blue on hover
-                        }
-                    })
-                    .on('mouseout', function() {
-                        if (currentView === "full") {
-                            d3.select(this)
-                                .transition()
-                                .duration(200)
-                                .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff");  // Return to original color
-                        }
-                    })
-                    .on('click', function(d) {
-                        if (currentView === "full") {
-                            self.displayFilters.chr = chr.CHR;
-                            zoomToChromosome({CHR: chr.CHR});
-                        }
-                    });
-            });
-        
-            // Create scales
-            const xScale = d3.scaleLinear()
-                .domain([0, this.svgs.metadata.x_axis[this.svgs.metadata.x_axis.length - 1].bp_end])
-                .range([0, width]);
-        
+                .style("pointer-events", "all");
+
+            // Add chromosome labels
+            const chrLabels = plotGroup.append("g")
+                .attr("class", "chr-labels");
+
             const yScale = d3.scaleLinear()
-                .domain([this.svgs.metadata.y_axis.min_lp, this.svgs.metadata.y_axis.max_lp])
+                .domain([self.svgs.metadata.y_axis.min_lp, self.svgs.metadata.y_axis.max_lp])
                 .range([height, 0]);
-        
-            // Add X axis
-            const xAxis = d3.axisBottom(xScale)
-                .ticks(0)  // Remove all ticks
-                .tickSize(0);  // Remove tick lines
-        
-            const xAxisGroup = plotGroup.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(xAxis);
-        
-            // Add X axis label
-            const xAxisLabel = plotGroup.append("text")
-                .attr("x", width / 2)
-                .attr("y", height + 40)
-                .style("text-anchor", "middle")
-                .style("font-size", "14px")
-                .text("Chromosome");
-        
-            // Add Y axis
+
             const yAxis = d3.axisLeft(yScale)
                 .ticks(10)
                 .tickFormat(d => d);
-        
-            const yAxisGroup = plotGroup.append("g")
+            plotGroup.append("g")
                 .call(yAxis)
                 .selectAll("text")
                 .style("text-anchor", "end")
                 .style("font-size", "12px");
-        
-            // Add Y axis label
-            const yAxisLabel = plotGroup.append("text")
+            plotGroup.append("text")
                 .attr("transform", "rotate(-90)")
                 .attr("x", -height / 2)
                 .attr("y", -50)
                 .style("text-anchor", "middle")
                 .style("font-size", "14px")
                 .text("-log10(p-value)");
-        
-            // Add horizontal reference lines
+
+            // Add reference lines
             const referenceLines = plotGroup.append("g")
                 .attr("class", "reference-lines");
-        
-            // Line at y=5
             referenceLines.append("line")
                 .attr("x1", 0)
                 .attr("x2", width)
@@ -458,8 +407,7 @@ export default function pheontype() {
                 .attr("opacity", 0.5)
                 .attr("stroke-width", 0.5)
                 .attr("stroke-dasharray", "5,5");
-        
-            // Line at y=7.3
+
             referenceLines.append("line")
                 .attr("x1", 0)
                 .attr("x2", width)
@@ -467,233 +415,257 @@ export default function pheontype() {
                 .attr("y2", yScale(7.3))
                 .attr("stroke", "darkred")
                 .attr("opacity", 0.5)
-                .attr("stroke-width", 0.5)
-        
-            // Add chromosome labels
-            const chrLabels = plotGroup.append("g")
-                .attr("class", "chr-labels");
+                .attr("stroke-width", 0.5);
 
-            this.svgs.metadata.x_axis.forEach(chr => {
-                const xPos = ((chr.pixel_start + chr.pixel_end) / 2 / this.svgs.metadata.svg_width) * width;
-                chrLabels.append("text")
-                    .attr("x", xPos)
-                    .attr("y", height + 20)
-                    .style("text-anchor", "middle")
-                    .style("font-size", "10px")
-                    .text(chr.CHR);
-            });
-        
             // Store coloc circles in a group for easy manipulation
             const colocCirclesGroup = plotGroup.append("g")
                 .attr("class", "coloc-circles");
-        
-            // Function to draw coloc circles
-            function drawColocCircles() {
-                // Clear existing circles
-                colocCirclesGroup.selectAll("*").remove();
-        
-                if (self.filteredGroupedColoc) {
-                    const allGroups = Object.values(self.filteredGroupedColoc);
-                    allGroups.forEach(group => {
-                        // Find the relevant study for the current trait_id
-                        const traitId = self.data.trait.id;
-                        const study = group.find(s => s.trait_id === traitId);
-                        if (!study) return;
-                        
-                        // Skip if we're in chromosome view and this isn't the selected chromosome
-                        if (currentView === "chromosome" && study.chr != currentChr) return;
-                        
-                        // Find the chromosome metadata
-                        const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == study.chr);
-                        if (!chrMeta) return;
-                        
-                        // Convert bp to pixel (linear interpolation)
-                        const chrLength = chrMeta.bp_end - chrMeta.bp_start;
-                        const bpRatio = study.bp / chrLength;
-                        const xPixel = (chrMeta.pixel_start + (bpRatio * (chrMeta.pixel_end - chrMeta.pixel_start))) / self.svgs.metadata.svg_width * width;
-                        
-                        const yValue = -Math.log10(study.min_p);
-                        const yPixel = yScale(yValue);
-                        
-                        // Draw the circle
-                        colocCirclesGroup.append("circle")
-                            .datum(study)  // Bind the study data to the circle
-                            .attr("cx", xPixel)
-                            .attr("cy", yPixel)
-                            .attr("r", Math.min(group.length + 2, 20))  // Base size on number of elements in group
-                            .attr("fill", "#1976d2")
-                            .attr("stroke", "#fff")
-                            .attr("stroke-width", 1.5)
-                            .attr("opacity", 0.8)
-                            .on('mouseover', function(event, d) {
-                                d3.select(this).style("cursor", "pointer"); 
-        
-                                let allTraits = group.map(s => s.trait_name)
-                                let uniqueTraits = [...new Set(allTraits)]
-                                let traitNames = uniqueTraits.slice(0,9)
-                                traitNames = traitNames.join("<br />")
-                                if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
-                                traitNames = 'SNP: ' + d.candidate_snp + '<br />' + traitNames
-        
-                                d3.select(this).transition()
-                                    .duration('100')
-                                    .attr("fill", "black")
-                                    .attr("r", Math.min(group.length + 2, 20) + 8)  // Increase size on hover
-                                tooltip.transition()
-                                    .duration(100)
-                                    .style("opacity", 1)
-                                    .style("visibility", "visible")
-                                    .style("display", "flex");
-                                tooltip.html(traitNames)
-                                    .style("left", (event.pageX + 10) + "px")
-                                    .style("top", (event.pageY - 15) + "px");
-                            })
-                            .on('mouseout', function () {
-                                d3.select(this).transition()
-                                    .duration('200')
-                                    .attr("fill", "#1976d2")
-                                    .attr("r", Math.min(group.length + 2, 20))  // Return to original size
-                                tooltip.transition()
-                                    .duration(100)
-                                    .style("visibility", "hidden")
-                                    .style("display", "none");
-                            })
-                            .on('click', function(event, d) {
-                                self.displayFilters.candidate_snp = d.candidate_snp;
-                            });
-                    });
-                }
-            }
-        
-            // Initial draw of coloc circles
-            drawColocCircles();
-        
-            // Function to zoom to a specific chromosome
-            function zoomToChromosome(chrData) {
-                currentView = "chromosome";
-                currentChr = chrData.CHR;
-                const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == chrData.CHR);
-                const chrSvg = self.svgs.chromosomes[`chr${chrData.CHR}`];
 
-                loadSvg(chrSvg)
+            // Quick fade out all circles before switching views
+            colocCirclesGroup.selectAll("circle")
+                .transition()
+                .duration(500)
+                .attr("opacity", 0)
+                .remove();
 
-                // Update x-scale domain to this chromosome's bp range
-                xScale.domain([chrMeta.bp_start, chrMeta.bp_end])
-                       .range([0, width]);
-                
-                // Update x-axis
-                xAxisGroup.transition()
-                    .duration(500)
-                    .call(xAxis.scale(xScale));
-                
-                // Update x-axis label
-                xAxisLabel.text(`Chromosome ${chrData.CHR}`);
-                
-                // Update chromosome background
-                chrBackgrounds.selectAll("rect")
-                    .transition()
-                    .duration(500)
-                    .style("pointer-events", "none")
-                    .style("cursor", "default")
-                    .attr("opacity", 0);
+            function renderChromosomeView() {
+                const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == self.displayFilters.chr);
+                const chrSvg = self.svgs.chromosomes[`chr${self.displayFilters.chr}`];
+                loadSvg(chrSvg);
+
+                const xScale = d3.scaleLinear()
+                    .domain([chrMeta.bp_start, chrMeta.bp_end])
+                    .range([0, width]);
+
+                const xAxis = d3.axisBottom(xScale)
+                    .ticks(0)
+                    .tickSize(0);
+                plotGroup.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(xAxis);
+                plotGroup.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height + 40)
+                    .style("text-anchor", "middle")
+                    .style("font-size", "14px")
+                    .text(`Chromosome ${self.displayFilters.chr}`);
 
                 chrLabels.selectAll("text")
+                    .data(self.svgs.metadata.x_axis)
+                    .join("text")
                     .transition()
                     .duration(500)
                     .attr("opacity", 0);
-                
-                // Update reference lines
-                referenceLines.selectAll("line")
-                    .transition()
-                    .duration(500)
-                    .attr("x2", width);
-                
-                // Reposition coloc circles
-                colocCirclesGroup.selectAll("circle")
-                    .transition()
-                    .duration(500)
-                    .attr("opacity", d => d.chr == chrData.CHR ? 1 : 0)
-                    .style("pointer-events", d => d.chr == chrData.CHR ? "auto" : "none")
-                    .attr("cx", d => {
-                        const circleChrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
-                        const bpPosition = (d.bp) / (circleChrMeta.bp_end - circleChrMeta.bp_start);
-                        return bpPosition * width;
-                    });
-            }
-            
-            function resetZoom() {
-                currentView = "full";
-                currentChr = null;
 
-                loadSvg(self.svgs.full)
-                
-                // Reset x-scale to full genome
-                xScale.domain([0, self.svgs.metadata.x_axis[self.svgs.metadata.x_axis.length - 1].bp_end])
+                if (self.filteredGroupedColoc) {
+                    const allGroups = Object.values(self.filteredGroupedColoc);
+                    const circleData = allGroups.map(group => {
+                        const traitId = self.data.trait.id;
+                        const study = group.find(s => s.trait_id === traitId);
+                        if (!study) return null;
+                        if (study.chr != self.displayFilters.chr) return null;
+                        study._group = group;
+                        return study;
+                    }).filter(Boolean);
+
+                    const circles = colocCirclesGroup.selectAll("circle")
+                        .data(circleData, d => d.candidate_snp);
+
+                    circles.enter()
+                        .append("circle")
+                        .attr("cx", d => {
+                            const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
+                            const bpPosition = (d.bp) / (chrMeta.bp_end - chrMeta.bp_start);
+                            console.log(d.bp, (chrMeta.bp_end - chrMeta.bp_start), bpPosition * width)
+                            return bpPosition * width;
+                        })
+                        .attr("cy", d => {
+                            const yValue = -Math.log10(d.min_p);
+                            return yScale(yValue);
+                        })
+                        .attr("r", d => Math.min(d._group.length + 2, 20))
+                        .attr("fill", constants.colors.dataTypes.common)
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5)
+                        .attr("opacity", 0)
+                        .on('mouseover', function(event, d) {
+                            d3.select(this).style("cursor", "pointer");
+                            let allTraits = d._group.map(s => s.trait_name)
+                            let uniqueTraits = [...new Set(allTraits)]
+                            let traitNames = uniqueTraits.slice(0,9)
+                            traitNames = traitNames.join("<br />")
+                            if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
+                            traitNames = '<b>SNP: ' + d.candidate_snp + '</b><br />' + traitNames
+                            d3.select(this).transition()
+                                .duration('100')
+                                .attr("fill", constants.colors.dataTypes.highlighted)
+                                .attr("r", Math.min(d._group.length + 2, 20) + 8)
+                            tooltip.transition()
+                                .duration(100)
+                                .style("opacity", 1)
+                                .style("visibility", "visible")
+                                .style("display", "block");
+                            tooltip.html(traitNames)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 15) + "px");
+                        })
+                        .on('mouseout', function () {
+                            d3.select(this).transition()
+                                .duration('200')
+                                .attr("fill", constants.colors.dataTypes.common)
+                                .attr("r", d => Math.min(d._group.length + 2, 20))
+                            tooltip.transition()
+                                .duration(100)
+                                .style("visibility", "hidden")
+                                .style("display", "none");
+                        })
+                        .on('click', function(event, d) {
+                            self.displayFilters.candidate_snp = d.candidate_snp;
+                        })
+                        .transition()
+                        .duration(500)
+                        .attr("opacity", 0.8);
+                }
+            }
+
+            function renderFullView() {
+                loadSvg(self.svgs.full);
+
+                const xScale = d3.scaleLinear()
+                    .domain([0, self.svgs.metadata.x_axis[self.svgs.metadata.x_axis.length - 1].bp_end])
                     .range([0, width]);
-                
-                // Reset x-axis
-                xAxisGroup.transition()
-                    .duration(500)
-                    .call(xAxis.scale(xScale));
-                
-                // Reset x-axis label
-                xAxisLabel.text("Chromosome");
-                
-                // Reset chromosome backgrounds
+                const xAxis = d3.axisBottom(xScale)
+                    .ticks(0)
+                    .tickSize(0);
+                plotGroup.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(xAxis);
+                plotGroup.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height + 40)
+                    .style("text-anchor", "middle")
+                    .style("font-size", "14px")
+                    .text("Chromosome");
+
                 self.svgs.metadata.x_axis.forEach((chr, i) => {
                     const xStart = (chr.pixel_start / self.svgs.metadata.svg_width) * width;
                     const xEnd = (chr.pixel_end / self.svgs.metadata.svg_width) * width;
-                    
-                    chrBackgrounds.selectAll("rect")
-                        .filter(d => d.CHR == chr.CHR)
+                    const rect = chrBackgrounds.append("rect")
+                        .datum(chr)
+                        .attr("x", xStart)
+                        .attr("y", 0)
+                        .attr("width", xEnd - xStart)
+                        .attr("height", height)
+                        .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff")
+                        .attr("opacity", 0.5)
+                        .style("cursor", "pointer")
+                        .on('mouseover', function() {
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .attr("fill", "#e6f3ff");
+                        })
+                        .on('mouseout', function() {
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff");
+                        })
+                        .on('click', function(d) {
+                            console.log(chr.CHR)
+                            self.displayFilters.view = "chromosome";
+                            self.displayFilters.chr = chr.CHR;
+                            self.displayFilters.candidate_snp = null;
+                        });
+                });
+
+                self.svgs.metadata.x_axis.forEach(chr => {
+                    const xPos = ((chr.pixel_start + chr.pixel_end) / 2 / self.svgs.metadata.svg_width) * width;
+                    const label = chrLabels.append("text")
+                        .attr("x", xPos)
+                        .attr("y", height + 20)
+                        .style("text-anchor", "middle")
+                        .style("font-size", "10px")
+                        .text(chr.CHR);
+                    label.transition().duration(500).attr("opacity", 1);
+                });
+                // Draw coloc circles for all chromosomes with fade transition
+                if (self.filteredGroupedColoc) {
+                    const allGroups = Object.values(self.filteredGroupedColoc);
+                    const circleData = allGroups.map(group => {
+                        const traitId = self.data.trait.id;
+                        const study = group.find(s => s.trait_id === traitId);
+                        if (!study) return null;
+                        study._group = group;
+                        return study;
+                    }).filter(Boolean);
+
+                    const circles = colocCirclesGroup.selectAll("circle")
+                        .data(circleData, d => d.candidate_snp);
+
+                    circles.enter()
+                        .append("circle")
+                        .attr("cx", d => {
+                            const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
+                            const chrLength = chrMeta.bp_end - chrMeta.bp_start;
+                            const bpRatio = d.bp / chrLength;
+                            const xPixel = (chrMeta.pixel_start + (bpRatio * (chrMeta.pixel_end - chrMeta.pixel_start))) / self.svgs.metadata.svg_width * width;
+                            return xPixel;
+                        })
+                        .attr("cy", d => {
+                            const yValue = -Math.log10(d.min_p);
+                            return yScale(yValue);
+                        })
+                        .attr("r", d => Math.min(d._group.length + 2, 20))
+                        .attr("fill", constants.colors.dataTypes.common)
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 1.5)
+                        .attr("opacity", 0)
+                        .on('mouseover', function(event, d) {
+                            d3.select(this).style("cursor", "pointer");
+                            let allTraits = d._group.map(s => s.trait_name)
+                            let uniqueTraits = [...new Set(allTraits)]
+                            let traitNames = uniqueTraits.slice(0,9)
+                            traitNames = traitNames.join("<br />")
+                            if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
+                            traitNames = '<b>SNP: ' + d.candidate_snp + '</b><br />' + traitNames 
+                            d3.select(this).transition()
+                                .duration('100')
+                                .attr("fill", constants.colors.dataTypes.highlighted)
+                                .attr("r", Math.min(d._group.length + 2, 20) + 8)
+                            tooltip.transition()
+                                .duration(100)
+                                .style("opacity", 1)
+                                .style("visibility", "visible")
+                                .style("display", "block");
+                            tooltip.html(traitNames)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 15) + "px");
+                        })
+                        .on('mouseout', function () {
+                            d3.select(this).transition()
+                                .duration('200')
+                                .attr("fill", constants.colors.dataTypes.common)
+                                .attr("r", d => Math.min(d._group.length + 2, 20))
+                            tooltip.transition()
+                                .duration(100)
+                                .style("visibility", "hidden")
+                                .style("display", "none");
+                        })
+                        .on('click', function(event, d) {
+                            self.displayFilters.candidate_snp = d.candidate_snp;
+                        })
                         .transition()
                         .duration(500)
-                        .attr("x", xStart)
-                        .attr("width", xEnd - xStart)
-                        .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff")
-                        .attr("opacity", 0.5);
-                });
-                
-                // Reset chromosome labels
-                chrLabels.selectAll("text")
-                    .transition()
-                    .duration(500)
-                    .attr("opacity", 1)
-                    .attr("x", (d, i) => {
-                        const chr = self.svgs.metadata.x_axis[i];
-                        return ((chr.pixel_start + chr.pixel_end) / 2 / self.svgs.metadata.svg_width) * width;
-                    });
-                
-                // Reset reference lines
-                referenceLines.selectAll("line")
-                    .transition()
-                    .duration(500)
-                    .attr("x2", width);
-                
-                // Reset coloc circles positions
-                colocCirclesGroup.selectAll("circle")
-                    .transition()
-                    .duration(500)
-                    .attr("opacity", 1)
-                    .style("pointer-events", "auto")
-                    .attr("cx", d => {
-                        const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
-                        
-                        // Calculate original pixel position
-                        const bpRatio = (d.bp) / (chrMeta.bp_end - chrMeta.bp_start);
-                        const chrPixelWidth = chrMeta.pixel_end - chrMeta.pixel_start;
-                        const pixelPos = chrMeta.pixel_start + (bpRatio * chrPixelWidth);
-                        
-                        // Convert to view coordinates
-                        return (pixelPos / self.svgs.metadata.svg_width) * width;
-                    });
-                
-                // Hide the reset button
-                // resetButton.style.display = "none";
+                        .attr("opacity", 0.8);
+                }
             }
-        
-            // Add reset button event listener
-            resetButton.addEventListener("click", resetZoom);
+
+            if (self.displayFilters.view === "chromosome" && self.displayFilters.chr) {
+                renderChromosomeView();
+            } else {
+                renderFullView();
+            }
         }
     }
 }

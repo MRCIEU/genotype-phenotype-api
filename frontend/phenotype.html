@@ -60,30 +60,36 @@
                 </div>
 
                 <div class="column is-2">
-                    <div class="dropdown is-hoverable is-right">
-                        <div class="dropdown-trigger">
-                            <button class="button is-small mt-0 mb-4" aria-haspopup="true">
-                                <span>Filter Results By:</span>
-                            </button>
-                        </div>
-
-                        <div class="dropdown-menu mt-0" id="dropdown-menu3" role="menu">
-                            <div class="dropdown-content" style="max-height: 400px; overflow-y: auto;">
-                                    <a class="dropdown-item" @click="filterByStudy(null)">Clear Filter</a>
-                                    <template @click.outside="closeSearch" x-for="trait in orderedTraitsToFilterBy">
-                                            <a class="dropdown-item" x-text="trait" @click="filterByStudy(trait)"></a>
-                                    </template>
-                            </div>
-                        </div>
-                    </div>
-                    <graph-options :categories='["Category 1", "Category 2"]'></graph-options>
+                    <graph-options></graph-options>
                 </div>
             </div>
             <div class="columns is-centered mb-0 mt-0 pb-0 pt-0" x-show="showResults">
-                <div class="column is-11" style="min-height: 0; height: auto; padding-top: 0; padding-bottom: 0;">
-                    <button id="reset-display" class="button is-small mt-0 mb-0" @click="removeDisplayFilters">
-                        Reset Display
-                    </button>
+                <div class="column is-11">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; min-height: 0; height: auto; padding-top: 0; padding-bottom: 0;">
+                        <button id="reset-display" class="button is-small mt-0 mb-0" @click="removeDisplayFilters">
+                            Reset Display
+                        </button>
+                        <div style="position: relative;">
+                            <input
+                                type="text"
+                                class="input is-small"
+                                :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
+                                x-model="traitSearch.text"
+                                @focus="traitSearch.showDropDown = true"
+                                @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
+                                style="width: 400px;"
+                            >
+                            <div
+                                class="dropdown-content"
+                                x-show="traitSearch.showDropDown"
+                                style="position: absolute; top: 100%; min-width: 100%; z-index: 10; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #dbdbdb; border-radius: 4px; white-space: nowrap;"
+                            >
+                                <template x-for="trait in getTraitsToFilterBy()" :key="trait">
+                                    <a class="dropdown-item" x-text="trait" @click="filterByStudy(trait)"></a>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -123,7 +129,14 @@
                                                                     <b>No coloc evidence found.</b>
                                                             </td>
                                                     </template>
-                                                    <td><a :href="'phenotype.html?id=' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a></td>
+                                                    <td>
+                                                        <template x-if="coloc.data_type === 'phenotype'">
+                                                            <a :href="'phenotype.html?id=' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a>
+                                                        </template>
+                                                        <template x-if="coloc.data_type !== 'phenotype'">
+                                                            <span x-text="coloc.trait_name" style="width:40%"></span>
+                                                        </template>
+                                                    </td>
                                                     <td x-text="(coloc.data_type === 'phenotype' && coloc.trait_category ? 'phenotype (' + coloc.trait_category + ')' : coloc.data_type)"></td>
                                                     <td><a :href="'gene.html?id=' + coloc.gene" x-text="coloc.gene"></a></td>
                                                     <td x-text="coloc.tissue"></td>

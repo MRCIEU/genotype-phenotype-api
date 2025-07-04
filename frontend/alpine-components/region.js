@@ -346,7 +346,7 @@ export default function region() {
                     .attr("y", d => d.level * (graphConstants.geneTrackMargin.height + 5)) // Add 5px spacing between levels
                     .attr("width", d => xScale(d.max_bp / 1000000) - xScale(d.min_bp / 1000000))
                     .attr("height", graphConstants.geneTrackMargin.height)
-                    .attr("fill", (d, i) => constants.colors[i % constants.colors.length])
+                    .attr("fill", (d, i) => constants.colors.palette[i % constants.colors.palette.length])
                     .attr("opacity", 0.7)
                     .on('mouseover', function(event, d) {
                             d3.select(this)
