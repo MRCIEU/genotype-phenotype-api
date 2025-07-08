@@ -1,6 +1,8 @@
-import * as d3 from 'd3';
-import constants from './constants.js'
 import JSZip from 'jszip';
+import * as d3 from 'd3';
+
+import constants from './constants.js'
+import downloads from './downloads.js';
 
 export default function pheontype() {
     return {
@@ -8,6 +10,10 @@ export default function pheontype() {
         data: null,
         filteredColocData: null,
         filteredGroupedColoc: null,
+        showTables: {
+            coloc: true,
+            rare: true 
+        },
         displayFilters: {
             view: "full",
             chr: null,
@@ -87,6 +93,7 @@ export default function pheontype() {
 
                 // order traits by frequency in order to display in dropdown for filtering
                 let allTraits = this.data.colocs.map(c => c.trait_name)
+                allTraits = allTraits.concat(this.data.rare_results.map(r => r.trait_name))
                 let frequency = {};
                 allTraits.forEach(item => {
                     frequency[item] = (frequency[item] || 0) + 1;
@@ -133,6 +140,10 @@ export default function pheontype() {
             }
         },
 
+        async downloadData() {
+            await downloads.downloadDataToZip(this.data, 'phenotype');
+        },
+
         get showResults() {
             if (this.data === null) return false
             if (this.userUpload) return this.data.trait.status === 'completed'
@@ -166,8 +177,8 @@ export default function pheontype() {
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                     (coloc.trait_id === this.data.trait.id ||
                         (graphOptions.traitType === 'all' ? true : 
-                        graphOptions.traitType === 'molecular' ? coloc.data_type !== 'phenotype' :
-                        graphOptions.traitType === 'phenotype' ? coloc.data_type === 'phenotype' : true))
+                        graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
+                        graphOptions.traitType === 'phenotype' ? coloc.data_type === 'Phenotype' : true))
                     )
                 )
                 let displayFilters = this.displayFilters.chr !== null ? coloc.chr == this.displayFilters.chr : true
@@ -184,23 +195,22 @@ export default function pheontype() {
 
                 return graphOptionFilters && displayFilters && traitFilter
             })
-            // this.filteredRareResults = this.data.rare_results.filter(r => r.min_p <= graphOptions.pValue)
-            this.filteredRareResults = this.data.rare_results
-            // this.filteredStudyExtractions = this.data.study_extractions.filter(se => {
-            //     let graphOptionFilters = (se.min_p <= graphOptions.pValue &&
-            //         (graphOptions.includeTrans ? true : se.cis_trans !== 'trans') &&
-            //         (graphOptions.onlyMolecularTraits ? se.data_type !== 'phenotype' : true)
-            //     )
-            //     if (Object.values(graphOptions.categories).some(c => c)) {
-            //         graphOptionFilters = graphOptionFilters && graphOptions.categories[se.trait_category] === true
-            //     }
 
-            //     return graphOptionFilters
-            // })
+            this.filteredRareResults = this.data.rare_results.filter(rare => {
+                const traitFilter = this.displayFilters.trait_name ? rare.trait_name === this.displayFilters.trait_name : true
+                const graphOptionFilters = (rare.min_p <= graphOptions.pValue && 
+                    !graphOptions.includeTrans && 
+                    (graphOptions.traitType === 'all' || graphOptions.traitType === 'phenotype')
+                )
+                return graphOptionFilters && traitFilter
+            })
 
-            // deduplicate studies and sort based on frequency
+            this.filteredGroupedRareResults = Object.groupBy(this.filteredRareResults, ({candidate_snp}) => candidate_snp)
+            this.filteredGroupedRareResults = Object.fromEntries(
+                Object.entries(this.filteredGroupedRareResults).filter(([_, group]) => group.length > 1)
+            );
+
             this.filteredGroupedColoc = Object.groupBy(this.filteredColocData, ({ candidate_snp }) => candidate_snp);
-            // Filter out groups with only one element
             this.filteredGroupedColoc = Object.fromEntries(
                 Object.entries(this.filteredGroupedColoc).filter(([_, group]) => group.length > 1)
             );
@@ -250,6 +260,28 @@ export default function pheontype() {
             return Object.fromEntries(Object.entries(tableData).slice(0, 100))
         },
 
+        get getDataForRareTable() {
+            if (!this.filteredRareResults || this.filteredRareResults.length === 0) return []
+
+            let tableData = this.filteredRareResults.filter(rare => {
+                if (this.displayFilters.candidate_snp !== null) return rare.candidate_snp === this.displayFilters.candidate_snp 
+                else if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr
+                else return true
+            })
+
+            tableData.forEach(rare => {
+                const hash = [...rare.candidate_snp].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % constants.tableColors.length, 0)
+                rare.color = constants.tableColors[hash]
+            })
+
+            tableData = Object.groupBy(tableData, ({ candidate_snp }) => candidate_snp);
+            tableData = Object.fromEntries(
+                Object.entries(tableData).filter(([_, group]) => group.length > 1)
+            );
+
+            return Object.fromEntries(Object.entries(tableData).slice(0, 100))
+        },
+
         initPhenotypeGraph() {
             if (this.errorMessage) {
                 const chartContainer = document.getElementById("phenotype-chart");
@@ -283,10 +315,6 @@ export default function pheontype() {
                 this.getPhenotypeGraph();
             }, 0);
         },
-
-        //overlay options: https://codepen.io/hanconsol/pen/bGPBGxb
-        //splitting into chromosomes, using scaleBand: https://stackoverflow.com/questions/65499073/how-to-create-a-facetplot-in-d3-js
-        // looks cool: https://nvd3.org/examples/scatter.html //https://observablehq.com/@d3/splom/2?intent=fork
 
         getPhenotypeGraph() {
             const chartContainer = document.getElementById("phenotype-chart");
@@ -395,6 +423,41 @@ export default function pheontype() {
                 .style("font-size", "14px")
                 .text("-log10(p-value)");
 
+            // Add legend above y-axis
+            const legendGroup = plotGroup.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width - 110}, -10)`);
+
+            // Common variant legend item
+            legendGroup.append("circle")
+                .attr("cx", 0)
+                .attr("cy", 0)
+                .attr("r", 5)
+                .attr("fill", constants.colors.dataTypes.common)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+
+            legendGroup.append("text")
+                .attr("x", 7)
+                .attr("y", 4)
+                .style("font-size", "12px")
+                .text("Common");
+
+            // Rare variant legend item
+            legendGroup.append("circle")
+                .attr("cx", 75)
+                .attr("cy", 0)
+                .attr("r", 5)
+                .attr("fill", constants.colors.dataTypes.rare)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+
+            legendGroup.append("text")
+                .attr("x", 82)
+                .attr("y", 4)
+                .style("font-size", "12px")
+                .text("Rare");
+
             // Add reference lines
             const referenceLines = plotGroup.append("g")
                 .attr("class", "reference-lines");
@@ -457,8 +520,8 @@ export default function pheontype() {
                     .duration(500)
                     .attr("opacity", 0);
 
-                if (self.filteredGroupedColoc) {
-                    const allGroups = Object.values(self.filteredGroupedColoc);
+                if (self.filteredGroupedColoc || self.filteredGroupedRareResults) {
+                    const allGroups = Object.values(self.filteredGroupedColoc).concat(Object.values(self.filteredGroupedRareResults))
                     const circleData = allGroups.map(group => {
                         const traitId = self.data.trait.id;
                         const study = group.find(s => s.trait_id === traitId);
@@ -484,7 +547,7 @@ export default function pheontype() {
                             return yScale(yValue);
                         })
                         .attr("r", d => Math.min(d._group.length + 2, 20))
-                        .attr("fill", constants.colors.dataTypes.common)
+                        .attr("fill", d => d.coloc_group_id ? constants.colors.dataTypes.common : constants.colors.dataTypes.rare)
                         .attr("stroke", "#fff")
                         .attr("stroke-width", 1.5)
                         .attr("opacity", 0)
@@ -512,7 +575,7 @@ export default function pheontype() {
                         .on('mouseout', function () {
                             d3.select(this).transition()
                                 .duration('200')
-                                .attr("fill", constants.colors.dataTypes.common)
+                                .attr("fill", d => d.coloc_group_id ? constants.colors.dataTypes.common : constants.colors.dataTypes.rare)
                                 .attr("r", d => Math.min(d._group.length + 2, 20))
                             tooltip.transition()
                                 .duration(100)
@@ -590,8 +653,8 @@ export default function pheontype() {
                     label.transition().duration(500).attr("opacity", 1);
                 });
                 // Draw coloc circles for all chromosomes with fade transition
-                if (self.filteredGroupedColoc) {
-                    const allGroups = Object.values(self.filteredGroupedColoc);
+                if (self.filteredGroupedColoc || self.filteredGroupedRareResults) {
+                    const allGroups = Object.values(self.filteredGroupedColoc).concat(Object.values(self.filteredGroupedRareResults))
                     const circleData = allGroups.map(group => {
                         const traitId = self.data.trait.id;
                         const study = group.find(s => s.trait_id === traitId);
@@ -617,7 +680,7 @@ export default function pheontype() {
                             return yScale(yValue);
                         })
                         .attr("r", d => Math.min(d._group.length + 2, 20))
-                        .attr("fill", constants.colors.dataTypes.common)
+                        .attr("fill", d => d.coloc_group_id ? constants.colors.dataTypes.common : constants.colors.dataTypes.rare)
                         .attr("stroke", "#fff")
                         .attr("stroke-width", 1.5)
                         .attr("opacity", 0)
@@ -645,7 +708,7 @@ export default function pheontype() {
                         .on('mouseout', function () {
                             d3.select(this).transition()
                                 .duration('200')
-                                .attr("fill", constants.colors.dataTypes.common)
+                                .attr("fill", d => d.coloc_group_id ? constants.colors.dataTypes.common : constants.colors.dataTypes.rare)
                                 .attr("r", d => Math.min(d._group.length + 2, 20))
                             tooltip.transition()
                                 .duration(100)
@@ -666,6 +729,6 @@ export default function pheontype() {
             } else {
                 renderFullView();
             }
-        }
+        },
     }
 }

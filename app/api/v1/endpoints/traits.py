@@ -2,7 +2,7 @@ import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.studies_db import StudiesDBClient
 from app.db.associations_db import AssociationsDBClient
-from app.models.schemas import BasicTraitResponse, Coloc, GetTraitsResponse, RareResult, Study, ExtendedStudyExtraction, TraitResponse, Trait, VariantTypes, Association, convert_duckdb_to_pydantic_model
+from app.models.schemas import BasicTraitResponse, Coloc, GetTraitsResponse, RareResult, Study, ExtendedStudyExtraction, TraitResponse, Trait, VariantType, Association, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 router = APIRouter()
@@ -46,6 +46,7 @@ async def get_trait(
         else:
             rare_results = []
 
+        print(trait)
         study_extractions = db.get_study_extractions_for_study(trait.common_study.id)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
 
@@ -87,7 +88,7 @@ def populate_trait_studies(trait: Trait, studies: List[Study]):
     common_study = None
     rare_study = None
     for study in studies:
-        if study.variant_type == VariantTypes.COMMON.value:
+        if study.variant_type == VariantType.common.value:
             common_study = study
         else:
             rare_study = study

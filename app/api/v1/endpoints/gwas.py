@@ -10,7 +10,7 @@ from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
-from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, Study, StudyDataTypes, StudyExtraction, TraitResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
+from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, StudyDataType, StudyExtraction, TraitResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
@@ -224,7 +224,7 @@ async def get_gwas(guid: str):
                 coloc.cis_trans = existing_study_extraction.cis_trans
             else:
                 coloc.trait_name = gwas.name
-                coloc.data_type = StudyDataTypes.phenotype.name
+                coloc.data_type = StudyDataType.phenotype.name
                 coloc.tissue = None
                 coloc.cis_trans = None
 

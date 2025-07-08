@@ -76,7 +76,7 @@ export default function gene() {
                 }))
 
                 constants.orderedDataTypes.forEach(dataType => {
-                    if (dataType !== 'phenotype') this.tissueByDataType[dataType] = {}
+                    if (dataType !== 'Phenotype') this.tissueByDataType[dataType] = {}
                 })
 
                 let variantTypesInData = Object.values(this.data.variants).map(variant => variant.Consequence)
@@ -120,8 +120,8 @@ export default function gene() {
                    coloc.posterior_prob >= graphOptions.coloc &&
                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                    (graphOptions.traitType === 'all' ? true : 
-                    graphOptions.traitType === 'molecular' ? coloc.data_type !== 'phenotype' :
-                    graphOptions.traitType === 'phenotype' ? coloc.data_type === 'phenotype' : true))
+                    graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
+                    graphOptions.traitType === 'Phenotype' ? coloc.data_type === 'Phenotype' : true))
 
                 if (Object.values(graphOptions.categories).some(c => c)) {
                     graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true
@@ -134,7 +134,7 @@ export default function gene() {
             this.data.filteredStudies = this.data.study_extractions.filter(study => {
                 let graphOptionFilters = (study.min_p <= graphOptions.pValue && 
                    (graphOptions.includeTrans ? true : study.cis_trans !== 'trans') &&
-                   (graphOptions.onlyMolecularTraits ? study.data_type !== 'phenotype' : true))
+                   (graphOptions.onlyMolecularTraits ? study.data_type !== 'Phenotype' : true))
 
                 if (Object.values(graphOptions.categories).some(c => c)) {
                     graphOptionFilters = graphOptionFilters && graphOptions.categories[study.trait_category] === true
@@ -158,7 +158,7 @@ export default function gene() {
 
             this.data.tissues.forEach(tissue => {
                 constants.orderedDataTypes.forEach(dataType => {
-                    if (dataType === 'phenotype') return;
+                    if (dataType === 'Phenotype') return;
                     const tissueColocs = this.data.filteredColocs.filter(coloc => coloc.tissue === tissue && coloc.data_type === dataType)
                     const colocIds = tissueColocs.map(coloc => coloc.id)
                     const allColocsWithTissue = this.data.filteredColocs.filter(coloc => colocIds.includes(coloc.id))
@@ -198,197 +198,6 @@ export default function gene() {
             return this.variantTypes[variantType] || '#000000';
         },
 
-        // initTissueByTraitGraph() {
-        //     if (this.errorMessage) {
-        //         const chartContainer = document.getElementById("gene-dot-plot");
-        //         chartContainer.innerHTML = '<div />'
-        //         return;
-        //     }
-        //     else if (!this.data) {
-        //         const chartContainer = document.getElementById("gene-dot-plot");
-        //         chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
-        //         return;
-        //     }
-
-        //     const graphOptions = Alpine.store('graphOptionStore');
-        //     this.filterByOptions(graphOptions);
-
-        //     // listen to resize events to redraw the graph
-        //     window.addEventListener('resize', () => {
-        //         clearTimeout(this.resizeTimer);
-        //         this.resizeTimer = setTimeout(() => {
-        //             this.getTissueByTraitGraph();
-        //         }, 250);
-        //     });
-        //     this.getTissueByTraitGraph();
-        // },
-
-        // getTissueByTraitGraph() {
-        //     const container = document.getElementById('gene-dot-plot');
-        //     container.innerHTML = '';
-
-        //     const graphConstants = {
-        //         width: container.clientWidth,
-        //         height: Math.max(400, window.innerHeight * 0.5), // Responsive height
-        //         outerMargin: {
-        //             top: 0,
-        //             right: 10,
-        //             bottom: 150,
-        //             left: 120
-        //         }
-        //     }
-
-        //     const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-        //     const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
-
-        //     // Create SVG with viewBox for responsiveness
-        //     this.svg = d3.select('#gene-dot-plot')
-        //         .append('svg')
-        //         .attr('viewBox', `0 0 ${graphConstants.width} ${graphConstants.height}`)
-        //         .attr('preserveAspectRatio', 'xMidYMid meet')
-        //         .style('width', '100%')
-        //         .style('height', '100%')
-        //         .append('g')
-        //         .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-        //     const tissues = this.data.tissues;
-        //     const dataTypes = Object.keys(this.tissueByDataType)
-
-        //     const x = d3.scaleBand()
-        //         .domain(tissues)
-        //         .range([0, innerWidth])
-        //         .padding(0.1);
-
-        //     const y = d3.scaleBand()
-        //         .domain(dataTypes)
-        //         .range([innerHeight, 0])
-        //         .padding(0.1);
-
-        //     // Add vertical grid lines
-        //     this.svg.append('g')
-        //         .attr('class', 'grid-lines')
-        //         .selectAll('line')
-        //         .data(tissues)
-        //         .enter()
-        //         .append('line')
-        //         .attr('x1', d => x(d) + x.bandwidth()/2)
-        //         .attr('x2', d => x(d) + x.bandwidth()/2)
-        //         .attr('y1', 0)
-        //         .attr('y2', innerHeight)
-        //         .style('stroke', '#e0e0e0')
-        //         .style('stroke-width', 1);
-
-        //     // Add horizontal grid lines
-        //     this.svg.append('g')
-        //         .attr('class', 'grid-lines')
-        //         .selectAll('line')
-        //         .data(dataTypes)
-        //         .enter()
-        //         .append('line')
-        //         .attr('x1', 0)
-        //         .attr('x2', innerWidth)
-        //         .attr('y1', d => y(d) + y.bandwidth()/2)
-        //         .attr('y2', d => y(d) + y.bandwidth()/2)
-        //         .style('stroke', '#e0e0e0')
-        //         .style('stroke-width', 1);
-
-        //     // Add X axis
-        //     this.svg.append('g')
-        //         .attr('transform', `translate(0,${innerHeight})`)
-        //         .call(d3.axisBottom(x))
-        //         .selectAll('text')
-        //         .attr('transform', 'rotate(-45)')
-        //         .style('text-anchor', 'end');
-
-        //     // Add Y axis
-        //     this.svg.append('g')
-        //         .call(d3.axisLeft(y));
-
-        //     // Add dots for each tissue and category
-        //     tissues.forEach(tissue => {
-        //         dataTypes.forEach(dataType => {
-        //             const results = this.tissueByDataType[dataType][tissue] || [];
-        //             const baseRadius = 2;
-        //             let traitNames = ""
-        //             let uniqueTraits = []
-        //             if (results.length === 0) return;
-
-        //             uniqueTraits = [...new Set(results.map(t => t.trait_name))]
-        //             traitNames = uniqueTraits.slice(0,9)
-        //             traitNames = traitNames.join("<br />")
-        //             if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
-        //             const radius = uniqueTraits.length > 0 ? 
-        //                 Math.min(baseRadius + Math.sqrt(uniqueTraits.length) * 2, 8) : // Square root scale with max size
-        //                 0;
-                    
-        //             this.svg.append('circle')
-        //                 .attr('cx', x(tissue) + x.bandwidth()/2)
-        //                 .attr('cy', y(dataType) + y.bandwidth()/2)
-        //                 .attr('r', radius)
-        //                 .style('fill', 'black')
-        //                 .style('opacity', 0.7)
-        //                 .on('mouseover', (event) => {
-        //                     // Bold the x-axis label for this tissue
-        //                     this.svg.selectAll('.tick text')
-        //                         .filter(d => d === tissue)
-        //                         .style('font-weight', 'bold');
-
-        //                     if (dataType !== 'None') {
-        //                         d3.select('#gene-dot-plot')
-        //                             .append('div')
-        //                             .attr('class', 'tooltip')
-        //                             .style('position', 'absolute')
-        //                             .style('background-color', 'white')
-        //                             .style('padding', '5px')
-        //                             .style('border', '1px solid black')
-        //                             .style('border-radius', '5px')
-        //                             .style('left', `${event.pageX + 10}px`)
-        //                             .style('top', `${event.pageY - 10}px`)
-        //                             .html(traitNames);
-        //                     }
-        //                 })
-        //                 .on('mouseout', () => {
-        //                     // Remove bold from y-axis label
-        //                     this.svg.selectAll('.tick text')
-        //                         .style('font-weight', 'normal');
-                            
-        //                     d3.selectAll('.tooltip').remove();
-        //                 });
-        //         });
-        //     });
-
-        //     // Add axis labels
-        //     this.svg.append('text')
-        //         .attr('x', innerWidth/2)
-        //         .attr('y', innerHeight + graphConstants.outerMargin.bottom - 10)
-        //         .style('text-anchor', 'middle')
-        //         .text('Tissue');
-
-        //     this.svg.append('text')
-        //         .attr('transform', 'rotate(-90)')
-        //         .attr('x', -innerHeight/2)
-        //         .attr('y', -graphConstants.outerMargin.left + 30)
-        //         .style('text-anchor', 'middle')
-        //         .text('QTL Type');
-
-        //     // Add window resize listener
-        //     const resizeGraph = () => {
-        //         const newWidth = container.clientWidth;
-        //         const newHeight = Math.max(400, window.innerHeight * 0.6);
-                
-        //         d3.select('#gene-dot-plot svg')
-        //             .attr('viewBox', `0 0 ${newWidth} ${newHeight}`);
-        //     };
-
-        //     // Add resize listener
-        //     window.addEventListener('resize', resizeGraph);
-
-        //     // Clean up listener when component is destroyed
-        //     return () => {
-        //         window.removeEventListener('resize', resizeGraph);
-        //     };
-        // },
-
         initTraitByPositionGraph() {
             if (this.errorMessage) {
                 const chartContainer = document.getElementById("gene-network-plot");
@@ -414,6 +223,7 @@ export default function gene() {
         },
 
         getTraitByPositionGraph() {
+            const self = this;
             const container = document.getElementById('gene-network-plot');
             container.innerHTML = '';
 
@@ -454,7 +264,7 @@ export default function gene() {
                 outerMargin: {
                     top: 50,
                     right: 150,
-                    bottom: 120,
+                    bottom: 150,
                     left: 60,
                 },
                 geneTrackMargin: {
@@ -503,7 +313,7 @@ export default function gene() {
                         const hasOverlap = levels[level]?.some(existing => {
                             const existingRadius = Math.min(5 + Math.sqrt(existing.studies.length) * 2, 20);
                             const distance = Math.abs(existing.bp - position);
-                            return distance < (radius + existingRadius);
+                            return distance < (radius + existingRadius + 5); // Reduced spacing from default
                         });
                         
                         if (!hasOverlap) {
@@ -530,16 +340,23 @@ export default function gene() {
 
                 // Adjust y-position calculation to start from the bottom
                 // and work upwards, leaving less empty space
-                const yPos = innerHeight - (level * (radius * 2.2)) - 50; // -50 for some padding from x-axis
+                const yPos = innerHeight - (level * (radius * 1.8)) - 50; // Reduced spacing from 2.2 to 1.8
 
                 svg.append('circle')
                     .attr('cx', xScale(bp))
                     .attr('cy', yPos)
                     .attr('r', radius)
                     // .style('fill', this.getVariantTypeColor(variantType))
-                    .style('fill', this.getResultColorType(studies[0].type))
+                    .attr("fill", this.getResultColorType(studies[0].type))
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5)
                     .style('opacity', 0.9)
-                    .on('mouseover', (event) => {
+                    .on('mouseover', function(event, d) {
+                        d3.select(this).style("cursor", "pointer");
+                        d3.select(this).transition()
+                            .duration('100')
+                            .attr("fill", constants.colors.dataTypes.highlighted)
+                            .attr("r", radius + 8) // Make circle grow on hover like in phenotype.js
                         const uniqueTraits = [...new Set(studies.map(s => s.trait_name))];
                         const traitNames = uniqueTraits.slice(0, 9);
                         let tooltipContent = traitNames.join("<br />");
@@ -559,7 +376,11 @@ export default function gene() {
                             .style('top', `${event.pageY - 10}px`)
                             .html(tooltipContent);
                     })
-                    .on('mouseout', () => {
+                    .on('mouseout', function() {
+                        d3.select(this).transition()
+                            .duration('200')
+                            .attr("fill", self.getResultColorType(studies[0].type))
+                            .attr("r", radius); // Return to original size
                         d3.selectAll('.tooltip').remove();
                     });
             });
@@ -666,7 +487,7 @@ export default function gene() {
             // Add x-axis label
             svg.append("text")
                 .attr("x", innerWidth/2)
-                .attr("y", innerHeight + graphConstants.outerMargin.bottom - 20)
+                .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
                 .style("text-anchor", "middle")
                 .text("Genomic Position (MB)");
         },

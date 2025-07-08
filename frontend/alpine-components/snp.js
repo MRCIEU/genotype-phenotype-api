@@ -89,7 +89,7 @@ export default function snp() {
             
             const filename = `${this.getSNPName()}_coloc_data.csv`;
             
-            downloads.downloadColocsToCSV(
+            downloads.downloadSNPDataToCSV(
                 this.data.variant,
                 this.data.filteredColocs,
                 filename
@@ -102,8 +102,8 @@ export default function snp() {
                     coloc.posterior_prob >= graphOptions.coloc &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                     (graphOptions.traitType === 'all' ? true : 
-                     graphOptions.traitType === 'molecular' ? coloc.data_type !== 'phenotype' :
-                     graphOptions.traitType === 'phenotype' ? coloc.data_type === 'phenotype' : true))
+                     graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
+                     graphOptions.traitType === 'phenotype' ? coloc.data_type === 'Phenotype' : true))
 
                 if (Object.values(graphOptions.categories).some(c => c)) {
                     graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true

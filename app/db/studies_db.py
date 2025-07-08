@@ -5,7 +5,7 @@ import duckdb
 import time
 import logging
 
-from app.models.schemas import StudyDataTypes, VariantTypes
+from app.models.schemas import StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -41,7 +41,7 @@ class StudiesDBClient:
             SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry
             FROM traits
             JOIN studies ON traits.id = studies.trait_id
-            WHERE traits.data_type = '{StudyDataTypes.PHENOTYPE.value}'
+            WHERE traits.data_type = '{StudyDataType.phenotype.name}'
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -152,10 +152,11 @@ class StudiesDBClient:
     
     def _fetch_rare_results(self, condition: str):
         query = f"""
-            SELECT rare_results.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
+            SELECT rare_results.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue, ld_blocks.ld_block
             FROM rare_results
             JOIN studies ON rare_results.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
+            JOIN ld_blocks ON rare_results.ld_block_id = ld_blocks.id
             WHERE rare_results.rare_result_group_id IN (SELECT DISTINCT rare_result_group_id FROM rare_results WHERE {condition})
         """
         return self.studies_conn.execute(query).fetchall()
@@ -185,7 +186,7 @@ class StudiesDBClient:
             SELECT traits.id, traits.trait_name
             FROM traits
             JOIN studies ON traits.id = studies.trait_id 
-            WHERE traits.data_type = '{StudyDataTypes.PHENOTYPE.value}' AND studies.variant_type = '{VariantTypes.COMMON.value}'
+            WHERE traits.data_type = '{StudyDataType.phenotype.name}' AND studies.variant_type = '{VariantType.common.name}'
         """).fetchall()
 
     @log_performance

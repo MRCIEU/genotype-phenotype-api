@@ -26,7 +26,7 @@
                 <div class="column is-10">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
                     <h6 class="has-text-centered mb-0 mt-0">
-                        Range: <span x-text="genomicRange"></span>
+                        Gene Range: <span x-text="genomicRange"></span>
                     </h6>
                     <h6 class="has-text-centered mb-0"><a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a></h6>
                     <h6 class="has-text-centered mb-0">
@@ -92,7 +92,7 @@
                                                                 </td>
                                                         </template>
                                                         <td><a :href="'phenotype.html?id=' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a></td>
-                                                        <td x-text="(coloc.data_type === 'phenotype' && coloc.trait_category ? 'phenotype (' + coloc.trait_category + ')' : coloc.data_type)"></td>
+                                                        <td x-text="(coloc.data_type === 'Phenotype' && coloc.trait_category ? 'phenotype (' + coloc.trait_category + ')' : coloc.data_type)"></td>
                                                         <td><a :href="'gene.html?id=' + coloc.gene" x-text="coloc.gene"></a></td>
                                                         <td x-text="coloc.tissue"></td>
                                                         <td x-text="coloc.cis_trans"></td>
@@ -104,7 +104,7 @@
                                     <tr>
                                         <td>None</td>
                                         <td><a :href="'phenotype.html?id=' + study.trait_id" x-text="study.trait_name"></a></td>
-                                        <td x-text="(study.data_type === 'phenotype' && study.trait_category ? 'phenotype (' + study.trait_category + ')' : study.data_type)"></td>
+                                        <td x-text="(study.data_type === 'Phenotype' && study.trait_category ? 'Phenotype (' + study.trait_category + ')' : study.data_type)"></td>
                                         <td><a :href="'gene.html?id=' + study.gene" x-text="study.gene"></a></td>
                                         <td x-text="study.tissue"></td>
                                         <td x-text="study.cis_trans"></td>

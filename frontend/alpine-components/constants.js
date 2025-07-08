@@ -63,11 +63,11 @@ export default {
             'non_coding_transcript_variant'
         ],
         orderedDataTypes: [
-            'splice_variant',
-            'gene_expression',
-            'methylation',
-            'protein',
-            'phenotype'
+            'Splice Variant',
+            'Gene Expression',
+            'Methylation',
+            'Protein',
+            'Phenotype'
         ],
         findMinAndMaxValues: function(data) {
                 const idFrequencies = data.reduce((acc, obj) => {

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 import json
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional, Union
 
 class Singleton(type):
@@ -11,17 +11,17 @@ class Singleton(type):
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
-class StudyDataTypes(Enum):
+class StudyDataType(Enum):
     splice_variant = "Splice Variant"
     gene_expression = "Gene Expression"
     methylation = "Methylation"
     protein = "Protein"
     phenotype = "Phenotype"
 
-class VariantTypes(Enum):
-    COMMON = "common"
-    RARE_EXOME = "rare_exome"
-    RARE_WGS = "rare_wgs"
+class VariantType(Enum):
+    common = "Common"
+    rare_exome = "Rare Exome"
+    rare_wgs = "Rare WGS"
 
 class StudySource(BaseModel):
     id: int
@@ -63,6 +63,10 @@ class Coloc(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
 class LdBlock(BaseModel):
     id: int
@@ -109,6 +113,10 @@ class Trait(BaseModel):
     common_study: Optional[Study] = None
     rare_study: Optional[Study] = None
 
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
+
 class BasicTraitResponse(BaseModel):
     id: int
     data_type: str
@@ -119,6 +127,14 @@ class BasicTraitResponse(BaseModel):
     sample_size: int
     category: str
     ancestry: str
+
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
+
+    @field_validator("variant_type")
+    def validate_variant_type(cls, v):
+        return VariantType[v].value if enum_has_member(VariantType, v) else v
 
 class GetTraitsResponse(BaseModel):
     traits: List[BasicTraitResponse]
@@ -145,6 +161,14 @@ class Study(BaseModel):
     gene: Optional[str] = None
     gene_id: Optional[int] = None
 
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
+
+    @field_validator("variant_type")
+    def validate_variant_type(cls, v):
+        return VariantType[v].value if enum_has_member(VariantType, v) else v
+
 class StudyExtraction(BaseModel):
     id: int
     study_id: int
@@ -168,6 +192,10 @@ class ExtendedStudyExtraction(StudyExtraction):
     trait_category: Optional[str] = None
     data_type: str
     tissue: Optional[str] = None
+
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
 class SearchTerm(BaseModel):
     type: str
@@ -193,6 +221,11 @@ class RareResult(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+    ld_block: Optional[str] = None
+
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
 class ExtendedRareResult(RareResult):
     association: Optional[Association] = None
@@ -391,6 +424,10 @@ class ExtendedUploadColoc(UploadColoc):
     tissue: Optional[str] = None
     cis_trans: Optional[str] = None
 
+    @field_validator("data_type")
+    def validate_data_type(cls, v):
+        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
+
 class GPMapMetadata(BaseModel):
     num_common_studies: int
     num_rare_studies: int
@@ -427,4 +464,7 @@ def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple
         return None
     else:
         raise ValueError("Results must be a list of tuples or a single tuple.")
+
+def enum_has_member(enum_class, key: str) -> bool:
+    return key in enum_class.__members__
 
