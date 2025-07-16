@@ -47,9 +47,9 @@
                 <div class="column is-10">
                     <div class="is-divider mt-0 mb-2"></div>
                     <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
-                    <p class="is-size-7 has-text-centered">Displays studies that are either</p>
-                    <p class="is-size-7 has-text-centered">(a) within the BP range of the gene, (b) annotated by the QTL resource as associated with that Gene (within +/-1Mb), or</p>
-                    <p class="is-size-7 has-text-centered">(c) colocalising with (b) at the select coloc threshold</p>
+                    <p class="is-size-7 has-text-centered">Displays colocalising studies that are either</p>
+                    <p class="is-size-7 has-text-centered">(a) within the BP range of the gene, or </p>
+                    <p class="is-size-7 has-text-centered">(b) annotated by the QTL resource as associated with that Gene (within +/-1Mb)</p>
                     <div x-model="initTraitByPositionGraph" id="trait-by-position-chart"></div>
                 </div>
 
@@ -94,10 +94,11 @@
                                     </template>
                                 </div>
                             </div>
-                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp" class="tag is-light" style="margin-left: 0.5rem;">
+                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp || displayFilters.gene" class="tag is-light" style="margin-left: 0.5rem;">
                                 Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
                                 <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
-                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>
+                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>&nbsp;
+                                <b x-show="displayFilters.gene" x-text="'Gene: ' + displayFilters.gene"></b>
                             </span>
                         </div>
                         <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem;">

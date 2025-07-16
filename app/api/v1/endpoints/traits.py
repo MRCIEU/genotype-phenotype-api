@@ -1,4 +1,3 @@
-from time import sleep
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.studies_db import StudiesDBClient
@@ -31,7 +30,6 @@ async def get_trait(
     include_associations: bool = Query(False, description="Whether to include associations for SNPs")
 ) -> TraitResponse:
     try:
-        sleep(3)
         db = StudiesDBClient()
         associations_db = AssociationsDBClient()
         trait = db.get_trait(trait_id)

@@ -19,7 +19,8 @@ export default function gene() {
         },
         displayFilters: {
             candidateSnp: null,
-            traitName: null
+            traitName: null,
+            gene: null,
         },
         traitSearch: {
             text: '',
@@ -147,12 +148,13 @@ export default function gene() {
                 this.data.gene.maxMbp
             )
 
-            this.filteredData.groupedRare = graphTransformations.groupByCandidateSnp(this.filteredData.rare, 'gene', this.data.gene.id, this.displayFilters.traitName)
-            this.filteredData.groupedColocs = graphTransformations.groupByCandidateSnp(this.filteredData.colocs, 'gene', this.data.gene.id, this.displayFilters.traitName)
+            this.filteredData.groupedRare = graphTransformations.groupByCandidateSnp(this.filteredData.rare, 'gene', this.data.gene.id, this.displayFilters)
+            this.filteredData.groupedColocs = graphTransformations.groupByCandidateSnp(this.filteredData.colocs, 'gene', this.data.gene.id, this.displayFilters)
             this.filteredData.groupedResults = {...this.filteredData.groupedColocs, ...this.filteredData.groupedRare}
 
-            const allFilteredData = this.filteredData.colocs.concat(this.filteredData.rare)
-            this.filteredData.associatedGenes = Object.groupBy(allFilteredData, ({ gene }) => gene)
+            // Flatten all groupedResults arrays, then group by gene
+            const allGroupedEntries = Object.values(this.filteredData.groupedResults).flat();
+            this.filteredData.associatedGenes = Object.groupBy(allGroupedEntries, ({ gene }) => gene);
             delete this.filteredData.associatedGenes[null];
             delete this.filteredData.associatedGenes["NA"];
             delete this.filteredData.associatedGenes[this.data.gene.gene];
@@ -166,7 +168,8 @@ export default function gene() {
         },
         
         get filteredColocDataExist() {
-            return this.data && this.filteredData.colocs && this.filteredData.colocs.length > 0
+            this.filterDataForGraphs()
+            return this.filteredData.colocs && this.filteredData.colocs.length > 0
         },
 
         get genomicRange() {
@@ -185,8 +188,11 @@ export default function gene() {
         },
 
         removeDisplayFilters() {
+            this.downloadClicked = false;
             this.displayFilters = {
-                traitName: null
+                traitName: null,
+                candidateSnp: null,
+                gene: null,
             }
             this.traitSearch.text = ''
         },
@@ -204,12 +210,23 @@ export default function gene() {
 
         get getDataForColocTable() {
             if (!this.filteredData.colocs || this.filteredData.colocs.length === 0) return []
-            return stringify(Object.fromEntries(Object.entries(this.filteredData.groupedColocs).slice(0, constants.maxSNPGroupsToDisplay)))
+
+            const tableData = Object.fromEntries(
+                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, group]) => {
+                    return this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
+                })
+            )
+            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)))
         },
 
         get getDataForRareTable() {
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return []
-            return stringify(Object.fromEntries(Object.entries(this.filteredData.groupedRare).slice(0, constants.maxSNPGroupsToDisplay)))
+            const tableData = Object.fromEntries(
+                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp, group]) => {
+                    return this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
+                })
+            )
+            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)))
         },
 
         initTraitByPositionGraph() {
@@ -225,7 +242,7 @@ export default function gene() {
         },
 
         getTraitByPositionGraph() {
-            graphTransformations.traitByPositionGraph(this.minMbp, this.maxMbp, this.filteredData, this.data.gene.genes_in_region)
+            graphTransformations.traitByPositionGraph.bind(this)()
         },
 
         getAssociatedGenesGraph() {
@@ -286,11 +303,21 @@ export default function gene() {
                 .attr('height', d => innerHeight - y(d.count))
                 .attr('fill', '#7eb0d5')
                 .on('mouseover', function(event, d) {
-                    d3.select(this).attr('fill', '#fd7f6f');
+                    d3.select(this)
+                        .attr('fill', '#fd7f6f')
+                        .style("cursor", "pointer")
+                        .style("stroke", "#808080")
+                        .style("stroke-width", 3)
                     graphTransformations.getTooltip(`Gene: ${d.gene}<br>Count: ${d.count}`, event)
                 })
+                .on('click', (event, d) => {
+                    this.displayFilters.gene = d.gene;
+                })
                 .on('mouseout', function() {
-                    d3.select(this).attr('fill', '#7eb0d5');
+                    d3.select(this)
+                        .attr('fill', '#7eb0d5')
+                        .style("stroke", null)
+                        .style("stroke-width", null)
                     d3.selectAll('.tooltip').remove();
                 });
 

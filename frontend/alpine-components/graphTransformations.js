@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import graphTransformations from './graphTransformations.js';
 
 export default {
-    groupByCandidateSnp(data, type, id, traitFilter) {
+    groupByCandidateSnp(data, type, id, displayFilters) {
         id = parseInt(id)
         let attribute = null
         if (type === 'trait') {
@@ -17,9 +17,10 @@ export default {
 
         groupedData = Object.entries(groupedData).filter(([_, group]) => {
             const hasId = attribute ? group.some(entry => parseInt(entry[attribute]) === id) : true
-            const hasTrait = traitFilter ? group.some(entry => entry.trait_name === traitFilter) : true
+            const hasTrait = displayFilters.traitName ? group.some(entry => entry.trait_name === displayFilters.traitName) : true
+            const hasGene = displayFilters.gene ? group.some(entry => entry.gene === displayFilters.gene) : true
             const moreThanOneTrait = group.length > 1
-            return hasId && hasTrait && moreThanOneTrait
+            return hasId && hasTrait && hasGene && moreThanOneTrait
         });
 
         groupedData.sort((a, b) => {
@@ -139,66 +140,45 @@ export default {
                 .style('visibility', 'visible');
         }, 0);
     },
-    traitByPositionGraph(minMbp, maxMbp, filteredData, genesInRegion) {
 
-        const self = this;
+    traitByPositionGraph() {
+        const genesInRegion = this.data.genes_in_region ? this.data.genes_in_region : this.data.gene.genes_in_region
+
         const container = document.getElementById('trait-by-position-chart');
         container.innerHTML = '';
 
-        // Prepare SNP groups with position data first
-        const snpGroups = Object.entries(filteredData.groupedResults).map(([snp, studies]) => ({
+        const graphConstants = {
+            width: container.clientWidth,
+            outerMargin: { top: 90, right: 60, bottom: 150, left: 60, },
+            geneTrackMargin: { top: 40, height: 20 }
+        };
+        const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
+
+        const snpGroups = Object.entries(this.filteredData.groupedResults).map(([snp, studies]) => ({
             snp,
             studies,
             bp: snp.match(/\d+:(\d+)_/)[1] / 1000000
         }));
 
-        // Get positioned groups first to determine height
-        const positionedGroups = assignCircleLevels(snpGroups);
-        const maxLevel = Math.max(...positionedGroups.map(g => g.level));
-        
-        // Calculate the height needed for the highest circle
-        const baseRadius = 2;
-        const maxCircleRadius = Math.max(baseRadius + Math.sqrt(Math.max(
-            ...positionedGroups.map(g => g.studies.length)
-        )), 10);
-        
-        const circleSpace = (maxLevel * maxCircleRadius/1.5) + 50; // 50 for padding from x-axis
-        
-        // Dynamically calculate height based on actual circle space needed
-        const minHeight = 300;
-        const calculatedHeight = Math.max(minHeight, circleSpace + 200); // +200 for margins and gene track
+        const xScale = d3.scaleLinear()
+            .domain([this.minMbp, this.maxMbp])
+            .nice()
+            .range([0, innerWidth]);
 
-        const graphConstants = {
-            width: container.clientWidth,
-            height: calculatedHeight,
-            outerMargin: {
-                top: 90,
-                right: 60,
-                bottom: 150,
-                left: 60,
-            },
-            geneTrackMargin: {
-                top: 40,
-                height: 20
-            }
-        }
+        // Prepare SNP groups with position data first
+        const { positionedGroups, numLevels } = assignCircleLevels(snpGroups, xScale);
+        const dynamicHeight = Math.max((numLevels * 16), 350)
 
-        const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-        const innerHeight = graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
+        const innerHeight = dynamicHeight - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
 
         const svg = d3.select('#trait-by-position-chart')
             .append('svg')
-            .attr('viewBox', `0 0 ${graphConstants.width} ${graphConstants.height}`)
+            .attr('viewBox', `0 0 ${graphConstants.width} ${dynamicHeight}`)
             .attr('preserveAspectRatio', 'xMidYMid meet')
             .style('width', '100%')
             .style('height', '100%')
             .append('g')
             .attr('transform', `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-        const xScale = d3.scaleLinear()
-            .domain([minMbp, maxMbp])
-            .nice()
-            .range([0, innerWidth]);
 
         // Draw the x-axis
         svg.append("g")
@@ -211,19 +191,25 @@ export default {
             .attr("dy", ".15em")
             .attr("transform", "rotate(-65)");
 
-        // Function to detect overlaps and assign vertical levels
-        function assignCircleLevels(snpGroups) {
+        // Function to detect overlaps and assign vertical levels to SNP circles
+        function assignCircleLevels(snpGroups, xScale) {
             let levels = [];
             snpGroups.forEach(group => {
                 let level = 0;
-                const radius = Math.min(5 + Math.sqrt(group.studies.length) * 2, 20);
-                const position = group.bp;
-                
+                const baseRadius = 2;
+                const radius = group.studies.length > 0 ? 
+                    Math.min(baseRadius + Math.sqrt(group.studies.length) * 1.7, 10) : 
+                    baseRadius;
+                const positionPx = xScale(group.bp);
+
                 while (true) {
                     const hasOverlap = levels[level]?.some(existing => {
-                        const existingRadius = Math.min(5 + Math.sqrt(existing.studies.length) * 2, 20);
-                        const distance = Math.abs(existing.bp - position);
-                        return distance < (radius + existingRadius);
+                        const existingRadius = existing.studies.length > 0 ? 
+                            Math.min(baseRadius + Math.sqrt(existing.studies.length) * 1.7, 10) : 
+                            baseRadius;
+                        const existingPx = xScale(existing.bp);
+                        const distancePx = Math.abs(existingPx - positionPx);
+                        return distancePx < (radius + existingRadius);
                     });
                     
                     if (!hasOverlap) {
@@ -234,54 +220,11 @@ export default {
                     level++;
                 }
             });
-            return levels.flat();
+            return { positionedGroups: levels.flat(), numLevels: levels.length };
         }
 
-        // Add circles for each SNP group with adjusted vertical positions
-        positionedGroups.forEach(({snp, studies, bp, level}) => {
-            const baseRadius = 2;
-            const radius = studies.length > 0 ? 
-                Math.min(baseRadius + Math.sqrt(studies.length) * 1.5, 10) : 
-                baseRadius;
-
-            // Adjust y-position calculation to start from the bottom
-            // and work upwards, leaving less empty space
-            const yPos = innerHeight - (level * (radius * 1.8)) - 10;
-
-            svg.append('circle')
-                .attr('cx', xScale(bp))
-                .attr('cy', yPos)
-                .attr('r', radius)
-                .attr("fill", this.getResultColorType(studies[0].type))
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 1.5)
-                .style('opacity', 0.9)
-                .on('mouseover', function(event, d) {
-                    d3.select(this).style("cursor", "pointer");
-                    d3.select(this).transition()
-                        .duration('100')
-                        .attr("fill", constants.colors.dataTypes.highlighted)
-                        .attr("r", radius + 8)
-
-                    const tooltipContent = graphTransformations.getTraitListHTML(studies)
-                    graphTransformations.getTooltip(tooltipContent, event)
-                })
-                .on('mouseout', function() {
-                    d3.select(this).transition()
-                        .duration('200')
-                        .attr("fill", self.getResultColorType(studies[0].type))
-                        .attr("r", radius);
-                    d3.selectAll('.tooltip').remove();
-                });
-        });
-
-        // Add gene track
-        const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top;
-        const genes = genesInRegion.filter(gene =>
-            gene.minMbp <= maxMbp && gene.maxMbp >= minMbp
-        )
-
-        function assignLevels(genes) {
+        // Function to detect overlaps and assign vertical levels to gene rectangles 
+        function assignGeneLevels(genes) {
             let levels = [];
             genes.forEach(gene => {
                 let level = 0;
@@ -302,7 +245,111 @@ export default {
             return levels;
         }
 
-        assignLevels(genes);
+        function renderLegend() {
+            const legendWidth = 120;
+            const legendHeight = 20;
+            const legend = svg.append('g')
+                .attr('class', 'legend')
+                .attr('transform', `translate(${innerWidth - legendWidth}, -${graphConstants.outerMargin.top-10})`);
+
+            legend.append('rect')
+                .attr('x', -8)
+                .attr('y', -10)
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .attr('fill', 'none')
+                .attr('stroke', '#bbb')
+                .attr('stroke-width', 1);
+
+            // Common variant legend item
+            legend.append('circle')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', 5)
+                .attr('fill', constants.colors.dataTypes.common)
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 1);
+
+            legend.append('text')
+                .attr('x', 10)
+                .attr('y', 4)
+                .style('font-size', '12px')
+                .text('Common');
+
+            // Rare variant legend item
+            legend.append('circle')
+                .attr('cx', 70)
+                .attr('cy', 0)
+                .attr('r', 5)
+                .attr('fill', constants.colors.dataTypes.rare)
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 1);
+
+            legend.append('text')
+                .attr('x', 80)
+                .attr('y', 4)
+                .style('font-size', '12px')
+                .text('Rare');
+
+            svg.append("text")
+                .attr("x", innerWidth/2)
+                .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
+                .style("text-anchor", "middle")
+                .text("Genomic Position (MB)");
+        }
+
+        // Add circles for each SNP group with adjusted vertical positions
+        svg.selectAll('.snp-circle')
+            .data(positionedGroups)
+            .enter()
+            .append('circle')
+            .attr('class', 'snp-circle')
+            .attr('cx', d => xScale(d.bp))
+            .attr('cy', d => {
+                const baseRadius = 2;
+                const radius = d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius;
+                return innerHeight - (d.level * (radius * 1.8)) - 10;
+            })
+            .attr('r', d => {
+                const baseRadius = 2;
+                return d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius;
+            })
+            .attr('fill', d => graphTransformations.getResultColorType(d.studies[0].type))
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 1.5)
+            .style('opacity', 0.9)
+            .on('mouseover', function(event, d) {
+                d3.select(this).style('cursor', 'pointer');
+                d3.select(this).transition()
+                    .duration('100')
+                    .attr('fill', constants.colors.dataTypes.highlighted)
+                    .attr('r', function() {
+                        const baseRadius = 2;
+                        return (d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius) + 8;
+                    });
+                const tooltipContent = graphTransformations.getTraitListHTML(d.studies)
+                graphTransformations.getTooltip(tooltipContent, event)
+            })
+            .on('click', (event, d) => {
+                this.displayFilters.candidateSnp = d.snp;
+            })
+            .on('mouseout', function(event, d) {
+                d3.select(this).transition()
+                    .duration('200')
+                    .attr('fill', graphTransformations.getResultColorType(d.studies[0].type))
+                    .attr('r', function() {
+                        const baseRadius = 2;
+                        return d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius;
+                    });
+                d3.selectAll('.tooltip').remove();
+            });
+
+        const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top;
+        const genes = genesInRegion.filter(gene =>
+            gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp
+        )
+
+        assignGeneLevels(genes);
         const geneGroup = svg.append("g")
             .attr("class", "gene-track");
 
@@ -320,63 +367,22 @@ export default {
             .attr("stroke-width", 3) 
             .attr("opacity", 0.7)
             .on('mouseover', (event, d) => {
-                this.getTooltip(`Gene: ${d.gene}`, event)
+                graphTransformations.getTooltip(`Gene: ${d.gene}`, event)
+                d3.select(event.target)
+                    .style("cursor", "pointer")
+                    .style("stroke", "#808080")
+                    .style("stroke-width", 3)
             })
-            .on('mouseout', () => {
+            .on('click', (event, d) => {
+                this.displayFilters.gene = d.gene;
+            })
+            .on('mouseout', (event, d) => {
                 d3.selectAll('.tooltip').remove();
+                d3.select(event.target)
+                    .style("stroke", (d) => d.focus ? "black": null)
+                    .style("stroke-width", (d) => d.focus ? 3 : null) 
             });
 
-        // Add compact legend (like phenotype.js)
-        const legendWidth = 120;
-        const legendHeight = 20;
-        const legend = svg.append('g')
-            .attr('class', 'legend')
-            .attr('transform', `translate(${innerWidth - legendWidth}, -${graphConstants.outerMargin.top-10})`);
-
-        legend.append('rect')
-            .attr('x', -8)
-            .attr('y', -10)
-            .attr('width', legendWidth)
-            .attr('height', legendHeight)
-            .attr('fill', 'none')
-            .attr('stroke', '#bbb')
-            .attr('stroke-width', 1);
-
-        // Common variant legend item
-        legend.append('circle')
-            .attr('cx', 0)
-            .attr('cy', 0)
-            .attr('r', 5)
-            .attr('fill', constants.colors.dataTypes.common)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1);
-
-        legend.append('text')
-            .attr('x', 10)
-            .attr('y', 4)
-            .style('font-size', '12px')
-            .text('Common');
-
-        // Rare variant legend item
-        legend.append('circle')
-            .attr('cx', 70)
-            .attr('cy', 0)
-            .attr('r', 5)
-            .attr('fill', constants.colors.dataTypes.rare)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1);
-
-        legend.append('text')
-            .attr('x', 80)
-            .attr('y', 4)
-            .style('font-size', '12px')
-            .text('Rare');
-
-        // Add x-axis label
-        svg.append("text")
-            .attr("x", innerWidth/2)
-            .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
-            .style("text-anchor", "middle")
-            .text("Genomic Position (MB)");
+        renderLegend()
     },
 }

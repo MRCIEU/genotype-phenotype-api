@@ -140,7 +140,12 @@ export default function homepage() {
         },
 
         get getGPMapMetadata() {
-            return this.gpmapMetadata ? this.gpmapMetadata : {};
+            return this.gpmapMetadata ? this.gpmapMetadata : {
+                num_common_studies: 0,
+                num_rare_studies: 0,
+                num_molecular_studies: 0,
+                num_causal_variants: 0
+            };
         },
 
         searchVariant() {

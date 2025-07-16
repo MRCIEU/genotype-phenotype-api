@@ -143,13 +143,13 @@ export default function pheontype() {
                 this.filteredData.colocs,
                 'trait',
                 this.data.trait.id,
-                this.displayFilters.traitName
+                this.displayFilters
             )
             this.filteredData.groupedRare = graphTransformations.groupByCandidateSnp(
                 this.filteredData.rare,
                 'trait',
                 this.data.trait.id,
-                this.displayFilters.traitName
+                this.displayFilters
             )
 
             const allFilteredData = {...this.filteredData.groupedColocs, ...this.filteredData.groupedRare}
@@ -228,6 +228,7 @@ export default function pheontype() {
         },
 
         removeDisplayFilters() {
+            this.downloadClicked = false;
             this.displayFilters = {
                 view: "full",
                 chr: null,
@@ -247,7 +248,7 @@ export default function pheontype() {
             })
 
             tableData = graphTransformations.addColorForSNPs(tableData)
-            tableData = graphTransformations.groupByCandidateSnp(tableData, 'trait', this.data.trait.id, this.displayFilters.traitName)
+            tableData = graphTransformations.groupByCandidateSnp(tableData, 'trait', this.data.trait.id, this.displayFilters)
 
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)))
         },
@@ -266,7 +267,7 @@ export default function pheontype() {
             })
 
             tableData = graphTransformations.addColorForSNPs(tableData)
-            tableData = graphTransformations.groupByCandidateSnp(tableData, 'trait', this.data.trait.id, this.displayFilters.traitName)
+            tableData = graphTransformations.groupByCandidateSnp(tableData, 'trait', this.data.trait.id, this.displayFilters)
 
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)))
         },
