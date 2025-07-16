@@ -65,8 +65,16 @@ export default {
     },
 
 
-    async downloadDataToZip(data, downloadType) {
-        const zip = new JSZip();
+    async downloadDataToZip(data, name, zipBlob = null) {
+        let zip;
+        if (zipBlob) {
+            zip = await JSZip.loadAsync(zipBlob);
+        } else {
+            zip = new JSZip();
+        }
+
+        name = name.replace(/[^a-zA-Z0-9_-]+/g, '_');
+        name = name.replace(/^_+|_+$/g, '');
 
         zip.file('README.txt', readme);
 
@@ -90,6 +98,11 @@ export default {
             zip.file('variants.tsv', variantsTSV);
         }
 
+        if (data.variant) {
+            const variantJSON = JSON.stringify(data.variant, null, 2);
+            zip.file('variant.json', variantJSON);
+        }
+
         if (data.pairwise_colocs && data.pairwise_colocs.length > 0) {
             const pairwiseColocTSV = this.arrayToTSV(data.pairwise_colocs);
             zip.file('coloc_pairs.tsv', pairwiseColocTSV);
@@ -105,8 +118,8 @@ export default {
             zip.file('study_extractions.tsv', studyTSV);
         }
 
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        this.downloadBlob(zipBlob, 'phenotype_data.zip');
+        const newZipBlob = await zip.generateAsync({ type: 'blob' });
+        this.downloadBlob(newZipBlob, `gpmap_${name}.zip`);
     },
 
     arrayToTSV(data) {

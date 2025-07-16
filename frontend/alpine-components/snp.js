@@ -1,13 +1,23 @@
 import Alpine from 'alpinejs'
 import * as d3 from "d3";
+import JSZip from 'jszip'
+
 import constants from './constants.js'
 import downloads from './downloads.js'
-import JSZip from 'jszip'
+import graphTransformations from './graphTransformations.js'
+
+//TODO: look at thissss: https://observablehq.com/@d3/force-directed-graph-component
 
 export default function snp() {
     return {
         data: null,
         svgs: [],
+        filteredData: {
+            colocs: null,
+            rare: null,
+            svgs: null,
+            studies: null,
+        },
         errorMessage: null,
         highlightedStudy: null,
 
@@ -15,13 +25,15 @@ export default function snp() {
             let variantId = (new URLSearchParams(location.search).get('id'))
 
             try {
-                await this.getSvgData(variantId)
                 const response = await fetch(constants.apiUrl + '/variants/' + variantId)
                 if (!response.ok) {
                     this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
                     return
                 }
                 this.data = await response.json()
+
+                document.title = 'GP Map: ' +  this.getSNPName()
+                await this.getSvgData(variantId)
 
                 this.data.colocs = this.data.colocs.map(coloc => ({
                     ...coloc,
@@ -32,22 +44,8 @@ export default function snp() {
 
                 const ld_block = this.data.colocs[0].ld_block
                 const ld_info = ld_block.split(/[\/-]/)
-                console.log(ld_info)
                 this.data.variant.min_bp = ld_info[2]
                 this.data.variant.max_bp = ld_info[3]
-
-                this.filterByOptions(Alpine.store('graphOptionStore'));
-                this.initForestPlot();
-                // this.drawSVGOverlayD3();
-                // this.initManhattanPlotOverlay();
-
-                // Responsive: redraw on window resize
-                window.addEventListener('resize', () => {
-                    clearTimeout(this._resizeTimer);
-                    this._resizeTimer = setTimeout(() => {
-                        this.drawSVGOverlayD3();
-                    }, 150);
-                });
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -55,16 +53,21 @@ export default function snp() {
 
         async getSvgData(variantId) {
             if (constants.isLocal) {
-                variantId = 'extraction'
+                variantId = 'test'
             }
-            const svgsUrl = `${constants.assetBaseUrl}/${variantId}_svgs.zip`
+            const svgsUrl = `${constants.assetBaseUrl}/snp_${variantId}_svgs.zip`
             const zipResponse = await fetch(svgsUrl)
             const zipBlob = await zipResponse.blob()
             const zip = await JSZip.loadAsync(zipBlob)
 
             this.svgs = [];
-            for (const [filename, file] of Object.entries(zip.files)) {
-                const studyExtractionId = parseInt(filename.split('.svg')[0]);
+            const entries = Object.entries(zip.files);
+            for (let i = 0; i < entries.length; i++) {
+                const [filename, file] = entries[i];
+                let studyExtractionId = parseInt(filename.split('.svg')[0]);
+                if (constants.isLocal) {
+                    studyExtractionId = this.data.colocs[i%this.data.colocs.length].study_extraction_id;
+                }
                 const svgContent = await file.async('text');
                 this.svgs.push({ studyExtractionId, svgContent });
             }
@@ -79,25 +82,33 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.data.filteredColocs: [];
+            return this.data ? this.filteredData.colocs: [];
         },
 
-        downloadData() {
+        downloadDataOnly() {
             if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
                 return;
             }
-            
-            const filename = `${this.getSNPName()}_coloc_data.csv`;
-            
-            downloads.downloadSNPDataToCSV(
-                this.data.variant,
-                this.data.filteredColocs,
-                filename
-            );
+            downloads.downloadDataToZip(this.data, this.getSNPName());
         },
 
-        filterByOptions(graphOptions) {
-            this.data.filteredColocs = this.data.colocs.filter(coloc => {
+        async downloadDataAndGWAS() {
+            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+                return;
+            }
+            const response = await fetch(constants.apiUrl + '/variants/' + this.data.variant.id + '/summary-stats')
+            if (!response.ok) {
+                this.errorMessage = `Failed to download summary stats: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
+                return
+            }
+            const zipBlob = await response.blob()
+            downloads.downloadDataToZip(this.data, this.getSNPName(), zipBlob);
+        },
+
+        filterDataForGraphs() {
+            if (!this.data) return
+            const graphOptions = Alpine.store('graphOptionStore');
+            this.filteredData.colocs = this.data.colocs.filter(coloc => {
                 let graphOptionFilters = (coloc.min_p <= graphOptions.pValue &&
                     coloc.posterior_prob >= graphOptions.coloc &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
@@ -111,30 +122,30 @@ export default function snp() {
 
                 return graphOptionFilters
             });
-            // this.data.filteredColocs.sort((a, b) => a.association.beta - b.association.beta);
-            this.initForestPlot();
-            this.drawSVGOverlayD3();
-            // this.initManhattanPlotOverlay();
+            this.filteredData.svgs = this.svgs.filter(svg => {
+                return this.filteredData.colocs.some(coloc => coloc.study_extraction_id === svg.studyExtractionId)
+            });
+            // this.filteredData.colocs.sort((a, b) => a.association.beta - b.association.beta);
+        },
+
+        initForestPlot() {
+            this.filterDataForGraphs();
+            const chartContainer = document.getElementById("forest-plot");
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getForestPlot())
         },
 
         initChordDiagram() {
-            if (!this.data) {
-                const chartContainer = document.getElementById("snp-chord-diagram");
-                chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
-                return;
-            }
-
-            const graphOptions = Alpine.store('graphOptionStore');
-            this.filterByOptions(graphOptions);
-            window.addEventListener('resize', () => {
-                // Debounce the resize event to prevent too many redraws
-                clearTimeout(this.resizeTimer);
-                this.resizeTimer = setTimeout(() => {
-                        this.getChordDiagram();
-                }, 250); // Wait for 250ms after the last resize event
-            });
-            this.getChordDiagram();
+            this.filterDataForGraphs();
+            const chartContainer = document.getElementById("snp-chord-diagram");
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getChordDiagram())
         },
+
+        initManhattanPlotOverlay() {
+            this.filterDataForGraphs();
+            const chartContainer = document.getElementById("manhattan-plot");
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getManhattanPlotOverlay())
+        },
+
 
         getChordDiagram() {
             if (!this.data) return;
@@ -168,7 +179,7 @@ export default function snp() {
 
             // Process data
             const candidate_snp = this.data.variant.RSID;
-            const colocs = this.data.filteredColocs;
+            const colocs = this.filteredData.colocs;
 
             // Extract unique data_types
             const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
@@ -259,7 +270,7 @@ export default function snp() {
                 .attr('opacity', 0.7)
                 .on('mouseover', function(event, d) {
                     d3.select(this).transition().duration(200).attr('opacity', 1);
-                    const coloc = self.data.filteredColocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
+                    const coloc = self.filteredData.colocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
                     self.highlightedStudy = coloc.study_extraction_id;
                     self.svgs = self.svgs.sort((a, b) =>
                         a.studyExtractionId === coloc.study_extraction_id ? 1 : b.studyExtractionId === coloc.study_extraction_id ? -1 : 0
@@ -326,98 +337,17 @@ export default function snp() {
                 .attr("dy", "0.35em")
                 .text("Candidate SNP")
                 .style("font-size", "12px");
-            // const scaleX = 1; // Make it 20% wider than its circular equivalent
-            // const scaleY = 0.5; // Make it 20% shorter than its circular equivalent
-            // svg.attr("transform", `translate(${graphConstants.width / 2}, ${graphConstants.height / 2}) scale(${scaleX}, ${scaleY})`);
         },
 
-        initManhattanPlotOverlay() {
-            if (!this.data) return;
-            const plotContainer = d3.select("#manhattan-plot");
-            
-            this.getManhattanPlotOverlay();
-            
-        },
-
-        getManhattanPlotOverlay() {
-            if (!this.data || !this.svgs || this.svgs.length === 0) return;
-            const self = this;
-            const chartElement = document.getElementById('manhattan-plot');
-            chartElement.innerHTML = '';
-
-            const chartContainer = d3.select("#manhattan-plot");
-            chartContainer.select("svg").remove();
-            let graphWidth = chartContainer.node().getBoundingClientRect().width - 50;
-            let graphHeight = 600;
-
-            // Create main SVG container
-            const svg = d3.select('#manhattan-plot')
-                .append('svg')
-                .attr('width', graphWidth)
-                .attr('height', graphHeight)
-                .append('g');
-
-            // Find the maximum -log10(p-value) across all studies
-            const maxLogP = Math.max(...this.data.filteredColocs.map(d => -Math.log10(d.min_p)));
-            const minLogP = Math.min(...this.data.filteredColocs.map(d => -Math.log10(d.min_p)));
-
-            // Create a scale for the height based on p-values
-            const heightScale = d3.scaleLinear()
-                .domain([minLogP, maxLogP])
-                .range([graphHeight * 0.3, graphHeight]); // Scale from 30% to 100% of height
-
-            // Create a group for all plots
-            const plotGroups = svg.selectAll(".plot")
-                .data(Object.keys(this.svgs).slice(0, 1))
-                .enter()
-                .append("g")
-                .attr("class", "plot")
-                .style("opacity", 0.3)  // Start faded
-                .style("pointer-events", "none");  // Ignore mouse events
-
-            // Parse and embed each SVG
-            plotGroups.each(function(svgContent, index) {
-                const parser = new DOMParser();
-                const svgDoc = parser.parseFromString(svgContent, "image/svg+xml");
-                const importedSvg = svgDoc.documentElement;
-                
-                // Get the corresponding study's p-value
-                const study = self.data.filteredColocs[index];
-                const logP = -Math.log10(study.min_p);
-                const scaledHeight = heightScale(logP);
-                
-                // Calculate the scale factor
-                const scaleFactor = scaledHeight / graphHeight;
-                
-                // Remove width/height to allow scaling
-                importedSvg.removeAttribute("width");
-                importedSvg.removeAttribute("height");
-                importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-                importedSvg.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
-                
-                // Create a <g> to wrap the SVG's children and apply the transform
-                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                // Move all children of importedSvg into g
-                while (importedSvg.childNodes.length > 0) {
-                    g.appendChild(importedSvg.childNodes[0]);
-                }
-                // Apply scaling and translation to align at the bottom
-                g.setAttribute("transform", `translate(0,${graphHeight - scaledHeight}) scale(1,${scaleFactor})`);
-                // Append the <g> to the D3 group
-                this.appendChild(g);
-            });
-
-        },
-
-        initForestPlot() {
-            if (!this.data || !this.data.filteredColocs) return;
+        getForestPlot() {
+            if (!this.data || !this.filteredData.colocs) return;
 
             const plotContainer = d3.select("#forest-plot");
             plotContainer.selectAll("*").remove();
 
             const margin = { top: 50, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
-            const height = this.data.filteredColocs.length * 27;
+            const height = this.filteredData.colocs.length * 27;
 
             const svg = plotContainer.append("svg")
                 .attr("width", width + margin.left + margin.right)
@@ -426,7 +356,7 @@ export default function snp() {
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
             // Filter out items without association data
-            const validData = this.data.filteredColocs.filter(d => d.association && d.association.beta !== null && d.association.se !== null);
+            const validData = this.filteredData.colocs.filter(d => d.association && d.association.beta !== null && d.association.se !== null);
             
             // Calculate the range for the x-axis
             const maxAbsBeta = d3.max(validData, d => Math.abs(d.association.beta));
@@ -500,40 +430,7 @@ export default function snp() {
                 .text("Effect Size (Beta)");
         },
 
-        getScaledSVG(svgContent, index) {
-            // Get the min p-value for this study
-            const study = this.data && this.data.filteredColocs ? this.data.filteredColocs[index] : null;
-            if (!study) return svgContent;
-
-            const logP = -Math.log10(study.min_p);
-            // Find the global min/max for scaling
-            const allLogPs = this.data.filteredColocs.map(d => -Math.log10(d.min_p));
-            const minLogP = Math.min(...allLogPs);
-            const maxLogP = Math.max(...allLogPs);
-
-            // Scale from 30% to 100% of height
-            const minScale = 0.3;
-            const maxScale = 1.0;
-            const scale = minScale + ((logP - minLogP) / (maxLogP - minLogP)) * (maxScale - minScale);
-
-            // Inject a <g> with a scale transform into the SVG
-            let parser = new DOMParser();
-            let doc = parser.parseFromString(svgContent, "image/svg+xml");
-            let svg = doc.documentElement;
-
-            // Wrap all children in a <g> with the scale transform
-            let g = doc.createElementNS("http://www.w3.org/2000/svg", "g");
-            while (svg.childNodes.length > 0) {
-                g.appendChild(svg.childNodes[0]);
-            }
-            g.setAttribute("transform", `scale(1,${scale}) translate(0,${600 * (1 - scale)})`);
-            svg.appendChild(g);
-
-            // Return the new SVG as a string
-            return new XMLSerializer().serializeToString(svg);
-        },
-
-        drawSVGOverlayD3() {
+        getManhattanPlotOverlay() {
             d3.select("#manhattan-plot").selectAll("*").remove();
 
             const width = document.getElementById("manhattan-plot").clientWidth;
@@ -579,8 +476,9 @@ export default function snp() {
                 .attr("stroke", "red")
                 .attr("stroke-width", 0.8)
                 .attr("opacity", 0.8);
+            
 
-            this.svgs.forEach(({ studyExtractionId, svgContent }, i) => {
+            this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }, i) => {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(svgContent, "image/svg+xml");
                 let importedSvg = doc.documentElement;
@@ -634,7 +532,7 @@ export default function snp() {
                 .text(""); // Start empty
 
             if (this.highlightedStudy) {
-                const study = this.data.filteredColocs.find(d => d.study_extraction_id === this.highlightedStudy);
+                const study = this.filteredData.colocs.find(d => d.study_extraction_id === this.highlightedStudy);
                 if (study) {
                     let traitName = study.trait_name;
                     const pValueText = `: p = ${study.min_p.toExponential(2)}`;

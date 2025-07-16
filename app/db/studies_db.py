@@ -179,6 +179,10 @@ class StudiesDBClient:
     def get_rare_results_for_study_ids(self, study_ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in study_ids)
         return self._fetch_rare_results(f"study_id IN ({formatted_ids})")
+    
+    @log_performance
+    def get_rare_results_for_ld_block(self, ld_block_id: int):
+        return self._fetch_rare_results(f"ld_block_id = {ld_block_id}")
 
     @log_performance
     def get_trait_names_for_search(self):
@@ -203,6 +207,17 @@ class StudiesDBClient:
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
             WHERE study_extractions.study_id = '{study_id}'
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_study_extractions_for_variant(self, snp_id: int):
+        query = f"""
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
+            FROM study_extractions 
+            JOIN studies ON study_extractions.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            WHERE study_extractions.snp_id = {snp_id}
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -245,7 +260,7 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_study_extractions_in_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
+    def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
         return self.studies_conn.execute(
             """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
@@ -256,6 +271,16 @@ class StudiesDBClient:
             """,
             (chr, bp_start, bp_end, symbol)
         ).fetchall()
+
+    @log_performance
+    def get_study_extractions_in_ld_block(self, ld_block_id: int):
+        return self.studies_conn.execute(f"""
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
+            FROM study_extractions 
+            JOIN studies ON study_extractions.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            WHERE study_extractions.ld_block_id = {ld_block_id}
+        """).fetchall()
 
     @log_performance
     def get_ld_block(self, ld_block_id: int):

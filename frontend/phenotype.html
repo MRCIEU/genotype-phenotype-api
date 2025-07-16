@@ -22,6 +22,7 @@
         <div id="phenotype" x-data="phenotype" x-init="loadData">
             <navigation-bar></navigation-bar>
 
+            <!-- Title, status and text -->
             <div class="columns mt-4 mb-0 pb-0 pt-0">
                 <div class="column is-10 pb-0 mb-0">
                     <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
@@ -48,12 +49,13 @@
 
                 </div>
                 <div class="column is-2">
-                    <div x-show="showResults && filteredColocData && filteredColocData.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
+                    <div x-show="showResults && filteredData.colocs && filteredData.colocs.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
                             Please change current filter settings for results to appear.
                     </div>
                 </div>
             </div>
 
+            <!-- Graph and options -->
             <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
                 <div class="column is-10 pb-0 mb-0">
                     <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
@@ -63,6 +65,8 @@
                     <graph-options></graph-options>
                 </div>
             </div>
+
+            <!-- Display filters and Download button -->
             <div class="columns is-centered mb-0 mt-0 pb-0 pt-0" x-show="showResults">
                 <div class="column is-11">
                     <div style="display: flex; align-items: center; gap: 0.5rem; min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; justify-content: space-between;">
@@ -86,116 +90,45 @@
                                     style="position: absolute; top: 100%; min-width: 100%; z-index: 10; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #dbdbdb; border-radius: 4px; white-space: nowrap;"
                                 >
                                     <template x-for="trait in getTraitsToFilterBy()" :key="trait">
-                                        <a class="dropdown-item" x-text="trait" @click="filterByStudy(trait)"></a>
+                                        <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
                                     </template>
                                 </div>
                             </div>
+                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp" class="tag is-light" style="margin-left: 0.5rem;">
+                                Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
+                                <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
+                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>
+                            </span>
                         </div>
-                        <button id="download-data" class="button is-success is-small mt-0 mb-0" @click="downloadData">
+                        <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem;">
+                            Data has been downloaded without GWAS summary statistics. For more information <a href="data.html#data-availability" target="_blank">click here</a>
+                        </span>
+                        <button
+                            id="download-data"
+                            class="button is-success is-small mt-0 mb-0"
+                            @click="downloadData"
+                        >
                             Download Data
                         </button>
                     </div>
                 </div>
             </div>
 
+            <!-- Data tables -->
             <div class="columns mt-0 mb-0 is-centered" x-show="showResults">
                 <div class="column is-11">
                     <div style="display: flex; align-items: center; cursor: pointer;" @click="showTables.coloc = !showTables.coloc">
                         <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px;"></span>
                         <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Coloc Results</h4>
+                        <h6 class="subtitle is-6 mb-2" style="margin-bottom: 0; font-size: 10px;">(Truncated at 100 SNPs)</h6>
                     </div>
-                    <table x-show="showTables.coloc" class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-                        <thead>
-                            <tr>
-                                <th><abbr title="Coloc Info">Coloc Info</abbr></th>
-                                <th><abbr title="Trait">Trait</abbr></th>
-                                <th><abbr title="Data Type">Data Type</abbr></th>
-                                <th><abbr title="Gene">Gene</abbr></th>
-                                <th><abbr title="Tissue">Tissue</abbr></th>
-                                <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
-                                <th><abbr title="P-value">P-value</abbr></th>
-                            </tr>
-                        </thead>
-                        <tbody class="is-size-7">
-                            <template x-for="[candidate_snp, colocs] in Object.entries(getDataForColocTable)">
-                                    <template x-for="(coloc, colocIndex) in colocs">
-                                            <tr x-bind:style="!!coloc.posterior_prob ? 'background-color: ' + coloc.color : ''">
-                                                    <template x-if="colocIndex === 0 && !!coloc.posterior_prob">
-                                                            <td x-bind:rowspan="colocs.length" style="width: 20%">
-                                                                    Causal Variant: <a :href="'snp.html?id=' + coloc.snp_id" x-text="coloc.candidate_snp"></a>
-                                                                    <br>
-                                                                    LD Region: <a :href="'region.html?id=' + coloc.ld_block_id" x-text="coloc.ld_block"></a>
-                                                                    <br>
-                                                                    Posterior Probability (PP): <b x-text="coloc.posterior_prob.toFixed(3)"></b>
-                                                                    <br>
-                                                                    PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp.toFixed(3)"></b>
-                                                            </td>
-                                                    </template>
-                                                    <template x-if="colocIndex === 0 && !coloc.posterior_prob">
-                                                            <td x-bind:rowspan="colocs.length" style="width: 20%">
-                                                                    LD Region: <a :href="'region.html?id=' + coloc.ld_block" x-text="coloc.ld_block"></a>
-                                                                    <br>
-                                                                    <b>No coloc evidence found.</b>
-                                                            </td>
-                                                    </template>
-                                                    <td>
-                                                        <template x-if="coloc.data_type === 'Phenotype'">
-                                                            <a :href="'phenotype.html?id=' + coloc.trait_id" x-text="coloc.trait_name" style="width:40%"></a>
-                                                        </template>
-                                                        <template x-if="coloc.data_type !== 'Phenotype'">
-                                                            <span x-text="coloc.trait_name" style="width:40%"></span>
-                                                        </template>
-                                                    </td>
-                                                    <td x-text="(coloc.data_type === 'Phenotype' && coloc.trait_category ? 'Phenotype (' + coloc.trait_category + ')' : coloc.data_type)"></td>
-                                                    <td><a :href="'gene.html?id=' + coloc.gene" x-text="coloc.gene"></a></td>
-                                                    <td x-text="coloc.tissue"></td>
-                                                    <td x-text="coloc.cis_trans"></td>
-                                                    <td x-text="(coloc.min_p !== null ? coloc.min_p.toExponential(2) : '')"></td>
-                                            </tr>
-                                    </template>
-                            </template>
-                        </tbody>
-                    </table>
-                    <div style="display: flex; align-items: center; cursor: pointer;" @click="showTables.rare = !showTables.rare">
-                        <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px;"></span>
-                        <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Rare Results</h4>
+                    <results-table id='coloc-table' :data="getDataForColocTable" x-show="showTables.coloc"></results-table>
+
+                    <div x-show="doRareResultsExist" style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem;"  @click="showTables.rare = !showTables.rare">
+                        <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px; display: inline;"></span>
+                        <h4 class="title is-4 mb-2" style="margin: 0; display: inline; vertical-align: middle;">Rare Results</h4>
                     </div>
-                    <table x-show="showTables.rare" class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-                        <thead>
-                            <tr>
-                                <th><abbr title="SNP Info">SNP Info</abbr></th>
-                                <th><abbr title="Trait">Trait</abbr></th>
-                                <th><abbr title="Data Type">Data Type</abbr></th>
-                                <th><abbr title="Gene">Gene</abbr></th>
-                                <th><abbr title="Tissue">Tissue</abbr></th>
-                                <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
-                                <th><abbr title="P-value">P-value</abbr></th>
-                            </tr>
-                        </thead>
-                        <tbody class="is-size-7">
-                            <template x-for="[candidate_snp, rares] in Object.entries(getDataForRareTable)">
-                                    <template x-for="(rare, rareIndex) in rares">
-                                            <tr x-bind:style="!!rare.min_p ? 'background-color: ' + rare.color : ''">
-                                                    <template x-if="rareIndex === 0 && !!rare.min_p">
-                                                            <td x-bind:rowspan="rares.length" style="width: 20%">
-                                                                    Causal Variant: <a :href="'snp.html?id=' + rare.snp_id" x-text="rare.candidate_snp"></a>
-                                                                    <br>
-                                                                    LD Region: <a :href="'region.html?id=' + rare.ld_block_id" x-text="rare.ld_block"></a>
-                                                            </td>
-                                                    </template>
-                                                    <td>
-                                                        <span x-text="rare.trait_name" style="width:40%"></span>
-                                                    </td>
-                                                    <td x-text="(rare.data_type === 'Phenotype' && rare.trait_category ? 'Phenotype (' + rare.trait_category + ')' : rare.data_type)"></td>
-                                                    <td><a :href="'gene.html?id=' + rare.gene" x-text="rare.gene"></a></td>
-                                                    <td x-text="rare.tissue"></td>
-                                                    <td x-text="rare.cis_trans"></td>
-                                                    <td x-text="(rare.min_p !== null ? rare.min_p.toExponential(2) : '')"></td>
-                                            </tr>
-                                    </template>
-                            </template>
-                        </tbody>
-                    </table>
+                    <results-table id='rare-table' :data="getDataForRareTable" x-show="showTables.rare && doRareResultsExist"></results-table>
                 </div>
             </div>
         </div>

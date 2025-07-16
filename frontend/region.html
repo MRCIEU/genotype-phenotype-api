@@ -5,7 +5,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-    <title>GPM</title>
+    <title>GP Map Region</title>
     <script type="module" src="/main.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
     <script>
@@ -31,71 +31,73 @@
 
             <div class="columns mt-2">
                 <div class="column is-10">
-                    <div x-model="initGraph" id="region-chart"></div>
+                    <div x-model="initTraitByPositionGraph" id="trait-by-position-chart"></div>
                 </div>
 
                 <div class="column is-2">
-                    <!-- <div class="dropdown is-hoverable is-right">
-                        <div class="dropdown-trigger">
-                            <button class="button mt-0 mb-4" aria-haspopup="true">
-                                <span>Filter Results By:</span>
-                            </button>
-                        </div>
-                        <div class="dropdown-menu mt-0" id="dropdown-menu3" role="menu">
-                            <div class="dropdown-content">
-                                        <a class="dropdown-item" @click="filterStudies(null)">Clear Filter</a>
-                                <template @click.outside="closeSearch" x-for="study in traitsToFilterBy">
-                                        <a class="dropdown-item" x-text="study" @click="filterStudies(study)"></a>
-                                </template>
-                            </div>
-                        </div>
-                    </div> -->
                     <graph-options></graph-options>
                 </div>
             </div>
-
-            <div class="columns mt-2 is-centered">
+            <!-- Display filters and Download button -->
+            <div class="columns is-centered mb-0 mt-0 pb-0 pt-0">
                 <div class="column is-11">
-                <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-                    <thead>
-                        <tr>
-                                <th><abbr title="Coloc Info">Coloc Info</abbr></th>
-                                <th><abbr title="Trait">Trait</abbr></th>
-                                <th><abbr title="Data Type">Data Type</abbr></th>
-                                <th><abbr title="Gene">Gene</abbr></th>
-                                <th><abbr title="Tissue">Tissue</abbr></th>
-                                <th><abbr title="Cis/Trans">Cis/Trans</abbr></th>
-                                <th><abbr title="P-value">P-value</abbr></th>
-                        </tr>
-                    </thead>
-                    <tbody class="is-size-7">
-                            <template x-for="[candidate_snp, colocs] in Object.entries(colocsForTable)">
-                                    <template x-for="(coloc, colocIndex) in colocs">
-                                            <tr x-bind:style="'background-color: ' + coloc.color">
-                                                    <template x-if="colocIndex === 0">
-                                                            <td x-bind:rowspan="colocs.length" style="width: 20%">
-                                                                    Causal Variant: <a :href="'snp.html?id=' + coloc.candidate_snp" x-text="coloc.candidate_snp"></a>
-                                                                    <br>
-                                                                    LD Region: <a :href="'region.html?id=' + coloc.ld_block" x-text="coloc.ld_block"></a>
-                                                                    <br>
-                                                                    Posterior Probability (PP): <b x-text="coloc.posterior_prob.toFixed(3)"></b>
-                                                                    <br>
-                                                                    PP Explained by SNP: <b x-text="coloc.posterior_explained_by_snp.toFixed(3)"></b>
-                                                            </td>
-                                                    </template>
-                                                    <td x-text="coloc.trait" style="width:40%"></td>
-                                                    <td x-text="coloc.data_type"></td>
-                                                    <td><a :href="'gene.html?id=' + coloc.gene" x-text="coloc.gene"></a></td>
-                                                    <td x-text="coloc.tissue"></td>
-                                                    <td x-text="coloc.cis_trans"></td>
-                                                    <td x-text="(coloc.min_p !== null ? coloc.min_p.toExponential(2) : '')"></td>
-                                            </tr>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button id="reset-display" class="button is-small mt-0 mb-0" @click="removeDisplayFilters">
+                                Reset Display
+                            </button>
+                            <div style="position: relative;">
+                                <input
+                                    type="text"
+                                    class="input is-small"
+                                    :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
+                                    x-model="traitSearch.text"
+                                    @focus="traitSearch.showDropDown = true"
+                                    @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
+                                    style="width: 400px;"
+                                >
+                                <div
+                                    class="dropdown-content"
+                                    x-show="traitSearch.showDropDown"
+                                    style="position: absolute; top: 100%; min-width: 100%; z-index: 10; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #dbdbdb; border-radius: 4px; white-space: nowrap;"
+                                >
+                                    <template x-for="trait in getTraitsToFilterBy()" :key="trait">
+                                        <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
                                     </template>
-                            </template>
-                    </tbody>
-                </table>
+                                </div>
+                            </div>
+                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp" class="tag is-light" style="margin-left: 0.5rem;">
+                                Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
+                                <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
+                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>
+                            </span>
+                        </div>
+                        <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem;">
+                            Data has been downloaded without GWAS summary statistics. For more information <a href="data.html#data-availability" target="_blank">click here</a>
+                        </span>
+                        <button id="download-data" class="button is-success is-small mt-0 mb-0" @click="downloadData">
+                            Download Data
+                        </button>
+                    </div>
                 </div>
             </div>
+            <!-- Data tables -->
+            <div class="columns mt-0 mb-0 is-centered">
+                <div class="column is-11">
+                    <div style="display: flex; align-items: center; cursor: pointer;" @click="showTables.coloc = !showTables.coloc">
+                        <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px;"></span>
+                        <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Coloc Results</h4>
+                    </div>
+                    <results-table id='coloc-table' :data="getDataForColocTable" x-show="showTables.coloc"></results-table>
+
+                    <div style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem;" @click="showTables.rare = !showTables.rare">
+                        <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px;"></span>
+                        <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Rare Results</h4>
+                    </div>
+                    <results-table id='rare-table' :data="getDataForRareTable" x-show="showTables.rare"></results-table>
+                </div>
+            </div>
+
         </div>
     </div>
 </body>

@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     ASSOCIATIONS_DB_PATH: str
     LD_DB_PATH: str
     GWAS_UPLOAD_DB_PATH: str
+    SUMMARY_STATS_DIR: str
     REDIS_HOST: str
     REDIS_PORT: int
     DEBUG: bool = False

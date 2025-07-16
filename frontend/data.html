@@ -24,7 +24,7 @@
 
                 <div class="content columns mt-2 is-centered">
                     <div class="column is-11">
-                        <h2>Data Sources</h2>
+                        <h2 id="data-sources">Data Sources</h2>
                         <h4>Sources</h4>
                         <p>
                             The datasets that were used to populate the Genotype-Phenotype Map are as follows:
@@ -50,10 +50,23 @@
                             </table>
 
                         </div>
-                        <h2>Summary of Data Processed in Pipeline</h2>
+                        <h2 id="data-availability">Data Availability</h2>
+                        <p>
+                            Due to the large size of the data, we have restricted options to be able to download the summary statistics for all traits.  We have the following options:
+                            <li>
+                                Colocalization and Rare Variant Analysis Results: You can download all colocalizing and rare variant analysis results for any given trait, gene, or SNP using the <b>Download Data</b> buttons of their respective pages.
+                            </li>
+                            <li>
+                                GWAS / Summary Statistics: You can download all colocalizing and rare variant analysis results <b>and their corresponding GWAS summary satistics</b> only for a specific SNP, using the <b>Download Data</b> button on the SNP view.
+                            </li>
+                            <li>
+                                <a href="https://console.cloud.google.com/storage/browser/genotype-phenotype-map" target="_blank"><b></b>Google Cloud Bucket</b></a>:  You can download all of the data from the Google Cloud Bucket.  Note that this bucket is a 'requester pays' bucket, so you will need to have a Google Cloud account, be logged in, and have a credit card on file to download the data.  A full explanation of the data in the bucket can be found <a href="https://github.com/MRCIEU/genotype-phenotype-map/some-wiki-page" target="_blank">here</a>.
+                            </li>
+                        </p>
+                        <h2 id="summary-of-data-processed-in-pipeline">Summary of Data Processed in Pipeline</h2>
                         <pipeline-summary></pipeline-summary>
 
-                        <h2>Acknowledgements</h2>
+                        <h2 id="acknowledgements">Acknowledgements</h2>
                         <p>
                             Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
                             elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius

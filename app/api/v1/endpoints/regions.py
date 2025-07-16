@@ -17,27 +17,46 @@ router = APIRouter()
 @time_endpoint
 async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) -> RegionResponse:
     try:
-        db = StudiesDBClient()
         cache_service = DBCacheService()
+        tissues = cache_service.get_tissues()
 
+        db = StudiesDBClient()
         ld_block = db.get_ld_block(ld_block_id)
         if ld_block is None:
             raise HTTPException(status_code=404, detail=f"LD Block {ld_block_id} not found")
-
         ld_block = convert_duckdb_to_pydantic_model(LdBlock, ld_block)
+
         genes = cache_service.get_genes()
-
-        colocs = db.get_all_colocs_for_ld_block(ld_block_id)
-        region = Region(chr=ld_block.chr, start=ld_block.start, end=ld_block.stop, ancestry=ld_block.ancestry)
-        colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
-
-        filtered_genes = [gene for gene in genes
-                          if gene.chr == ld_block.chr and 
-                          gene.start >= ld_block.start - 1000000 and 
-                          gene.stop <= ld_block.stop + 1000000
+        genes_in_region = [g for g in genes
+                          if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
                           ]
 
-        return RegionResponse(region=region, colocs=colocs, genes=filtered_genes)
+        coloc_snp_ids = rare_result_snp_ids = []
+        region_colocs = db.get_all_colocs_for_ld_block(ld_block_id)
+        if region_colocs:
+            region_colocs = convert_duckdb_to_pydantic_model(Coloc, region_colocs)
+            coloc_snp_ids = [coloc.snp_id for coloc in region_colocs]
+
+        region_rare_results = db.get_rare_results_for_ld_block(ld_block_id)
+        # TODO: Remove this once we have fixed the rare results in the pipeline
+        region_rare_results = [r for r in region_rare_results if r[2] is not None]
+        if region_rare_results:
+            region_rare_results = convert_duckdb_to_pydantic_model(RareResult, region_rare_results)
+            rare_result_snp_ids = [rare_result.snp_id for rare_result in region_rare_results]
+        
+        snp_ids = coloc_snp_ids + rare_result_snp_ids
+
+        if snp_ids:
+            variants = db.get_variants(snp_ids=snp_ids)
+            variants = convert_duckdb_to_pydantic_model(Variant, variants)
+
+        return RegionResponse(region=ld_block,
+                              genes_in_region=genes_in_region,
+                              tissues=tissues,
+                              colocs=region_colocs,
+                              variants=variants,
+                              rare_results=region_rare_results
+                              )
     except HTTPException as e:
         raise e
     except Exception as e:

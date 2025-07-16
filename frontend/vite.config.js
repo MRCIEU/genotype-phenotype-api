@@ -23,6 +23,8 @@ export default defineConfig({
                 about: resolve(__dirname, 'about.html'),
                 "navigation-bar": resolve(__dirname, 'web-components/navigation-bar.html'),
                 "graph-options": resolve(__dirname, 'web-components/graph-options.html'),
+                "results-table": resolve(__dirname, 'web-components/results-table.html'),
+                "pipeline-summary": resolve(__dirname, 'web-components/pipeline-summary.html'),
                 // glob.sync('*.html').map(file => [
                     // file.slice(0, file.length - 5),
                     // resolve(__dirname, file)

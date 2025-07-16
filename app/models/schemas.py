@@ -276,21 +276,22 @@ class GeneResponse(BaseModel):
     study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
 
-class Region(BaseModel):
-    ancestry: str
-    chr: int 
-    start: int
-    end: int
-
 class RegionResponse(BaseModel):
-    region: Region
+    region: LdBlock
+    genes_in_region: List[Gene] 
     colocs: List[Coloc]
-    genes: List[Gene] 
+    rare_results: List[RareResult]
+    variants: List[Variant]
+    tissues: List[str]
 
 class VariantResponse(BaseModel):
     variant: Variant
     colocs: List[ExtendedColoc]
     rare_results: List[ExtendedRareResult]
+    study_extractions: List[ExtendedStudyExtraction]
+
+class VariantSummaryStatsResponse(BaseModel):
+    variant: Variant
 
 class VariantSearchResponse(BaseModel):
     original_variants: List[ExtendedVariant]
