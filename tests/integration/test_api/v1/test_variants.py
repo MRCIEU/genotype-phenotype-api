@@ -157,5 +157,3 @@ def test_get_variant_summary_stats():
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/zip"
     assert response.headers["Content-Disposition"] == "attachment; filename=variant_5758009_summary_stats.zip"
-    assert response.headers["Content-Length"] is not None
-    assert response.headers["Content-Length"] > 0

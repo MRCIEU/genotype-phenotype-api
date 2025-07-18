@@ -46,6 +46,7 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
         
         snp_ids = coloc_snp_ids + rare_result_snp_ids
 
+        variants = []
         if snp_ids:
             variants = db.get_variants(snp_ids=snp_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)

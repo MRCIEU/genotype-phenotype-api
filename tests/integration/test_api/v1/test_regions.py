@@ -1,18 +1,19 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import Coloc, GeneMetadata, RegionResponse
+from app.models.schemas import Coloc, Gene, GeneMetadata, RareResult, RegionResponse, Variant
 
 client = TestClient(app)
 
 def test_get_region():
     response = client.get("/v1/regions/1309")
-    assert response.status_code == 200
     region = response.json()
+    print(region)
+    assert response.status_code == 200
     region_model = RegionResponse(**region)
     assert region_model.region.chr is not None
     assert region_model.region.start is not None
-    assert region_model.region.end is not None
+    assert region_model.region.stop is not None
     assert region_model.region.ancestry is not None
 
     for coloc in region_model.colocs:
@@ -24,7 +25,14 @@ def test_get_region():
         assert coloc.min_p is not None
         assert coloc.posterior_prob is not None
 
-    for gene_metadata in region_model.genes:
-        assert isinstance(gene_metadata, GeneMetadata)
-        assert gene_metadata.symbol is not None
-        assert gene_metadata.chr is not None
+    for gene in region_model.genes_in_region:
+        assert isinstance(gene, Gene)
+
+    for rare_result in region_model.rare_results:
+        assert isinstance(rare_result, RareResult)
+
+    for variant in region_model.variants:
+        assert isinstance(variant, Variant)
+
+    for tissue in region_model.tissues:
+        assert isinstance(tissue, str)
