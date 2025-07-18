@@ -16,12 +16,14 @@ import contact from './alpine-components/contact.js';
 window.Alpine = Alpine;
 
 import { NavigationBar } from './web-components/navigation-bar.js';
+import { ResultsTable } from './web-components/results-table.js';
 import { GraphOptions } from './web-components/graph-options.js';
 import { PipelineSummary } from './web-components/pipeline-summary.js';
 
 customElements.define('navigation-bar', NavigationBar);
 customElements.define('graph-options', GraphOptions);
 customElements.define('pipeline-summary', PipelineSummary);
+customElements.define('results-table', ResultsTable);
 
 // import * as Sentry from "@sentry/browser";
 // if (!import.meta.env.VITE_DEBUG === 'true') {
@@ -34,9 +36,17 @@ customElements.define('pipeline-summary', PipelineSummary);
 const graphOptions = {
     coloc: 0.8,
     pValue: 0.00000005,
-    includeRareVariants: true,
-    onlyMolecularTraits: false,
+    traitType: 'all',
     includeTrans: false,
+    categories: {
+        "Anthropometric": false,
+        "Blood Cell Measure": false,
+        "Clinical Measure": false,
+        "Health Trait / Disease Outcome": false,
+        "Operation / Treatment": false,
+        "Physiological": false,
+        "Social / Behavioural": false
+    },
     pValueOptions: [
             0.00015,       // 1.5e-4
             0.00005,       // 5e-5

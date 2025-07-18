@@ -1,9 +1,11 @@
 import logo from '../assets/images/logo.png'
+import mrc_logo from '../assets/images/mrc_ieu.svg'
 import constants from './constants'
 
 export default function homepage() {
     return {
         logo,
+        mrc_logo,
         searchText: '',
         searchOptionData: [],
         variantSearchInProgress: false,
@@ -17,7 +19,19 @@ export default function homepage() {
             message: '',
             formData: {
                 studyType: 'continuous',
-                ancestry: 'EUR'
+                ancestry: 'EUR',
+                pValueIndex: 7,
+                pValue: 0.00000005,
+                pValueOptions: [
+                    0.00015,       // 1.5e-4
+                    0.00005,       // 5e-5
+                    0.00001,       // 1e-5
+                    0.000005,      // 5e-6
+                    0.000001,      // 1e-6
+                    0.0000005,     // 5e-7
+                    0.0000001,     // 1e-7
+                    0.00000005     // 5e-8
+                ]
             },
             validationErrors: {},
         },
@@ -126,7 +140,12 @@ export default function homepage() {
         },
 
         get getGPMapMetadata() {
-            return this.gpmapMetadata ? this.gpmapMetadata : {};
+            return this.gpmapMetadata ? this.gpmapMetadata : {
+                num_common_studies: 0,
+                num_rare_studies: 0,
+                num_molecular_studies: 0,
+                num_causal_variants: 0
+            };
         },
 
         searchVariant() {
@@ -157,18 +176,30 @@ export default function homepage() {
                 'bp',
                 'ea',
                 'oa',
-                'beta',
-                'se',
                 'p',
                 'eaf'
             ];
 
+            // Check base required fields
             requiredFields.forEach((field) => {
                 if (!this.uploadMetadata.formData[field]) {
                     this.uploadMetadata.validationErrors[field] = true;
                     hasErrors = true;
                 }
             });
+
+            // Check effect size fields - must have either beta/SE or OR/LB/UB
+            const hasBetaSE = this.uploadMetadata.formData.beta && this.uploadMetadata.formData.se;
+            const hasORCI = this.uploadMetadata.formData.or && this.uploadMetadata.formData.lb && this.uploadMetadata.formData.ub;
+
+            if (!hasBetaSE && !hasORCI) {
+                this.uploadMetadata.validationErrors.beta = true;
+                this.uploadMetadata.validationErrors.se = true;
+                this.uploadMetadata.validationErrors.or = true;
+                this.uploadMetadata.validationErrors.lb = true;
+                this.uploadMetadata.validationErrors.ub = true;
+                hasErrors = true;
+            }
 
             if (this.uploadMetadata.formData.isPublished && !this.uploadMetadata.formData.doi) {
                 this.uploadMetadata.validationErrors.doi = true 
@@ -201,8 +232,10 @@ export default function homepage() {
                     EA: this.uploadMetadata.formData.ea,
                     OA: this.uploadMetadata.formData.oa,
                     BETA: this.uploadMetadata.formData.beta,
-                    OR: this.uploadMetadata.formData.or,
                     SE: this.uploadMetadata.formData.se,
+                    OR: this.uploadMetadata.formData.or,
+                    LB: this.uploadMetadata.formData.lb,
+                    UB: this.uploadMetadata.formData.ub,
                     P: this.uploadMetadata.formData.p,
                     EAF: this.uploadMetadata.formData.eaf
                 }

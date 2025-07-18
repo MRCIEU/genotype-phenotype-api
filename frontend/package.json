@@ -25,6 +25,8 @@
     "bulma-divider": "^0.2.0",
     "bulma-slider": "^2.0.5",
     "d3": "^7.9.0",
-    "font-awesome": "^4.7.0"
+    "flatted": "^3.3.3",
+    "font-awesome": "^4.7.0",
+    "jszip": "^3.10.1"
   }
 }

@@ -1,10 +1,12 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi.responses import StreamingResponse
 from app.db.associations_db import AssociationsDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Association, Coloc, ExtendedColoc, ExtendedRareResult, RareResult, Variant, VariantResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import Association, Coloc, ExtendedColoc, ExtendedRareResult, ExtendedStudyExtraction, RareResult, Variant, VariantResponse, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import get_logger, time_endpoint
+from app.services.summary_stat_service import SummaryStatService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -62,16 +64,18 @@ async def get_variant(
             raise HTTPException(status_code=404, detail="Variant not found")
         colocs = studies_db.get_colocs_for_variants([snp_id])
         rare_results = studies_db.get_rare_results_for_variants([snp_id])
+        study_extractions = studies_db.get_study_extractions_for_variant(snp_id)
 
-        if not colocs and not rare_results:
+        if not colocs and not rare_results and not study_extractions:
             variant = convert_duckdb_to_pydantic_model(Variant, variant)
-            return VariantResponse(variant=variant, colocs=[], rare_results=[])
+            return VariantResponse(variant=variant, colocs=[], rare_results=[], study_extractions=[])
 
         colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
+        study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
 
-        study_ids = [coloc.study_id for coloc in colocs] + [rare_result.study_id for rare_result in rare_results]
+        study_ids = [coloc.study_id for coloc in colocs] + [rare_result.study_id for rare_result in rare_results] + [study_extraction.study_id for study_extraction in study_extractions]
         associations = associations_db.get_associations_for_variant_and_studies(snp_id, study_ids)
         associations = convert_duckdb_to_pydantic_model(Association, associations)
 
@@ -98,7 +102,7 @@ async def get_variant(
                 association=association
             ))
 
-        return VariantResponse(variant=variant, colocs=extended_colocs, rare_results=extended_rare_results)
+        return VariantResponse(variant=variant, colocs=extended_colocs, rare_results=extended_rare_results, study_extractions=study_extractions)
 
     except HTTPException as e:
         raise e
@@ -106,3 +110,41 @@ async def get_variant(
         logger.error(f"Error in get_variant: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/{snp_id}/summary-stats")
+@time_endpoint
+async def get_variant_with_summary_stats(
+    snp_id: int = Path(..., description="Variant ID to filter results"),
+):
+    try:
+        studies_db = StudiesDBClient()
+        variant = studies_db.get_variant(snp_id)
+        if variant is None:
+            raise HTTPException(status_code=404, detail="Variant not found")
+        colocs = studies_db.get_colocs_for_variants([snp_id])
+        rare_results = studies_db.get_rare_results_for_variants([snp_id])
+        study_extractions = studies_db.get_study_extractions_for_variant(snp_id)
+
+        colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
+        rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
+        variant = convert_duckdb_to_pydantic_model(Variant, variant)
+        study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
+
+        all_study_extraction_ids = [coloc.study_extraction_id for coloc in colocs] + [rare_result.study_extraction_id for rare_result in rare_results] + [study_extraction.id for study_extraction in study_extractions]
+        all_study_extractions = studies_db.get_study_extractions_by_id(all_study_extraction_ids)
+        all_study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, all_study_extractions)
+
+        summary_stat_service = SummaryStatService()
+        zip_buffer = summary_stat_service.get_study_summary_stats(all_study_extractions)
+
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=variant_{snp_id}_summary_stats.zip"}
+        )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in get_variant: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))

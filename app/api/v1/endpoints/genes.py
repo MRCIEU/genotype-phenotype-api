@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
-from typing import List
 import traceback
 
 from app.services.cache_service import DBCacheService
@@ -52,7 +51,7 @@ async def get_gene(gene_identifier: str = Path(..., description="Gene Symbol or 
                           ]
         gene.genes_in_region = genes_in_region
 
-        study_extractions = db.get_study_extractions_in_region(gene.chr, gene.start, gene.stop, gene.gene)
+        study_extractions = db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.gene)
         if study_extractions is not None:
             study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
             study_extraction_ids = [s.id for s in study_extractions]

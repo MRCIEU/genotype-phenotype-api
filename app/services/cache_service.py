@@ -1,5 +1,5 @@
 from functools import lru_cache
-from app.models.schemas import GPMapMetadata, Gene, SearchTerm, Singleton, StudyDataTypes, VariantTypes, convert_duckdb_to_pydantic_model
+from app.models.schemas import GPMapMetadata, Gene, SearchTerm, Singleton, StudyDataType, VariantType, convert_duckdb_to_pydantic_model
 from app.db.studies_db import StudiesDBClient
 from typing import List
 
@@ -75,11 +75,11 @@ class DBCacheService(metaclass=Singleton):
         common_studies = self.db.get_study_metadata()
 
         for study in common_studies:
-            if study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.COMMON.value:
+            if study[0] == StudyDataType.phenotype.name and study[1] == VariantType.common.name:
                 num_common_studies += study[2]
-            elif study[0] == StudyDataTypes.PHENOTYPE.value and study[1] == VariantTypes.RARE_EXOME.value:
+            elif study[0] == StudyDataType.phenotype.name and study[1] == VariantType.rare_exome.name:
                 num_rare_studies += study[2]
-            elif study[0] != StudyDataTypes.PHENOTYPE.value:
+            elif study[0] != StudyDataType.phenotype.name:
                 num_molecular_studies += study[2]
 
         gpmap_metadata = GPMapMetadata(
