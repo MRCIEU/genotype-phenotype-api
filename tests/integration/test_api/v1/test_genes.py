@@ -7,6 +7,7 @@ client = TestClient(app)
 
 def test_get_genes_with_colocs():
     response = client.get("/v1/genes/WNT7B")
+    print(response.json())
     assert response.status_code == 200
     genes = response.json()
     assert genes is not None

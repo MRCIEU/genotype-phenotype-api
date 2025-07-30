@@ -69,7 +69,7 @@
                 </div>
 
                 <div class="column is-7">
-                    <h4 x-show="data && data.colocs.length === 0" class="title is-3 has-text-centered">
+                    <h4 x-show="data && data.coloc_groups.length === 0" class="title is-3 has-text-centered">
                         No colocalization information to display for this variant.
                     </h4>
                     <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
@@ -90,7 +90,7 @@
                         <div class="level-right">
                             <div class="dropdown is-right" x-data="{ open: false }" :class="{ 'is-active': open }" style="display: inline-block;">
                                 <div class="dropdown-trigger">
-                                    <button class="button is-success is-small" @click="open = !open" :disabled="!data || data.colocs.length === 0">
+                                    <button class="button is-success is-small" @click="open = !open" :disabled="!data || data.coloc_groups.length === 0">
                                         <span>Download Data</span>
                                     </button>
                                 </div>
@@ -117,11 +117,11 @@
                         <tbody>
                             <template x-for="item in getDataForTable">
                                 <tr>
-                                    <td class="py-1 px-2" x-text="item.trait_name"></td>
-                                    <td class="py-1 px-2" x-text="item.tissue"></td>
+                                    <td class="py-1 px-2 has-text-ellipsis" style="max-width: 200px; white-space: nowrap; overflow: hidden;" x-text="item.trait_name"></td>
+                                    <td class="py-1 px-2 has-text-ellipsis" style="max-width: 120px; white-space: nowrap; overflow: hidden;" x-text="item.tissue"></td>
                                     <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                     <td class="py-1 px-2" x-text="item.cis_trans"></td>
-                                    <td class="py-1 px-2" x-text="(item.data_type === 'Phenotype' && item.trait_category ? 'phenotype (' + item.trait_category + ')' : item.data_type)"></td>
+                                    <td class="py-1 px-2 has-text-ellipsis" style="max-width: 180px; white-space: nowrap; overflow: hidden;" x-text="(item.data_type === 'Phenotype' && item.trait_category ? 'phenotype (' + item.trait_category + ')' : item.data_type)"></td>
                                     <td class="py-1 px-2" x-text="item.association ? item.association.beta.toFixed(3) : 'N/A'"></td>
                                 </tr>
                             </template>

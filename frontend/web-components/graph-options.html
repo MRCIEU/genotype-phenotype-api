@@ -1,6 +1,27 @@
 <div id="graphOptions" x-data="graphOptions">
-    <span class="is-size-7">Coloc Posterior Probability: <span x-text="coloc"></span></span> <br />
-    <input class="slider is-four-fifths mt-0 mb-0" @click="$store.graphOptionStore.coloc = parseFloat(coloc)" x-model="coloc" step="0.05" min="0.5" max="0.8" value="0.8" type="range">
+    <span class="is-size-7">Coloc Posterior Probability:</span> <br />
+    <div class="ml-4">
+        <label class="radio is-size-7">
+            <input 
+                type="radio" 
+                name="colocType"
+                value="strong"
+                x-model="colocType"
+                @change="$store.graphOptionStore.colocType = 'strong'"
+            />
+            <span>Strong (h4>0.8)</span>
+        </label>
+        <label class="radio is-size-7">
+            <input 
+                type="radio" 
+                name="colocType"
+                value="moderate"
+                x-model="colocType"
+                @change="$store.graphOptionStore.colocType = 'moderate'"
+            />
+            <span>Moderate (h4>0.6)</span>
+        </label>
+    </div>
     <hr class="divider mt-0 mb-0">
 
     <span class="is-size-7">Study P-value: <span x-text="Number(pValue).toExponential()"></span></span> <br />

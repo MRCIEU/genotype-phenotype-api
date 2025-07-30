@@ -10,7 +10,7 @@ from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
-from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColoc, GwasUpload, ProcessGwasRequest, GwasStatus, StudyDataType, StudyExtraction, TraitResponse, UpdateGwasRequest, UploadColoc, UploadStudyExtraction, convert_duckdb_to_pydantic_model
+from app.models.schemas import ExtendedStudyExtraction, ExtendedUploadColocGroup, GwasUpload, ProcessGwasRequest, GwasStatus, StudyDataType, StudyExtraction, TraitResponse, UpdateGwasRequest, UploadColocGroup, UploadStudyExtraction, convert_duckdb_to_pydantic_model
 
 settings = get_settings()
 router = APIRouter()
@@ -124,7 +124,7 @@ async def update_gwas(
         ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
         existing_ld_blocks = studies_db.get_ld_blocks_by_ld_block(ld_blocks)
 
-        coloc_snps = [coloc.candidate_snp for coloc in update_gwas_request.coloc_results]
+        coloc_snps = [coloc.snp_id for coloc in update_gwas_request.coloc_groups]
         coloc_snps = studies_db.get_variants_by_snp_strings(coloc_snps)
 
         study_extractions_snps = [study_extractions.snp for study_extractions in update_gwas_request.study_extractions]
@@ -202,7 +202,7 @@ async def get_gwas(guid: str):
             )
 
         colocalisations = gwas_upload_db.get_colocs_by_gwas_upload_id(gwas.id)
-        colocalisations = convert_duckdb_to_pydantic_model(ExtendedUploadColoc, colocalisations)
+        colocalisations = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, colocalisations)
 
         upload_study_extractions = gwas_upload_db.get_study_extractions_by_gwas_upload_id(gwas.id)
         upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)

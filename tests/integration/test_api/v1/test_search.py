@@ -27,9 +27,11 @@ def test_search_variant_by_rsid():
     assert len(variants.original_variants) > 0
     assert len(variants.proxy_variants) == 0
     assert variants.original_variants[0].num_colocs == 0
+    assert variants.original_variants[0].num_rare_results == 0
 
 def test_search_variant_by_chr_bp():
     response = client.get("/v1/search/variant/3:45576631")
+    print(response.json())
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)
@@ -37,3 +39,4 @@ def test_search_variant_by_chr_bp():
     assert len(variants.original_variants) > 0
     assert len(variants.proxy_variants) == 0
     assert variants.original_variants[0].num_colocs == 0
+    assert variants.original_variants[0].num_rare_results == 0

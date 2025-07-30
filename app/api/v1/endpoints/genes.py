@@ -58,13 +58,13 @@ async def get_gene(gene_identifier: str = Path(..., description="Gene Symbol or 
 
         region_colocs = db.get_all_colocs_for_study_extraction_ids(study_extraction_ids)
         gene_colocs = db.get_all_colocs_for_gene(gene.gene)
-        colocs = region_colocs + gene_colocs
-        if colocs is not None:
-            colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
-            study_extraction_ids = [coloc.study_extraction_id for coloc in colocs]
+        coloc_groups = region_colocs + gene_colocs
+        if coloc_groups is not None:
+            coloc_groups = convert_duckdb_to_pydantic_model(ColocGroup, coloc_groups)
+            study_extraction_ids = [coloc.study_extraction_id for coloc in coloc_groups]
             filtered_studies = [s for s in study_extractions if s.id not in study_extraction_ids]
 
-            snp_ids = [coloc.snp_id for coloc in colocs]
+            snp_ids = [coloc.snp_id for coloc in coloc_groups]
             variants = db.get_variants(snp_ids=snp_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)
         else:
@@ -79,7 +79,13 @@ async def get_gene(gene_identifier: str = Path(..., description="Gene Symbol or 
         if rare_results is not None:
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
 
-        return GeneResponse(tissues=tissues, gene=gene, colocs=colocs, variants=variants, study_extractions=filtered_studies, rare_results=rare_results)
+        return GeneResponse(tissues=tissues,
+                            gene=gene,
+                            coloc_groups=coloc_groups,
+                            variants=variants,
+                            study_extractions=filtered_studies,
+                            rare_results=rare_results
+        )
     except HTTPException as e:
         raise e
     except Exception as e:

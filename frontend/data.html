@@ -24,56 +24,64 @@
 
                 <div class="content columns mt-2 is-centered">
                     <div class="column is-11">
-                        <h2 id="data-sources">Data Sources</h2>
-                        <h4>Sources</h4>
-                        <p>
-                            The datasets that were used to populate the Genotype-Phenotype Map are as follows:
-                        </p>
-                        <div class="columns mt-2 is-centered">
-                            <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-                                <thead>
-                                    <tr>
-                                        <th><abbr title="Name">Name</abbr></th>
-                                        <th><abbr title="URL">URL</abbr></th>
-                                        <th><abbr title="DOI">DOI</abbr></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="source in getStudySources">
-                                        <tr>
-                                            <td x-text="source.name"></td>
-                                            <td><a x-bind:href="source.url" target="_blank"><span x-text="source.url"></span></a></td>
-                                            <td><a x-bind:href="source.doi" target="_blank"><span x-text="source.doi"></span></a></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-
-                        </div>
                         <h2 id="data-availability">Data Availability</h2>
-                        <p>
-                            Due to the large size of the data, we have restricted options to be able to download the summary statistics for all traits.  We have the following options:
-                            <li>
-                                Colocalization and Rare Variant Analysis Results: You can download all colocalizing and rare variant analysis results for any given trait, gene, or SNP using the <b>Download Data</b> buttons of their respective pages.
-                            </li>
-                            <li>
-                                GWAS / Summary Statistics: You can download all colocalizing and rare variant analysis results <b>and their corresponding GWAS summary satistics</b> only for a specific SNP, using the <b>Download Data</b> button on the SNP view.
-                            </li>
-                            <li>
-                                <a href="https://console.cloud.google.com/storage/browser/genotype-phenotype-map" target="_blank"><b></b>Google Cloud Bucket</b></a>:  You can download all of the data from the Google Cloud Bucket.  Note that this bucket is a 'requester pays' bucket, so you will need to have a Google Cloud account, be logged in, and have a credit card on file to download the data.  A full explanation of the data in the bucket can be found <a href="https://github.com/MRCIEU/genotype-phenotype-map/some-wiki-page" target="_blank">here</a>.
-                            </li>
-                        </p>
+                        <div class="column is-10 is-offset-1">
+                            <p>
+                                Due to the large size of the data, we have restricted options to be able to download the summary statistics for all traits.  We have the following options:
+                                <li>
+                                    Colocalization and Rare Variant Analysis Results: You can download all colocalizing and rare variant analysis results for any given trait, gene, or SNP using the <b>Download Data</b> buttons of their respective pages.
+                                </li>
+                                <li>
+                                    GWAS / Summary Statistics: You can download all colocalizing and rare variant analysis results <b>and their corresponding GWAS summary satistics</b> only for a specific SNP, using the <b>Download Data</b> button on the SNP view.
+                                </li>
+                                <li>
+                                    <a href="https://console.cloud.google.com/storage/browser/genotype-phenotype-map" target="_blank"><b></b>Google Cloud Bucket</b></a>:  You can download all of the data from the Google Cloud Bucket.  Note that this bucket is a 'requester pays' bucket, so you will need to have a Google Cloud account, be logged in, and have a credit card on file to download the data.  A full explanation of the data in the bucket can be found <a href="https://github.com/MRCIEU/genotype-phenotype-map/some-wiki-page" target="_blank">here</a>.
+                                </li>
+                            </p>
+                        </div>
+                        <h2 id="data-sources">Data Sources</h2>
+                        <div class="column is-10 is-offset-1">
+                            <h4>Sources</h4>
+                            <p>
+                                The datasets that were used to populate the Genotype-Phenotype Map are as follows:
+                            </p>
+                            <div class="columns mt-2 is-centered">
+                                <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+                                    <thead>
+                                        <tr>
+                                            <th><abbr title="Name">Name</abbr></th>
+                                            <th><abbr title="URL">URL</abbr></th>
+                                            <th><abbr title="DOI">DOI</abbr></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="source in getStudySources">
+                                            <tr>
+                                                <td x-text="source.name"></td>
+                                                <td><a x-bind:href="source.url" target="_blank"><span x-text="source.url"></span></a></td>
+                                                <td><a x-bind:href="source.doi" target="_blank"><span x-text="source.doi"></span></a></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <h2 id="summary-of-data-processed-in-pipeline">Summary of Data Processed in Pipeline</h2>
-                        <pipeline-summary></pipeline-summary>
+                        <div class="column is-10 is-offset-1">
+                            <pipeline-summary></pipeline-summary>
+                        </div>
 
                         <h2 id="acknowledgements">Acknowledgements</h2>
-                        <p>
-                            Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
-                            elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius
-                            lectus, nec rutrum justo nibh eu lectus. Ut vulputate semper dui. Fusce erat
-                            odio, sollicitudin vel erat vel, interdum mattis neque. Sub<sub>script</sub>
-                            works as well!
-                        </p>
+                        <div class="column is-10 is-offset-1">
+                            <p>
+                                Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing
+                                elit. Nulla accumsan, metus ultrices eleifend gravida, nulla nunc varius
+                                lectus, nec rutrum justo nibh eu lectus. Ut vulputate semper dui. Fusce erat
+                                odio, sollicitudin vel erat vel, interdum mattis neque. Sub<sub>script</sub>
+                                works as well!
+                            </p>
+
+                        </div>
                     </div>
                 </div>
             </div>

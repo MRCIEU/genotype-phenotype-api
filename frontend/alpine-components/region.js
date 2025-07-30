@@ -59,8 +59,8 @@ export default function region() {
             this.minMbp = this.data.region.start / 1000000
             this.maxMbp = this.data.region.stop / 1000000
 
-            this.data.colocs = this.data.colocs.map(coloc => {
-                const variantType = this.data.variants.find(variant => variant.SNP === coloc.candidate_snp)
+            this.data.coloc_groups = this.data.coloc_groups.map(coloc => {
+                const variantType = this.data.variants.find(variant => variant.SNP === coloc.display_snp)
                 return {
                     ...coloc,
                     type: 'coloc',
@@ -68,10 +68,10 @@ export default function region() {
                     variantType: variantType ? variantType.Consequence.split(",")[0] : null,
                 }
             })
-            this.data.colocs = graphTransformations.addColorForSNPs(this.data.colocs)
+            this.data.coloc_groups = graphTransformations.addColorForSNPs(this.data.coloc_groups)
 
             this.data.rare_results = this.data.rare_results.map(rareResult => {
-                const variantType = this.data.variants.find(variant => variant.SNP === rareResult.candidate_snp)
+                const variantType = this.data.variants.find(variant => variant.SNP === rareResult.display_snp)
                 return {
                     ...rareResult,
                     type: 'rare',
@@ -92,9 +92,9 @@ export default function region() {
             if (!this.data) return
             const graphOptions = Alpine.store('graphOptionStore');
 
-            this.filteredData.colocs = this.data.colocs.filter(coloc => {
+            this.data.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters = (coloc.min_p <= graphOptions.pValue &&
-                   coloc.posterior_prob >= graphOptions.coloc &&
+                    (graphOptions.colocType === coloc.group_threshold) &&
                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                    (graphOptions.traitType === 'all' ? true : 
                     graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
@@ -112,8 +112,8 @@ export default function region() {
                 return graphOptionFilters
             })
 
-            this.filteredData.groupedRare = graphTransformations.groupByCandidateSnp(this.filteredData.rare, null, null, this.displayFilters)
-            this.filteredData.groupedColocs = graphTransformations.groupByCandidateSnp(this.filteredData.colocs, null, null, this.displayFilters)
+            this.filteredData.groupedRare = graphTransformations.groupBySnp(this.filteredData.rare, null, null, this.displayFilters)
+            this.filteredData.groupedColocs = graphTransformations.groupBySnp(this.data.coloc_groups, null, null, this.displayFilters)
             this.filteredData.groupedResults = {...this.filteredData.groupedColocs, ...this.filteredData.groupedRare}
 
             this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(this.filteredData.groupedResults)
@@ -149,7 +149,7 @@ export default function region() {
 
         get filteredColocDataExist() {
             this.filterDataForGraphs()
-            return this.filteredData.colocs && this.filteredData.colocs.length > 0
+            return this.data && this.data.coloc_groups && this.data.coloc_groups.length > 0
         },
 
         async downloadData() {
@@ -158,7 +158,7 @@ export default function region() {
         },
 
         get getDataForColocTable() {
-            if (!this.filteredData.colocs || this.filteredData.colocs.length === 0) return []
+            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return []
 
             const tableData = Object.fromEntries(
                 Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, group]) => {

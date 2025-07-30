@@ -2,16 +2,12 @@ import traceback
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import * 
-from typing import List
-
 from app.logging_config import get_logger, time_endpoint
 from app.services.cache_service import DBCacheService
 
 logger = get_logger(__name__)
 router = APIRouter()
 
-
-# TODO: consider getting rid of this whole endpoint.  Is this a valid way to show to data?
 
 @router.get("/{ld_block_id}", response_model=RegionResponse)
 @time_endpoint
@@ -34,7 +30,7 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
         coloc_snp_ids = rare_result_snp_ids = []
         region_colocs = db.get_all_colocs_for_ld_block(ld_block_id)
         if region_colocs:
-            region_colocs = convert_duckdb_to_pydantic_model(Coloc, region_colocs)
+            region_colocs = convert_duckdb_to_pydantic_model(ColocGroup, region_colocs)
             coloc_snp_ids = [coloc.snp_id for coloc in region_colocs]
 
         region_rare_results = db.get_rare_results_for_ld_block(ld_block_id)
@@ -54,7 +50,7 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
         return RegionResponse(region=ld_block,
                               genes_in_region=genes_in_region,
                               tissues=tissues,
-                              colocs=region_colocs,
+                              coloc_groups=region_colocs,
                               variants=variants,
                               rare_results=region_rare_results
                               )

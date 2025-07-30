@@ -4,7 +4,7 @@ from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
-from app.models.schemas import GwasStatus, ProcessGwasRequest, UploadColoc, UploadStudyExtraction
+from app.models.schemas import GwasStatus, ProcessGwasRequest, UploadColocGroup, UploadColocPair, UploadStudyExtraction
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -125,17 +125,36 @@ class GwasDBClient:
         return results
 
     @log_performance
-    def populate_colocs(self, colocs: List[UploadColoc]):
+    def populate_colocs(self, colocs: List[UploadColocGroup]):
         conn = self.connect()
         try:
-            coloc_fields = list(UploadColoc.model_fields.keys())
+            coloc_fields = list(UploadColocGroup.model_fields.keys())
             coloc_fields_str = ", ".join(coloc_fields)
             coloc_placeholders = ", ".join(["?" for _ in coloc_fields])
+
             for coloc in colocs:
                 values = [getattr(coloc, field) for field in coloc_fields]
                 conn.execute(f"""
-                    INSERT INTO colocalisations ({coloc_fields_str})
+                    INSERT INTO coloc_groups ({coloc_fields_str})
                     VALUES ({coloc_placeholders})
+                """, values)
+            conn.commit()
+        finally:
+            conn.close()
+
+    @log_performance
+    def populate_coloc_pairs(self, coloc_pairs: List[UploadColocPair]):
+        conn = self.connect()
+        try:
+            coloc_pair_fields = list(UploadColocPair.model_fields.keys())
+            coloc_pair_fields_str = ", ".join(coloc_pair_fields)
+            coloc_pair_placeholders = ", ".join(["?" for _ in coloc_pair_fields])
+
+            for coloc_pair in coloc_pairs:
+                values = [getattr(coloc_pair, field) for field in coloc_pair_fields]
+                conn.execute(f"""
+                    INSERT INTO coloc_pairs ({coloc_pair_fields_str})
+                    VALUES ({coloc_pair_placeholders})
                 """, values)
             conn.commit()
         finally:

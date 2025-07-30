@@ -1,8 +1,8 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Response
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Coloc, ExtendedVariant, Ld, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import ColocGroup, ExtendedVariant, Ld, RareResult, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.services.cache_service import DBCacheService
@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/options", response_model=List[SearchTerm])
 @time_endpoint
-async def get_search_options(request: Request, response: Response):
+async def get_search_options(response: Response):
     try:
         # Add cache control headers
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
@@ -34,7 +34,6 @@ async def get_search_options(request: Request, response: Response):
 @time_endpoint
 async def search(search_term: str):
     try:
-        cache_service = DBCacheService()
         studies_db = StudiesDBClient()
         ld_db = LdDBClient()
 
@@ -58,15 +57,18 @@ async def search(search_term: str):
 
         all_snp_ids = list(set(snp_ids + proxy_snp_ids))
         colocs = studies_db.get_colocs_for_variants(snp_ids=all_snp_ids)
-        colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
+        colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
 
-        # TODO: Add rare variants
+        rare_results = studies_db.get_rare_results_for_variants(snp_ids=snp_ids)
+        rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
+
         for variant in original_variants:
-            variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
-            variant.ld_proxies = [proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id]
+            populate_variant_search_results(variant, colocs, rare_results, proxies)
         for variant in proxy_variants:
-            variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
-            variant.ld_proxies = [proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id]
+            populate_variant_search_results(variant, colocs, rare_results, proxies)
+        
+        logger.warning("Original variants:")
+        logger.warning(original_variants)
 
         proxy_variants = [variant for variant in proxy_variants if variant.num_colocs > 0]
         proxy_variants.sort(key=lambda x: x.num_colocs, reverse=True)
@@ -77,3 +79,13 @@ async def search(search_term: str):
     except Exception as e:
         logger.error(f"Error in search variant: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def populate_variant_search_results(variant: ExtendedVariant, colocs: List[ColocGroup], rare_results: List[RareResult], proxies: List[Ld]):
+    variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
+    variant.coloc_groups = [coloc for coloc in colocs if coloc.snp_id == variant.id]
+    
+    variant.num_rare_results = len(set([rare_result.rare_result_group_id for rare_result in rare_results if rare_result.snp_id == variant.id]))
+    variant.rare_results = [rare_result for rare_result in rare_results if rare_result.snp_id == variant.id]
+
+    variant.ld_proxies = [proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id]

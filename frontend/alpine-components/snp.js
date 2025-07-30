@@ -35,14 +35,14 @@ export default function snp() {
                 document.title = 'GP Map: ' +  this.getSNPName()
                 await this.getSvgData(variantId)
 
-                this.data.colocs = this.data.colocs.map(coloc => ({
+                this.data.coloc_groups = this.data.coloc_groups.map(coloc => ({
                     ...coloc,
                     tissue: coloc.tissue ? coloc.tissue : "N/A",
                     cis_trans: coloc.cis_trans? coloc.cis_trans : "N/A"
                 })) 
-                this.data.colocs.sort((a, b) => a.data_type.localeCompare(b.data_type));
+                this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
-                const ld_block = this.data.colocs[0].ld_block
+                const ld_block = this.data.coloc_groups[0].ld_block
                 const ld_info = ld_block.split(/[\/-]/)
                 this.data.variant.min_bp = ld_info[2]
                 this.data.variant.max_bp = ld_info[3]
@@ -66,7 +66,7 @@ export default function snp() {
                 const [filename, file] = entries[i];
                 let studyExtractionId = parseInt(filename.split('.svg')[0]);
                 if (constants.isLocal) {
-                    studyExtractionId = this.data.colocs[i%this.data.colocs.length].study_extraction_id;
+                    studyExtractionId = this.data.coloc_groups[i%this.data.coloc_groups.length].study_extraction_id;
                 }
                 const svgContent = await file.async('text');
                 this.svgs.push({ studyExtractionId, svgContent });
@@ -82,18 +82,18 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.filteredData.colocs: [];
+            return this.data ? this.data.coloc_groups: [];
         },
 
         downloadDataOnly() {
-            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) {
                 return;
             }
             downloads.downloadDataToZip(this.data, this.getSNPName());
         },
 
         async downloadDataAndGWAS() {
-            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) {
                 return;
             }
             const response = await fetch(constants.apiUrl + '/variants/' + this.data.variant.id + '/summary-stats')
@@ -108,9 +108,9 @@ export default function snp() {
         filterDataForGraphs() {
             if (!this.data) return
             const graphOptions = Alpine.store('graphOptionStore');
-            this.filteredData.colocs = this.data.colocs.filter(coloc => {
+            this.data.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters = (coloc.min_p <= graphOptions.pValue &&
-                    coloc.posterior_prob >= graphOptions.coloc &&
+                    (graphOptions.colocType === coloc.group_threshold) &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                     (graphOptions.traitType === 'all' ? true : 
                      graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
@@ -123,9 +123,9 @@ export default function snp() {
                 return graphOptionFilters
             });
             this.filteredData.svgs = this.svgs.filter(svg => {
-                return this.filteredData.colocs.some(coloc => coloc.study_extraction_id === svg.studyExtractionId)
+                return this.data.coloc_groups.some(coloc => coloc.study_extraction_id === svg.studyExtractionId)
             });
-            // this.filteredData.colocs.sort((a, b) => a.association.beta - b.association.beta);
+            // this.data.coloc_groups.sort((a, b) => a.association.beta - b.association.beta);
         },
 
         initForestPlot() {
@@ -178,8 +178,8 @@ export default function snp() {
                 .attr('transform', `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
 
             // Process data
-            const candidate_snp = this.data.variant.RSID;
-            const colocs = this.filteredData.colocs;
+            const display_snp = this.data.variant.RSID;
+            const colocs = this.data.coloc_groups;
 
             // Extract unique data_types
             const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
@@ -187,8 +187,8 @@ export default function snp() {
             // Extract unique traits
             const traits = colocs.map(d => d.trait_name);
 
-            // Combine candidate_snp and traits into nodes
-            const nodes = [candidate_snp, ...traits];
+            // Combine display_snp and traits into nodes
+            const nodes = [display_snp, ...traits];
 
             // Create data_type mapping for coloring
             const dataTypeMap = {};
@@ -210,9 +210,9 @@ export default function snp() {
             // Initialize matrix
             const matrix = Array(nodes.length).fill(null).map(() => Array(nodes.length).fill(0));
 
-            // Populate matrix: connections from candidate_snp to each trait
+            // Populate matrix: connections from display_snp to each trait
             colocs.forEach(coloc => {
-                const source = indexMap[candidate_snp];
+                const source = indexMap[display_snp];
                 const target = indexMap[coloc.trait_name];
                 matrix[source][target] = 1; // Each trait connects once to the SNP
             });
@@ -233,7 +233,7 @@ export default function snp() {
             const ribbon = d3.ribbon()
                 .radius(innerRadius);
 
-            // Add groups (candidate_snp and traits)
+            // Add groups (display_snp and traits)
             const group = svg.selectAll('.group')
                 .data(chords.groups)
                 .enter().append('g')
@@ -242,7 +242,7 @@ export default function snp() {
             group.append('path')
                 .style('fill', d => {
                     const name = nodes[d.index];
-                    if (name === candidate_snp) {
+                    if (name === display_snp) {
                         return '#808080'; // Gray for SNP
                     }
                     return color(dataTypeMap[name]);
@@ -253,7 +253,7 @@ export default function snp() {
                     d3.select(this).transition().duration(200).style('fill', d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
                 })
                 .on('mouseout', function(event, d) {
-                    d3.select(this).transition().duration(200).style('fill', nodes[d.index] === candidate_snp ? '#808080' : color(dataTypeMap[nodes[d.index]]));
+                    d3.select(this).transition().duration(200).style('fill', nodes[d.index] === display_snp ? '#808080' : color(dataTypeMap[nodes[d.index]]));
                 });
 
             // Add chords
@@ -270,7 +270,7 @@ export default function snp() {
                 .attr('opacity', 0.7)
                 .on('mouseover', function(event, d) {
                     d3.select(this).transition().duration(200).attr('opacity', 1);
-                    const coloc = self.filteredData.colocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
+                    const coloc = self.data.coloc_groups.find(coloc => coloc.trait_name === nodes[d.target.index]);
                     self.highlightedStudy = coloc.study_extraction_id;
                     self.svgs = self.svgs.sort((a, b) =>
                         a.studyExtractionId === coloc.study_extraction_id ? 1 : b.studyExtractionId === coloc.study_extraction_id ? -1 : 0
@@ -340,14 +340,14 @@ export default function snp() {
         },
 
         getForestPlot() {
-            if (!this.data || !this.filteredData.colocs) return;
+            if (!this.data || !this.data.coloc_groups) return;
 
             const plotContainer = d3.select("#forest-plot");
             plotContainer.selectAll("*").remove();
 
             const margin = { top: 50, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
-            const height = this.filteredData.colocs.length * 27;
+            const height = this.data.coloc_groups.length * 27;
 
             const svg = plotContainer.append("svg")
                 .attr("width", width + margin.left + margin.right)
@@ -356,7 +356,7 @@ export default function snp() {
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
             // Filter out items without association data
-            const validData = this.filteredData.colocs.filter(d => d.association && d.association.beta !== null && d.association.se !== null);
+            const validData = this.data.coloc_groups.filter(d => d.association && d.association.beta !== null && d.association.se !== null);
             
             // Calculate the range for the x-axis
             const maxAbsBeta = d3.max(validData, d => Math.abs(d.association.beta));
@@ -532,7 +532,7 @@ export default function snp() {
                 .text(""); // Start empty
 
             if (this.highlightedStudy) {
-                const study = this.filteredData.colocs.find(d => d.study_extraction_id === this.highlightedStudy);
+                const study = this.data.coloc_groups.find(d => d.study_extraction_id === this.highlightedStudy);
                 if (study) {
                     let traitName = study.trait_name;
                     const pValueText = `: p = ${study.min_p.toExponential(2)}`;

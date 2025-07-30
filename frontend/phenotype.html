@@ -49,7 +49,7 @@
 
                 </div>
                 <div class="column is-2">
-                    <div x-show="showResults && filteredData.colocs && filteredData.colocs.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
+                    <div x-show="showResults && filteredData.coloc_groups && data.coloc_groups.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
                             Please change current filter settings for results to appear.
                     </div>
                 </div>
@@ -78,7 +78,7 @@
                                 <input
                                     type="text"
                                     class="input is-small"
-                                    :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
+                                    :placeholder="displayFilters.traitName ? displayFilters.traitName : 'Filter Results By...'"
                                     x-model="traitSearch.text"
                                     @focus="traitSearch.showDropDown = true"
                                     @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
@@ -94,10 +94,10 @@
                                     </template>
                                 </div>
                             </div>
-                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp" class="tag is-light" style="margin-left: 0.5rem;">
+                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.snp" class="tag is-light" style="margin-left: 0.5rem;">
                                 Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
                                 <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
-                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>
+                                <b x-show="displayFilters.snp" x-text="'SNP: ' + displayFilters.snp"></b>
                             </span>
                         </div>
                         <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem;">

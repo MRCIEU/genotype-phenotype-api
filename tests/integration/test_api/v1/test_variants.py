@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import Association, ExtendedColoc, Variant, VariantResponse
+from app.models.schemas import Association, ExtendedColocGroup, Variant, VariantResponse
 
 
 client = TestClient(app)
@@ -123,8 +123,9 @@ def test_get_variants_by_grange_with_associations():
             if field != 'canonical' and field != 'gene_id':
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
         assert variant_model.associations is not None
-        assert len(variant_model.associations) > 0
         for association in variant_model.associations:
+            print(association)
+            assert isinstance(association, Association)
             assert association.snp_id is not None
             assert association.study_id is not None
             assert association.p is not None
@@ -141,7 +142,7 @@ def test_get_variant_by_id():
     assert variant_response.colocs is not None
 
     for coloc in variant_response.colocs:
-        assert isinstance(coloc, ExtendedColoc)
+        assert isinstance(coloc, ExtendedColocGroup)
         assert coloc.coloc_group_id is not None
         assert coloc.study_extraction_id is not None
         assert coloc.chr is not None

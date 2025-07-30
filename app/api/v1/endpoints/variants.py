@@ -2,8 +2,9 @@ import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import StreamingResponse
 from app.db.associations_db import AssociationsDBClient
+from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Association, Coloc, ExtendedColoc, ExtendedRareResult, ExtendedStudyExtraction, RareResult, Variant, VariantResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import Association, ColocGroup, ColocPair, ExtendedColocGroup, ExtendedRareResult, ExtendedStudyExtraction, RareResult, Variant, VariantResponse, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.services.summary_stat_service import SummaryStatService
@@ -19,6 +20,7 @@ async def get_variants(
     rsids: List[str] = Query(None, description="List of rsids to filter results"),
     grange: str = Query(None, description="grange to filter results"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
+    include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
     p_value_threshold: float = Query(None, description="P-value threshold to filter results")
 ) -> List[Variant]:
     try:
@@ -29,6 +31,7 @@ async def get_variants(
 
         studies_db = StudiesDBClient()
         associations_db = AssociationsDBClient()
+        coloc_pairs_db = ColocPairsDBClient()
 
         variants = studies_db.get_variants(snp_ids=snp_ids, variants=variants, rsids=rsids, grange=grange)
         variants = convert_duckdb_to_pydantic_model(Variant, variants)
@@ -40,6 +43,12 @@ async def get_variants(
 
             for variant in variants:
                 variant.associations = [association for association in associations if association.snp_id == variant.id]
+        
+        if include_coloc_pairs:
+            coloc_pairs = coloc_pairs_db.get_all_coloc_pairs_for_snps(variant_ids)
+            coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+            for variant in variants:
+                variant.coloc_pairs = [coloc_pair for coloc_pair in coloc_pairs if coloc_pair.snp_id == variant.id]
 
         return variants
 
@@ -54,10 +63,12 @@ async def get_variants(
 @time_endpoint
 async def get_variant(
     snp_id: int = Path(..., description="Variant ID to filter results"),
+    include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
 ) -> VariantResponse:
     try:
         studies_db = StudiesDBClient()
         associations_db = AssociationsDBClient()
+        coloc_pairs_db = ColocPairsDBClient()
 
         variant = studies_db.get_variant(snp_id)
         if variant is None:
@@ -70,7 +81,7 @@ async def get_variant(
             variant = convert_duckdb_to_pydantic_model(Variant, variant)
             return VariantResponse(variant=variant, colocs=[], rare_results=[], study_extractions=[])
 
-        colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
+        colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
@@ -79,6 +90,11 @@ async def get_variant(
         associations = associations_db.get_associations_for_variant_and_studies(snp_id, study_ids)
         associations = convert_duckdb_to_pydantic_model(Association, associations)
 
+        coloc_pairs = None
+        if include_coloc_pairs:
+            coloc_pairs = coloc_pairs_db.get_all_coloc_pairs_for_snp(snp_id)
+            coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+
         extended_colocs = []
         for coloc in colocs:
             association = next((u for u in associations if u.study_id == coloc.study_id), None)
@@ -86,7 +102,7 @@ async def get_variant(
                 #TODO: Remove this once we have fixed the data 
                 logger.warning(f"Association not found for variant {snp_id} and study {coloc.study_id}")
                 # raise HTTPException(status_code=400, detail="Association not found for variant and study")
-            extended_colocs.append(ExtendedColoc(
+            extended_colocs.append(ExtendedColocGroup(
                 **coloc.model_dump(),
                 association=association
             ))
@@ -102,7 +118,12 @@ async def get_variant(
                 association=association
             ))
 
-        return VariantResponse(variant=variant, colocs=extended_colocs, rare_results=extended_rare_results, study_extractions=study_extractions)
+        return VariantResponse(variant=variant,
+                               coloc_groups=extended_colocs,
+                               rare_results=extended_rare_results,
+                               study_extractions=study_extractions,
+                               coloc_pairs=coloc_pairs,
+                               associations=associations)
 
     except HTTPException as e:
         raise e
@@ -125,7 +146,7 @@ async def get_variant_with_summary_stats(
         rare_results = studies_db.get_rare_results_for_variants([snp_id])
         study_extractions = studies_db.get_study_extractions_for_variant(snp_id)
 
-        colocs = convert_duckdb_to_pydantic_model(Coloc, colocs)
+        colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)

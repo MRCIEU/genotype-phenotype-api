@@ -34,7 +34,7 @@ customElements.define('results-table', ResultsTable);
 // }
 
 const graphOptions = {
-    coloc: 0.8,
+    colocType: 'strong',
     pValue: 0.00000005,
     traitType: 'all',
     includeTrans: false,

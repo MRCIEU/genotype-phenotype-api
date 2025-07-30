@@ -23,6 +23,10 @@ class VariantType(Enum):
     rare_exome = "Rare Exome"
     rare_wgs = "Rare WGS"
 
+class ColocGroupThreshold(Enum):
+    strong = "Strong"
+    moderate = "Moderate"
+
 class StudySource(BaseModel):
     id: int
     source: str
@@ -39,23 +43,26 @@ class Association(BaseModel):
     eaf: float
     imputed: bool
 
-class Coloc(BaseModel):
+class ColocPair(BaseModel):
+    study_extraction_a_id: int
+    study_extraction_b_id: int
+    ld_block_id: int
+    h3: float
+    h4: float
+
+class ColocGroup(BaseModel):
+    coloc_group_id: int
+    study_id: int
     study_extraction_id: int
     snp_id: int
     ld_block_id: int
-    coloc_group_id: int
-    iteration: int
-    unique_study_id: str
-    posterior_prob: float
-    regional_prob: float
-    posterior_explained_by_snp: float
-    candidate_snp: str
-    study_id: int
+    group_threshold: str
     chr: Optional[int] = None
     bp: Optional[int] = None
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
+    display_snp: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
@@ -101,7 +108,7 @@ class GeneMetadata(BaseModel):
     min_bp: int
     max_bp: int
 
-class ExtendedColoc(Coloc):
+class ExtendedColocGroup(ColocGroup):
     association: Optional[Association] = None
 
 class Trait(BaseModel):
@@ -145,14 +152,11 @@ class GetStudySourcesResponse(BaseModel):
 class Study(BaseModel):
     id: int
     data_type: str
-    data_format: str
     study_name: str
     trait_id: int
     ancestry: Optional[str] = None
     sample_size: Optional[int] = None
     category: Optional[str] = None
-    study_location: str
-    extracted_location: str
     probe: Optional[str] = None
     tissue: Optional[str] = None
     source_id: Optional[int] = None
@@ -160,6 +164,7 @@ class Study(BaseModel):
     p_value_threshold: float
     gene: Optional[str] = None
     gene_id: Optional[int] = None
+    ensg: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -178,6 +183,8 @@ class StudyExtraction(BaseModel):
     unique_study_id: str
     study: str
     file: str
+    svg_file: Optional[str] = None
+    file_with_lbfs: Optional[str] = None
     chr: int 
     bp: int
     min_p: float
@@ -204,16 +211,14 @@ class SearchTerm(BaseModel):
 
 class RareResult(BaseModel):
     rare_result_group_id: int
+    study_id: int
     study_extraction_id: int
     snp_id: int
     ld_block_id: int
-    unique_study_id: str
-    candidate_snp: str
-    study_id: int
-    file: str
     chr: int
     bp: int
     min_p: float
+    display_snp: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
@@ -233,10 +238,13 @@ class ExtendedRareResult(RareResult):
 class Variant(BaseModel):
     id: int
     snp: str
+    display_snp: str
     chr: int
     bp: int
     ea: str
     oa: str
+    ref_allele: str
+    flipped: bool
     gene_id: Optional[int] = None
     gene: str
     feature_type: str
@@ -262,7 +270,9 @@ class Variant(BaseModel):
 
 class ExtendedVariant(Variant):
     num_colocs: Optional[int] = None
-    num_rare_variants: Optional[int] = None
+    coloc_groups: Optional[List[ColocGroup]] = None
+    num_rare_results: Optional[int] = None
+    rare_results: Optional[List[RareResult]] = None
     ld_proxies: Optional[List[Ld]] = None
 
 class GetGenesResponse(BaseModel):
@@ -270,7 +280,7 @@ class GetGenesResponse(BaseModel):
 
 class GeneResponse(BaseModel):
     gene: Gene
-    colocs: List[Coloc]
+    coloc_groups: List[ColocGroup]
     rare_results: List[RareResult]
     variants: List[Variant]
     study_extractions: List[ExtendedStudyExtraction]
@@ -279,14 +289,15 @@ class GeneResponse(BaseModel):
 class RegionResponse(BaseModel):
     region: LdBlock
     genes_in_region: List[Gene] 
-    colocs: List[Coloc]
+    coloc_groups: List[ColocGroup]
     rare_results: List[RareResult]
     variants: List[Variant]
     tissues: List[str]
 
 class VariantResponse(BaseModel):
     variant: Variant
-    colocs: List[ExtendedColoc]
+    coloc_groups: List[ExtendedColocGroup]
+    coloc_pairs: Optional[List[ColocPair]] = None
     rare_results: List[ExtendedRareResult]
     study_extractions: List[ExtendedStudyExtraction]
 
@@ -299,7 +310,8 @@ class VariantSearchResponse(BaseModel):
 
 class TraitResponse(BaseModel):
     trait: Trait | GwasUpload
-    colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
+    coloc_groups: Optional[List[ColocGroup]] | Optional[List[ExtendedUploadColocGroup]] = None
+    coloc_pairs: Optional[List[ColocPair]] = None
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
@@ -337,7 +349,8 @@ class ProcessGwasRequest(BaseModel):
 class UpdateGwasRequest(BaseModel):
     success: bool
     failure_reason: Optional[str] = None
-    coloc_results: Optional[List[UploadColoc]] = None
+    coloc_pairs: Optional[List[UploadColocPair]] = None
+    coloc_groups: Optional[List[UploadColocGroup]] = None
     study_extractions: Optional[List[UploadStudyExtraction]] = None
 
 class GwasColumnNames(BaseModel):
@@ -392,7 +405,7 @@ class UploadStudyExtraction(BaseModel):
     }
 
 
-class UploadColoc(BaseModel):
+class UploadColocGroup(BaseModel):
     gwas_upload_id: Optional[int] = None
     upload_study_extraction_id: Optional[int] = None
     existing_study_extraction_id: Optional[int] = None
@@ -404,7 +417,7 @@ class UploadColoc(BaseModel):
     posterior_prob: Optional[float] = None
     regional_prob: Optional[float] = None
     posterior_explained_by_snp: Optional[float] = None
-    candidate_snp: Optional[str] = None
+    display_snp: Optional[str] = None
     study_id: Optional[int] = None
     chr: Optional[int] = None
     bp: Optional[int] = None
@@ -418,7 +431,19 @@ class UploadColoc(BaseModel):
         "from_attributes": True
     }
 
-class ExtendedUploadColoc(UploadColoc):
+class UploadColocPair(BaseModel):
+    gwas_upload_id: Optional[int] = None
+    existing_study_extraction_id: Optional[int] = None
+    snp_id: Optional[int] = None
+    ld_block_id: Optional[int] = None
+    coloc_group_id: Optional[int] = None
+    study_extraction_a_id: int
+    study_extraction_b_id: int
+    ld_block_id: int
+    h3: float
+    h4: float
+
+class ExtendedUploadColocGroup(UploadColocGroup):
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
     data_type: Optional[str] = None

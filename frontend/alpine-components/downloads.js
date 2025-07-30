@@ -10,7 +10,7 @@ export default {
      */
     downloadSNPDataToCSV(snpData, colocData, filename = 'coloc_data.csv') {
         const headers = [
-            'candidate_snp', 'rsid', 'chr', 'bp', 'ea', 'oa', 'posterior_prob', 
+            'display_snp', 'rsid', 'chr', 'bp', 'ea', 'oa', 'posterior_prob', 
             'regional_prob', 'posterior_explained_by_snp', 'min_p', 'cis_trans',
             'trait', 'data_type', 'tissue', 'gene',
             'beta', 'se', 'p', 'eaf', 'imputed'
@@ -19,7 +19,7 @@ export default {
         let csvContent = headers.join(',') + '\n';
         colocData.forEach(coloc => {
             const row = [
-                coloc.candidate_snp || '',
+                coloc.display_snp || '',
                 snpData.rsid || '',
                 snpData.chr || '',
                 snpData.bp || '',
@@ -88,8 +88,8 @@ export default {
             zip.file('gene.json', geneJSON);
         }
 
-        if (data.colocs && data.colocs.length > 0) {
-            const colocTSV = this.arrayToTSV(data.colocs);
+        if (data.coloc_groups && data.coloc_groups.length > 0) {
+            const colocTSV = this.arrayToTSV(data.coloc_groups);
             zip.file('coloc_groups.tsv', colocTSV);
         }
 

@@ -10,7 +10,7 @@ export default function gene() {
         data: null,
         downloadClicked: false,
         filteredData: {
-            colocs: null,
+            coloc_groups: null,
             groupedColocs: null,
             rare: null,
             groupedRare: null,
@@ -59,8 +59,8 @@ export default function gene() {
             this.data.gene.minMbp = this.data.gene.start / 1000000
             this.data.gene.maxMbp = this.data.gene.stop / 1000000
 
-            this.data.colocs = this.data.colocs.map(coloc => {
-                const variantType = this.data.variants.find(variant => variant.SNP === coloc.candidate_snp)
+            this.data.coloc_groups = this.data.coloc_groups.map(coloc => {
+                const variantType = this.data.variants.find(variant => variant.SNP === coloc.display_snp)
                 return {
                     ...coloc,
                     type: 'coloc',
@@ -68,10 +68,10 @@ export default function gene() {
                     variantType: variantType ? variantType.Consequence.split(",")[0] : null,
                 }
             })
-            this.data.colocs = graphTransformations.addColorForSNPs(this.data.colocs)
+            this.data.coloc_groups = graphTransformations.addColorForSNPs(this.data.coloc_groups)
 
             this.data.rare_results = this.data.rare_results.map(rareResult => {
-                const variantType = this.data.variants.find(variant => variant.SNP === rareResult.candidate_snp)
+                const variantType = this.data.variants.find(variant => variant.SNP === rareResult.display_snp)
                 return {
                     ...rareResult,
                     type: 'rare',
@@ -103,9 +103,9 @@ export default function gene() {
             if (!this.data) return
             const graphOptions = Alpine.store('graphOptionStore');
 
-            this.filteredData.colocs = this.data.colocs.filter(coloc => {
+            this.data.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters = (coloc.min_p <= graphOptions.pValue &&
-                   coloc.posterior_prob >= graphOptions.coloc &&
+                    (graphOptions.colocType === coloc.group_threshold) &&
                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
                    (graphOptions.traitType === 'all' ? true : 
                     graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
@@ -138,18 +138,18 @@ export default function gene() {
             // Then, organise data for graphs, once filtering is done
             this.filteredData.studies.sort((a, b) => a.mbp - b.mbp)
             this.minMbp = Math.min(
-                ...this.filteredData.colocs.map(d => d.mbp), 
+                ...this.data.coloc_groups.map(d => d.mbp), 
                 ...this.filteredData.rare.map(d => d.mbp),
                 this.data.gene.minMbp
             )
             this.maxMbp = Math.max(
-                ...this.filteredData.colocs.map(d => d.mbp), 
+                ...this.data.coloc_groups.map(d => d.mbp), 
                 ...this.filteredData.rare.map(d => d.mbp),
                 this.data.gene.maxMbp
             )
 
-            this.filteredData.groupedRare = graphTransformations.groupByCandidateSnp(this.filteredData.rare, 'gene', this.data.gene.id, this.displayFilters)
-            this.filteredData.groupedColocs = graphTransformations.groupByCandidateSnp(this.filteredData.colocs, 'gene', this.data.gene.id, this.displayFilters)
+            this.filteredData.groupedRare = graphTransformations.groupBySnp(this.filteredData.rare, 'gene', this.data.gene.id, this.displayFilters)
+            this.filteredData.groupedColocs = graphTransformations.groupBySnp(this.data.coloc_groups, 'gene', this.data.gene.id, this.displayFilters)
             this.filteredData.groupedResults = {...this.filteredData.groupedColocs, ...this.filteredData.groupedRare}
 
             // Flatten all groupedResults arrays, then group by gene
@@ -168,8 +168,9 @@ export default function gene() {
         },
         
         get filteredColocDataExist() {
+            if (!this.data) return false
             this.filterDataForGraphs()
-            return this.filteredData.colocs && this.filteredData.colocs.length > 0
+            return this.data.coloc_groups && this.data.coloc_groups.length > 0
         },
 
         get genomicRange() {
@@ -177,7 +178,7 @@ export default function gene() {
         },
 
         get ldBlockId() {
-            return this.data && this.data.colocs ? this.data.colocs[0].ld_block_id : null
+            return this.data && this.data.coloc_groups && this.data.coloc_groups.length > 0 ? this.data.coloc_groups[0].ld_block_id : null
         },
 
         getTraitsToFilterBy() {
@@ -209,7 +210,7 @@ export default function gene() {
         },
 
         get getDataForColocTable() {
-            if (!this.filteredData.colocs || this.filteredData.colocs.length === 0) return []
+            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return []
 
             const tableData = Object.fromEntries(
                 Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, group]) => {

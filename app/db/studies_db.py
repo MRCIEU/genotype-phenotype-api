@@ -1,6 +1,6 @@
 from app.config import get_settings
 from functools import lru_cache, wraps
-from typing import List, Tuple
+from typing import List
 import duckdb
 import time
 import logging
@@ -102,27 +102,31 @@ class StudiesDBClient:
     def _fetch_colocs(self, condition: str):
         # TODO: Remove this once we filter colocs when creating the db
         query = f"""
-            SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue 
-            FROM colocalisations 
-            JOIN studies ON colocalisations.study_id = studies.id
+            SELECT coloc_groups.*, 
+            study_extractions.chr, study_extractions.bp, study_extractions.min_p, study_extractions.cis_trans,
+            study_extractions.ld_block, snp_annotations.display_snp, study_extractions.gene, study_extractions.gene_id,
+            traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue 
+            FROM coloc_groups 
+            JOIN studies ON coloc_groups.study_id = studies.id
+            JOIN snp_annotations on coloc_groups.snp_id = snp_annotations.id 
+            JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE colocalisations.coloc_group_id IN (SELECT DISTINCT coloc_group_id FROM colocalisations WHERE {condition})
-            AND colocalisations.posterior_prob IS NOT NULL AND colocalisations.posterior_prob > 0.5
+            WHERE coloc_groups.coloc_group_id IN (SELECT DISTINCT coloc_group_id FROM coloc_groups WHERE {condition})
         """
         return self.studies_conn.execute(query).fetchall()
 
-    @log_performance
-    def get_all_colocs_to_dataframe(self):
-        query = f"""
-            SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
-            FROM colocalisations 
-            JOIN studies ON colocalisations.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            JOIN gene_annotations ON colocalisations.gene_id = gene_annotations.id
-            WHERE colocalisations.posterior_prob IS NOT NULL AND colocalisations.posterior_prob > 0.5
-            AND gene_annotations.gene_biotype = 'protein_coding'
-        """
-        return self.studies_conn.execute(query).df()
+    # @log_performance
+    # def get_all_colocs_to_dataframe(self):
+    #     query = f"""
+    #         SELECT colocalisations.*, traits.id as trait_id, traits.trait_name, studies.data_type, studies.tissue
+    #         FROM colocalisations 
+    #         JOIN studies ON colocalisations.study_id = studies.id
+    #         JOIN traits ON studies.trait_id = traits.id
+    #         JOIN gene_annotations ON colocalisations.gene_id = gene_annotations.id
+    #         WHERE colocalisations.posterior_prob IS NOT NULL AND colocalisations.posterior_prob > 0.5
+    #         AND gene_annotations.gene_biotype = 'protein_coding'
+    #     """
+    #     return self.studies_conn.execute(query).df()
 
     @log_performance
     def get_colocs_for_variant(self, snp_id: int):
@@ -135,7 +139,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_all_colocs_for_gene(self, symbol: str):
-        return self._fetch_colocs(f"gene = '{symbol}' AND cis_trans = 'cis'")
+        return self._fetch_colocs(f"studies.gene = '{symbol}' AND study_extractions.cis_trans = 'cis'")
 
     @log_performance
     def get_all_colocs_for_ld_block(self, ld_block_id: int):
@@ -144,7 +148,7 @@ class StudiesDBClient:
     @log_performance
     def get_all_colocs_for_study(self, study_id: str):
         return self._fetch_colocs(f"study_id = '{study_id}'")
-    
+
     @log_performance
     def get_all_colocs_for_study_extraction_ids(self, study_extraction_ids: List[int]):
         formatted_ids = ','.join(f"{id}" for id in study_extraction_ids)
@@ -152,9 +156,13 @@ class StudiesDBClient:
     
     def _fetch_rare_results(self, condition: str):
         query = f"""
-            SELECT rare_results.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue, ld_blocks.ld_block
+            SELECT rare_results.*,
+            study_extractions.chr, study_extractions.bp, study_extractions.min_p, snp_annotations.display_snp, study_extractions.gene, study_extractions.gene_id,
+            traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue, ld_blocks.ld_block
             FROM rare_results
             JOIN studies ON rare_results.study_id = studies.id
+            JOIN snp_annotations ON rare_results.snp_id = snp_annotations.id
+            JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
             JOIN traits ON studies.trait_id = traits.id
             JOIN ld_blocks ON rare_results.ld_block_id = ld_blocks.id
             WHERE rare_results.rare_result_group_id IN (SELECT DISTINCT rare_result_group_id FROM rare_results WHERE {condition})
@@ -163,7 +171,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_rare_results_for_gene(self, symbol: str):
-        return self._fetch_rare_results(f"gene = '{symbol}'")
+        return self._fetch_rare_results(f"studies.gene = '{symbol}'")
     
     @log_performance
     def get_rare_results_for_study_extraction_ids(self, study_extraction_ids: List[int]):
@@ -382,13 +390,13 @@ class StudiesDBClient:
     @log_performance
     def get_coloc_metadata(self):
         query = """
-            SELECT MAX(coloc_group_id) as count FROM colocalisations 
+            SELECT MAX(coloc_group_id) as count FROM coloc_groups 
         """
         coloc_groups = self.studies_conn.execute(query).fetchone()
 
         query = """
             SELECT COUNT(DISTINCT snp_id) as count
-            FROM colocalisations
+            FROM coloc_groups
         """
         unique_snps = self.studies_conn.execute(query).fetchone()
         return coloc_groups[0], unique_snps[0]

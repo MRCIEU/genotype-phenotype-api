@@ -29,7 +29,7 @@ export class ResultsTable extends HTMLElement {
         if (!this.data) return;
 
         const columns = [
-            { key: 'candidate_snp', label: 'Info' },
+            { key: 'display_snp', label: 'Info' },
             { key: 'trait_name', label: 'Trait' },
             { key: 'data_type', label: 'Data Type' },
             { key: 'gene', label: 'Gene' },
@@ -56,16 +56,16 @@ export class ResultsTable extends HTMLElement {
                         rows.map((row, i) => `
                             <tr style="${row.color ? `background-color: ${row.color};` : ''}">
                                 ${columns.map(col => {
-                                    if (col.key === 'candidate_snp' && i === 0) {
+                                    if (col.key === 'display_snp' && i === 0) {
                                         return `<td rowspan="${rows.length}">
-                                            ${row.candidate_snp ? `Causal Variant: <a href="snp.html?id=${row.snp_id}">${row.candidate_snp}</a><br>` : ''}
+                                            ${row.display_snp ? `Causal Variant: <a href="snp.html?id=${row.snp_id}">${row.display_snp}</a><br>` : ''}
                                             ${row.ld_block_id ? `LD Region: <a href="region.html?id=${row.ld_block_id}">${row.ld_block || ''}</a><br>` : ''}
                                             ${row.posterior_prob !== undefined && row.posterior_prob !== null
                                                 ? `Posterior Probability (PP): <b>${Number(row.posterior_prob).toFixed(3)}</b><br>
                                                    PP Explained by SNP: <b>${Number(row.posterior_explained_by_snp).toFixed(3)}</b>`
                                                 : ''}
                                         </td>`;
-                                    } else if (col.key === 'candidate_snp') {
+                                    } else if (col.key === 'display_snp') {
                                         return '';
                                     } else if (col.key === 'data_type' && row.data_type === 'Phenotype' && row.trait_category) {
                                         return `<td>${row.data_type} (${row.trait_category})</td>`;

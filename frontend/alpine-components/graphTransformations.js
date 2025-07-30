@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import graphTransformations from './graphTransformations.js';
 
 export default {
-    groupByCandidateSnp(data, type, id, displayFilters) {
+    groupBySnp(data, type, id, displayFilters) {
         id = parseInt(id)
         let attribute = null
         if (type === 'trait') {
@@ -13,7 +13,7 @@ export default {
             attribute = 'gene_id'
         }
 
-        let groupedData = Object.groupBy(data, ({ candidate_snp }) => candidate_snp);
+        let groupedData = Object.groupBy(data, ({ display_snp }) => display_snp);
 
         groupedData = Object.entries(groupedData).filter(([_, group]) => {
             const hasId = attribute ? group.some(entry => parseInt(entry[attribute]) === id) : true
@@ -40,7 +40,7 @@ export default {
 
     addColorForSNPs(entries) {
         return entries.map(entry => {
-            const hash = [...entry.candidate_snp].reduce((hash, char) =>
+            const hash = [...entry.display_snp].reduce((hash, char) =>
                 (hash * 31 + char.charCodeAt(0)) % constants.tableColors.length, 0
             )
             return {
@@ -80,7 +80,7 @@ export default {
             s.trait_name.length > 70 ? `${s.trait_name.slice(0, 70)}...` : s.trait_name)
         )];
         const traitNames = uniqueTraits.slice(0, 9).join("<br>");
-        let tooltipContent = `<b>SNP: ${content[0].candidate_snp}</b><br>${traitNames}`;
+        let tooltipContent = `<b>SNP: ${content[0].display_snp}</b><br>${traitNames}`;
         if (uniqueTraits.length > 10) {
             tooltipContent += `<br>${uniqueTraits.length - 10} more...`;
         }
@@ -123,6 +123,7 @@ export default {
             .style('border-radius', '5px')
             .style('visibility', 'hidden')
             .html(content);
+            
 
         setTimeout(() => {
             const tooltipNode = tooltip.node();
@@ -157,7 +158,8 @@ export default {
         const snpGroups = Object.entries(this.filteredData.groupedResults).map(([snp, studies]) => ({
             snp,
             studies,
-            bp: snp.match(/\d+:(\d+)_/)[1] / 1000000
+            variant: this.data.variants.find(variant => variant.display_snp === snp),
+            bp: this.data.variants.find(variant => variant.display_snp === snp).bp / 1000000
         }));
 
         const xScale = d3.scaleLinear()
@@ -296,6 +298,34 @@ export default {
                 .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
                 .style("text-anchor", "middle")
                 .text("Genomic Position (MB)");
+
+            if (this.displayFilters.gene !== null || this.displayFilters.traitName !== null || this.displayFilters.snp !== null) {
+                const btnX = innerWidth/2 + 90;
+                const btnY = innerHeight + graphConstants.outerMargin.bottom - 25;
+                const btnWidth = 90;
+                const btnHeight = 22;
+                svg.append('rect')
+                    .attr('x', btnX)
+                    .attr('y', btnY)
+                    .attr('width', btnWidth)
+                    .attr('height', btnHeight)
+                    .attr('rx', 6)
+                    .attr('fill', 'white')
+                    .attr('stroke', '#b5b5b5')
+                    .style('cursor', 'pointer')
+                    .on('click', () => this.removeDisplayFilters());
+                svg.append('text')
+                    .attr('x', btnX + btnWidth / 2)
+                    .attr('y', btnY + btnHeight / 2+3)
+                    .attr('text-anchor', 'middle')
+                    .attr('alignment-baseline', 'middle')
+                    .attr('font-size', 13)
+                    .attr('fill', '#363636')
+                    .attr('class', 'button is-small')
+                    .style('cursor', 'pointer')
+                    .text('Reset Display')
+                    .on('click', () => this.removeDisplayFilters());
+            }
         }
 
         // Add circles for each SNP group with adjusted vertical positions
@@ -331,7 +361,7 @@ export default {
                 graphTransformations.getTooltip(tooltipContent, event)
             })
             .on('click', (event, d) => {
-                this.displayFilters.candidateSnp = d.snp;
+                this.displayFilters.snp = d.snp;
             })
             .on('mouseout', function(event, d) {
                 d3.select(this).transition()
@@ -383,6 +413,6 @@ export default {
                     .style("stroke-width", (d) => d.focus ? 3 : null) 
             });
 
-        renderLegend()
+        renderLegend.bind(this)()
     },
 }
