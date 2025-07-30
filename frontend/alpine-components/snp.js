@@ -368,9 +368,9 @@ export default function snp() {
                 .range([0, width]);
 
             const y = d3.scaleBand()
-                .domain(validData.map(d => d.trait_name))
+                .domain(validData.map(d => d.study_extraction_id))
                 .range([0, height])
-                .padding(0.1);
+                .padding(0);
 
             // Add x-axis
             svg.append("g")
@@ -399,7 +399,7 @@ export default function snp() {
             validData.forEach(d => {
                 const beta = d.association.beta;
                 const se = d.association.se;
-                const yPos = y(d.trait_name) + y.bandwidth() / 2;
+                const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
 
                 // Add confidence interval line
                 svg.append("line")
@@ -419,7 +419,7 @@ export default function snp() {
 
                 // Add tooltip
                 svg.append("title")
-                    .text(`Beta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`);
+                    .text(`Study ID: ${d.study_extraction_id}\nTrait: ${d.trait_name}\nBeta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`);
             });
 
             // Add axis labels
