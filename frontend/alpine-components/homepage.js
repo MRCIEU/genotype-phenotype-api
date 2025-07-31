@@ -259,6 +259,7 @@ export default function homepage() {
                     this.openPostUploadModal(true, result);
                 }
             } catch (error) {
+                console.error(error);
                 this.openPostUploadModal(false);
             }
         },

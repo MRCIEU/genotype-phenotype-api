@@ -52,7 +52,7 @@ export class ResultsTable extends HTMLElement {
                     </tr>
                 </thead>
                 <tbody>
-                    ${Object.entries(this.data).map(([snp, rows]) =>
+                    ${Object.entries(this.data).map(([_, rows]) =>
                         rows.map((row, i) => `
                             <tr style="${row.color ? `background-color: ${row.color};` : ''}">
                                 ${columns.map(col => {

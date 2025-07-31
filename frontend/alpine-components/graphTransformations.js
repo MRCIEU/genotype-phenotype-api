@@ -406,7 +406,7 @@ export default {
             .on('click', (event, d) => {
                 this.displayFilters.gene = d.gene;
             })
-            .on('mouseout', (event, d) => {
+            .on('mouseout', (event) => {
                 d3.selectAll('.tooltip').remove();
                 d3.select(event.target)
                     .style("stroke", (d) => d.focus ? "black": null)

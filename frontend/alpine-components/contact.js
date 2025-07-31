@@ -33,6 +33,7 @@ export default function contact() {
                     this.errorMessage = 'There was a problem sending your message.';
                 }
             } catch (e) {
+                console.error(e);
                 this.errorMessage = 'There was a problem sending your message.';
             }
             this.submitting = false;

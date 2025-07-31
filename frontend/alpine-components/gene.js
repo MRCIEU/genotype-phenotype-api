@@ -213,7 +213,7 @@ export default function gene() {
             if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return []
 
             const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, group]) => {
+                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp]) => {
                     return this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
                 })
             )
@@ -223,7 +223,7 @@ export default function gene() {
         get getDataForRareTable() {
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return []
             const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp, group]) => {
+                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp]) => {
                     return this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
                 })
             )

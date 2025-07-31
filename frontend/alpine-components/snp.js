@@ -43,7 +43,7 @@ export default function snp() {
                 this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
                 const ld_block = this.data.coloc_groups[0].ld_block
-                const ld_info = ld_block.split(/[\/-]/)
+                const ld_info = ld_block.split(/[/-]/)
                 this.data.variant.min_bp = ld_info[2]
                 this.data.variant.max_bp = ld_info[3]
             } catch (error) {
@@ -98,7 +98,7 @@ export default function snp() {
             }
             const response = await fetch(constants.apiUrl + '/variants/' + this.data.variant.id + '/summary-stats')
             if (!response.ok) {
-                this.errorMessage = `Failed to download summary stats: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
+                this.errorMessage = `Failed to download summary stats: ${response.status} ${constants.apiUrl + '/variants/' + this.data.variant.id}`
                 return
             }
             const zipBlob = await response.blob()
@@ -295,7 +295,7 @@ export default function snp() {
                                         BETA: ${coloc.association ? coloc.association.beta: "N/A"}
                                         `);
                 })
-                .on('mouseout', function(event, d) {
+                .on('mouseout', function() {
                     d3.select(this).transition().duration(200).attr('opacity', 0.7);
                     d3.selectAll('.tooltip').remove();
                 })
@@ -478,7 +478,7 @@ export default function snp() {
                 .attr("opacity", 0.8);
             
 
-            this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }, i) => {
+            this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }) => {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(svgContent, "image/svg+xml");
                 let importedSvg = doc.documentElement;

@@ -16,6 +16,8 @@
     "@rollup/rollup-linux-x64-gnu": "4.6.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "eslint": "^9.32.0",
     "glob": "^11.0.1",
     "vite": "^5.1.4"
   },

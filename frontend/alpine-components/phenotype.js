@@ -62,7 +62,8 @@ export default function pheontype() {
 
                 this.transformDataForGraphs()
             } catch (error) {
-                this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
+                console.error(error);
+                this.errorMessage = `Failed to load data: ${error.status} ${error.statusText}`
             }
         },
 
@@ -623,7 +624,7 @@ export default function pheontype() {
                 self.svgs.metadata.x_axis.forEach((chr, i) => {
                     const xStart = (chr.pixel_start / self.svgs.metadata.svg_width) * width;
                     const xEnd = (chr.pixel_end / self.svgs.metadata.svg_width) * width;
-                    const rect = chrBackgrounds.append("rect")
+                    chrBackgrounds.append("rect")
                         .datum(chr)
                         .attr("x", xStart)
                         .attr("y", 0)
@@ -644,7 +645,7 @@ export default function pheontype() {
                                 .duration(200)
                                 .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff");
                         })
-                        .on('click', function(d) {
+                        .on('click', function() {
                             self.displayFilters.view = "chromosome";
                             self.displayFilters.chr = chr.CHR;
                             self.displayFilters.snp = null;
@@ -704,12 +705,7 @@ export default function pheontype() {
                         .attr("opacity", 0.8)
                         .on('mouseover', function(event, d) {
                             d3.select(this).style("cursor", "pointer");
-                            let allTraits = d._group.map(s => s.trait_name)
-                            let uniqueTraits = [...new Set(allTraits)]
-                            let traitNames = uniqueTraits.slice(0,9)
-                            traitNames = traitNames.join("<br />")
-                            if (uniqueTraits.length > 10) traitNames += "<br /> " + (uniqueTraits.length - 10) + " more..."
-                            traitNames = '<b>SNP: ' + d.display_snp + '</b><br />' + traitNames 
+
                             d3.select(this).transition()
                                 .duration('100')
                                 .attr("fill", constants.colors.dataTypes.highlighted)

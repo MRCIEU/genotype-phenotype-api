@@ -1,4 +1,3 @@
-import * as d3 from 'd3';
 import { stringify } from 'flatted';
 
 import constants from './constants.js';
@@ -120,7 +119,7 @@ export default function region() {
         },
 
         get regionName() {
-            if (this.data === null) return
+            if (this.data === null) return null
             return this.data.region.ancestry + ' ' + this.data.region.chr + ':' + this.data.region.start + '-' + this.data.region.stop
         },
 
@@ -161,7 +160,7 @@ export default function region() {
             if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return []
 
             const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, group]) => {
+                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, _]) => {
                     return this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
                 })
             )
@@ -171,7 +170,7 @@ export default function region() {
         get getDataForRareTable() {
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return []
             const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp, group]) => {
+                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp, _]) => {
                     return this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
                 })
             )
