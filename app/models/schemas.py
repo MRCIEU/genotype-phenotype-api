@@ -513,9 +513,7 @@ def convert_duckdb_to_pydantic_model(
         converted = []
         for row in results:
             if row and not all(v is None for v in row):
-                model_dict = {
-                    field: row[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(row)
-                }
+                model_dict = {field: row[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(row)}
                 converted.append(model(**model_dict))
             else:
                 converted.append(None)
@@ -525,11 +523,7 @@ def convert_duckdb_to_pydantic_model(
     elif isinstance(results, tuple):
         if results and not all(v is None for v in results):
             return model(
-                **{
-                    field: results[idx]
-                    for idx, field in enumerate(model.model_fields.keys())
-                    if idx < len(results)
-                }
+                **{field: results[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(results)}
             )
         return None
     else:

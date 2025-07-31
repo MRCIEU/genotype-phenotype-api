@@ -71,9 +71,7 @@ async def get_gene(
         ]
         gene.genes_in_region = genes_in_region
 
-        study_extractions = studies_db.get_study_extractions_in_gene_region(
-            gene.chr, gene.start, gene.stop, gene.gene
-        )
+        study_extractions = studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.gene)
         if study_extractions is not None:
             study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
             study_extraction_ids = [s.id for s in study_extractions]

@@ -33,9 +33,7 @@ async def get_region(
 
         genes = cache_service.get_genes()
         genes_in_region = [
-            g
-            for g in genes
-            if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
+            g for g in genes if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
         ]
 
         coloc_snp_ids = rare_result_snp_ids = []

@@ -67,9 +67,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_studies_by_id(self, study_ids: List[int]):
-        formatted_ids = ",".join(
-            f"({i}, {id if id is not None else 'NULL'})" for i, id in enumerate(study_ids)
-        )
+        formatted_ids = ",".join(f"({i}, {id if id is not None else 'NULL'})" for i, id in enumerate(study_ids))
         query = f"""
             WITH input_studies AS (
                 SELECT * FROM (VALUES {formatted_ids}) as t(row_num, id)
@@ -344,18 +342,14 @@ class StudiesDBClient:
             formatted_variants = ",".join(f"'{variant}'" for variant in variants)
             query += f"snp IN ({formatted_variants})"
         elif variant_prefixes:
-            formatted_variant_prefixes = ",".join(
-                f"'{variant_prefix}'" for variant_prefix in variant_prefixes
-            )
+            formatted_variant_prefixes = ",".join(f"'{variant_prefix}'" for variant_prefix in variant_prefixes)
             query += f"SPLIT_PART(snp, '_', 1) IN ({formatted_variant_prefixes})"
 
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
     def get_tissues(self):
-        return self.studies_conn.execute(
-            "SELECT DISTINCT tissue FROM studies WHERE tissue IS NOT NULL"
-        ).fetchall()
+        return self.studies_conn.execute("SELECT DISTINCT tissue FROM studies WHERE tissue IS NOT NULL").fetchall()
 
     @log_performance
     def get_variants_by_snp_strings(self, variants: List[str]):

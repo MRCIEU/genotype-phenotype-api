@@ -54,9 +54,7 @@ class GwasDBClient:
     def get_colocs_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
-            result = conn.execute(
-                f"SELECT * FROM colocalisations WHERE gwas_upload_id = {gwas_upload_id}"
-            ).fetchall()
+            result = conn.execute(f"SELECT * FROM colocalisations WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
             return result
         finally:
             conn.close()
@@ -65,9 +63,7 @@ class GwasDBClient:
     def get_study_extractions_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
-            result = conn.execute(
-                f"SELECT * FROM study_extractions WHERE gwas_upload_id = {gwas_upload_id}"
-            ).fetchall()
+            result = conn.execute(f"SELECT * FROM study_extractions WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
             return result
         finally:
             conn.close()

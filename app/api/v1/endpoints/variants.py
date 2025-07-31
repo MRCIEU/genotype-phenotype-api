@@ -57,15 +57,11 @@ async def get_variants(
         variant_ids = [variant.id for variant in variants]
 
         if include_associations:
-            associations = associations_db.get_associations(
-                snp_ids=variant_ids, p_value_threshold=p_value_threshold
-            )
+            associations = associations_db.get_associations(snp_ids=variant_ids, p_value_threshold=p_value_threshold)
             associations = convert_duckdb_to_pydantic_model(Association, associations)
 
             for variant in variants:
-                variant.associations = [
-                    association for association in associations if association.snp_id == variant.id
-                ]
+                variant.associations = [association for association in associations if association.snp_id == variant.id]
 
         if include_coloc_pairs:
             study_extraction_ids = [variant.study_extraction_id for variant in variants]
@@ -74,9 +70,7 @@ async def get_variants(
             )
             coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
             for variant in variants:
-                variant.coloc_pairs = [
-                    coloc_pair for coloc_pair in coloc_pairs if coloc_pair.snp_id == variant.id
-                ]
+                variant.coloc_pairs = [coloc_pair for coloc_pair in coloc_pairs if coloc_pair.snp_id == variant.id]
 
         return variants
 
@@ -150,9 +144,7 @@ async def get_variant(
                 # TODO: Remove this once we have fixed the data
                 logger.warning(f"Association not found for variant {snp_id} and study {rare_result.study_id}")
                 # raise HTTPException(status_code=400, detail="Association not found for variant and study")
-            extended_rare_results.append(
-                ExtendedRareResult(**rare_result.model_dump(), association=association)
-            )
+            extended_rare_results.append(ExtendedRareResult(**rare_result.model_dump(), association=association))
 
         return VariantResponse(
             variant=variant,
@@ -195,9 +187,7 @@ async def get_variant_with_summary_stats(
             + [study_extraction.id for study_extraction in study_extractions]
         )
         all_study_extractions = studies_db.get_study_extractions_by_id(all_study_extraction_ids)
-        all_study_extractions = convert_duckdb_to_pydantic_model(
-            ExtendedStudyExtraction, all_study_extractions
-        )
+        all_study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, all_study_extractions)
 
         summary_stat_service = SummaryStatService()
         zip_buffer = summary_stat_service.get_study_summary_stats(all_study_extractions)

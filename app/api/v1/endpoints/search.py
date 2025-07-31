@@ -102,13 +102,7 @@ def populate_variant_search_results(
     variant.coloc_groups = [coloc for coloc in colocs if coloc.snp_id == variant.id]
 
     variant.num_rare_results = len(
-        set(
-            [
-                rare_result.rare_result_group_id
-                for rare_result in rare_results
-                if rare_result.snp_id == variant.id
-            ]
-        )
+        set([rare_result.rare_result_group_id for rare_result in rare_results if rare_result.snp_id == variant.id])
     )
     variant.rare_results = [rare_result for rare_result in rare_results if rare_result.snp_id == variant.id]
 

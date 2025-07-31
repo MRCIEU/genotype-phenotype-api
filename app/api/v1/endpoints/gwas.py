@@ -141,9 +141,7 @@ async def update_gwas(
         coloc_snps = [coloc.snp_id for coloc in update_gwas_request.coloc_groups]
         coloc_snps = studies_db.get_variants_by_snp_strings(coloc_snps)
 
-        study_extractions_snps = [
-            study_extractions.snp for study_extractions in update_gwas_request.study_extractions
-        ]
+        study_extractions_snps = [study_extractions.snp for study_extractions in update_gwas_request.study_extractions]
         study_extractions_snps = studies_db.get_variants_by_snp_strings(study_extractions_snps)
 
         for i, study in enumerate(update_gwas_request.study_extractions):
@@ -158,9 +156,7 @@ async def update_gwas(
 
         unique_study_ids = [coloc.unique_study_id for coloc in update_gwas_request.coloc_results]
         existing_study_extractions = studies_db.get_study_extractions_by_unique_study_id(unique_study_ids)
-        existing_study_extractions = convert_duckdb_to_pydantic_model(
-            StudyExtraction, existing_study_extractions
-        )
+        existing_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, existing_study_extractions)
         for i, coloc in enumerate(update_gwas_request.coloc_results):
             coloc.gwas_upload_id = gwas.id
             coloc.snp_id = coloc_snps[i][0] if coloc_snps[i] else None
@@ -221,9 +217,7 @@ async def get_gwas(guid: str):
         colocalisations = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, colocalisations)
 
         upload_study_extractions = gwas_upload_db.get_study_extractions_by_gwas_upload_id(gwas.id)
-        upload_study_extractions = convert_duckdb_to_pydantic_model(
-            UploadStudyExtraction, upload_study_extractions
-        )
+        upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
 
         existing_study_extraction_ids = [
             coloc.existing_study_extraction_id
