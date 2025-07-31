@@ -10,7 +10,11 @@
     "dev": "vite",
     "build": "vite build --mode production",
     "build:dev": "vite build --mode development",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.6.1"
@@ -18,7 +22,10 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
     "glob": "^11.0.1",
+    "prettier": "^3.6.2",
     "vite": "^5.1.4"
   },
   "dependencies": {
