@@ -1,7 +1,16 @@
 from functools import lru_cache
-from app.models.schemas import GPMapMetadata, Gene, SearchTerm, Singleton, StudyDataType, VariantType, convert_duckdb_to_pydantic_model
+from app.models.schemas import (
+    GPMapMetadata,
+    Gene,
+    SearchTerm,
+    Singleton,
+    StudyDataType,
+    VariantType,
+    convert_duckdb_to_pydantic_model,
+)
 from app.db.studies_db import StudiesDBClient
 from typing import List
+
 
 class DBCacheService(metaclass=Singleton):
     def __init__(self):
@@ -17,14 +26,14 @@ class DBCacheService(metaclass=Singleton):
 
         genes = self.db.get_gene_names()
         gene_search_terms = [
-            SearchTerm(type="gene", name=gene[0], type_id=gene[0])
-            for gene in genes if gene[0] is not None
+            SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes if gene[0] is not None
         ]
 
         trait_search_terms = self.db.get_trait_names_for_search()
         trait_search_terms = [
             SearchTerm(type="study", name=term[1], type_id=term[0])
-            for term in trait_search_terms if term[1] is not None
+            for term in trait_search_terms
+            if term[1] is not None
         ]
 
         return gene_search_terms + trait_search_terms
@@ -50,14 +59,16 @@ class DBCacheService(metaclass=Singleton):
         return [SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes]
 
     @lru_cache(maxsize=1)
-    def get_tissues(self, ) -> List[str]:
+    def get_tissues(
+        self,
+    ) -> List[str]:
         """
         Retrieve variants from DuckDB with caching.
         Returns:
             List of Variant instances
         """
         tissues = self.db.get_tissues()
-        tissues =[tissue[0] for tissue in tissues]
+        tissues = [tissue[0] for tissue in tissues]
         return sorted(tissues)
 
     @lru_cache(maxsize=1)

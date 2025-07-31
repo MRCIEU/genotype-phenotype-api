@@ -1,9 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import ColocGroup, Gene, RareResult, RegionResponse, Variant
 
 client = TestClient(app)
+
 
 def test_get_region():
     response = client.get("/v1/regions/1309")
@@ -15,7 +15,7 @@ def test_get_region():
     assert region_model.region.stop is not None
     assert region_model.region.ancestry is not None
 
-    for coloc in region_model.colocs:
+    for coloc in region_model.coloc_groups:
         assert isinstance(coloc, ColocGroup)
         assert coloc.coloc_group_id is not None
         assert coloc.study_extraction_id is not None

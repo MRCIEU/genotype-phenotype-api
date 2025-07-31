@@ -111,7 +111,6 @@ export default function pheontype() {
         filterDataForGraphs() {
             if (!this.data) return
             const graphOptions = Alpine.store('graphOptionStore')
-            console.log(graphOptions.colocType)
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
                     (graphOptions.colocType === coloc.group_threshold) &&
@@ -131,7 +130,6 @@ export default function pheontype() {
 
                 return graphOptionFilters && displayFilters && categoryFilters
             })
-            console.log(this.filteredData.coloc_groups.length)
 
             this.filteredData.rare = this.data.rare_results.filter(rare => {
                 const graphOptionFilters = (rare.min_p <= graphOptions.pValue && 

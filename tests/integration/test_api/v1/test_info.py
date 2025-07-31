@@ -1,9 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import GPMapMetadata, Ld, StudySource
+from app.models.schemas import GPMapMetadata, StudySource
 
 client = TestClient(app)
+
 
 def test_get_gpmap_metadata():
     response = client.get("/v1/info/gpmap_metadata")
@@ -17,6 +17,7 @@ def test_get_gpmap_metadata():
     assert metadata.num_molecular_studies is not None
     assert metadata.num_coloc_groups is not None
     assert metadata.num_causal_variants is not None
+
 
 def test_get_study_sources():
     response = client.get("/v1/info/study_sources")

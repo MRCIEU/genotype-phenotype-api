@@ -1,7 +1,14 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import * 
+from app.models.schemas import (
+    LdBlock,
+    RegionResponse,
+    ColocGroup,
+    RareResult,
+    Variant,
+    convert_duckdb_to_pydantic_model,
+)
 from app.logging_config import get_logger, time_endpoint
 from app.services.cache_service import DBCacheService
 
@@ -11,7 +18,9 @@ router = APIRouter()
 
 @router.get("/{ld_block_id}", response_model=RegionResponse)
 @time_endpoint
-async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) -> RegionResponse:
+async def get_region(
+    ld_block_id: int = Path(..., description="LD Block ID"),
+) -> RegionResponse:
     try:
         cache_service = DBCacheService()
         tissues = cache_service.get_tissues()
@@ -23,9 +32,11 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
         ld_block = convert_duckdb_to_pydantic_model(LdBlock, ld_block)
 
         genes = cache_service.get_genes()
-        genes_in_region = [g for g in genes
-                          if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
-                          ]
+        genes_in_region = [
+            g
+            for g in genes
+            if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
+        ]
 
         coloc_snp_ids = rare_result_snp_ids = []
         region_colocs = db.get_all_colocs_for_ld_block(ld_block_id)
@@ -39,7 +50,7 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
         if region_rare_results:
             region_rare_results = convert_duckdb_to_pydantic_model(RareResult, region_rare_results)
             rare_result_snp_ids = [rare_result.snp_id for rare_result in region_rare_results]
-        
+
         snp_ids = coloc_snp_ids + rare_result_snp_ids
 
         variants = []
@@ -47,13 +58,14 @@ async def get_region(ld_block_id: int = Path(..., description="LD Block ID")) ->
             variants = db.get_variants(snp_ids=snp_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)
 
-        return RegionResponse(region=ld_block,
-                              genes_in_region=genes_in_region,
-                              tissues=tissues,
-                              coloc_groups=region_colocs,
-                              variants=variants,
-                              rare_results=region_rare_results
-                              )
+        return RegionResponse(
+            region=ld_block,
+            genes_in_region=genes_in_region,
+            tissues=tissues,
+            coloc_groups=region_colocs,
+            variants=variants,
+            rare_results=region_rare_results,
+        )
     except HTTPException as e:
         raise e
     except Exception as e:

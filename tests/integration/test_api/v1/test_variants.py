@@ -1,9 +1,16 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import Association, ExtendedColocGroup, Variant, VariantResponse
+from app.models.schemas import (
+    Association,
+    ColocPair,
+    ExtendedColocGroup,
+    Variant,
+    VariantResponse,
+)
 
 
 client = TestClient(app)
+
 
 def test_get_variants_by_variants():
     response = client.get("/v1/variants?snp_ids=5758009")
@@ -14,8 +21,9 @@ def test_get_variants_by_variants():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id' and field != 'associations':
+            if field != "canonical" and field != "gene_id" and field != "associations":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
+
 
 def test_get_variants_by_variants_with_associations():
     response = client.get("/v1/variants?snp_ids=5758009&include_associations=true")
@@ -26,7 +34,7 @@ def test_get_variants_by_variants_with_associations():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id':
+            if field != "canonical" and field != "gene_id":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
         assert variant_model.associations is not None
         assert len(variant_model.associations) > 0
@@ -36,6 +44,7 @@ def test_get_variants_by_variants_with_associations():
             assert association.p is not None
             assert association.beta is not None
             assert association.se is not None
+
 
 def test_get_variants_by_variants_with_associations_and_possible_p_value_threshold():
     response = client.get("/v1/variants?snp_ids=5758009&include_associations=true&p_value_threshold=5e-5")
@@ -46,7 +55,7 @@ def test_get_variants_by_variants_with_associations_and_possible_p_value_thresho
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id':
+            if field != "canonical" and field != "gene_id":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
         assert variant_model.associations is not None
         assert len(variant_model.associations) > 0
@@ -56,6 +65,7 @@ def test_get_variants_by_variants_with_associations_and_possible_p_value_thresho
             assert association.p is not None
             assert association.beta is not None
             assert association.se is not None
+
 
 def test_get_variants_by_variants_with_associations_and_impossible_p_value_threshold():
     response = client.get("/v1/variants?snp_ids=5758009&include_associations=true&p_value_threshold=0")
@@ -66,10 +76,11 @@ def test_get_variants_by_variants_with_associations_and_impossible_p_value_thres
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id':
+            if field != "canonical" and field != "gene_id":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
         assert variant_model.associations is not None
         assert len(variant_model.associations) == 0
+
 
 def test_get_variants_by_rsids():
     response = client.get("/v1/variants?rsids=rs6441921&rsids=rs17078078")
@@ -79,8 +90,9 @@ def test_get_variants_by_rsids():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id' and field != 'associations':
+            if field != "canonical" and field != "gene_id" and field != "associations":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
+
 
 def test_get_variants_by_rsids_with_associations():
     response = client.get("/v1/variants?rsids=rs6441921&rsids=rs17078078&include_associations=true")
@@ -90,7 +102,7 @@ def test_get_variants_by_rsids_with_associations():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id':
+            if field != "canonical" and field != "gene_id":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
         assert variant_model.associations is not None
         assert len(variant_model.associations) > 0
@@ -101,6 +113,7 @@ def test_get_variants_by_rsids_with_associations():
             assert association.beta is not None
             assert association.se is not None
 
+
 def test_get_variants_by_grange():
     response = client.get("/v1/variants?grange=3:45576630-45579689")
     assert response.status_code == 200
@@ -109,8 +122,9 @@ def test_get_variants_by_grange():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id' and field != 'associations':
+            if field != "canonical" and field != "gene_id" and field != "associations":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
+
 
 def test_get_variants_by_grange_with_associations():
     response = client.get("/v1/variants?grange=3:45576630-45579689&include_associations=true")
@@ -120,17 +134,17 @@ def test_get_variants_by_grange_with_associations():
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != 'canonical' and field != 'gene_id':
+            if field != "canonical" and field != "gene_id":
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
         assert variant_model.associations is not None
         for association in variant_model.associations:
-            print(association)
             assert isinstance(association, Association)
             assert association.snp_id is not None
             assert association.study_id is not None
             assert association.p is not None
             assert association.beta is not None
             assert association.se is not None
+
 
 def test_get_variant_by_id():
     response = client.get("/v1/variants/5758009")
@@ -139,9 +153,9 @@ def test_get_variant_by_id():
     assert variant is not None
     variant_response = VariantResponse(**variant)
     assert variant_response.variant is not None
-    assert variant_response.colocs is not None
+    assert variant_response.coloc_groups is not None
 
-    for coloc in variant_response.colocs:
+    for coloc in variant_response.coloc_groups:
         assert isinstance(coloc, ExtendedColocGroup)
         assert coloc.coloc_group_id is not None
         assert coloc.study_extraction_id is not None
@@ -151,7 +165,26 @@ def test_get_variant_by_id():
         assert coloc.posterior_prob is not None
         if coloc.association is not None:
             assert isinstance(coloc.association, Association)
-        
+
+
+def test_get_variant_by_id_with_coloc_pairs():
+    response = client.get("/v1/variants/5758009?include_coloc_pairs=true")
+    assert response.status_code == 200
+    variant = response.json()
+    assert variant is not None
+    variant_response = VariantResponse(**variant)
+    assert variant_response.variant is not None
+    assert variant_response.coloc_groups is not None
+
+    for coloc in variant_response.coloc_groups:
+        assert isinstance(coloc, ExtendedColocGroup)
+        if coloc.association is not None:
+            assert isinstance(coloc.association, Association)
+    assert variant_response.coloc_pairs is not None
+    assert len(variant_response.coloc_pairs) > 0
+    for coloc_pair in variant_response.coloc_pairs:
+        assert isinstance(coloc_pair, ColocPair)
+
 
 def test_get_variant_summary_stats():
     response = client.get("/v1/variants/5758009/summary-stats")

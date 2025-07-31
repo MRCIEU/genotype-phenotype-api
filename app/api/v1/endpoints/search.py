@@ -2,7 +2,15 @@ import traceback
 from fastapi import APIRouter, HTTPException, Response
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import ColocGroup, ExtendedVariant, Ld, RareResult, SearchTerm, VariantSearchResponse, convert_duckdb_to_pydantic_model
+from app.models.schemas import (
+    ColocGroup,
+    ExtendedVariant,
+    Ld,
+    RareResult,
+    SearchTerm,
+    VariantSearchResponse,
+    convert_duckdb_to_pydantic_model,
+)
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.services.cache_service import DBCacheService
@@ -16,8 +24,8 @@ router = APIRouter()
 async def get_search_options(response: Response):
     try:
         # Add cache control headers
-        response.headers['Cache-Control'] = 'no-cache, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
 
         cache_service = DBCacheService()
         search_terms = cache_service.get_search_terms()
@@ -42,14 +50,17 @@ async def search(search_term: str):
             original_variants = studies_db.get_variants(rsids=[search_term])
         elif any(c.isdigit() for c in search_term) and ":" in search_term:
             original_variants = studies_db.get_variants(variant_prefixes=[search_term])
-        
-        if not original_variants: return VariantSearchResponse(original_variants=[], proxy_variants=[]) 
-        
+
+        if not original_variants:
+            return VariantSearchResponse(original_variants=[], proxy_variants=[])
+
         original_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, original_variants)
         snp_ids = [variant.id for variant in original_variants]
         proxies = ld_db.get_ld_proxies(snp_ids=snp_ids)
         proxies = convert_duckdb_to_pydantic_model(Ld, proxies)
-        proxy_snp_ids = list(set([proxy.lead_snp_id for proxy in proxies] + [proxy.variant_snp_id for proxy in proxies]))
+        proxy_snp_ids = list(
+            set([proxy.lead_snp_id for proxy in proxies] + [proxy.variant_snp_id for proxy in proxies])
+        )
         proxy_snp_ids = [snp_id for snp_id in proxy_snp_ids if snp_id not in snp_ids]
 
         variant_proxies = studies_db.get_variants(snp_ids=proxy_snp_ids)
@@ -66,7 +77,7 @@ async def search(search_term: str):
             populate_variant_search_results(variant, colocs, rare_results, proxies)
         for variant in proxy_variants:
             populate_variant_search_results(variant, colocs, rare_results, proxies)
-        
+
         logger.warning("Original variants:")
         logger.warning(original_variants)
 
@@ -81,11 +92,26 @@ async def search(search_term: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def populate_variant_search_results(variant: ExtendedVariant, colocs: List[ColocGroup], rare_results: List[RareResult], proxies: List[Ld]):
+def populate_variant_search_results(
+    variant: ExtendedVariant,
+    colocs: List[ColocGroup],
+    rare_results: List[RareResult],
+    proxies: List[Ld],
+):
     variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
     variant.coloc_groups = [coloc for coloc in colocs if coloc.snp_id == variant.id]
-    
-    variant.num_rare_results = len(set([rare_result.rare_result_group_id for rare_result in rare_results if rare_result.snp_id == variant.id]))
+
+    variant.num_rare_results = len(
+        set(
+            [
+                rare_result.rare_result_group_id
+                for rare_result in rare_results
+                if rare_result.snp_id == variant.id
+            ]
+        )
+    )
     variant.rare_results = [rare_result for rare_result in rare_results if rare_result.snp_id == variant.id]
 
-    variant.ld_proxies = [proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id]
+    variant.ld_proxies = [
+        proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id
+    ]

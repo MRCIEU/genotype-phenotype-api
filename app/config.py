@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
+
 class Settings(BaseSettings):
     STUDIES_DB_PATH: str
     ASSOCIATIONS_DB_PATH: str
@@ -22,11 +23,9 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str
     WEBSITE_URL: str = "https://gpmap.opengwas.io"
 
+    model_config = {"env_file": ".env"}
 
-    model_config = {
-        "env_file": ".env"
-    }
 
 @lru_cache()
 def get_settings():
-    return Settings() 
+    return Settings()

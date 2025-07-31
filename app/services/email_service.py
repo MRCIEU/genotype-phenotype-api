@@ -2,9 +2,9 @@ from app.config import get_settings
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import EmailStr
 from loguru import logger
-from typing import Optional
 
 settings = get_settings()
+
 
 class EmailService:
     def __init__(self):
@@ -13,14 +13,14 @@ class EmailService:
         self.contact_url = f"{settings.WEBSITE_URL}/contact"
 
         self.conf = ConnectionConfig(
-            MAIL_USERNAME = settings.EMAIL_USERNAME,
-            MAIL_PASSWORD = settings.EMAIL_PASSWORD,
-            MAIL_FROM = self.from_email,
-            MAIL_PORT = settings.EMAIL_PORT,
-            MAIL_SERVER = settings.EMAIL_SERVER,
-            MAIL_STARTTLS = settings.EMAIL_TLS,
-            MAIL_SSL_TLS = False,
-            USE_CREDENTIALS = True
+            MAIL_USERNAME=settings.EMAIL_USERNAME,
+            MAIL_PASSWORD=settings.EMAIL_PASSWORD,
+            MAIL_FROM=self.from_email,
+            MAIL_PORT=settings.EMAIL_PORT,
+            MAIL_SERVER=settings.EMAIL_SERVER,
+            MAIL_STARTTLS=settings.EMAIL_TLS,
+            MAIL_SSL_TLS=False,
+            USE_CREDENTIALS=True,
         )
 
     async def send_contact_email(self, email: EmailStr, reason: str, message: str) -> None:
@@ -40,12 +40,7 @@ class EmailService:
         </body>
         </html>
         """
-        msg = MessageSchema(
-            subject=subject,
-            recipients=[send_to],
-            body=html,
-            subtype="html"
-        )
+        msg = MessageSchema(subject=subject, recipients=[send_to], body=html, subtype="html")
         fm = FastMail(self.conf)
         try:
             await fm.send_message(msg)
@@ -57,7 +52,7 @@ class EmailService:
         """
         Send an email notification that results are ready.
         """
-        subject = 'Your Genotype-Phenotype Map Results Are Ready'
+        subject = "Your Genotype-Phenotype Map Results Are Ready"
         html = f"""
         <html>
         <body>
@@ -68,12 +63,7 @@ class EmailService:
         </body>
         </html>
         """
-        msg = MessageSchema(
-            subject=subject,
-            recipients=[to_email],
-            body=html,
-            subtype="html"
-        )
+        msg = MessageSchema(subject=subject, recipients=[to_email], body=html, subtype="html")
         fm = FastMail(self.conf)
         try:
             await fm.send_message(msg)

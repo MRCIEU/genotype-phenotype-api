@@ -1,11 +1,10 @@
-import os
 import sys
 from pathlib import Path
 import networkx as nx
-import pandas as pd
 import matplotlib.pyplot as plt
 import json
 import numpy as np
+from app.db.studies_db import StudiesDBClient
 
 # if we do this, install, pip install networkx, matplotlib, pandas, scipy
 
@@ -13,7 +12,6 @@ import numpy as np
 project_root = str(Path(__file__).parent.parent)
 sys.path.append(project_root)
 
-from app.db.studies_db import StudiesDBClient 
 
 def convert_to_serializable(obj):
     if isinstance(obj, np.float32):
@@ -25,6 +23,7 @@ def convert_to_serializable(obj):
     elif isinstance(obj, list):
         return [convert_to_serializable(item) for item in obj]
     return obj
+
 
 # Connect to database and load data
 studies_db = StudiesDBClient()
@@ -42,25 +41,28 @@ print(studies.columns.tolist())
 G = nx.Graph()
 
 # Add edges between genes that share coloc_group_id
-for coloc_group, group in studies.groupby('coloc_group_id'):
-    genes = group['gene'].unique()
+for coloc_group, group in studies.groupby("coloc_group_id"):
+    genes = group["gene"].unique()
     genes = [gene for gene in genes if gene is not None]
     if len(genes) > 1:  # Only add edges if there are multiple genes in the group
         # Add all pairwise connections between genes in this coloc group
         for i in range(len(genes)):
-            for j in range(i+1, len(genes)):
+            for j in range(i + 1, len(genes)):
                 # Get the maximum posterior probability for this gene pair
-                gene_pair_data = group[(group['gene'].isin([genes[i], genes[j]]))]
-                max_prob = gene_pair_data['posterior_prob'].max()
+                gene_pair_data = group[(group["gene"].isin([genes[i], genes[j]]))]
+                max_prob = gene_pair_data["posterior_prob"].max()
                 # Add edge with weight based on posterior probability
-                G.add_edge(genes[i], genes[j], 
-                          coloc_group=coloc_group,
-                          weight=max_prob,
-                          snp=group['snp_id'].iloc[0])  # Store the SNP ID for reference
+                G.add_edge(
+                    genes[i],
+                    genes[j],
+                    coloc_group=coloc_group,
+                    weight=max_prob,
+                    snp=group["snp_id"].iloc[0],
+                )  # Store the SNP ID for reference
 
 # Now you can analyze the graph for your target gene
-target_gene = 'IKBKE'  # You can change this to any gene you're interested in
-depth = 3   # Change this to control how many layers of neighbors to show (1 = immediate neighbors only, 2 = neighbors of neighbors, etc.)
+target_gene = "IKBKE"  # You can change this to any gene you're interested in
+depth = 3  # Change this to control how many layers of neighbors to show (1 = immediate neighbors only, 2 = neighbors of neighbors, etc.)
 neighbors = list(G.neighbors(target_gene))
 print(f"\nNeighbors of {target_gene}: {neighbors}")
 
@@ -69,32 +71,33 @@ subgraph = G.subgraph(list(nx.ego_graph(G, target_gene, radius=depth).nodes()))
 pos = nx.spring_layout(subgraph)
 
 # Create D3.js compatible JSON
-d3_data = {
-    "nodes": [],
-    "links": []
-}
+d3_data = {"nodes": [], "links": []}
 
 # Add nodes
 for node in subgraph.nodes():
-    d3_data["nodes"].append({
-        "id": node,
-        "group": 1,  # You can modify this to group nodes differently
-        "isTarget": node == target_gene
-    })
+    d3_data["nodes"].append(
+        {
+            "id": node,
+            "group": 1,  # You can modify this to group nodes differently
+            "isTarget": node == target_gene,
+        }
+    )
 
 # Add links
 for source, target in subgraph.edges():
-    d3_data["links"].append({
-        "source": source,
-        "target": target,
-        "value": G[source][target]['weight'],
-        "coloc_group": G[source][target]['coloc_group'],
-        "snp": G[source][target]['snp']
-    })
+    d3_data["links"].append(
+        {
+            "source": source,
+            "target": target,
+            "value": G[source][target]["weight"],
+            "coloc_group": G[source][target]["coloc_group"],
+            "snp": G[source][target]["snp"],
+        }
+    )
 
 # Save the D3.js data
 output_file = f"gene_coloc_network_{target_gene}_d3.json"
-with open(output_file, 'w') as f:
+with open(output_file, "w") as f:
     json.dump(convert_to_serializable(d3_data), f, indent=2)
 print(f"\nD3.js data saved to {output_file}")
 
@@ -240,7 +243,7 @@ html_template = f"""<!DOCTYPE html>
 
 # Save the HTML template
 html_file = f"gene_coloc_network_{target_gene}.html"
-with open(html_file, 'w') as f:
+with open(html_file, "w") as f:
     f.write(html_template)
 print(f"Interactive visualization saved to {html_file}")
 
@@ -248,31 +251,21 @@ exit()
 # Create the static visualization (keeping the existing matplotlib code)
 plt.figure(figsize=(15, 10))
 # Draw nodes
-nx.draw_networkx_nodes(subgraph, pos, 
-                      node_size=1000,
-                      node_color='skyblue',
-                      alpha=0.7)
+nx.draw_networkx_nodes(subgraph, pos, node_size=1000, node_color="skyblue", alpha=0.7)
 
 # Draw edges with varying thickness based on weight
-edge_weights = [G[u][v]['weight'] * 2 for u, v in subgraph.edges()]
-nx.draw_networkx_edges(subgraph, pos, 
-                      width=edge_weights,
-                      alpha=0.5)
+edge_weights = [G[u][v]["weight"] * 2 for u, v in subgraph.edges()]
+nx.draw_networkx_edges(subgraph, pos, width=edge_weights, alpha=0.5)
 
 # Draw labels
-nx.draw_networkx_labels(subgraph, pos, 
-                       font_size=10,
-                       font_weight='bold')
+nx.draw_networkx_labels(subgraph, pos, font_size=10, font_weight="bold")
 
 # Add edge labels showing the coloc group ID
-edge_labels = {(u, v): f"Group: {G[u][v]['coloc_group']}\nSNP: {G[u][v]['snp']}" 
-               for u, v in subgraph.edges()}
-nx.draw_networkx_edge_labels(subgraph, pos, 
-                            edge_labels=edge_labels,
-                            font_size=8)
+edge_labels = {(u, v): f"Group: {G[u][v]['coloc_group']}\nSNP: {G[u][v]['snp']}" for u, v in subgraph.edges()}
+nx.draw_networkx_edge_labels(subgraph, pos, edge_labels=edge_labels, font_size=8)
 
 plt.title(f"Gene Co-localization Network for {target_gene}\nEdge thickness represents posterior probability")
-plt.axis('off')
+plt.axis("off")
 plt.tight_layout()
-plt.savefig(f"gene_coloc_network_{target_gene}.png", dpi=300, bbox_inches='tight')
+plt.savefig(f"gene_coloc_network_{target_gene}.png", dpi=300, bbox_inches="tight")
 plt.show()

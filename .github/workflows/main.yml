@@ -22,6 +22,7 @@ jobs:
         cp .env.test .env
         export $(cat .env | xargs)
         mkdir -p $GWAS_DIR
+        ruff check .
         pytest -vs
 
   build:

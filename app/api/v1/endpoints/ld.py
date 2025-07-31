@@ -14,7 +14,7 @@ router = APIRouter()
 @time_endpoint
 async def get_matrix(
     variants: List[str] = Query(None, description="List of variants to filter results"),
-    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
+    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
 ):
     try:
         ld_db = LdDBClient()
@@ -45,7 +45,7 @@ async def get_matrix(
 @time_endpoint
 async def get_proxies(
     variants: List[str] = Query(None, description="List of variants to filter results"),
-    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results")
+    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
 ):
     try:
         ld_db = LdDBClient()
