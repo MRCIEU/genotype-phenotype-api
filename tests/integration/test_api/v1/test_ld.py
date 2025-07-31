@@ -20,7 +20,7 @@ def test_get_ld_matrix_with_snp_ids():
 
 
 def test_get_ld_matrix_with_variants():
-    response = client.get("/v1/ld/matrix?variants=3:45576631_A_G&variants=3:45579683_A_C")
+    response = client.get("/v1/ld/matrix?variants=3:45579683_A_C&variants=3:45582317_G_T")
     assert response.status_code == 200
 
     ld_matrix = response.json()

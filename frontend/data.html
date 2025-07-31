@@ -4,7 +4,7 @@
         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-        <title>GPM</title>
+        <title>GP Map: Data</title>
         <script type="module" src="/main.js"></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
         <script>
@@ -93,6 +93,18 @@
                         <h2 id="summary-of-data-processed-in-pipeline">Summary of Data Processed in Pipeline</h2>
                         <div class="column is-10 is-offset-1">
                             <pipeline-summary></pipeline-summary>
+                        </div>
+
+                        <h2 id="known-issues">Known Issues</h2>
+                        <div class="column is-10 is-offset-1">
+                            <ul>
+                                <li>
+                                    <b>Indel SNPs</b>: Due to a bug in the data processing pipeline, indel SNPs were
+                                    imputed, as opposed to the original SNPs being used. Due to high correlation
+                                    between imputation and the original SNPs, this did not affect the colocalisaiton
+                                    results.
+                                </li>
+                            </ul>
                         </div>
 
                         <h2 id="acknowledgements">Acknowledgements</h2>

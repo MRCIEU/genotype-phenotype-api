@@ -65,6 +65,19 @@ You will need to have the following installed:
    * `pip install -r requirements.txt #only needed once, or every time requirements.txt changes`
    * `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
 
+4. Committing and pushing code
+
+  The repository comes with unit/integration tests and formatting and linting checks.  These are run in the CI pipeline, so please ensure they are passing.
+
+  * Python: linting and formatting is performed using [ruff](https://docs.astral.sh/ruff/), please run these before pushing
+    * `ruff format`
+    * `ruff check`
+  * Python integration tests: there are a suite of high level tests as API calls using [pytest](https://docs.pytest.org/en/stable/).  If you are adding another API endpoint or functionality, please add a test accordingly.  To run the tests:
+    * `pytest`
+  * Javascript: Linting and formatting is performed using (ESLint)[https://eslint.org/] and (Prettier)[https://prettier.io/docs/], please run these before pushing
+    * `cd frontend`
+    * `npm run format`
+    * `npm run lint`
 
 **Possible Issues:**
 
