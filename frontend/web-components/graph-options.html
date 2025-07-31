@@ -2,8 +2,8 @@
     <span class="is-size-7">Coloc Posterior Probability:</span> <br />
     <div class="ml-4">
         <label class="radio is-size-7">
-            <input 
-                type="radio" 
+            <input
+                type="radio"
                 name="colocType"
                 value="strong"
                 x-model="colocType"
@@ -12,8 +12,8 @@
             <span>Strong (h4>0.8)</span>
         </label>
         <label class="radio is-size-7">
-            <input 
-                type="radio" 
+            <input
+                type="radio"
                 name="colocType"
                 value="moderate"
                 x-model="colocType"
@@ -22,22 +22,34 @@
             <span>Moderate (h4>0.6)</span>
         </label>
     </div>
-    <hr class="divider mt-0 mb-0">
+    <hr class="divider mt-0 mb-0" />
 
     <span class="is-size-7">Study P-value: <span x-text="Number(pValue).toExponential()"></span></span> <br />
-    <input class="slider is-four-fifths mt-0 mb-0" x-model="pValueIndex" @input="updatePValue()" type="range" step="1" min="0" max="7">
-    <hr class="divider mt-0 mb-0">
+    <input
+        class="slider is-four-fifths mt-0 mb-0"
+        x-model="pValueIndex"
+        @input="updatePValue()"
+        type="range"
+        step="1"
+        min="0"
+        max="7"
+    />
+    <hr class="divider mt-0 mb-0" />
 
-    <label class="checkbox mt-1 is-size-7"> <input @change="$store.graphOptionStore.includeTrans = includeTrans" x-model="includeTrans" type="checkbox" /> Include Trans Markers</label> <br />
-    <hr class="divider mt-0 mb-0">
+    <label class="checkbox mt-1 is-size-7">
+        <input @change="$store.graphOptionStore.includeTrans = includeTrans" x-model="includeTrans" type="checkbox" />
+        Include Trans Markers</label
+    >
+    <br />
+    <hr class="divider mt-0 mb-0" />
 
     <!-- Trait Type Selection -->
     <span class="is-size-7 has-text-weight-bold">Trait Types</span>
     <div class="ml-4">
         <div>
             <label class="radio is-size-7">
-                <input 
-                    type="radio" 
+                <input
+                    type="radio"
                     name="traitType"
                     value="all"
                     x-model="traitType"
@@ -47,9 +59,12 @@
             </label>
         </div>
         <div>
-            <label class="radio is-size-7" :class="{ 'has-text-grey-light': Object.values($store.graphOptionStore.categories).some(c => c) }">
-                <input 
-                    type="radio" 
+            <label
+                class="radio is-size-7"
+                :class="{ 'has-text-grey-light': Object.values($store.graphOptionStore.categories).some(c => c) }"
+            >
+                <input
+                    type="radio"
                     name="traitType"
                     value="molecular"
                     x-model="traitType"
@@ -61,8 +76,8 @@
         </div>
         <div>
             <label class="radio is-size-7">
-                <input 
-                    type="radio" 
+                <input
+                    type="radio"
                     name="traitType"
                     value="phenotype"
                     x-model="traitType"
@@ -72,16 +87,19 @@
             </label>
         </div>
     </div>
-    <hr class="divider mt-0 mb-0">
+    <hr class="divider mt-0 mb-0" />
 
     <!-- Categories Section -->
     <span class="is-size-7 has-text-weight-bold">Trait Categories</span>
     <div class="ml-4">
         <template x-for="category in Object.keys($store.graphOptionStore.categories)" :key="category">
             <div>
-                <label class="checkbox is-size-7" :class="{ 'has-text-grey-light': $store.graphOptionStore.traitType === 'molecular' }">
-                    <input 
-                        type="checkbox" 
+                <label
+                    class="checkbox is-size-7"
+                    :class="{ 'has-text-grey-light': $store.graphOptionStore.traitType === 'molecular' }"
+                >
+                    <input
+                        type="checkbox"
                         :checked="$store.graphOptionStore.categories[category]"
                         :disabled="$store.graphOptionStore.traitType === 'molecular'"
                         @change="

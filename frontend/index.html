@@ -1,432 +1,566 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
+        <title>The Genotype-Phenotype Map</title>
+        <script type="module" src="/main.js" async blocking="render"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
 
+            gtag("config", "G-JRYWRJTDBP");
+        </script>
+    </head>
 
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-    <title>The Genotype-Phenotype Map</title>
-    <script type="module" src="/main.js" async blocking="render"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+    <body>
+        <div id="wait-to-load" style="display: none">
+            <navigation-bar></navigation-bar>
 
-        gtag('config', 'G-JRYWRJTDBP');
-    </script>
-</head>
-
-<body>
-    <div id = "wait-to-load" style="display:none;">
-        <navigation-bar></navigation-bar>
-
-        <div id="homepage" x-data="homepage" x-init="loadHomepage">
-            <div class="columns mt-6 is-centered">
-                <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
-            </div>
-            <div x-show="errorMessage" class="notification is-danger is-light mt-4">
-                <span x-text="errorMessage"></span>
-            </div>
-            <div class="columns mt-1 is-centered">
-                <div class="column is-three-quarters">
-                    <div class="dropdown is-active level">
-                        <input class="input" 
-                               type="text" 
-                               @input="getItemsForSearch" 
-                               @keyup.enter="searchVariant"
-                               placeholder="Search for a trait (hemoglobin), gene (DRD2), or variant (rs6589381, 11:113508230)" 
-                               x-model="searchText">
-                        <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
-                            <div class="dropdown-content" style="max-height: 320px; overflow-y: auto;">
-                                <template @click.outside="closeSearch" x-for="item in getItemsForSearch" :key="item.type_id">
-                                    <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Variant search results section -->
-                    <div x-show="variantSearchInProgress || (variantSearchResponse && (originalVariants.length > 0 || proxyVariants.length > 0))" class="mt-4">
-                        <h4 class="title is-4">Variant Search Results</h4>
-                        
-                        <div x-show="variantSearchInProgress" class="mb-4">
-                            <progress class="progress is-large is-info" max="100">60%</progress>
-                            <p class="has-text-centered">Searching for variants...</p>
-                        </div>
-                        <div x-show="!variantSearchInProgress && variantSearchResponse && originalVariants.length > 0">
-                            <h5 class="title is-5 mb-2">Exact Matches</h5>
-                            <div class="columns is-multiline">
-                                <template x-for="variant in originalVariants" :key="variant.id">
-                                    <div class="column is-12" x-show="variant">
-                                        <div class="card">
-                                            <header class="card-header">
-                                                <p class="card-header-title">
-                                                    <a :href="'snp.html?id=' + variant.id" x-text="variant.rsid || variant.snp || 'Unknown'"></a>
-                                                </p>
-                                            </header>
-                                            <div class="card-content">
-                                                <div class="content">
-                                                    <div class="columns">
-                                                        <div class="column is-3">
-                                                            <strong>Position:</strong> 
-                                                            <span x-text="variant.chr && variant.bp ? variant.chr + ':' + variant.bp : 'Unknown'"></span>
-                                                        </div>
-                                                        <div class="column is-3">
-                                                            <strong>Alleles:</strong> 
-                                                            <span x-text="variant.ea && variant.oa ? variant.ea + '/' + variant.oa : 'Unknown'"></span>
-                                                        </div>
-                                                        <div class="column is-3">
-                                                            <strong>Colocalizations:</strong> 
-                                                            <span x-text="variant.num_colocs || 0"></span>
-                                                        </div>
-                                                        <div class="column is-3">
-                                                            <strong>Gene:</strong> 
-                                                            <span x-text="variant.symbol || 'Unknown'"></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                        <div x-show="!variantSearchInProgress && proxyVariants && proxyVariants.length > 0" class="mt-4">
-                            <h5 class="title is-5 mb-2">Proxy Variants (in LD with exact match)</h5>
-                            <div class="columns is-multiline">
-                                <template x-for="variant in proxyVariants" :key="variant.id">
-                                    <div class="column is-12" x-show="variant">
-                                        <div class="card">
-                                            <header class="card-header">
-                                                <p class="card-header-title">
-                                                    <a :href="'snp.html?id=' + variant.id" x-text="variant.rsid || variant.snp || 'Unknown'"></a>
-                                                </p>
-                                            </header>
-                                            <div class="card-content">
-                                                <div class="content">
-                                                    <div class="columns">
-                                                        <div class="column is-2">
-                                                            <strong>Position:</strong> 
-                                                            <span x-text="variant.chr && variant.bp ? variant.chr + ':' + variant.bp : 'Unknown'"></span>
-                                                        </div>
-                                                        <div class="column is-2">
-                                                            <strong>Alleles:</strong> 
-                                                            <span x-text="variant.ea && variant.oa ? variant.ea + '/' + variant.oa : 'Unknown'"></span>
-                                                        </div>
-                                                        <div class="column is-2">
-                                                            <strong>Colocalizations:</strong> 
-                                                            <span x-text="variant.num_colocs || 0"></span>
-                                                        </div>
-                                                        <div class="column is-2">
-                                                            <strong>Gene:</strong> 
-                                                            <span x-text="variant.symbol || 'Unknown'"></span>
-                                                        </div>
-                                                        <div class="column is-4">
-                                                            <strong>LD (r<sup>2</sup>):</strong> 
-                                                            <span x-text="variant.ld_proxies && variant.ld_proxies.length > 0 ? (variant.ld_proxies[0].r**2).toFixed(3) : 'N/A'"></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                        
-                        <!-- No results message -->
-                        <div x-show="!variantSearchInProgress && variantSearchResponse && 
-                                    (!originalVariants.length) && 
-                                    (!proxyVariants.length)" 
-                             class="notification">
-                            No variants found matching your search.
-                        </div>
-                    </div>
-
-                    <br />
-                    <div class="is-divider" data-content="OR"></div>
-                    <div class="columns mt-6 is-centered">
-                        <button class="button is-success" data-target="modal-js-example" @click="openModal()">Upload GWAS for Comparison</button>
-                        <div x-show="uploadMetadata.postUploadModalOpen" x-cloak class="modal" :class="{ 'is-active': uploadMetadata.postUploadModalOpen }">
-                            <div class="modal-background" @click="closePostUploadModal"></div>
-                            <div class="modal-content">
-                                <div class="box">
-                                    <div x-show="uploadMetadata.uploadSuccess" class="notification">
-                                        <h3 class="title is-4">Upload Successful</h3>
-                                        <p x-html="uploadMetadata.message"></p>
-                                    </div>
-                                    <div x-show="!uploadMetadata.uploadSuccess" class="notification">
-                                        <h3 class="title is-4">Upload Failed</h3>
-                                        <p x-html="uploadMetadata.message"></p>
-                                    </div>
-                                    <button class="button mt-4" 
-                                            :class="uploadMetadata.uploadSuccess ? 'is-success' : 'is-danger'"
-                                            @click="closePostUploadModal">Close</button>
+            <div id="homepage" x-data="homepage" x-init="loadHomepage">
+                <div class="columns mt-6 is-centered">
+                    <img :src="logo" class="logo" width="400" alt="The Genotype-Phenotype Map" />
+                </div>
+                <div x-show="errorMessage" class="notification is-danger is-light mt-4">
+                    <span x-text="errorMessage"></span>
+                </div>
+                <div class="columns mt-1 is-centered">
+                    <div class="column is-three-quarters">
+                        <div class="dropdown is-active level">
+                            <input
+                                class="input"
+                                type="text"
+                                @input="getItemsForSearch"
+                                @keyup.enter="searchVariant"
+                                placeholder="Search for a trait (hemoglobin), gene (DRD2), or variant (rs6589381, 11:113508230)"
+                                x-model="searchText"
+                            />
+                            <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
+                                <div class="dropdown-content" style="max-height: 320px; overflow-y: auto">
+                                    <template
+                                        @click.outside="closeSearch"
+                                        x-for="item in getItemsForSearch"
+                                        :key="item.type_id"
+                                    >
+                                        <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
+                                    </template>
                                 </div>
                             </div>
                         </div>
-                        <!-- Upload modal section -->
-                        <div id="modal-js-example" class="modal is-three-quarters" :class="{ 'is-active': uploadMetadata.modalOpen }" @keydown.window.escape="closeModal()">
-                            <div class="modal-background" @click="closeModal()"></div>
-                            <div class="modal-card is-large" style="width: 900px; max-width: 90%;">
-                                <header class="modal-card-head">
-                                    <p class="modal-card-title">Upload GWAS for Comparison</p>
-                                </header>
-                                <section class="modal-card-body">
-                                    <div class="field">
-                                        <label class="label">Name of Trait</label>
-                                        <div class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.traitName}"
-                                                   type="text" 
-                                                   x-model="uploadMetadata.formData.traitName">
-                                        </div>
-                                    </div>
-                                    <div class="is-divider"></div>
-                                    <div class="columns">
-                                        <div class="column is-half">
-                                            <div class="field">
-                                                <label class="label">File</label>
-                                                <div class="file has-name" :class="{'is-danger': uploadMetadata.validationErrors.file}">
-                                                    <label class="file-label">
-                                                        <input class="file-input" 
-                                                               type="file" 
-                                                               @change="uploadMetadata.formData.file = $event.target.files[0]" 
-                                                               accept=".tsv,.csv,.txt,.gz,.zip,.vcf">
-                                                        <span class="file-cta">
-                                                            <span class="file-label">Choose a file…</span>
-                                                        </span>
-                                                        <span class="file-name" x-text="uploadMetadata.formData.file ? uploadMetadata.formData.file.name : 'No file selected'"></span>
-                                                    </label>
-                                                </div>
-                                                <p class="is-size-7">Size limit is 1GB. Please use zip/gzip to compress.</p>
-                                            </div>
-                                        </div>
-                                        <div class="column is-half">
-                                            <div class="field">
-                                                <label class="label">P-Value Threshold: <span x-text="Number(uploadMetadata.formData.pValue).toExponential()"></span></label>
-                                                <input class="slider is-fullwidth" 
-                                                       type="range" 
-                                                       x-model="uploadMetadata.formData.pValueIndex" 
-                                                       @input="uploadMetadata.formData.pValue = uploadMetadata.formData.pValueOptions[uploadMetadata.formData.pValueIndex]"
-                                                       step="1" 
-                                                       min="0" 
-                                                       max="7">
-                                                <p class="is-size-7">Only LD Regions with variants with a p-value less than this threshold will be considered.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="is-divider"></div>
-                                    <div class="columns">
-                                        <div class="column is-one-quarter">
-                                        <label class="label">Genome Reference Build</label>
-                                            <label class="radio" :class="{'has-text-danger': uploadMetadata.validationErrors.genomeBuild}">
-                                                <input type="radio" 
-                                                       name="genome-build"
-                                                       value="GRCh37"
-                                                       x-model="uploadMetadata.formData.genomeBuild">
-                                                    GRCh37 
-                                            </label>
-                                            <label class="radio" :class="{'has-text-danger': uploadMetadata.validationErrors.genomeBuild}">
-                                                <input type="radio" 
-                                                       name="genome-build"
-                                                       value="GRCh38"
-                                                       x-model="uploadMetadata.formData.genomeBuild">
-                                                    GRCh38
-                                            </label>
-                                        </div>
-                                        <div class="column is-one-quarter">
-                                            <label class="label">Sample Size</label>
-                                            <div class="control">
-                                                <input class="input" 
-                                                       :class="{'is-danger': uploadMetadata.validationErrors.sampleSize}"
-                                                       type="number" 
-                                                       placeholder="Enter sample size" 
-                                                       x-model="uploadMetadata.formData.sampleSize">
-                                            </div>
-                                        </div>
-                                        <div class="column is-one-quarter">
-                                            <label class="label">Ancestry</label>
-                                            <div class="select">
-                                                <select x-model="uploadMetadata.formData.ancestry">
-                                                    <option value="EUR">EUR</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="column is-one-quarter">
-                                            <label class="label">Trait Type</label>
-                                            <div class="select">
-                                                <select x-model="uploadMetadata.formData.studyType">
-                                                    <option value="continuous">Continuous</option>
-                                                    <option value="categorical">Categorical / Binary</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <label class="label">GWAS Column Names</label>
-                                    <div class="field is-grouped">
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.chr}"
-                                                   type="text" 
-                                                   placeholder="CHR" 
-                                                   x-model="uploadMetadata.formData.chr">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.bp}"
-                                                   type="text" 
-                                                   placeholder="BP" 
-                                                   x-model="uploadMetadata.formData.bp">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.p}"
-                                                   type="text" 
-                                                   placeholder="P" 
-                                                   x-model="uploadMetadata.formData.p">
-                                        </p>
-                                    </div>
-                                    <div class="field is-grouped">
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.ea}"
-                                                   type="text" 
-                                                   placeholder="EA" 
-                                                   x-model="uploadMetadata.formData.ea">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.oa}"
-                                                   type="text" 
-                                                   placeholder="OA" x-model="uploadMetadata.formData.oa">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.eaf}"
-                                                   type="text" 
-                                                   placeholder="EAF" 
-                                                   x-model="uploadMetadata.formData.eaf">
-                                        </p>
-                                    </div>
-                                    Either BETA:
-                                    <div class="field is-grouped">
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.beta}"
-                                                   type="text" 
-                                                   placeholder="BETA" 
-                                                   x-model="uploadMetadata.formData.beta">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.se}"
-                                                   type="text" 
-                                                   placeholder="SE" 
-                                                   x-model="uploadMetadata.formData.se">
-                                        </p>
-                                    </div>
-                                    Or Odds Ratio:
-                                    <div class="field is-grouped">
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.or}"
-                                                   type="text" 
-                                                   placeholder="OR" x-model="uploadMetadata.formData.or">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.lb}"
-                                                   type="text" 
-                                                   placeholder="LB" 
-                                                   x-model="uploadMetadata.formData.lb">
-                                        </p>
-                                        <p class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.ub}"
-                                                   type="text" 
-                                                   placeholder="UB" 
-                                                   x-model="uploadMetadata.formData.ub">
-                                        </p>
-                                    </div>
-                                    <br />
-                                    <div class="field">
-                                        <div class="control">
-                                            <label class="checkbox">
-                                                <input type="checkbox" x-model="uploadMetadata.formData.isPublished">
-                                                This study is published
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <template x-if="uploadMetadata.formData.isPublished">
-                                        <div>
-                                            <div class="field">
-                                                <label class="label">DOI</label>
-                                                <div class="control">
-                                                    <input class="input" 
-                                                           :class="{'is-danger': uploadMetadata.validationErrors.doi}"
-                                                           type="text" 
-                                                           placeholder="DOI" 
-                                                           x-model="uploadMetadata.formData.doi">
-                                                </div>
-                                            </div>
-                                            <div class="field">
-                                                <div class="control">
-                                                    <label class="checkbox">
-                                                        <input type="checkbox" x-model="uploadMetadata.formData.shouldBeAdded">
-                                                        You think this study should be permanently included in the Genotype-Phenotype Map
-                                                    </label>
+
+                        <!-- Variant search results section -->
+                        <div
+                            x-show="variantSearchInProgress || (variantSearchResponse && (originalVariants.length > 0 || proxyVariants.length > 0))"
+                            class="mt-4"
+                        >
+                            <h4 class="title is-4">Variant Search Results</h4>
+
+                            <div x-show="variantSearchInProgress" class="mb-4">
+                                <progress class="progress is-large is-info" max="100">60%</progress>
+                                <p class="has-text-centered">Searching for variants...</p>
+                            </div>
+                            <div
+                                x-show="!variantSearchInProgress && variantSearchResponse && originalVariants.length > 0"
+                            >
+                                <h5 class="title is-5 mb-2">Exact Matches</h5>
+                                <div class="columns is-multiline">
+                                    <template x-for="variant in originalVariants" :key="variant.id">
+                                        <div class="column is-12" x-show="variant">
+                                            <div class="card">
+                                                <header class="card-header">
+                                                    <p class="card-header-title">
+                                                        <a
+                                                            :href="'snp.html?id=' + variant.id"
+                                                            x-text="variant.rsid || variant.snp || 'Unknown'"
+                                                        ></a>
+                                                    </p>
+                                                </header>
+                                                <div class="card-content">
+                                                    <div class="content">
+                                                        <div class="columns">
+                                                            <div class="column is-3">
+                                                                <strong>Position:</strong>
+                                                                <span
+                                                                    x-text="variant.chr && variant.bp ? variant.chr + ':' + variant.bp : 'Unknown'"
+                                                                ></span>
+                                                            </div>
+                                                            <div class="column is-3">
+                                                                <strong>Alleles:</strong>
+                                                                <span
+                                                                    x-text="variant.ea && variant.oa ? variant.ea + '/' + variant.oa : 'Unknown'"
+                                                                ></span>
+                                                            </div>
+                                                            <div class="column is-3">
+                                                                <strong>Colocalizations:</strong>
+                                                                <span x-text="variant.num_colocs || 0"></span>
+                                                            </div>
+                                                            <div class="column is-3">
+                                                                <strong>Gene:</strong>
+                                                                <span x-text="variant.symbol || 'Unknown'"></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </template>
-                                    <br />
-                                    <div class="field">
-                                        <label class="label">Email</label>
-                                        <div class="control">
-                                            <input class="input" 
-                                                   :class="{'is-danger': uploadMetadata.validationErrors.email}"
-                                                   type="email" 
-                                                   placeholder="Email input" 
-                                                   x-model="uploadMetadata.formData.email">
+                                </div>
+                            </div>
+                            <div
+                                x-show="!variantSearchInProgress && proxyVariants && proxyVariants.length > 0"
+                                class="mt-4"
+                            >
+                                <h5 class="title is-5 mb-2">Proxy Variants (in LD with exact match)</h5>
+                                <div class="columns is-multiline">
+                                    <template x-for="variant in proxyVariants" :key="variant.id">
+                                        <div class="column is-12" x-show="variant">
+                                            <div class="card">
+                                                <header class="card-header">
+                                                    <p class="card-header-title">
+                                                        <a
+                                                            :href="'snp.html?id=' + variant.id"
+                                                            x-text="variant.rsid || variant.snp || 'Unknown'"
+                                                        ></a>
+                                                    </p>
+                                                </header>
+                                                <div class="card-content">
+                                                    <div class="content">
+                                                        <div class="columns">
+                                                            <div class="column is-2">
+                                                                <strong>Position:</strong>
+                                                                <span
+                                                                    x-text="variant.chr && variant.bp ? variant.chr + ':' + variant.bp : 'Unknown'"
+                                                                ></span>
+                                                            </div>
+                                                            <div class="column is-2">
+                                                                <strong>Alleles:</strong>
+                                                                <span
+                                                                    x-text="variant.ea && variant.oa ? variant.ea + '/' + variant.oa : 'Unknown'"
+                                                                ></span>
+                                                            </div>
+                                                            <div class="column is-2">
+                                                                <strong>Colocalizations:</strong>
+                                                                <span x-text="variant.num_colocs || 0"></span>
+                                                            </div>
+                                                            <div class="column is-2">
+                                                                <strong>Gene:</strong>
+                                                                <span x-text="variant.symbol || 'Unknown'"></span>
+                                                            </div>
+                                                            <div class="column is-4">
+                                                                <strong>LD (r<sup>2</sup>):</strong>
+                                                                <span
+                                                                    x-text="variant.ld_proxies && variant.ld_proxies.length > 0 ? (variant.ld_proxies[0].r**2).toFixed(3) : 'N/A'"
+                                                                ></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    We will send you an email once the analysis has been completed.
-                                </section>
-                                <footer class="modal-card-foot">
-                                    <div class="buttons">
-                                        <button class="button is-success" @click="uploadGWAS()" :disabled="uploadMetadata.currentlyUploading">Upload</button>
-                                        <button class="button" @click="closeModal()" :disabled="uploadMetadata.currentlyUploading">Cancel</button>
-                                        <div x-show="uploadMetadata.currentlyUploading" class="button is-loading">Uploading</div>
-                                        <div x-show="uploadMetadata.currentlyUploading">Please wait, this may take a few minutes if the file is large.</div>
-                                    </div>
-                                </footer>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- No results message -->
+                            <div
+                                x-show="!variantSearchInProgress && variantSearchResponse && 
+                                    (!originalVariants.length) && 
+                                    (!proxyVariants.length)"
+                                class="notification"
+                            >
+                                No variants found matching your search.
                             </div>
                         </div>
-                    </div>
-                    <div class="block mt-6" x-init="loadGPMapMetadata" x-show="getGPMapMetadata">
-                        GWAS studies: <strong x-text="getGPMapMetadata.num_common_studies.toLocaleString()"></strong><br />
-                        Rare variant studies: <strong x-text="getGPMapMetadata.num_rare_studies.toLocaleString()"></strong><br />
-                        Molecular measurements: <strong x-text="getGPMapMetadata.num_molecular_studies.toLocaleString()"></strong><br />
-                        <!-- Colocalised Pairs: <strong x-text="getGPMapMetadata.num_coloc_groups"></strong><br /> -->
-                        Causal variants: <strong x-text="getGPMapMetadata.num_causal_variants.toLocaleString()"></strong><br />
-                        Mistakes: <strong>many</strong><br />
-                    </div>
-                    <div class="block">
-                        Citation: <strong>DOI here</strong>
+
+                        <br />
+                        <div class="is-divider" data-content="OR"></div>
+                        <div class="columns mt-6 is-centered">
+                            <button class="button is-success" data-target="modal-js-example" @click="openModal()">
+                                Upload GWAS for Comparison
+                            </button>
+                            <div
+                                x-show="uploadMetadata.postUploadModalOpen"
+                                x-cloak
+                                class="modal"
+                                :class="{ 'is-active': uploadMetadata.postUploadModalOpen }"
+                            >
+                                <div class="modal-background" @click="closePostUploadModal"></div>
+                                <div class="modal-content">
+                                    <div class="box">
+                                        <div x-show="uploadMetadata.uploadSuccess" class="notification">
+                                            <h3 class="title is-4">Upload Successful</h3>
+                                            <p x-html="uploadMetadata.message"></p>
+                                        </div>
+                                        <div x-show="!uploadMetadata.uploadSuccess" class="notification">
+                                            <h3 class="title is-4">Upload Failed</h3>
+                                            <p x-html="uploadMetadata.message"></p>
+                                        </div>
+                                        <button
+                                            class="button mt-4"
+                                            :class="uploadMetadata.uploadSuccess ? 'is-success' : 'is-danger'"
+                                            @click="closePostUploadModal"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Upload modal section -->
+                            <div
+                                id="modal-js-example"
+                                class="modal is-three-quarters"
+                                :class="{ 'is-active': uploadMetadata.modalOpen }"
+                                @keydown.window.escape="closeModal()"
+                            >
+                                <div class="modal-background" @click="closeModal()"></div>
+                                <div class="modal-card is-large" style="width: 900px; max-width: 90%">
+                                    <header class="modal-card-head">
+                                        <p class="modal-card-title">Upload GWAS for Comparison</p>
+                                    </header>
+                                    <section class="modal-card-body">
+                                        <div class="field">
+                                            <label class="label">Name of Trait</label>
+                                            <div class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.traitName}"
+                                                    type="text"
+                                                    x-model="uploadMetadata.formData.traitName"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div class="is-divider"></div>
+                                        <div class="columns">
+                                            <div class="column is-half">
+                                                <div class="field">
+                                                    <label class="label">File</label>
+                                                    <div
+                                                        class="file has-name"
+                                                        :class="{'is-danger': uploadMetadata.validationErrors.file}"
+                                                    >
+                                                        <label class="file-label">
+                                                            <input
+                                                                class="file-input"
+                                                                type="file"
+                                                                @change="uploadMetadata.formData.file = $event.target.files[0]"
+                                                                accept=".tsv,.csv,.txt,.gz,.zip,.vcf"
+                                                            />
+                                                            <span class="file-cta">
+                                                                <span class="file-label">Choose a file…</span>
+                                                            </span>
+                                                            <span
+                                                                class="file-name"
+                                                                x-text="uploadMetadata.formData.file ? uploadMetadata.formData.file.name : 'No file selected'"
+                                                            ></span>
+                                                        </label>
+                                                    </div>
+                                                    <p class="is-size-7">
+                                                        Size limit is 1GB. Please use zip/gzip to compress.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="column is-half">
+                                                <div class="field">
+                                                    <label class="label"
+                                                        >P-Value Threshold:
+                                                        <span
+                                                            x-text="Number(uploadMetadata.formData.pValue).toExponential()"
+                                                        ></span
+                                                    ></label>
+                                                    <input
+                                                        class="slider is-fullwidth"
+                                                        type="range"
+                                                        x-model="uploadMetadata.formData.pValueIndex"
+                                                        @input="uploadMetadata.formData.pValue = uploadMetadata.formData.pValueOptions[uploadMetadata.formData.pValueIndex]"
+                                                        step="1"
+                                                        min="0"
+                                                        max="7"
+                                                    />
+                                                    <p class="is-size-7">
+                                                        Only LD Regions with variants with a p-value less than this
+                                                        threshold will be considered.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="is-divider"></div>
+                                        <div class="columns">
+                                            <div class="column is-one-quarter">
+                                                <label class="label">Genome Reference Build</label>
+                                                <label
+                                                    class="radio"
+                                                    :class="{'has-text-danger': uploadMetadata.validationErrors.genomeBuild}"
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="genome-build"
+                                                        value="GRCh37"
+                                                        x-model="uploadMetadata.formData.genomeBuild"
+                                                    />
+                                                    GRCh37
+                                                </label>
+                                                <label
+                                                    class="radio"
+                                                    :class="{'has-text-danger': uploadMetadata.validationErrors.genomeBuild}"
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="genome-build"
+                                                        value="GRCh38"
+                                                        x-model="uploadMetadata.formData.genomeBuild"
+                                                    />
+                                                    GRCh38
+                                                </label>
+                                            </div>
+                                            <div class="column is-one-quarter">
+                                                <label class="label">Sample Size</label>
+                                                <div class="control">
+                                                    <input
+                                                        class="input"
+                                                        :class="{'is-danger': uploadMetadata.validationErrors.sampleSize}"
+                                                        type="number"
+                                                        placeholder="Enter sample size"
+                                                        x-model="uploadMetadata.formData.sampleSize"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div class="column is-one-quarter">
+                                                <label class="label">Ancestry</label>
+                                                <div class="select">
+                                                    <select x-model="uploadMetadata.formData.ancestry">
+                                                        <option value="EUR">EUR</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="column is-one-quarter">
+                                                <label class="label">Trait Type</label>
+                                                <div class="select">
+                                                    <select x-model="uploadMetadata.formData.studyType">
+                                                        <option value="continuous">Continuous</option>
+                                                        <option value="categorical">Categorical / Binary</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <label class="label">GWAS Column Names</label>
+                                        <div class="field is-grouped">
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.chr}"
+                                                    type="text"
+                                                    placeholder="CHR"
+                                                    x-model="uploadMetadata.formData.chr"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.bp}"
+                                                    type="text"
+                                                    placeholder="BP"
+                                                    x-model="uploadMetadata.formData.bp"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.p}"
+                                                    type="text"
+                                                    placeholder="P"
+                                                    x-model="uploadMetadata.formData.p"
+                                                />
+                                            </p>
+                                        </div>
+                                        <div class="field is-grouped">
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.ea}"
+                                                    type="text"
+                                                    placeholder="EA"
+                                                    x-model="uploadMetadata.formData.ea"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.oa}"
+                                                    type="text"
+                                                    placeholder="OA"
+                                                    x-model="uploadMetadata.formData.oa"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.eaf}"
+                                                    type="text"
+                                                    placeholder="EAF"
+                                                    x-model="uploadMetadata.formData.eaf"
+                                                />
+                                            </p>
+                                        </div>
+                                        Either BETA:
+                                        <div class="field is-grouped">
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.beta}"
+                                                    type="text"
+                                                    placeholder="BETA"
+                                                    x-model="uploadMetadata.formData.beta"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.se}"
+                                                    type="text"
+                                                    placeholder="SE"
+                                                    x-model="uploadMetadata.formData.se"
+                                                />
+                                            </p>
+                                        </div>
+                                        Or Odds Ratio:
+                                        <div class="field is-grouped">
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.or}"
+                                                    type="text"
+                                                    placeholder="OR"
+                                                    x-model="uploadMetadata.formData.or"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.lb}"
+                                                    type="text"
+                                                    placeholder="LB"
+                                                    x-model="uploadMetadata.formData.lb"
+                                                />
+                                            </p>
+                                            <p class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.ub}"
+                                                    type="text"
+                                                    placeholder="UB"
+                                                    x-model="uploadMetadata.formData.ub"
+                                                />
+                                            </p>
+                                        </div>
+                                        <br />
+                                        <div class="field">
+                                            <div class="control">
+                                                <label class="checkbox">
+                                                    <input
+                                                        type="checkbox"
+                                                        x-model="uploadMetadata.formData.isPublished"
+                                                    />
+                                                    This study is published
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <template x-if="uploadMetadata.formData.isPublished">
+                                            <div>
+                                                <div class="field">
+                                                    <label class="label">DOI</label>
+                                                    <div class="control">
+                                                        <input
+                                                            class="input"
+                                                            :class="{'is-danger': uploadMetadata.validationErrors.doi}"
+                                                            type="text"
+                                                            placeholder="DOI"
+                                                            x-model="uploadMetadata.formData.doi"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div class="field">
+                                                    <div class="control">
+                                                        <label class="checkbox">
+                                                            <input
+                                                                type="checkbox"
+                                                                x-model="uploadMetadata.formData.shouldBeAdded"
+                                                            />
+                                                            You think this study should be permanently included in the
+                                                            Genotype-Phenotype Map
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <br />
+                                        <div class="field">
+                                            <label class="label">Email</label>
+                                            <div class="control">
+                                                <input
+                                                    class="input"
+                                                    :class="{'is-danger': uploadMetadata.validationErrors.email}"
+                                                    type="email"
+                                                    placeholder="Email input"
+                                                    x-model="uploadMetadata.formData.email"
+                                                />
+                                            </div>
+                                        </div>
+                                        We will send you an email once the analysis has been completed.
+                                    </section>
+                                    <footer class="modal-card-foot">
+                                        <div class="buttons">
+                                            <button
+                                                class="button is-success"
+                                                @click="uploadGWAS()"
+                                                :disabled="uploadMetadata.currentlyUploading"
+                                            >
+                                                Upload
+                                            </button>
+                                            <button
+                                                class="button"
+                                                @click="closeModal()"
+                                                :disabled="uploadMetadata.currentlyUploading"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <div x-show="uploadMetadata.currentlyUploading" class="button is-loading">
+                                                Uploading
+                                            </div>
+                                            <div x-show="uploadMetadata.currentlyUploading">
+                                                Please wait, this may take a few minutes if the file is large.
+                                            </div>
+                                        </div>
+                                    </footer>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="block mt-6" x-init="loadGPMapMetadata" x-show="getGPMapMetadata">
+                            GWAS studies: <strong x-text="getGPMapMetadata.num_common_studies.toLocaleString()"></strong
+                            ><br />
+                            Rare variant studies:
+                            <strong x-text="getGPMapMetadata.num_rare_studies.toLocaleString()"></strong><br />
+                            Molecular measurements:
+                            <strong x-text="getGPMapMetadata.num_molecular_studies.toLocaleString()"></strong><br />
+                            <!-- Colocalised Pairs: <strong x-text="getGPMapMetadata.num_coloc_groups"></strong><br /> -->
+                            Causal variants:
+                            <strong x-text="getGPMapMetadata.num_causal_variants.toLocaleString()"></strong><br />
+                            Mistakes: <strong>many</strong><br />
+                        </div>
+                        <div class="block">Citation: <strong>DOI here</strong></div>
                     </div>
                 </div>
-            </div>
-            <div class="footer py-2">
-                <div class="content">
-                    <img :src="mrc_logo" class="logo" width="400" alt="MRC Integrative Epidemiology Unit" />
+                <div class="footer py-2">
+                    <div class="content">
+                        <img :src="mrc_logo" class="logo" width="400" alt="MRC Integrative Epidemiology Unit" />
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</body>
-
+    </body>
 </html>

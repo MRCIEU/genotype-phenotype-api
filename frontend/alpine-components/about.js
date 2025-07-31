@@ -1,4 +1,4 @@
-import pipeline from '../assets/images/pipeline.png'
+import pipeline from "../assets/images/pipeline.png";
 
 export default function about() {
     return {
@@ -6,18 +6,18 @@ export default function about() {
         datasets: null,
 
         loadData() {
-            fetch('../sample_data/datasets.json')
+            fetch("../sample_data/datasets.json")
                 .then(response => {
-                    return response.json()
-                }).then(data => {
-                    this.datasets = data
+                    return response.json();
                 })
+                .then(data => {
+                    this.datasets = data;
+                });
         },
 
         get getDatasetsForTable() {
-            if (this.datasets === null) return []
-            return this.datasets.datasets
+            if (this.datasets === null) return [];
+            return this.datasets.datasets;
         },
-
-    }
+    };
 }

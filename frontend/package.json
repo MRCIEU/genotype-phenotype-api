@@ -1,41 +1,41 @@
 {
-  "name": "genotype-phenotype-frontend",
-  "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build --mode production",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.6.1"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.32.0",
-    "eslint": "^9.32.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.3",
-    "glob": "^11.0.1",
-    "prettier": "^3.6.2",
-    "vite": "^5.1.4"
-  },
-  "dependencies": {
-    "alpinejs": "^3.13.5",
-    "bulma": "^1.0.2",
-    "bulma-divider": "^0.2.0",
-    "bulma-slider": "^2.0.5",
-    "d3": "^7.9.0",
-    "flatted": "^3.3.3",
-    "font-awesome": "^4.7.0",
-    "jszip": "^3.10.1"
-  }
+    "name": "genotype-phenotype-frontend",
+    "private": true,
+    "version": "0.0.1",
+    "type": "module",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build --mode production",
+        "build:dev": "vite build --mode development",
+        "preview": "vite preview",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "4.6.1"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.32.0",
+        "eslint": "^9.32.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.3",
+        "glob": "^11.0.1",
+        "prettier": "^3.6.2",
+        "vite": "^5.1.4"
+    },
+    "dependencies": {
+        "alpinejs": "^3.13.5",
+        "bulma": "^1.0.2",
+        "bulma-divider": "^0.2.0",
+        "bulma-slider": "^2.0.5",
+        "d3": "^7.9.0",
+        "flatted": "^3.3.3",
+        "font-awesome": "^4.7.0",
+        "jszip": "^3.10.1"
+    }
 }

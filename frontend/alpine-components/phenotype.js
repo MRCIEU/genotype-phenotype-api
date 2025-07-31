@@ -1,10 +1,10 @@
-import JSZip from 'jszip';
-import * as d3 from 'd3';
-import { stringify } from 'flatted';
+import JSZip from "jszip";
+import * as d3 from "d3";
+import { stringify } from "flatted";
 
-import graphTransformations from './graphTransformations.js'
-import constants from './constants.js'
-import downloads from './downloads.js';
+import graphTransformations from "./graphTransformations.js";
+import constants from "./constants.js";
+import downloads from "./downloads.js";
 
 export default function pheontype() {
     return {
@@ -14,25 +14,25 @@ export default function pheontype() {
             colocs: null,
             groupedColocs: null,
             rare: null,
-            groupedRare: null, 
+            groupedRare: null,
         },
         svgs: {
             metadata: null,
             full: null,
-            chromosomes: {}
+            chromosomes: {},
         },
         showTables: {
             coloc: true,
-            rare: true 
+            rare: true,
         },
         displayFilters: {
             view: "full",
             chr: null,
             snp: null,
-            traitName: null
+            traitName: null,
         },
         traitSearch: {
-            text: '',
+            text: "",
             showDropDown: false,
             orderedTraits: null,
         },
@@ -40,36 +40,36 @@ export default function pheontype() {
         downloadClicked: false,
 
         async loadData() {
-            let traitId = (new URLSearchParams(location.search).get('id'))
-            let traitUrl = constants.apiUrl + '/traits/' + traitId
+            let traitId = new URLSearchParams(location.search).get("id");
+            let traitUrl = constants.apiUrl + "/traits/" + traitId;
 
-            if (traitId && traitId.includes('-')) {
-                this.userUpload = true
-                traitUrl = constants.apiUrl + '/gwas/' + traitId
+            if (traitId && traitId.includes("-")) {
+                this.userUpload = true;
+                traitUrl = constants.apiUrl + "/gwas/" + traitId;
             }
 
             try {
-                const response = await fetch(traitUrl)
+                const response = await fetch(traitUrl);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
-                    return
+                    this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
+                    return;
                 }
- 
-                this.data = await response.json()
-                await this.getSvgData(traitId)
 
-                document.title = 'GP Map: ' + this.data.trait.trait_name
+                this.data = await response.json();
+                await this.getSvgData(traitId);
 
-                this.transformDataForGraphs()
+                document.title = "GP Map: " + this.data.trait.trait_name;
+
+                this.transformDataForGraphs();
             } catch (error) {
                 console.error(error);
-                this.errorMessage = `Failed to load data: ${error.status} ${error.statusText}`
+                this.errorMessage = `Failed to load data: ${error.status} ${error.statusText}`;
             }
         },
 
         transformDataForGraphs() {
             // Count frequency of each id in colocs and scale between 2 and 10
-            const [scaledMinNumStudies, scaledMaxNumStudies] = [2,10]
+            const [scaledMinNumStudies, scaledMaxNumStudies] = [2, 10];
             const idFrequencies = this.data.coloc_groups.reduce((acc, obj) => {
                 if (obj.coloc_group_id) {
                     acc[obj.coloc_group_id] = (acc[obj.coloc_group_id] || 0) + 1;
@@ -83,110 +83,118 @@ export default function pheontype() {
             const maxNumStudies = Math.max(...frequencies);
 
             this.data.study_extractions = this.data.study_extractions.map(se => {
-                se.MbP = se.bp / 1000000
-                se.chrText = 'CHR '.concat(se.chr)
-                se.ignore = false
-                return se
-            })
+                se.MbP = se.bp / 1000000;
+                se.chrText = "CHR ".concat(se.chr);
+                se.ignore = false;
+                return se;
+            });
             this.data.rare_results = this.data.rare_results.map(r => {
-                r.MbP = r.bp / 1000000
-                r.chrText = 'CHR '.concat(r.chr)
-                r.ignore = false
-                return r
-            })
+                r.MbP = r.bp / 1000000;
+                r.chrText = "CHR ".concat(r.chr);
+                r.ignore = false;
+                return r;
+            });
             this.data.coloc_groups = this.data.coloc_groups.map(c => {
-                c.MbP = c.bp / 1000000
-                c.chrText = 'CHR '.concat(c.chr)
-                c.annotationColor = constants.colors.palette[Math.floor(Math.random()*constants.colors.palette.length)]
-                c.ignore = false
+                c.MbP = c.bp / 1000000;
+                c.chrText = "CHR ".concat(c.chr);
+                c.annotationColor =
+                    constants.colors.palette[Math.floor(Math.random() * constants.colors.palette.length)];
+                c.ignore = false;
                 if (minNumStudies === maxNumStudies) {
-                    c.scaledNumStudies = 4 
+                    c.scaledNumStudies = 4;
                 } else {
-                    c.scaledNumStudies = ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies - minNumStudies)) * (scaledMaxNumStudies- scaledMinNumStudies) + scaledMinNumStudies 
+                    c.scaledNumStudies =
+                        ((idFrequencies[c.coloc_group_id] - minNumStudies) / (maxNumStudies - minNumStudies)) *
+                            (scaledMaxNumStudies - scaledMinNumStudies) +
+                        scaledMinNumStudies;
                 }
-                return c
-            })
+                return c;
+            });
             this.data.coloc_groups.sort((a, b) => a.chr > b.chr);
         },
 
         filterDataForGraphs() {
-            if (!this.data) return
-            const graphOptions = Alpine.store('graphOptionStore')
+            if (!this.data) return;
+            const graphOptions = Alpine.store("graphOptionStore");
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
-                let graphOptionFilters = ((coloc.min_p <= graphOptions.pValue &&
-                    (graphOptions.colocType === coloc.group_threshold) &&
-                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
+                let graphOptionFilters =
+                    coloc.min_p <= graphOptions.pValue &&
+                    graphOptions.colocType === coloc.group_threshold &&
+                    (graphOptions.includeTrans ? true : coloc.cis_trans !== "trans") &&
                     (coloc.trait_id === this.data.trait.id ||
-                        (graphOptions.traitType === 'all' ? true : 
-                        graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
-                        graphOptions.traitType === 'phenotype' ? coloc.data_type === 'Phenotype' : true))
-                    )
-                )
-                let displayFilters = this.displayFilters.chr !== null ? coloc.chr == this.displayFilters.chr : true
+                        (graphOptions.traitType === "all"
+                            ? true
+                            : graphOptions.traitType === "molecular"
+                              ? coloc.data_type !== "Phenotype"
+                              : graphOptions.traitType === "phenotype"
+                                ? coloc.data_type === "Phenotype"
+                                : true));
+                let displayFilters = this.displayFilters.chr !== null ? coloc.chr == this.displayFilters.chr : true;
 
-                let categoryFilters = true
+                let categoryFilters = true;
                 if (Object.values(graphOptions.categories).some(c => c)) {
-                    categoryFilters = graphOptions.categories[coloc.trait_category] === true || coloc.trait_id === this.data.trait.id
+                    categoryFilters =
+                        graphOptions.categories[coloc.trait_category] === true || coloc.trait_id === this.data.trait.id;
                 }
 
-                return graphOptionFilters && displayFilters && categoryFilters
-            })
+                return graphOptionFilters && displayFilters && categoryFilters;
+            });
 
             this.filteredData.rare = this.data.rare_results.filter(rare => {
-                const graphOptionFilters = (rare.min_p <= graphOptions.pValue && 
-                    !graphOptions.includeTrans && 
-                    (graphOptions.traitType === 'all' || graphOptions.traitType === 'phenotype')
-                )
-                return graphOptionFilters
-            })
+                const graphOptionFilters =
+                    rare.min_p <= graphOptions.pValue &&
+                    !graphOptions.includeTrans &&
+                    (graphOptions.traitType === "all" || graphOptions.traitType === "phenotype");
+                return graphOptionFilters;
+            });
 
             this.filteredData.groupedColocs = graphTransformations.groupBySnp(
                 this.filteredData.coloc_groups,
-                'trait',
+                "trait",
                 this.data.trait.id,
                 this.displayFilters
-            )
+            );
             this.filteredData.groupedRare = graphTransformations.groupBySnp(
                 this.filteredData.rare,
-                'trait',
+                "trait",
                 this.data.trait.id,
                 this.displayFilters
-            )
+            );
 
-            const allFilteredData = {...this.filteredData.groupedColocs, ...this.filteredData.groupedRare}
-            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(allFilteredData)
+            const allFilteredData = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
+            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(allFilteredData);
         },
 
         async getSvgData(traitId) {
             if (constants.isLocal) {
-                const minP = this.data.coloc_groups.reduce((min, se) => Math.min(min, se.min_p), Infinity)
-                traitId = minP < 1e-10 ? 'gwas' : 'short_gwas' 
+                const minP = this.data.coloc_groups.reduce((min, se) => Math.min(min, se.min_p), Infinity);
+                traitId = minP < 1e-10 ? "gwas" : "short_gwas";
             }
 
-            const metadataUrl = `${constants.assetBaseUrl}/${traitId}_metadata.json`
-            const svgsUrl = `${constants.assetBaseUrl}/${traitId}_svgs.zip`
+            const metadataUrl = `${constants.assetBaseUrl}/${traitId}_metadata.json`;
+            const svgsUrl = `${constants.assetBaseUrl}/${traitId}_svgs.zip`;
 
-            const response = await fetch(metadataUrl)
+            const response = await fetch(metadataUrl);
             if (!response.ok) {
-                this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`
-                return
+                this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
+                return;
             }
-            this.svgs.metadata = await response.json()
+            this.svgs.metadata = await response.json();
 
-            const zipResponse = await fetch(svgsUrl)
-            const zipBlob = await zipResponse.blob()
-            const zip = await JSZip.loadAsync(zipBlob)
+            const zipResponse = await fetch(svgsUrl);
+            const zipBlob = await zipResponse.blob();
+            const zip = await JSZip.loadAsync(zipBlob);
 
             for (const [filename, file] of Object.entries(zip.files)) {
-                if (filename.endsWith('.svg')) {
-                    const svgContent = await file.async('text')
-                    if (filename.includes('chr')) {
+                if (filename.endsWith(".svg")) {
+                    const svgContent = await file.async("text");
+                    if (filename.includes("chr")) {
                         // Extract chromosome number from filename
-                        const chrNum = filename.match(/chr(\d+)\.svg/)[1]
-                        this.svgs.chromosomes[`chr${chrNum}`] = svgContent
+                        const chrNum = filename.match(/chr(\d+)\.svg/)[1];
+                        this.svgs.chromosomes[`chr${chrNum}`] = svgContent;
                     } else {
                         // This is the full genome SVG
-                        this.svgs.full = svgContent
+                        this.svgs.full = svgContent;
                     }
                 }
             }
@@ -198,38 +206,37 @@ export default function pheontype() {
         },
 
         get showResults() {
-            if (this.userUpload) return this.data.trait.status === 'completed'
-            return true
+            if (this.userUpload) return this.data.trait.status === "completed";
+            return true;
         },
 
         get getStudyToDisplay() {
-            let text = 'Trait: '
-            if (this.data === null) return text + '...'
+            let text = "Trait: ";
+            if (this.data === null) return text + "...";
             if (this.userUpload) {
-                return 'GWAS Upload: ' + this.data.trait.name
+                return "GWAS Upload: " + this.data.trait.name;
             }
 
-            return text + this.data.trait.trait_name
+            return text + this.data.trait.trait_name;
         },
 
         get getUploadStatus() {
-            let text = 'Status: '
-            if (this.data === null) return text + '...'
-            return text + this.data.trait.status
+            let text = "Status: ";
+            if (this.data === null) return text + "...";
+            return text + this.data.trait.status;
         },
 
-
         getTraitsToFilterBy() {
-            if (this.traitSearch.orderedTraits === null) return []
+            if (this.traitSearch.orderedTraits === null) return [];
             return this.traitSearch.orderedTraits.filter(
                 t => !this.traitSearch.text || t.toLowerCase().includes(this.traitSearch.text.toLowerCase())
-            )
+            );
         },
 
         filterByTrait(trait) {
             if (trait !== null) {
-                this.displayFilters.traitName = trait
-            } 
+                this.displayFilters.traitName = trait;
+            }
         },
 
         removeDisplayFilters() {
@@ -238,98 +245,109 @@ export default function pheontype() {
                 view: "full",
                 chr: null,
                 snp: null,
-                traitName: null
-            }
-            this.traitSearch.text = ''
+                traitName: null,
+            };
+            this.traitSearch.text = "";
         },
 
         get getDataForColocTable() {
-            if (!this.filteredData.coloc_groups || this.filteredData.coloc_groups.length === 0) return []
+            if (!this.filteredData.coloc_groups || this.filteredData.coloc_groups.length === 0) return [];
 
             let tableData = this.filteredData.coloc_groups.filter(coloc => {
-                if (this.displayFilters.snp !== null) return coloc.display_snp === this.displayFilters.snp 
-                else if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr
-                else return true
-            })
+                if (this.displayFilters.snp !== null) return coloc.display_snp === this.displayFilters.snp;
+                else if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr;
+                else return true;
+            });
 
-            tableData = graphTransformations.addColorForSNPs(tableData)
-            tableData = graphTransformations.groupBySnp(tableData, 'trait', this.data.trait.id, this.displayFilters)
+            tableData = graphTransformations.addColorForSNPs(tableData);
+            tableData = graphTransformations.groupBySnp(tableData, "trait", this.data.trait.id, this.displayFilters);
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)))
+            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get doRareResultsExist() {
-            return this.data && this.data.trait.rare_study !== null
+            return this.data && this.data.trait.rare_study !== null;
         },
 
         get getDataForRareTable() {
-            if (!this.filteredData.rare || this.filteredData.rare.length === 0) return []
+            if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
 
             let tableData = this.filteredData.rare.filter(rare => {
-                if (this.displayFilters.snp !== null) return rare.display_snp === this.displayFilters.snp 
-                else if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr
-                else return true
-            })
+                if (this.displayFilters.snp !== null) return rare.display_snp === this.displayFilters.snp;
+                else if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr;
+                else return true;
+            });
 
-            tableData = graphTransformations.addColorForSNPs(tableData)
-            tableData = graphTransformations.groupBySnp(tableData, 'trait', this.data.trait.id, this.displayFilters)
+            tableData = graphTransformations.addColorForSNPs(tableData);
+            tableData = graphTransformations.groupBySnp(tableData, "trait", this.data.trait.id, this.displayFilters);
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)))
+            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         initPhenotypeGraph() {
-            this.filterDataForGraphs()
-            if (!this.svgs.metadata) return
+            this.filterDataForGraphs();
+            if (!this.svgs.metadata) return;
             const chartContainer = document.getElementById("phenotype-chart");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getPhenotypeGraph())
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
+                this.getPhenotypeGraph()
+            );
         },
 
         getPhenotypeGraph() {
             const chartContainer = document.getElementById("phenotype-chart");
-            chartContainer.innerHTML = '';
-        
+            chartContainer.innerHTML = "";
+
             let self = this;
             const graphConstants = {
                 margin: { top: 20, right: 20, bottom: 60, left: 80 },
-                legend: { width: 450, height: 20 }
-            }
-        
+                legend: { width: 450, height: 20 },
+            };
+
             // Get container dimensions
             const containerWidth = chartContainer.clientWidth;
             const aspectRatio = self.svgs.metadata.svg_height / self.svgs.metadata.svg_width;
             const width = containerWidth - graphConstants.margin.left - graphConstants.margin.right;
             const height = width * aspectRatio;
-        
+
             // Create SVG container
-            const svg = d3.select(chartContainer)
+            const svg = d3
+                .select(chartContainer)
                 .append("svg")
                 .attr("width", width + graphConstants.margin.left + graphConstants.margin.right)
                 .attr("height", height + graphConstants.margin.top + graphConstants.margin.bottom)
-                .attr("viewBox", `0 0 ${width + graphConstants.margin.left + graphConstants.margin.right} ${height + graphConstants.margin.top + graphConstants.margin.bottom}`);
-        
+                .attr(
+                    "viewBox",
+                    `0 0 ${width + graphConstants.margin.left + graphConstants.margin.right} ${height + graphConstants.margin.top + graphConstants.margin.bottom}`
+                );
+
             // Create main plot group
-            const plotGroup = svg.append("g")
+            const plotGroup = svg
+                .append("g")
                 .attr("transform", `translate(${graphConstants.margin.left},${graphConstants.margin.top})`);
-        
+
             // Create a foreignObject to properly embed the SVG
-            const foreignObject = plotGroup.append("foreignObject")
+            const foreignObject = plotGroup
+                .append("foreignObject")
                 .attr("width", width)
                 .attr("height", height)
                 .attr("overflow", "hidden");
-        
+
             function loadSvg(specificSvg) {
-                if (!specificSvg) return
+                if (!specificSvg) return;
 
                 foreignObject.selectAll("*").remove();
                 const parser = new DOMParser();
                 const svgDoc = parser.parseFromString(specificSvg, "image/svg+xml");
                 const importedSvg = svgDoc.documentElement;
-                
+
                 // Remove width/height attributes to allow scaling
-                importedSvg.removeAttribute("width")
-                importedSvg.removeAttribute("height")
-                importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet")
-                importedSvg.setAttribute("viewBox", `0 0 ${self.svgs.metadata.svg_width} ${self.svgs.metadata.svg_height}`)
+                importedSvg.removeAttribute("width");
+                importedSvg.removeAttribute("height");
+                importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                importedSvg.setAttribute(
+                    "viewBox",
+                    `0 0 ${self.svgs.metadata.svg_width} ${self.svgs.metadata.svg_height}`
+                );
                 importedSvg.style.pointerEvents = "none"; // Make the SVG non-interactive
 
                 // Append the SVG to foreignObject
@@ -337,27 +355,26 @@ export default function pheontype() {
             }
 
             // Add chromosome backgrounds for ALL chromosomes
-            const chrBackgrounds = plotGroup.append("g")
+            const chrBackgrounds = plotGroup
+                .append("g")
                 .attr("class", "chr-backgrounds")
                 .style("pointer-events", "all");
 
             // Add chromosome labels
-            const chrLabels = plotGroup.append("g")
-                .attr("class", "chr-labels");
+            const chrLabels = plotGroup.append("g").attr("class", "chr-labels");
 
-            const yScale = d3.scaleLinear()
+            const yScale = d3
+                .scaleLinear()
                 .domain([self.svgs.metadata.y_axis.min_lp, self.svgs.metadata.y_axis.max_lp])
                 .range([height, 0]);
 
-            const yAxis = d3.axisLeft(yScale)
+            const yAxis = d3
+                .axisLeft(yScale)
                 .ticks(10)
                 .tickFormat(d => d);
-            plotGroup.append("g")
-                .call(yAxis)
-                .selectAll("text")
-                .style("text-anchor", "end")
-                .style("font-size", "12px");
-            plotGroup.append("text")
+            plotGroup.append("g").call(yAxis).selectAll("text").style("text-anchor", "end").style("font-size", "12px");
+            plotGroup
+                .append("text")
                 .attr("transform", "rotate(-90)")
                 .attr("x", -height / 2)
                 .attr("y", -50)
@@ -366,32 +383,30 @@ export default function pheontype() {
                 .text("-log10(p-value)");
 
             // Store coloc circles in a group for easy manipulation
-            const colocCirclesGroup = plotGroup.append("g")
-                .attr("class", "coloc-circles");
+            const colocCirclesGroup = plotGroup.append("g").attr("class", "coloc-circles");
 
-            colocCirclesGroup.selectAll("circle")
-                .transition()
-                .duration(500)
-                .attr("opacity", 0)
-                .remove();
+            colocCirclesGroup.selectAll("circle").transition().duration(500).attr("opacity", 0).remove();
 
             function renderLegend() {
                 const legendY = -10;
                 const legendX = width - graphConstants.legend.width;
-                const legendGroup = plotGroup.append("g")
+                const legendGroup = plotGroup
+                    .append("g")
                     .attr("class", "legend")
                     .attr("transform", `translate(${legendX}, ${legendY})`);
-                legendGroup.append('rect')
-                    .attr('x', -10)
-                    .attr('y', -10)
-                    .attr('width', graphConstants.legend.width)
-                    .attr('height', graphConstants.legend.height)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#bbb')
-                    .attr('stroke-width', 1);
+                legendGroup
+                    .append("rect")
+                    .attr("x", -10)
+                    .attr("y", -10)
+                    .attr("width", graphConstants.legend.width)
+                    .attr("height", graphConstants.legend.height)
+                    .attr("fill", "none")
+                    .attr("stroke", "#bbb")
+                    .attr("stroke-width", 1);
 
                 // Common
-                legendGroup.append("circle")
+                legendGroup
+                    .append("circle")
                     .attr("cx", 0)
                     .attr("cy", 2)
                     .attr("r", 5)
@@ -399,14 +414,11 @@ export default function pheontype() {
                     .attr("stroke", "#fff")
                     .attr("stroke-width", 1);
 
-                legendGroup.append("text")
-                    .attr("x", 10)
-                    .attr("y", 6)
-                    .style("font-size", "12px")
-                    .text("Common");
+                legendGroup.append("text").attr("x", 10).attr("y", 6).style("font-size", "12px").text("Common");
 
                 // Rare
-                legendGroup.append("circle")
+                legendGroup
+                    .append("circle")
                     .attr("cx", 70)
                     .attr("cy", 2)
                     .attr("r", 5)
@@ -414,14 +426,11 @@ export default function pheontype() {
                     .attr("stroke", "#fff")
                     .attr("stroke-width", 1);
 
-                legendGroup.append("text")
-                    .attr("x", 80)
-                    .attr("y", 6)
-                    .style("font-size", "12px")
-                    .text("Rare");
+                legendGroup.append("text").attr("x", 80).attr("y", 6).style("font-size", "12px").text("Rare");
 
                 // Suggestive significance (dashed line)
-                legendGroup.append("line")
+                legendGroup
+                    .append("line")
                     .attr("x1", 115)
                     .attr("x2", 135)
                     .attr("y1", 3)
@@ -430,14 +439,16 @@ export default function pheontype() {
                     .attr("stroke-width", 0.8)
                     .attr("stroke-dasharray", "5,5");
 
-                legendGroup.append("text")
+                legendGroup
+                    .append("text")
                     .attr("x", 135)
                     .attr("y", 6)
                     .style("font-size", "12px")
                     .text("Suggestive significance");
 
                 // Genome-wide significance (solid line)
-                legendGroup.append("line")
+                legendGroup
+                    .append("line")
                     .attr("x1", 270)
                     .attr("x2", 290)
                     .attr("y1", 3)
@@ -445,7 +456,8 @@ export default function pheontype() {
                     .attr("stroke", "darkred")
                     .attr("stroke-width", 0.8);
 
-                legendGroup.append("text")
+                legendGroup
+                    .append("text")
                     .attr("x", 295)
                     .attr("y", 6)
                     .style("font-size", "12px")
@@ -453,9 +465,9 @@ export default function pheontype() {
             }
 
             // Add reference lines
-            const referenceLines = plotGroup.append("g")
-                .attr("class", "reference-lines");
-            referenceLines.append("line")
+            const referenceLines = plotGroup.append("g").attr("class", "reference-lines");
+            referenceLines
+                .append("line")
                 .attr("x1", 0)
                 .attr("x2", width)
                 .attr("y1", yScale(4))
@@ -465,7 +477,8 @@ export default function pheontype() {
                 .attr("stroke-width", 0.6)
                 .attr("stroke-dasharray", "5,5");
 
-            referenceLines.append("line")
+            referenceLines
+                .append("line")
                 .attr("x1", 0)
                 .attr("x2", width)
                 .attr("y1", yScale(7.3))
@@ -474,34 +487,39 @@ export default function pheontype() {
                 .attr("opacity", 0.8)
                 .attr("stroke-width", 0.6);
 
-
             function renderResetDisplayButton() {
-                if (self.displayFilters.chr !== null || self.displayFilters.snp !== null || self.displayFilters.traitName !== null) {
+                if (
+                    self.displayFilters.chr !== null ||
+                    self.displayFilters.snp !== null ||
+                    self.displayFilters.traitName !== null
+                ) {
                     const btnX = width / 2 + 60;
                     const btnY = height + 25;
                     const btnWidth = 90;
                     const btnHeight = 22;
-                    plotGroup.append('rect')
-                        .attr('x', btnX)
-                        .attr('y', btnY)
-                        .attr('width', btnWidth)
-                        .attr('height', btnHeight)
-                        .attr('rx', 6)
-                        .attr('fill', 'white')
-                        .attr('stroke', '#b5b5b5')
-                        .style('cursor', 'pointer')
-                        .on('click', () => self.removeDisplayFilters());
-                    plotGroup.append('text')
-                        .attr('x', btnX + btnWidth / 2)
-                        .attr('y', btnY + btnHeight / 2+3)
-                        .attr('text-anchor', 'middle')
-                        .attr('alignment-baseline', 'middle')
-                        .attr('font-size', 13)
-                        .attr('fill', '#363636')
-                        .attr('class', 'button is-small')
-                        .style('cursor', 'pointer')
-                        .text('Reset Display')
-                        .on('click', () => self.removeDisplayFilters());
+                    plotGroup
+                        .append("rect")
+                        .attr("x", btnX)
+                        .attr("y", btnY)
+                        .attr("width", btnWidth)
+                        .attr("height", btnHeight)
+                        .attr("rx", 6)
+                        .attr("fill", "white")
+                        .attr("stroke", "#b5b5b5")
+                        .style("cursor", "pointer")
+                        .on("click", () => self.removeDisplayFilters());
+                    plotGroup
+                        .append("text")
+                        .attr("x", btnX + btnWidth / 2)
+                        .attr("y", btnY + btnHeight / 2 + 3)
+                        .attr("text-anchor", "middle")
+                        .attr("alignment-baseline", "middle")
+                        .attr("font-size", 13)
+                        .attr("fill", "#363636")
+                        .attr("class", "button is-small")
+                        .style("cursor", "pointer")
+                        .text("Reset Display")
+                        .on("click", () => self.removeDisplayFilters());
                 }
             }
 
@@ -510,51 +528,51 @@ export default function pheontype() {
                 const chrSvg = self.svgs.chromosomes[`chr${self.displayFilters.chr}`];
                 loadSvg(chrSvg);
 
-                const xScale = d3.scaleLinear()
-                    .domain([chrMeta.bp_start, chrMeta.bp_end])
-                    .range([0, width]);
+                const xScale = d3.scaleLinear().domain([chrMeta.bp_start, chrMeta.bp_end]).range([0, width]);
 
-                const xAxis = d3.axisBottom(xScale)
-                    .ticks(0)
-                    .tickSize(0);
-                plotGroup.append("g")
-                    .attr("transform", `translate(0,${height})`)
-                    .call(xAxis);
-                plotGroup.append("text")
+                const xAxis = d3.axisBottom(xScale).ticks(0).tickSize(0);
+                plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+                plotGroup
+                    .append("text")
                     .attr("x", width / 2)
                     .attr("y", height + 40)
                     .style("text-anchor", "middle")
                     .style("font-size", "14px")
                     .text(`Chromosome ${self.displayFilters.chr}`);
 
-                chrLabels.selectAll("text")
+                chrLabels
+                    .selectAll("text")
                     .data(self.svgs.metadata.x_axis)
                     .join("text")
                     .transition()
                     .duration(500)
                     .attr("opacity", 0);
-                
+
                 renderResetDisplayButton();
 
                 if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
-                    const allGroups = Object.values(self.filteredData.groupedColocs).concat(Object.values(self.filteredData.groupedRare))
-                    const circleData = allGroups.map(group => {
-                        const traitId = self.data.trait.id;
-                        const study = group.find(s => s.trait_id === traitId);
-                        if (!study) return null;
-                        if (study.chr != self.displayFilters.chr) return null;
-                        study._group = group;
-                        return study;
-                    }).filter(Boolean);
+                    const allGroups = Object.values(self.filteredData.groupedColocs).concat(
+                        Object.values(self.filteredData.groupedRare)
+                    );
+                    const circleData = allGroups
+                        .map(group => {
+                            const traitId = self.data.trait.id;
+                            const study = group.find(s => s.trait_id === traitId);
+                            if (!study) return null;
+                            if (study.chr != self.displayFilters.chr) return null;
+                            study._group = group;
+                            return study;
+                        })
+                        .filter(Boolean);
 
-                    const circles = colocCirclesGroup.selectAll("circle")
-                        .data(circleData, d => d.display_snp);
+                    const circles = colocCirclesGroup.selectAll("circle").data(circleData, d => d.display_snp);
 
-                    circles.enter()
+                    circles
+                        .enter()
                         .append("circle")
                         .attr("cx", d => {
                             const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
-                            const bpPosition = (d.bp) / (chrMeta.bp_end - chrMeta.bp_start);
+                            const bpPosition = d.bp / (chrMeta.bp_end - chrMeta.bp_start);
                             return bpPosition * width;
                         })
                         .attr("cy", d => {
@@ -563,56 +581,55 @@ export default function pheontype() {
                         })
                         .attr("r", d => Math.min(d._group.length + 2, 20))
                         .attr("fill", d => {
-                            if (d.display_snp === self.displayFilters.snp) return constants.colors.dataTypes.highlighted
-                            else if (d.coloc_group_id) return constants.colors.dataTypes.common
-                            else return constants.colors.dataTypes.rare
+                            if (d.display_snp === self.displayFilters.snp)
+                                return constants.colors.dataTypes.highlighted;
+                            else if (d.coloc_group_id) return constants.colors.dataTypes.common;
+                            else return constants.colors.dataTypes.rare;
                         })
                         .attr("stroke", "#fff")
                         .attr("stroke-width", 1.5)
                         .attr("opacity", 0.8)
-                        .on('mouseover', function(event, d) {
+                        .on("mouseover", function (event, d) {
                             d3.select(this).style("cursor", "pointer");
-                            d3.select(this).transition()
-                                .duration('100')
+                            d3.select(this)
+                                .transition()
+                                .duration("100")
                                 .attr("fill", constants.colors.dataTypes.highlighted)
-                                .attr("r", Math.min(d._group.length + 2, 20) + 8)
-                            const tooltipContent = graphTransformations.getTraitListHTML(d._group)
-                            graphTransformations.getTooltip(tooltipContent, event)
+                                .attr("r", Math.min(d._group.length + 2, 20) + 8);
+                            const tooltipContent = graphTransformations.getTraitListHTML(d._group);
+                            graphTransformations.getTooltip(tooltipContent, event);
                         })
-                        .on('mouseout', function () {
-                            d3.select(this).transition()
-                                .duration('200')
+                        .on("mouseout", function () {
+                            d3.select(this)
+                                .transition()
+                                .duration("200")
                                 .attr("fill", d => {
-                                    if (d.display_snp === self.displayFilters.snp) return constants.colors.dataTypes.highlighted
-                                    else if (d.coloc_group_id) return constants.colors.dataTypes.common
-                                    else return constants.colors.dataTypes.rare
+                                    if (d.display_snp === self.displayFilters.snp)
+                                        return constants.colors.dataTypes.highlighted;
+                                    else if (d.coloc_group_id) return constants.colors.dataTypes.common;
+                                    else return constants.colors.dataTypes.rare;
                                 })
-                                .attr("r", d => Math.min(d._group.length + 2, 20))
-                            d3.selectAll('.tooltip').remove();
+                                .attr("r", d => Math.min(d._group.length + 2, 20));
+                            d3.selectAll(".tooltip").remove();
                         })
-                        .on('click', function(event, d) {
+                        .on("click", function (event, d) {
                             self.displayFilters.snp = d.display_snp;
-                        })
-                        // .transition()
-                        // .duration(500)
-                        // .attr("opacity", 0.8);
+                        });
                 }
             }
 
             function renderFullView() {
                 loadSvg(self.svgs.full);
 
-                const xScale = d3.scaleLinear()
+                const xScale = d3
+                    .scaleLinear()
                     .domain([0, self.svgs.metadata.x_axis[self.svgs.metadata.x_axis.length - 1].bp_end])
                     .range([0, width]);
-                const xAxis = d3.axisBottom(xScale)
-                    .ticks(0)
-                    .tickSize(0);
-                plotGroup.append("g")
-                    .attr("transform", `translate(0,${height})`)
-                    .call(xAxis);
+                const xAxis = d3.axisBottom(xScale).ticks(0).tickSize(0);
+                plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
                 // X-axis label
-                plotGroup.append("text")
+                plotGroup
+                    .append("text")
                     .attr("x", width / 2)
                     .attr("y", height + 40)
                     .style("text-anchor", "middle")
@@ -624,7 +641,8 @@ export default function pheontype() {
                 self.svgs.metadata.x_axis.forEach((chr, i) => {
                     const xStart = (chr.pixel_start / self.svgs.metadata.svg_width) * width;
                     const xEnd = (chr.pixel_end / self.svgs.metadata.svg_width) * width;
-                    chrBackgrounds.append("rect")
+                    chrBackgrounds
+                        .append("rect")
                         .datum(chr)
                         .attr("x", xStart)
                         .attr("y", 0)
@@ -633,19 +651,16 @@ export default function pheontype() {
                         .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff")
                         .attr("opacity", 0.5)
                         .style("cursor", "pointer")
-                        .on('mouseover', function() {
-                            d3.select(this)
-                                .transition()
-                                .duration(200)
-                                .attr("fill", "#e6f3ff");
+                        .on("mouseover", function () {
+                            d3.select(this).transition().duration(200).attr("fill", "#e6f3ff");
                         })
-                        .on('mouseout', function() {
+                        .on("mouseout", function () {
                             d3.select(this)
                                 .transition()
                                 .duration(200)
                                 .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff");
                         })
-                        .on('click', function() {
+                        .on("click", function () {
                             self.displayFilters.view = "chromosome";
                             self.displayFilters.chr = chr.CHR;
                             self.displayFilters.snp = null;
@@ -654,7 +669,8 @@ export default function pheontype() {
 
                 self.svgs.metadata.x_axis.forEach(chr => {
                     const xPos = ((chr.pixel_start + chr.pixel_end) / 2 / self.svgs.metadata.svg_width) * width;
-                    const label = chrLabels.append("text")
+                    const label = chrLabels
+                        .append("text")
                         .attr("x", xPos)
                         .attr("y", height + 20)
                         .style("text-anchor", "middle")
@@ -664,30 +680,37 @@ export default function pheontype() {
                 });
                 // Draw coloc circles for all chromosomes with fade transition
                 if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
-                    const allGroups = Object.values(self.filteredData.groupedColocs).concat(Object.values(self.filteredData.groupedRare))
-                    const circleData = allGroups.map(group => {
-                        const traitId = self.data.trait.id;
-                        const study = group.find(s => s.trait_id === traitId);
-                        if (!study) return null;
-                        study._group = group;
-                        return study;
-                    }).filter(Boolean);
+                    const allGroups = Object.values(self.filteredData.groupedColocs).concat(
+                        Object.values(self.filteredData.groupedRare)
+                    );
+                    const circleData = allGroups
+                        .map(group => {
+                            const traitId = self.data.trait.id;
+                            const study = group.find(s => s.trait_id === traitId);
+                            if (!study) return null;
+                            study._group = group;
+                            return study;
+                        })
+                        .filter(Boolean);
                     circleData.sort((a, b) => {
                         if (a.display_snp !== b.display_snp) {
                             return a.display_snp < b.display_snp ? -1 : 1;
                         }
                     });
 
-                    const circles = colocCirclesGroup.selectAll("circle")
-                        .data(circleData, d => d.display_snp);
+                    const circles = colocCirclesGroup.selectAll("circle").data(circleData, d => d.display_snp);
 
-                    circles.enter()
+                    circles
+                        .enter()
                         .append("circle")
                         .attr("cx", d => {
                             const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
                             const chrLength = chrMeta.bp_end - chrMeta.bp_start;
                             const bpRatio = d.bp / chrLength;
-                            const xPixel = (chrMeta.pixel_start + (bpRatio * (chrMeta.pixel_end - chrMeta.pixel_start))) / self.svgs.metadata.svg_width * width;
+                            const xPixel =
+                                ((chrMeta.pixel_start + bpRatio * (chrMeta.pixel_end - chrMeta.pixel_start)) /
+                                    self.svgs.metadata.svg_width) *
+                                width;
                             return xPixel;
                         })
                         .attr("cy", d => {
@@ -696,43 +719,43 @@ export default function pheontype() {
                         })
                         .attr("r", d => Math.min(d._group.length + 2, 20))
                         .attr("fill", d => {
-                            if (d.display_snp === self.displayFilters.snp) return constants.colors.dataTypes.highlighted
-                            else if (d.coloc_group_id) return constants.colors.dataTypes.common
-                            else return constants.colors.dataTypes.rare
+                            if (d.display_snp === self.displayFilters.snp)
+                                return constants.colors.dataTypes.highlighted;
+                            else if (d.coloc_group_id) return constants.colors.dataTypes.common;
+                            else return constants.colors.dataTypes.rare;
                         })
                         .attr("stroke", "#fff")
                         .attr("stroke-width", 1.5)
                         .attr("opacity", 0.8)
-                        .on('mouseover', function(event, d) {
+                        .on("mouseover", function (event, d) {
                             d3.select(this).style("cursor", "pointer");
 
-                            d3.select(this).transition()
-                                .duration('100')
+                            d3.select(this)
+                                .transition()
+                                .duration("100")
                                 .attr("fill", constants.colors.dataTypes.highlighted)
-                                .attr("r", Math.min(d._group.length + 2, 20) + 8)
-                            const tooltipContent = graphTransformations.getTraitListHTML(d._group)
-                            graphTransformations.getTooltip(tooltipContent, event)
+                                .attr("r", Math.min(d._group.length + 2, 20) + 8);
+                            const tooltipContent = graphTransformations.getTraitListHTML(d._group);
+                            graphTransformations.getTooltip(tooltipContent, event);
                         })
-                        .on('mouseout', function () {
-                            d3.select(this).transition()
-                                .duration('200')
+                        .on("mouseout", function () {
+                            d3.select(this)
+                                .transition()
+                                .duration("200")
                                 .attr("fill", d => {
-                                    if (d.display_snp === self.displayFilters.snp) return constants.colors.dataTypes.highlighted
-                                    else if (d.coloc_group_id) return constants.colors.dataTypes.common
-                                    else return constants.colors.dataTypes.rare
+                                    if (d.display_snp === self.displayFilters.snp)
+                                        return constants.colors.dataTypes.highlighted;
+                                    else if (d.coloc_group_id) return constants.colors.dataTypes.common;
+                                    else return constants.colors.dataTypes.rare;
                                 })
-                                .attr("r", d => Math.min(d._group.length + 2, 20))
-                            d3.selectAll('.tooltip').remove();
+                                .attr("r", d => Math.min(d._group.length + 2, 20));
+                            d3.selectAll(".tooltip").remove();
                         })
-                        .on('click', function(event, d) {
+                        .on("click", function (event, d) {
                             self.displayFilters.snp = d.display_snp;
-                        })
-                        .transition()
-                        .duration(500)
-                        .attr("opacity", 0.8);
+                        });
                 }
             }
-
 
             renderLegend();
             if (self.displayFilters.view === "chromosome" && self.displayFilters.chr) {
@@ -741,5 +764,5 @@ export default function pheontype() {
                 renderFullView();
             }
         },
-    }
+    };
 }

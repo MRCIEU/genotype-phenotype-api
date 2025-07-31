@@ -6,6 +6,6 @@ export class GraphOptions extends HTMLElement {
     connectedCallback() {
         fetch("web-components/graph-options.html")
             .then(stream => stream.text())
-            .then(text => this.innerHTML = text);
+            .then(text => (this.innerHTML = text));
     }
 }
