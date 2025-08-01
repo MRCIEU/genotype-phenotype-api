@@ -18,7 +18,7 @@ class DBCacheService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
 
-    @lru_cache(maxsize=1)
+    # @lru_cache(maxsize=1)
     def get_search_terms(self) -> List[SearchTerm]:
         """
         Retrieve trait and gene names for search from DuckDB with caching.
@@ -26,14 +26,32 @@ class DBCacheService(metaclass=Singleton):
             List of tuples containing (study_name, trait)
         """
 
+
         genes = self.db.get_gene_names()
         gene_search_terms = [
             SearchTerm(type="gene", name=gene[0], alt_name=gene[1], type_id=gene[0]) for gene in genes if gene[0] is not None
         ]
 
+        num_extractions_per_study = self.db.get_num_study_extractions_per_study()
+        num_extractions_per_study = {study_id: num_extractions for study_id, num_extractions in num_extractions_per_study}
+
+        num_coloc_groups_per_study = self.db.get_num_colocs_per_study()
+        num_coloc_groups_per_study = {study_id: num_coloc_groups for study_id, num_coloc_groups in num_coloc_groups_per_study}
+
+        num_rare_results_per_study = self.db.get_num_rare_results_per_study()
+        num_rare_results_per_study = {study_id: num_rare_results for study_id, num_rare_results in num_rare_results_per_study}
+
         trait_search_terms = self.db.get_trait_names_for_search()
         trait_search_terms = [
-            SearchTerm(type="trait", name=term[1], alt_name=None, type_id=term[0])
+            SearchTerm(
+                type="trait",
+                name=term[1],
+                alt_name=None,
+                type_id=term[0],
+                num_extractions=num_extractions_per_study.get(term[0], 0),
+                num_coloc_groups=num_coloc_groups_per_study.get(term[0], 0),
+                num_rare_results=num_rare_results_per_study.get(term[0], 0)
+            )
             for term in trait_search_terms
             if term[1] is not None
         ]

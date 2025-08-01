@@ -231,6 +231,9 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
+    num_extractions: Optional[int] = None
+    num_coloc_groups: Optional[int] = None
+    num_rare_results: Optional[int] = None
 
 
 class RareResult(BaseModel):

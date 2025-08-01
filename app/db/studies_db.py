@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import StudyDataType, VariantType
+from app.models.schemas import ColocGroupThreshold, StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -95,6 +95,18 @@ class StudiesDBClient:
         """
         return self.studies_conn.execute(query).fetchall()
 
+    @log_performance
+    def get_num_colocs_per_study(self):
+        query = f"""
+            SELECT traits.id, COUNT(DISTINCT coloc_group_id) as num_colocs
+            FROM coloc_groups
+            JOIN studies ON coloc_groups.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
+            GROUP BY traits.id
+        """
+        return self.studies_conn.execute(query).fetchall()
+
     # @log_performance
     # def get_all_colocs_to_dataframe(self):
     #     query = f"""
@@ -107,6 +119,7 @@ class StudiesDBClient:
     #         AND gene_annotations.gene_biotype = 'protein_coding'
     #     """
     #     return self.studies_conn.execute(query).df()
+
 
     @log_performance
     def get_colocs_for_variant(self, snp_id: int):
@@ -150,6 +163,17 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
+    def get_num_rare_results_per_study(self):
+        query = """
+            SELECT traits.id, COUNT(DISTINCT rare_result_group_id) as num_rare_results
+            FROM rare_results
+            JOIN studies ON rare_results.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            GROUP BY traits.id
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
     def get_rare_results_for_gene(self, symbol: str):
         return self._fetch_rare_results(f"studies.gene = '{symbol}'")
 
@@ -184,6 +208,18 @@ class StudiesDBClient:
     @log_performance
     def get_gene_names(self):
         return self.studies_conn.execute("SELECT gene, ensembl_id FROM gene_annotations").fetchall()
+    
+    @log_performance
+    def get_num_study_extractions_per_study(self):
+        query = f"""
+            SELECT traits.id, COUNT(DISTINCT study_extractions.id) as num_extractions
+            FROM study_extractions 
+            JOIN studies ON study_extractions.study_id = studies.id
+            JOIN traits ON studies.trait_id = traits.id
+            WHERE studies.data_type = '{StudyDataType.phenotype.name}' AND studies.variant_type = '{VariantType.common.name}'
+            GROUP BY traits.id
+        """
+        return self.studies_conn.execute(query).fetchall()
 
     @log_performance
     def get_study_extractions_for_study(self, study_id: str):

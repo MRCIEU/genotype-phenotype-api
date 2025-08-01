@@ -121,7 +121,9 @@ export default function homepage() {
 
             this.searchMetadata.searchTimeout = setTimeout(() => {
                 this.filteredItems = this.searchOptionData.filter(item => {
-                    return item.name.toLowerCase().includes(this.searchText.toLowerCase());
+                    return (item.name.toLowerCase().includes(this.searchText.toLowerCase()) ||
+                        item.alt_name && item.alt_name.toLowerCase().includes(this.searchText.toLowerCase())
+                    );
                 });
                 this.searchMetadata.searchOpen = this.filteredItems.length > 0;
             }, this.searchMetadata.searchDelay);

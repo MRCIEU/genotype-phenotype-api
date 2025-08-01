@@ -76,8 +76,8 @@ You will need to have the following installed:
     * `pytest`
   * Javascript: Linting and formatting is performed using (ESLint)[https://eslint.org/] and (Prettier)[https://prettier.io/docs/], please run these before pushing
     * `cd frontend`
+    * `npm run lint` and `npm run lint:fix`
     * `npm run format`
-    * `npm run lint`
 
 **Possible Issues:**
 
