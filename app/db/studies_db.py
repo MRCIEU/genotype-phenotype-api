@@ -120,7 +120,6 @@ class StudiesDBClient:
     #     """
     #     return self.studies_conn.execute(query).df()
 
-
     @log_performance
     def get_colocs_for_variant(self, snp_id: int):
         return self._fetch_colocs(f"snp_id = {snp_id}")
@@ -208,7 +207,7 @@ class StudiesDBClient:
     @log_performance
     def get_gene_names(self):
         return self.studies_conn.execute("SELECT gene, ensembl_id FROM gene_annotations").fetchall()
-    
+
     @log_performance
     def get_num_study_extractions_per_study(self):
         query = f"""
