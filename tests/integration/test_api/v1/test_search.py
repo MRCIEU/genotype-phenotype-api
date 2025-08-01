@@ -17,6 +17,8 @@ def test_get_search_options():
         assert search_term.type is not None
         assert search_term.type_id is not None
         assert search_term.name is not None
+        if search_term.type == "gene":
+            assert search_term.alt_name is not None
 
 
 def test_search_variant_by_rsid():

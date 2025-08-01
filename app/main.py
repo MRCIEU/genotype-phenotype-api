@@ -13,7 +13,6 @@ logger = get_logger("app.main")
 
 
 def create_app() -> FastAPI:
-    logger.info("Starting application")
     if not settings.DEBUG:
         sentry_sdk.init(dsn=settings.SENTRY_DSN, send_default_pii=True)
 

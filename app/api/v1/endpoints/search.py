@@ -40,7 +40,7 @@ async def get_search_options(response: Response):
 
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 @time_endpoint
-async def search(search_term: str):
+async def variant_search(search_term: str):
     try:
         studies_db = StudiesDBClient()
         ld_db = LdDBClient()
@@ -77,9 +77,6 @@ async def search(search_term: str):
             populate_variant_search_results(variant, colocs, rare_results, proxies)
         for variant in proxy_variants:
             populate_variant_search_results(variant, colocs, rare_results, proxies)
-
-        logger.warning("Original variants:")
-        logger.warning(original_variants)
 
         proxy_variants = [variant for variant in proxy_variants if variant.num_colocs > 0]
         proxy_variants.sort(key=lambda x: x.num_colocs, reverse=True)

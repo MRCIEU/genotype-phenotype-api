@@ -229,6 +229,7 @@ class ExtendedStudyExtraction(StudyExtraction):
 class SearchTerm(BaseModel):
     type: str
     name: Optional[str] = None
+    alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
 
 

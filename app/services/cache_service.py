@@ -10,7 +10,9 @@ from app.models.schemas import (
 )
 from app.db.studies_db import StudiesDBClient
 from typing import List
+from app.logging_config import get_logger
 
+logger = get_logger(__name__)
 
 class DBCacheService(metaclass=Singleton):
     def __init__(self):
@@ -19,19 +21,19 @@ class DBCacheService(metaclass=Singleton):
     @lru_cache(maxsize=1)
     def get_search_terms(self) -> List[SearchTerm]:
         """
-        Retrieve study names for search from DuckDB with caching.
+        Retrieve trait and gene names for search from DuckDB with caching.
         Returns:
             List of tuples containing (study_name, trait)
         """
 
         genes = self.db.get_gene_names()
         gene_search_terms = [
-            SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes if gene[0] is not None
+            SearchTerm(type="gene", name=gene[0], alt_name=gene[1], type_id=gene[0]) for gene in genes if gene[0] is not None
         ]
 
         trait_search_terms = self.db.get_trait_names_for_search()
         trait_search_terms = [
-            SearchTerm(type="study", name=term[1], type_id=term[0])
+            SearchTerm(type="trait", name=term[1], alt_name=None, type_id=term[0])
             for term in trait_search_terms
             if term[1] is not None
         ]

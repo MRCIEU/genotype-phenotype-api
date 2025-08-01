@@ -183,7 +183,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_gene_names(self):
-        return self.studies_conn.execute("SELECT gene FROM gene_annotations").fetchall()
+        return self.studies_conn.execute("SELECT gene, ensembl_id FROM gene_annotations").fetchall()
 
     @log_performance
     def get_study_extractions_for_study(self, study_id: str):
