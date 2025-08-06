@@ -72,10 +72,6 @@ async def get_trait(
         colocs = db.get_all_colocs_for_study(trait.common_study.id)
         if colocs is not None:
             colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
-            study_extraction_ids = [coloc.study_extraction_id for coloc in colocs]
-            filtered_studies = [s for s in study_extractions if s.id not in study_extraction_ids]
-        else:
-            filtered_studies = study_extractions
 
         coloc_pairs = None
         if include_coloc_pairs:
@@ -101,7 +97,7 @@ async def get_trait(
             coloc_groups=colocs,
             coloc_pairs=coloc_pairs,
             rare_results=rare_results,
-            study_extractions=filtered_studies,
+            study_extractions=study_extractions,
             associations=associations,
         )
     except HTTPException as e:

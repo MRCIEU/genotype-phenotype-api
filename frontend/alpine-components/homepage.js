@@ -86,7 +86,8 @@ export default function homepage() {
         },
 
         goToItem(item) {
-            if (item.type === "study") {
+            console.log(item);
+            if (item.type === "trait") {
                 window.location.href = "phenotype.html?id=" + item.type_id;
             } else if (item.type === "gene") {
                 window.location.href = "gene.html?id=" + item.type_id;

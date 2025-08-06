@@ -96,12 +96,28 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_num_colocs_per_study(self):
+    def get_num_coloc_groups_per_trait(self):
         query = f"""
-            SELECT traits.id, COUNT(DISTINCT coloc_group_id) as num_colocs
+            SELECT traits.id, COUNT(DISTINCT coloc_group_id) as num_coloc_groups
             FROM coloc_groups
             JOIN studies ON coloc_groups.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
+            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
+            GROUP BY traits.id
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_num_coloc_studies_per_trait(self):
+        query = f"""
+            SELECT 
+                traits.id,
+                COUNT(DISTINCT other_studies.id) as num_coloc_studies
+            FROM traits
+            JOIN studies ON traits.id = studies.trait_id
+            JOIN coloc_groups ON studies.id = coloc_groups.study_id
+            JOIN coloc_groups other_colocs ON coloc_groups.coloc_group_id = other_colocs.coloc_group_id
+            JOIN studies other_studies ON other_colocs.study_id = other_studies.id
             WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
             GROUP BY traits.id
         """
@@ -277,6 +293,47 @@ class StudiesDBClient:
             FROM input_studies 
             LEFT JOIN study_extractions ON input_studies.unique_study_id = study_extractions.unique_study_id
             ORDER BY input_studies.row_num
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_num_coloc_groups_per_gene(self):
+        query = f"""
+            SELECT study_extractions.gene, COUNT(DISTINCT coloc_group_id) as num_coloc_groups
+            FROM coloc_groups
+            JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
+            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
+            GROUP BY study_extractions.gene
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_num_coloc_studies_per_gene(self):
+        query = f"""
+            SELECT study_extractions.gene, COUNT(DISTINCT coloc_groups.study_id) as num_coloc_studies
+            FROM coloc_groups
+            JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
+            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
+            GROUP BY study_extractions.gene
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_num_study_extractions_per_gene(self):
+        query = """
+            SELECT study_extractions.gene, COUNT(DISTINCT study_extractions.id) as num_extractions
+            FROM study_extractions
+            GROUP BY study_extractions.gene
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_num_rare_results_per_gene(self):
+        query = """
+            SELECT study_extractions.gene, COUNT(DISTINCT rare_results.rare_result_group_id) as num_rare_results
+            FROM rare_results
+            JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
+            GROUP BY study_extractions.gene
         """
         return self.studies_conn.execute(query).fetchall()
 

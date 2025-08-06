@@ -19,7 +19,7 @@ class DBCacheService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
 
-    # @lru_cache(maxsize=1)
+    @lru_cache(maxsize=1)
     def get_search_terms(self) -> List[SearchTerm]:
         """
         Retrieve trait and gene names for search from DuckDB with caching.
@@ -27,9 +27,36 @@ class DBCacheService(metaclass=Singleton):
             List of tuples containing (study_name, trait)
         """
 
+        num_coloc_groups_per_gene = self.db.get_num_coloc_groups_per_gene()
+        num_coloc_groups_per_gene = {
+            gene_id: num_coloc_groups for gene_id, num_coloc_groups in num_coloc_groups_per_gene
+        }
+
+        num_coloc_studies_per_gene = self.db.get_num_coloc_studies_per_gene()
+        num_coloc_studies_per_gene = {
+            gene_id: num_coloc_studies for gene_id, num_coloc_studies in num_coloc_studies_per_gene
+        }
+
+        num_extractions_per_gene = self.db.get_num_study_extractions_per_gene()
+        num_extractions_per_gene = {gene_id: num_extractions for gene_id, num_extractions in num_extractions_per_gene}
+
+        num_rare_results_per_gene = self.db.get_num_rare_results_per_gene()
+        num_rare_results_per_gene = {
+            gene_id: num_rare_results for gene_id, num_rare_results in num_rare_results_per_gene
+        }
+
         genes = self.db.get_gene_names()
         gene_search_terms = [
-            SearchTerm(type="gene", name=gene[0], alt_name=gene[1], type_id=gene[0])
+            SearchTerm(
+                type="gene",
+                name=gene[0],
+                alt_name=gene[1],
+                type_id=gene[0],
+                num_extractions=num_extractions_per_gene.get(gene[0], 0),
+                num_coloc_groups=num_coloc_groups_per_gene.get(gene[0], 0),
+                num_coloc_studies=num_coloc_studies_per_gene.get(gene[0], 0),
+                num_rare_results=num_rare_results_per_gene.get(gene[0], 0),
+            )
             for gene in genes
             if gene[0] is not None
         ]
@@ -39,9 +66,13 @@ class DBCacheService(metaclass=Singleton):
             study_id: num_extractions for study_id, num_extractions in num_extractions_per_study
         }
 
-        num_coloc_groups_per_study = self.db.get_num_colocs_per_study()
-        num_coloc_groups_per_study = {
-            study_id: num_coloc_groups for study_id, num_coloc_groups in num_coloc_groups_per_study
+        coloc_groups_per_trait = self.db.get_num_coloc_groups_per_trait()
+        num_coloc_groups_per_trait = {
+            trait_id: num_coloc_groups for trait_id, num_coloc_groups in coloc_groups_per_trait
+        }
+        coloc_studies_per_trait = self.db.get_num_coloc_studies_per_trait()
+        num_coloc_studies_per_trait = {
+            trait_id: num_coloc_studies for trait_id, num_coloc_studies in coloc_studies_per_trait
         }
 
         num_rare_results_per_study = self.db.get_num_rare_results_per_study()
@@ -57,7 +88,8 @@ class DBCacheService(metaclass=Singleton):
                 alt_name=None,
                 type_id=term[0],
                 num_extractions=num_extractions_per_study.get(term[0], 0),
-                num_coloc_groups=num_coloc_groups_per_study.get(term[0], 0),
+                num_coloc_groups=num_coloc_groups_per_trait.get(term[0], 0),
+                num_coloc_studies=num_coloc_studies_per_trait.get(term[0], 0),
                 num_rare_results=num_rare_results_per_study.get(term[0], 0),
             )
             for term in trait_search_terms

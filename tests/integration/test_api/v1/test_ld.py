@@ -6,7 +6,7 @@ client = TestClient(app)
 
 
 def test_get_ld_matrix_with_snp_ids():
-    response = client.get("/v1/ld/matrix?snp_ids=5758009&snp_ids=5757997")
+    response = client.get("v1/ld/matrix?snp_ids=8466253&snp_ids=8466097")
     assert response.status_code == 200
 
     ld_matrix = response.json()
@@ -20,7 +20,7 @@ def test_get_ld_matrix_with_snp_ids():
 
 
 def test_get_ld_matrix_with_variants():
-    response = client.get("/v1/ld/matrix?variants=3:45579683_A_C&variants=3:45582317_G_T")
+    response = client.get("v1/ld/matrix?variants=7:37964907_A_G&variants=7:37937647_C_T")
     assert response.status_code == 200
 
     ld_matrix = response.json()
@@ -34,7 +34,7 @@ def test_get_ld_matrix_with_variants():
 
 
 def test_get_ld_proxy_with_snp_ids():
-    response = client.get("/v1/ld/proxies?snp_ids=5758009&snp_ids=5757997")
+    response = client.get("v1/ld/proxies?snp_ids=8466253&snp_ids=8466097")
     assert response.status_code == 200
     ld_proxy = response.json()
     assert len(ld_proxy) > 0
@@ -47,7 +47,7 @@ def test_get_ld_proxy_with_snp_ids():
 
 
 def test_get_ld_proxy_with_variants():
-    response = client.get("/v1/ld/proxies?variants=3:45576631_A_G&variants=3:45579683_A_C")
+    response = client.get("v1/ld/proxies?variants=7:37964907_A_G&variants=7:37937647_C_T")
     assert response.status_code == 200
     ld_proxy = response.json()
     assert len(ld_proxy) > 0

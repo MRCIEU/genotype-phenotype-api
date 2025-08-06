@@ -13,7 +13,7 @@ client = TestClient(app)
 
 
 def test_get_variants_by_variants():
-    response = client.get("/v1/variants?snp_ids=5758009")
+    response = client.get("/v1/variants?snp_ids=8466097")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -26,7 +26,7 @@ def test_get_variants_by_variants():
 
 
 def test_get_variants_by_variants_with_associations():
-    response = client.get("/v1/variants?snp_ids=5758009&include_associations=true")
+    response = client.get("/v1/variants?snp_ids=8466097&include_associations=true")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -47,7 +47,7 @@ def test_get_variants_by_variants_with_associations():
 
 
 def test_get_variants_by_variants_with_associations_and_possible_p_value_threshold():
-    response = client.get("/v1/variants?snp_ids=5758009&include_associations=true&p_value_threshold=5e-5")
+    response = client.get("/v1/variants?snp_ids=8466097&include_associations=true&p_value_threshold=5e-5")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -68,7 +68,7 @@ def test_get_variants_by_variants_with_associations_and_possible_p_value_thresho
 
 
 def test_get_variants_by_variants_with_associations_and_impossible_p_value_threshold():
-    response = client.get("/v1/variants?snp_ids=5758009&include_associations=true&p_value_threshold=0")
+    response = client.get("/v1/variants?snp_ids=8466097&include_associations=true&p_value_threshold=-1")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -83,7 +83,7 @@ def test_get_variants_by_variants_with_associations_and_impossible_p_value_thres
 
 
 def test_get_variants_by_rsids():
-    response = client.get("/v1/variants?rsids=rs6441921&rsids=rs17078078")
+    response = client.get("/v1/variants?rsids=rs2598104&rsids=rs17078078")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -95,7 +95,7 @@ def test_get_variants_by_rsids():
 
 
 def test_get_variants_by_rsids_with_associations():
-    response = client.get("/v1/variants?rsids=rs6441921&rsids=rs17078078&include_associations=true")
+    response = client.get("/v1/variants?rsids=rs2598104&include_associations=true")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0

@@ -82,14 +82,12 @@ async def get_gene(
         if coloc_groups is not None:
             coloc_groups = convert_duckdb_to_pydantic_model(ColocGroup, coloc_groups)
             study_extraction_ids = [coloc.study_extraction_id for coloc in coloc_groups]
-            filtered_studies = [s for s in study_extractions if s.id not in study_extraction_ids]
 
             snp_ids = [coloc.snp_id for coloc in coloc_groups]
             variants = studies_db.get_variants(snp_ids=snp_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)
         else:
             variants = []
-            filtered_studies = []
 
         study_rare_results = studies_db.get_rare_results_for_study_extraction_ids(study_extraction_ids)
         gene_rare_results = studies_db.get_rare_results_for_gene(gene.gene)
@@ -117,7 +115,7 @@ async def get_gene(
             coloc_groups=coloc_groups,
             coloc_pairs=coloc_pairs,
             variants=variants,
-            study_extractions=filtered_studies,
+            study_extractions=study_extractions,
             rare_results=rare_results,
         )
     except HTTPException as e:

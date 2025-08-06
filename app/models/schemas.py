@@ -57,6 +57,7 @@ class ColocPair(BaseModel):
     ld_block_id: int
     h3: float
     h4: float
+    spurious: bool
 
 
 class ColocGroup(BaseModel):
@@ -181,8 +182,8 @@ class Study(BaseModel):
     source_id: Optional[int] = None
     variant_type: Optional[str] = None
     p_value_threshold: float
-    gene: Optional[str] = None
     gene_id: Optional[int] = None
+    gene: Optional[str] = None
     ensg: Optional[str] = None
 
     @field_validator("data_type")
@@ -233,6 +234,7 @@ class SearchTerm(BaseModel):
     type_id: Optional[int | str] = None
     num_extractions: Optional[int] = None
     num_coloc_groups: Optional[int] = None
+    num_coloc_studies: Optional[int] = None
     num_rare_results: Optional[int] = None
 
 
