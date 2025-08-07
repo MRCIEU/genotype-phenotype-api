@@ -187,9 +187,11 @@ export default function snp() {
             const display_snp = this.data.variant.RSID;
             const colocs = this.filteredData.colocs;
 
-            const fixedColorMap = constants.orderedDataTypes.map((dataType, index) => ({
-                [dataType]: constants.colors.palette[index],
-            })).reduce((acc, obj) => ({ ...acc, ...obj }), {});
+            const fixedColorMap = constants.orderedDataTypes
+                .map((dataType, index) => ({
+                    [dataType]: constants.colors.palette[index],
+                }))
+                .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
             const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
             const traits = colocs.map(d => d.trait_name);
@@ -201,9 +203,7 @@ export default function snp() {
                 dataTypeMap[coloc.trait_name] = coloc.data_type;
             });
 
-            const color = d3.scaleOrdinal()
-                .domain(Object.keys(fixedColorMap))
-                .range(Object.values(fixedColorMap));
+            const color = d3.scaleOrdinal().domain(Object.keys(fixedColorMap)).range(Object.values(fixedColorMap));
 
             const indexMap = {};
             nodes.forEach((node, i) => {
