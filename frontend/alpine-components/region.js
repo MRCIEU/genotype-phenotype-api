@@ -90,7 +90,7 @@ export default function region() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
 
-            this.data.coloc_groups = this.data.coloc_groups.filter(coloc => {
+            this.filteredData.colocs = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
                     graphOptions.colocType === coloc.group_threshold &&
@@ -122,7 +122,7 @@ export default function region() {
                 this.displayFilters
             );
             this.filteredData.groupedColocs = graphTransformations.groupBySnp(
-                this.data.coloc_groups,
+                this.filteredData.colocs,
                 null,
                 null,
                 this.displayFilters
@@ -170,7 +170,7 @@ export default function region() {
 
         get filteredColocDataExist() {
             this.filterDataForGraphs();
-            return this.data && this.data.coloc_groups && this.data.coloc_groups.length > 0;
+            return this.data && this.filteredData.colocs && this.filteredData.colocs.length > 0;
         },
 
         async downloadData() {
@@ -179,7 +179,7 @@ export default function region() {
         },
 
         get getDataForColocTable() {
-            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return [];
+            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) return [];
 
             const tableData = Object.fromEntries(
                 Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, _]) => {

@@ -102,7 +102,7 @@ export default function gene() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
 
-            this.data.coloc_groups = this.data.coloc_groups.filter(coloc => {
+            this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
                     graphOptions.colocType === coloc.group_threshold &&
@@ -115,11 +115,13 @@ export default function gene() {
                             ? coloc.data_type === "Phenotype"
                             : true);
 
+                let categoryFilters = true;
                 if (Object.values(graphOptions.categories).some(c => c)) {
-                    graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true;
+                    categoryFilters =
+                        graphOptions.categories[coloc.trait_category] === true || coloc.gene_id === this.data.gene.id;
                 }
 
-                return graphOptionFilters;
+                return graphOptionFilters && categoryFilters;
             });
 
             this.filteredData.rare = this.data.rare_results.filter(rare => {
@@ -143,12 +145,12 @@ export default function gene() {
             // Then, organise data for graphs, once filtering is done
             this.filteredData.studies.sort((a, b) => a.mbp - b.mbp);
             this.minMbp = Math.min(
-                ...this.data.coloc_groups.map(d => d.mbp),
+                ...this.filteredData.coloc_groups.map(d => d.mbp),
                 ...this.filteredData.rare.map(d => d.mbp),
                 this.data.gene.minMbp
             );
             this.maxMbp = Math.max(
-                ...this.data.coloc_groups.map(d => d.mbp),
+                ...this.filteredData.coloc_groups.map(d => d.mbp),
                 ...this.filteredData.rare.map(d => d.mbp),
                 this.data.gene.maxMbp
             );
@@ -160,7 +162,7 @@ export default function gene() {
                 this.displayFilters
             );
             this.filteredData.groupedColocs = graphTransformations.groupBySnp(
-                this.data.coloc_groups,
+                this.filteredData.coloc_groups,
                 "gene",
                 this.data.gene.id,
                 this.displayFilters
@@ -185,7 +187,7 @@ export default function gene() {
         get filteredColocDataExist() {
             if (!this.data) return false;
             this.filterDataForGraphs();
-            return this.data.coloc_groups && this.data.coloc_groups.length > 0;
+            return this.filteredData.coloc_groups && this.filteredData.coloc_groups.length > 0;
         },
 
         get genomicRange() {
@@ -193,8 +195,8 @@ export default function gene() {
         },
 
         get ldBlockId() {
-            return this.data && this.data.coloc_groups && this.data.coloc_groups.length > 0
-                ? this.data.coloc_groups[0].ld_block_id
+            return this.data && this.filteredData.coloc_groups && this.filteredData.coloc_groups.length > 0
+                ? this.filteredData.coloc_groups[0].ld_block_id
                 : null;
         },
 

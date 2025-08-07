@@ -82,18 +82,18 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.data.coloc_groups : [];
+            return this.data ? this.filteredData.colocs : [];
         },
 
         downloadDataOnly() {
-            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) {
+            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) {
                 return;
             }
             downloads.downloadDataToZip(this.data, this.getSNPName());
         },
 
         async downloadDataAndGWAS() {
-            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) {
+            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) {
                 return;
             }
             const response = await fetch(constants.apiUrl + "/variants/" + this.data.variant.id + "/summary-stats");
@@ -108,7 +108,7 @@ export default function snp() {
         filterDataForGraphs() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
-            this.data.coloc_groups = this.data.coloc_groups.filter(coloc => {
+            this.filteredData.colocs = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
                     graphOptions.colocType === coloc.group_threshold &&
@@ -128,7 +128,7 @@ export default function snp() {
                 return graphOptionFilters;
             });
             this.filteredData.svgs = this.svgs.filter(svg => {
-                return this.data.coloc_groups.some(coloc => coloc.study_extraction_id === svg.studyExtractionId);
+                return this.filteredData.colocs.some(coloc => coloc.study_extraction_id === svg.studyExtractionId);
             });
             // this.data.coloc_groups.sort((a, b) => a.association.beta - b.association.beta);
         },
@@ -184,58 +184,46 @@ export default function snp() {
                 .append("g")
                 .attr("transform", `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
 
-            // Process data
             const display_snp = this.data.variant.RSID;
-            const colocs = this.data.coloc_groups;
+            const colocs = this.filteredData.colocs;
 
-            // Extract unique data_types
+            const fixedColorMap = constants.orderedDataTypes.map((dataType, index) => ({
+                [dataType]: constants.colors.palette[index],
+            })).reduce((acc, obj) => ({ ...acc, ...obj }), {});
+
             const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
-
-            // Extract unique traits
             const traits = colocs.map(d => d.trait_name);
 
-            // Combine display_snp and traits into nodes
             const nodes = [display_snp, ...traits];
 
-            // Create data_type mapping for coloring
             const dataTypeMap = {};
             colocs.forEach(coloc => {
                 dataTypeMap[coloc.trait_name] = coloc.data_type;
             });
 
-            // Create color scale based on data_type
-            const color = d3.scaleOrdinal().domain(dataTypes).range(constants.colors.palette);
+            const color = d3.scaleOrdinal()
+                .domain(Object.keys(fixedColorMap))
+                .range(Object.values(fixedColorMap));
 
-            // Create index mapping
             const indexMap = {};
             nodes.forEach((node, i) => {
                 indexMap[node] = i;
             });
 
-            // Initialize matrix
             const matrix = Array(nodes.length)
                 .fill(null)
                 .map(() => Array(nodes.length).fill(0));
 
-            // Populate matrix: connections from display_snp to each trait
             colocs.forEach(coloc => {
                 const source = indexMap[display_snp];
                 const target = indexMap[coloc.trait_name];
-                matrix[source][target] = 1; // Each trait connects once to the SNP
+                matrix[source][target] = 1;
             });
 
-            // Define chord layout
             const chordGenerator = d3.chord().padAngle(0.005).sortSubgroups(d3.descending);
-
             const chords = chordGenerator(matrix);
-
-            // Define arc generator
             const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
-
-            // Define ribbon generator
             const ribbon = d3.ribbon().radius(innerRadius);
-
-            // Add groups (display_snp and traits)
             const group = svg.selectAll(".group").data(chords.groups).enter().append("g").attr("class", "group");
 
             group
@@ -243,26 +231,25 @@ export default function snp() {
                 .style("fill", d => {
                     const name = nodes[d.index];
                     if (name === display_snp) {
-                        return "#808080"; // Gray for SNP
+                        return "#808080";
                     }
                     return color(dataTypeMap[name]);
                 })
                 .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.index]])).darker())
                 .attr("d", arc)
-                .on("mouseover", function (event, d) {
+                .on("mouseover", function (_, d) {
                     d3.select(this)
                         .transition()
                         .duration(200)
                         .style("fill", d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
                 })
-                .on("mouseout", function (event, d) {
+                .on("mouseout", function (_, d) {
                     d3.select(this)
                         .transition()
                         .duration(200)
                         .style("fill", nodes[d.index] === display_snp ? "#808080" : color(dataTypeMap[nodes[d.index]]));
                 });
 
-            // Add chords
             svg.selectAll(".chord")
                 .data(chords)
                 .enter()
@@ -277,7 +264,7 @@ export default function snp() {
                 .attr("opacity", 0.7)
                 .on("mouseover", function (event, d) {
                     d3.select(this).transition().duration(200).attr("opacity", 1);
-                    const coloc = self.data.coloc_groups.find(coloc => coloc.trait_name === nodes[d.target.index]);
+                    const coloc = self.filteredData.colocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
                     self.highlightedStudy = coloc.study_extraction_id;
                     self.svgs = self.svgs.sort((a, b) =>
                         a.studyExtractionId === coloc.study_extraction_id
@@ -311,7 +298,7 @@ export default function snp() {
                     d3.selectAll(".tooltip").remove();
                 });
 
-            // Add legend
+            // Add legend - only show data types that are actually present
             const legend = svg
                 .append("g")
                 .attr("class", "legend")
@@ -346,14 +333,14 @@ export default function snp() {
         },
 
         getForestPlot() {
-            if (!this.data || !this.data.coloc_groups) return;
+            if (!this.data || !this.filteredData.colocs) return;
 
             const plotContainer = d3.select("#forest-plot");
             plotContainer.selectAll("*").remove();
 
             const margin = { top: 50, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
-            const height = this.data.coloc_groups.length * 27;
+            const height = this.filteredData.colocs.length * 27;
 
             const svg = plotContainer
                 .append("svg")
@@ -362,16 +349,13 @@ export default function snp() {
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            // Filter out items without association data
-            const validData = this.data.coloc_groups.filter(
+            const validData = this.filteredData.colocs.filter(
                 d => d.association && d.association.beta !== null && d.association.se !== null
             );
 
-            // Calculate the range for the x-axis
             const maxAbsBeta = d3.max(validData, d => Math.abs(d.association.beta));
             const xRange = [-maxAbsBeta * 1.5, maxAbsBeta * 1.5];
 
-            // Create scales
             const x = d3.scaleLinear().domain(xRange).range([0, width]);
 
             const y = d3
@@ -380,7 +364,6 @@ export default function snp() {
                 .range([0, height])
                 .padding(0);
 
-            // Add x-axis
             svg.append("g")
                 .attr("transform", `translate(0,${height})`)
                 .call(d3.axisBottom(x))
@@ -388,10 +371,8 @@ export default function snp() {
                 .style("font-size", "10px")
                 .attr("transform", "rotate(-65) translate(-15,-10)");
 
-            // Add y-axis
             svg.append("g").call(d3.axisLeft(y).tickSize(0).tickFormat("")).selectAll(".domain").attr("stroke", "#ddd");
 
-            // Add vertical line at x=0
             svg.append("line")
                 .attr("x1", x(0))
                 .attr("y1", 0)
@@ -400,13 +381,11 @@ export default function snp() {
                 .attr("stroke", "#000")
                 .attr("stroke-width", 1);
 
-            // Add points and confidence intervals
             validData.forEach(d => {
                 const beta = d.association.beta;
                 const se = d.association.se;
                 const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
 
-                // Add confidence interval line
                 svg.append("line")
                     .attr("x1", x(beta - 1.96 * se))
                     .attr("y1", yPos)
@@ -415,20 +394,17 @@ export default function snp() {
                     .attr("stroke", beta > 0 ? "#afe1af" : "#ee4b2b")
                     .attr("stroke-width", 2);
 
-                // Add point estimate
                 svg.append("circle")
                     .attr("cx", x(beta))
                     .attr("cy", yPos)
                     .attr("r", 4)
                     .attr("fill", beta > 0 ? "#afe1af" : "#ee4b2b");
 
-                // Add tooltip
                 svg.append("title").text(
                     `Study ID: ${d.study_extraction_id}\nTrait: ${d.trait_name}\nBeta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`
                 );
             });
 
-            // Add axis labels
             svg.append("text")
                 .attr("transform", `translate(${width / 2}, ${height + margin.bottom})`)
                 .style("text-anchor", "middle")
@@ -447,22 +423,19 @@ export default function snp() {
             const minBP = this.data.variant.min_bp / 1e6;
             const maxBP = this.data.variant.max_bp / 1e6;
 
-            // Set up scales
             const x = d3
                 .scaleLinear()
                 .domain([minBP, maxBP])
                 .range([margin.left, width - margin.right]);
 
-            // Create SVG
             const svg = d3.select("#manhattan-plot").append("svg").attr("width", width).attr("height", height);
 
-            // Add axes
             svg.append("g")
                 .attr("transform", `translate(0,${height - margin.bottom})`)
                 .call(
                     d3
                         .axisBottom(x)
-                        .ticks((maxBP - minBP) / 0.1) // one tick every 0.1 Mb
+                        .ticks((maxBP - minBP) / 0.1)
                         .tickFormat(d3.format(".1f"))
                 );
             svg.append("text")
@@ -538,7 +511,7 @@ export default function snp() {
                 .text(""); // Start empty
 
             if (this.highlightedStudy) {
-                const study = this.data.coloc_groups.find(d => d.study_extraction_id === this.highlightedStudy);
+                const study = this.filteredData.colocs.find(d => d.study_extraction_id === this.highlightedStudy);
                 if (study) {
                     let traitName = study.trait_name;
                     const pValueText = `: p = ${study.min_p.toExponential(2)}`;
