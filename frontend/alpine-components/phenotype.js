@@ -309,6 +309,38 @@ export default function pheontype() {
             const width = containerWidth - graphConstants.margin.left - graphConstants.margin.right;
             const height = width * aspectRatio;
 
+            // Shared variables for circle size calculations
+            let circleData = [];
+            let radiusInfo = {
+                maxGroupSize: 0,
+                minRadius: 0,
+                maxRadius: 0,
+            };
+
+            if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
+                const allGroups = Object.values(self.filteredData.groupedColocs).concat(
+                    Object.values(self.filteredData.groupedRare)
+                );
+                circleData = allGroups
+                    .map(group => {
+                        const traitId = self.data.trait.id;
+                        const study = group.find(s => s.trait_id === traitId);
+                        if (!study) return null;
+                        study._group = group;
+                        return study;
+                    })
+                    .filter(Boolean);
+
+                if (circleData.length > 0) {
+                    radiusInfo.maxGroupSize = Math.max(...circleData.map(d => d._group.length));
+                    radiusInfo.minRadius = Math.min(...circleData.map(d => d._group.length)) + 2;
+                    radiusInfo.maxRadius = Math.max(
+                        radiusInfo.minRadius + 5,
+                        Math.min(radiusInfo.maxGroupSize + 2, 20)
+                    );
+                }
+            }
+
             // Create SVG container
             const svg = d3
                 .select(chartContainer)
@@ -331,28 +363,6 @@ export default function pheontype() {
                 .attr("width", width)
                 .attr("height", height)
                 .attr("overflow", "hidden");
-
-            function loadSvg(specificSvg) {
-                if (!specificSvg) return;
-
-                foreignObject.selectAll("*").remove();
-                const parser = new DOMParser();
-                const svgDoc = parser.parseFromString(specificSvg, "image/svg+xml");
-                const importedSvg = svgDoc.documentElement;
-
-                // Remove width/height attributes to allow scaling
-                importedSvg.removeAttribute("width");
-                importedSvg.removeAttribute("height");
-                importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-                importedSvg.setAttribute(
-                    "viewBox",
-                    `0 0 ${self.svgs.metadata.svg_width} ${self.svgs.metadata.svg_height}`
-                );
-                importedSvg.style.pointerEvents = "none"; // Make the SVG non-interactive
-
-                // Append the SVG to foreignObject
-                foreignObject.node().appendChild(importedSvg);
-            }
 
             // Add chromosome backgrounds for ALL chromosomes
             const chrBackgrounds = plotGroup
@@ -523,6 +533,34 @@ export default function pheontype() {
                 }
             }
 
+            function loadSvg(specificSvg) {
+                if (!specificSvg) return;
+
+                foreignObject.selectAll("*").remove();
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(specificSvg, "image/svg+xml");
+                const importedSvg = svgDoc.documentElement;
+
+                // Remove width/height attributes to allow scaling
+                importedSvg.removeAttribute("width");
+                importedSvg.removeAttribute("height");
+                importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                importedSvg.setAttribute(
+                    "viewBox",
+                    `0 0 ${self.svgs.metadata.svg_width} ${self.svgs.metadata.svg_height}`
+                );
+                importedSvg.style.pointerEvents = "none"; // Make the SVG non-interactive
+
+                // Append the SVG to foreignObject
+                foreignObject.node().appendChild(importedSvg);
+            }
+
+            function calculateDynamicCircleRadius(groupSize) {
+                const normalizedSize =
+                    (groupSize - radiusInfo.minRadius + 2) / (radiusInfo.maxGroupSize - radiusInfo.minRadius + 2);
+                return radiusInfo.minRadius + normalizedSize * (radiusInfo.maxRadius - radiusInfo.minRadius);
+            }
+
             function renderChromosomeView() {
                 const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == self.displayFilters.chr);
                 const chrSvg = self.svgs.chromosomes[`chr${self.displayFilters.chr}`];
@@ -550,72 +588,62 @@ export default function pheontype() {
 
                 renderResetDisplayButton();
 
-                if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
-                    const allGroups = Object.values(self.filteredData.groupedColocs).concat(
-                        Object.values(self.filteredData.groupedRare)
-                    );
-                    const circleData = allGroups
-                        .map(group => {
-                            const traitId = self.data.trait.id;
-                            const study = group.find(s => s.trait_id === traitId);
-                            if (!study) return null;
-                            if (study.chr != self.displayFilters.chr) return null;
-                            study._group = group;
-                            return study;
-                        })
-                        .filter(Boolean);
+                // Only show circles for the selected chromosome
+                const chrCircleData = circleData.filter(study => study.chr == self.displayFilters.chr);
+                const circles = colocCirclesGroup.selectAll("circle").data(chrCircleData, d => d.display_snp);
 
-                    const circles = colocCirclesGroup.selectAll("circle").data(circleData, d => d.display_snp);
-
-                    circles
-                        .enter()
-                        .append("circle")
-                        .attr("cx", d => {
-                            const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
-                            const bpPosition = d.bp / (chrMeta.bp_end - chrMeta.bp_start);
-                            return bpPosition * width;
-                        })
-                        .attr("cy", d => {
-                            const yValue = -Math.log10(d.min_p);
-                            return yScale(yValue);
-                        })
-                        .attr("r", d => Math.min(d._group.length + 2, 20))
-                        .attr("fill", d => {
-                            if (d.display_snp === self.displayFilters.snp)
-                                return constants.colors.dataTypes.highlighted;
-                            else if (d.coloc_group_id) return constants.colors.dataTypes.common;
-                            else return constants.colors.dataTypes.rare;
-                        })
-                        .attr("stroke", "#fff")
-                        .attr("stroke-width", 1.5)
-                        .attr("opacity", 0.8)
-                        .on("mouseover", function (event, d) {
-                            d3.select(this).style("cursor", "pointer");
-                            d3.select(this)
-                                .transition()
-                                .duration("100")
-                                .attr("fill", constants.colors.dataTypes.highlighted)
-                                .attr("r", Math.min(d._group.length + 2, 20) + 8);
-                            const tooltipContent = graphTransformations.getTraitListHTML(d._group);
-                            graphTransformations.getTooltip(tooltipContent, event);
-                        })
-                        .on("mouseout", function () {
-                            d3.select(this)
-                                .transition()
-                                .duration("200")
-                                .attr("fill", d => {
-                                    if (d.display_snp === self.displayFilters.snp)
-                                        return constants.colors.dataTypes.highlighted;
-                                    else if (d.coloc_group_id) return constants.colors.dataTypes.common;
-                                    else return constants.colors.dataTypes.rare;
-                                })
-                                .attr("r", d => Math.min(d._group.length + 2, 20));
-                            d3.selectAll(".tooltip").remove();
-                        })
-                        .on("click", function (event, d) {
-                            self.displayFilters.snp = d.display_snp;
-                        });
-                }
+                circles
+                    .enter()
+                    .append("circle")
+                    .attr("cx", d => {
+                        const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
+                        const bpPosition = d.bp / (chrMeta.bp_end - chrMeta.bp_start);
+                        return bpPosition * width;
+                    })
+                    .attr("cy", d => {
+                        const yValue = -Math.log10(d.min_p);
+                        return yScale(yValue);
+                    })
+                    .attr("r", d => {
+                        return calculateDynamicCircleRadius(d._group.length);
+                    })
+                    .attr("fill", d => {
+                        if (d.display_snp === self.displayFilters.snp) return constants.colors.dataTypes.highlighted;
+                        else if (d.coloc_group_id) return constants.colors.dataTypes.common;
+                        else return constants.colors.dataTypes.rare;
+                    })
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5)
+                    .attr("opacity", 0.8)
+                    .on("mouseover", function (event, d) {
+                        d3.select(this).style("cursor", "pointer");
+                        const currentRadius = calculateDynamicCircleRadius(d._group.length);
+                        d3.select(this)
+                            .transition()
+                            .duration("100")
+                            .attr("fill", constants.colors.dataTypes.highlighted)
+                            .attr("r", currentRadius + 8);
+                        const tooltipContent = graphTransformations.getTraitListHTML(d._group);
+                        graphTransformations.getTooltip(tooltipContent, event);
+                    })
+                    .on("mouseout", function () {
+                        d3.select(this)
+                            .transition()
+                            .duration("200")
+                            .attr("fill", d => {
+                                if (d.display_snp === self.displayFilters.snp)
+                                    return constants.colors.dataTypes.highlighted;
+                                else if (d.coloc_group_id) return constants.colors.dataTypes.common;
+                                else return constants.colors.dataTypes.rare;
+                            })
+                            .attr("r", d => {
+                                return calculateDynamicCircleRadius(d._group.length);
+                            });
+                        d3.selectAll(".tooltip").remove();
+                    })
+                    .on("click", function (_, d) {
+                        self.displayFilters.snp = d.display_snp;
+                    });
             }
 
             function renderFullView() {
@@ -678,26 +706,7 @@ export default function pheontype() {
                         .text(chr.CHR);
                     label.transition().duration(500).attr("opacity", 1);
                 });
-                // Draw coloc circles for all chromosomes with fade transition
                 if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
-                    const allGroups = Object.values(self.filteredData.groupedColocs).concat(
-                        Object.values(self.filteredData.groupedRare)
-                    );
-                    const circleData = allGroups
-                        .map(group => {
-                            const traitId = self.data.trait.id;
-                            const study = group.find(s => s.trait_id === traitId);
-                            if (!study) return null;
-                            study._group = group;
-                            return study;
-                        })
-                        .filter(Boolean);
-                    circleData.sort((a, b) => {
-                        if (a.display_snp !== b.display_snp) {
-                            return a.display_snp < b.display_snp ? -1 : 1;
-                        }
-                    });
-
                     const circles = colocCirclesGroup.selectAll("circle").data(circleData, d => d.display_snp);
 
                     circles
@@ -717,7 +726,9 @@ export default function pheontype() {
                             const yValue = -Math.log10(d.min_p);
                             return yScale(yValue);
                         })
-                        .attr("r", d => Math.min(d._group.length + 2, 20))
+                        .attr("r", d => {
+                            return calculateDynamicCircleRadius(d._group.length);
+                        })
                         .attr("fill", d => {
                             if (d.display_snp === self.displayFilters.snp)
                                 return constants.colors.dataTypes.highlighted;
@@ -729,12 +740,13 @@ export default function pheontype() {
                         .attr("opacity", 0.8)
                         .on("mouseover", function (event, d) {
                             d3.select(this).style("cursor", "pointer");
+                            const currentRadius = calculateDynamicCircleRadius(d._group.length);
 
                             d3.select(this)
                                 .transition()
                                 .duration("100")
                                 .attr("fill", constants.colors.dataTypes.highlighted)
-                                .attr("r", Math.min(d._group.length + 2, 20) + 8);
+                                .attr("r", currentRadius + 8);
                             const tooltipContent = graphTransformations.getTraitListHTML(d._group);
                             graphTransformations.getTooltip(tooltipContent, event);
                         })
@@ -748,10 +760,12 @@ export default function pheontype() {
                                     else if (d.coloc_group_id) return constants.colors.dataTypes.common;
                                     else return constants.colors.dataTypes.rare;
                                 })
-                                .attr("r", d => Math.min(d._group.length + 2, 20));
+                                .attr("r", d => {
+                                    return calculateDynamicCircleRadius(d._group.length);
+                                });
                             d3.selectAll(".tooltip").remove();
                         })
-                        .on("click", function (event, d) {
+                        .on("click", function (_, d) {
                             self.displayFilters.snp = d.display_snp;
                         });
                 }

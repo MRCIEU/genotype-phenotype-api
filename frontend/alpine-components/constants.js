@@ -52,7 +52,7 @@ export default {
         "non_coding_transcript_variant",
     ],
     orderedDataTypes: ["Splice Variant", "Gene Expression", "Methylation", "Protein", "Phenotype"],
-    maxSNPGroupsToDisplay: 100,
+    maxSNPGroupsToDisplay: 50,
     findMinAndMaxValues: function (data) {
         const idFrequencies = data.reduce((acc, obj) => {
             if (obj.id) {
