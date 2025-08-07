@@ -36,6 +36,6 @@ mv /oradiskvdb1/static/svgs /oradiskvdb1/static/svgs_backup
 mv /oradiskvdb1/static/svgs_new /oradiskvdb1/static/svgs
 mkdir -p /oradiskvdb1/static/svgs_new
 
-sudo docker compose up -d
+sudo docker compose up -d --remove-orphans
 
 echo "Done"
