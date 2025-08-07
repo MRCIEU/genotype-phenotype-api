@@ -1,7 +1,19 @@
 from functools import lru_cache
-from app.models.schemas import GPMapMetadata, Gene, SearchTerm, Singleton, StudyDataType, VariantType, convert_duckdb_to_pydantic_model
+from app.models.schemas import (
+    GPMapMetadata,
+    Gene,
+    SearchTerm,
+    Singleton,
+    StudyDataType,
+    VariantType,
+    convert_duckdb_to_pydantic_model,
+)
 from app.db.studies_db import StudiesDBClient
 from typing import List
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 class DBCacheService(metaclass=Singleton):
     def __init__(self):
@@ -10,21 +22,78 @@ class DBCacheService(metaclass=Singleton):
     @lru_cache(maxsize=1)
     def get_search_terms(self) -> List[SearchTerm]:
         """
-        Retrieve study names for search from DuckDB with caching.
+        Retrieve trait and gene names for search from DuckDB with caching.
         Returns:
             List of tuples containing (study_name, trait)
         """
 
+        num_coloc_groups_per_gene = self.db.get_num_coloc_groups_per_gene()
+        num_coloc_groups_per_gene = {
+            gene_id: num_coloc_groups for gene_id, num_coloc_groups in num_coloc_groups_per_gene
+        }
+
+        num_coloc_studies_per_gene = self.db.get_num_coloc_studies_per_gene()
+        num_coloc_studies_per_gene = {
+            gene_id: num_coloc_studies for gene_id, num_coloc_studies in num_coloc_studies_per_gene
+        }
+
+        num_extractions_per_gene = self.db.get_num_study_extractions_per_gene()
+        num_extractions_per_gene = {gene_id: num_extractions for gene_id, num_extractions in num_extractions_per_gene}
+
+        num_rare_results_per_gene = self.db.get_num_rare_results_per_gene()
+        num_rare_results_per_gene = {
+            gene_id: num_rare_results for gene_id, num_rare_results in num_rare_results_per_gene
+        }
+
         genes = self.db.get_gene_names()
         gene_search_terms = [
-            SearchTerm(type="gene", name=gene[0], type_id=gene[0])
-            for gene in genes if gene[0] is not None
+            SearchTerm(
+                type="gene",
+                name=gene[0],
+                alt_name=gene[1],
+                type_id=gene[0],
+                num_extractions=num_extractions_per_gene.get(gene[0], 0),
+                num_coloc_groups=num_coloc_groups_per_gene.get(gene[0], 0),
+                num_coloc_studies=num_coloc_studies_per_gene.get(gene[0], 0),
+                num_rare_results=num_rare_results_per_gene.get(gene[0], 0),
+            )
+            for gene in genes
+            if gene[0] is not None
         ]
+
+        num_extractions_per_study = self.db.get_num_study_extractions_per_study()
+        num_extractions_per_study = {
+            study_id: num_extractions for study_id, num_extractions in num_extractions_per_study
+        }
+
+        coloc_groups_per_trait = self.db.get_num_coloc_groups_per_trait()
+        num_coloc_groups_per_trait = {
+            trait_id: num_coloc_groups for trait_id, num_coloc_groups in coloc_groups_per_trait
+        }
+        coloc_studies_per_trait = self.db.get_num_coloc_studies_per_trait()
+        num_coloc_studies_per_trait = {
+            trait_id: num_coloc_studies for trait_id, num_coloc_studies in coloc_studies_per_trait
+        }
+
+        num_rare_results_per_study = self.db.get_num_rare_results_per_study()
+        num_rare_results_per_study = {
+            study_id: num_rare_results for study_id, num_rare_results in num_rare_results_per_study
+        }
 
         trait_search_terms = self.db.get_trait_names_for_search()
         trait_search_terms = [
-            SearchTerm(type="study", name=term[1], type_id=term[0])
-            for term in trait_search_terms if term[1] is not None
+            SearchTerm(
+                type="trait",
+                name=term[1],
+                alt_name=None,
+                type_id=term[0],
+                num_extractions=num_extractions_per_study.get(term[0], 0),
+                num_coloc_groups=num_coloc_groups_per_trait.get(term[0], 0),
+                num_coloc_studies=num_coloc_studies_per_trait.get(term[0], 0),
+                num_rare_results=num_rare_results_per_study.get(term[0], 0),
+            )
+            for term in trait_search_terms
+            if term[1] is not None
         ]
 
         return gene_search_terms + trait_search_terms
@@ -50,14 +119,16 @@ class DBCacheService(metaclass=Singleton):
         return [SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes]
 
     @lru_cache(maxsize=1)
-    def get_tissues(self, ) -> List[str]:
+    def get_tissues(
+        self,
+    ) -> List[str]:
         """
         Retrieve variants from DuckDB with caching.
         Returns:
             List of Variant instances
         """
         tissues = self.db.get_tissues()
-        tissues =[tissue[0] for tissue in tissues]
+        tissues = [tissue[0] for tissue in tissues]
         return sorted(tissues)
 
     @lru_cache(maxsize=1)

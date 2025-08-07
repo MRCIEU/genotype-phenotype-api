@@ -1,138 +1,201 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
+        <title>GPM Phenotype</title>
+        <script type="module" src="/main.js"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
 
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-    <title>GPM Phenotype</title>
-    <script type="module" src="/main.js"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+            gtag("config", "G-JRYWRJTDBP");
+        </script>
+    </head>
 
-        gtag('config', 'G-JRYWRJTDBP');
-    </script>
-</head>
+    <body>
+        <div id="wait-to-load" style="display: none">
+            <div id="phenotype" x-data="phenotype" x-init="loadData">
+                <navigation-bar></navigation-bar>
 
-<body>
-    <div id = "wait-to-load" style="display:none;">
-        <div id="phenotype" x-data="phenotype" x-init="loadData">
-            <navigation-bar></navigation-bar>
+                <!-- Title, status and text -->
+                <div class="columns mt-4 mb-0 pb-0 pt-0">
+                    <div class="column is-10 pb-0 mb-0">
+                        <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
+                        <p class="has-text-centered mb-0" x-show="userUpload">
+                            <span x-text="getUploadStatus"></span>
+                        </p>
 
-            <!-- Title, status and text -->
-            <div class="columns mt-4 mb-0 pb-0 pt-0">
-                <div class="column is-10 pb-0 mb-0">
-                    <h3 class="title is-2 has-text-centered mb-0" x-text="getStudyToDisplay"></h3>
-                    <p class="has-text-centered mb-0" x-show="userUpload">
-                        <span x-text="getUploadStatus"></span>
-                    </p>
-
-                    <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'failed'">
-                        <div class="columns mt-0 is-centered">
-                            <h4 class="title">Upload failed</h4>
-                            <br />
-                            <p>Maybe give error message here?</p>
-                        </div>
-                    </div>
-                    <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'processing'">
-                        This may take a while...
-                    </div>
-
-                    <div x-show="showResults" class="mb-0">
-                        <p class="is-size-7 has-text-centered">Displays colocalised results of the study in question, and shows all studies which colocalise with it</p>
-                        <p class="is-size-7 has-text-centered">Also displays significant rare and non-colocalising results</p>
-                        <p class="is-size-7 has-text-centered">To compare 2 specific traits, please use the 'Filter Results By' dropdown</p>
-                    </div>
-
-                </div>
-                <div class="column is-2">
-                    <div x-show="showResults && filteredData.colocs && filteredData.colocs.length === 0" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
-                            Please change current filter settings for results to appear.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Graph and options -->
-            <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
-                <div class="column is-10 pb-0 mb-0">
-                    <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
-                </div>
-
-                <div class="column is-2">
-                    <graph-options></graph-options>
-                </div>
-            </div>
-
-            <!-- Display filters and Download button -->
-            <div class="columns is-centered mb-0 mt-0 pb-0 pt-0" x-show="showResults">
-                <div class="column is-11">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <button id="reset-display" class="button is-small mt-0 mb-0" @click="removeDisplayFilters">
-                                Reset Display
-                            </button>
-                            <div style="position: relative;">
-                                <input
-                                    type="text"
-                                    class="input is-small"
-                                    :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
-                                    x-model="traitSearch.text"
-                                    @focus="traitSearch.showDropDown = true"
-                                    @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
-                                    style="width: 400px;"
-                                >
-                                <div
-                                    class="dropdown-content"
-                                    x-show="traitSearch.showDropDown"
-                                    style="position: absolute; top: 100%; min-width: 100%; z-index: 10; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #dbdbdb; border-radius: 4px; white-space: nowrap;"
-                                >
-                                    <template x-for="trait in getTraitsToFilterBy()" :key="trait">
-                                        <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
-                                    </template>
-                                </div>
+                        <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'failed'">
+                            <div class="columns mt-0 is-centered">
+                                <h4 class="title">Upload failed</h4>
+                                <br />
+                                <p>Maybe give error message here?</p>
                             </div>
-                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp" class="tag is-light" style="margin-left: 0.5rem;">
-                                Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
-                                <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
-                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>
-                            </span>
                         </div>
-                        <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem;">
-                            Data has been downloaded without GWAS summary statistics. For more information <a href="data.html#data-availability" target="_blank">click here</a>
-                        </span>
-                        <button
-                            id="download-data"
-                            class="button is-success is-small mt-0 mb-0"
-                            @click="downloadData"
+                        <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'processing'">
+                            This may take a while...
+                        </div>
+
+                        <div x-show="showResults" class="mb-0">
+                            <p class="is-size-7 has-text-centered">
+                                Displays colocalised results of the study in question, and shows all studies which
+                                colocalise with it
+                            </p>
+                            <p class="is-size-7 has-text-centered">
+                                Also displays significant rare and non-colocalising results
+                            </p>
+                            <p class="is-size-7 has-text-centered">
+                                To compare 2 specific traits, please use the 'Filter Results By' dropdown
+                            </p>
+                        </div>
+                    </div>
+                    <div class="column is-2">
+                        <div
+                            x-show="showResults && filteredData.coloc_groups && data.coloc_groups.length === 0"
+                            class="notification is-danger is-light"
+                            style="padding: 5px; margin-right: 5px"
                         >
-                            Download Data
-                        </button>
+                            Please change current filter settings for results to appear.
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Data tables -->
-            <div class="columns mt-0 mb-0 is-centered" x-show="showResults">
-                <div class="column is-11">
-                    <div style="display: flex; align-items: center; cursor: pointer;" @click="showTables.coloc = !showTables.coloc">
-                        <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px;"></span>
-                        <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Coloc Results</h4>
-                        <h6 class="subtitle is-6 mb-2" style="margin-bottom: 0; font-size: 10px;">(Truncated at 100 SNPs)</h6>
+                <!-- Graph and options -->
+                <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
+                    <div class="column is-10 pb-0 mb-0">
+                        <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
                     </div>
-                    <results-table id='coloc-table' :data="getDataForColocTable" x-show="showTables.coloc"></results-table>
 
-                    <div x-show="doRareResultsExist" style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem;"  @click="showTables.rare = !showTables.rare">
-                        <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px; display: inline;"></span>
-                        <h4 class="title is-4 mb-2" style="margin: 0; display: inline; vertical-align: middle;">Rare Results</h4>
+                    <div class="column is-2">
+                        <graph-options></graph-options>
                     </div>
-                    <results-table id='rare-table' :data="getDataForRareTable" x-show="showTables.rare && doRareResultsExist"></results-table>
+                </div>
+
+                <!-- Display filters and Download button -->
+                <div class="columns is-centered mb-0 mt-0 pb-0 pt-0" x-show="showResults">
+                    <div class="column is-11">
+                        <div
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                min-height: 0;
+                                height: auto;
+                                padding-top: 0;
+                                padding-bottom: 0;
+                                justify-content: space-between;
+                            "
+                        >
+                            <div style="display: flex; align-items: center; gap: 0.5rem">
+                                <button
+                                    id="reset-display"
+                                    class="button is-small mt-0 mb-0"
+                                    @click="removeDisplayFilters"
+                                >
+                                    Reset Display
+                                </button>
+                                <div style="position: relative">
+                                    <input
+                                        type="text"
+                                        class="input is-small"
+                                        :placeholder="displayFilters.traitName ? displayFilters.traitName : 'Filter Results By...'"
+                                        x-model="traitSearch.text"
+                                        @focus="traitSearch.showDropDown = true"
+                                        @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
+                                        style="width: 400px"
+                                    />
+                                    <div
+                                        class="dropdown-content"
+                                        x-show="traitSearch.showDropDown"
+                                        style="
+                                            position: absolute;
+                                            top: 100%;
+                                            min-width: 100%;
+                                            z-index: 10;
+                                            max-height: 300px;
+                                            overflow-y: auto;
+                                            background: white;
+                                            border: 1px solid #dbdbdb;
+                                            border-radius: 4px;
+                                            white-space: nowrap;
+                                        "
+                                    >
+                                        <template x-for="trait in getTraitsToFilterBy()" :key="trait">
+                                            <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
+                                        </template>
+                                    </div>
+                                </div>
+                                <span
+                                    x-show="displayFilters.traitName || displayFilters.chr || displayFilters.snp"
+                                    class="tag is-light"
+                                    style="margin-left: 0.5rem"
+                                >
+                                    Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
+                                    <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
+                                    <b x-show="displayFilters.snp" x-text="'SNP: ' + displayFilters.snp"></b>
+                                </span>
+                            </div>
+                            <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem">
+                                Data has been downloaded without GWAS summary statistics. For more information
+                                <a href="data.html#data-availability" target="_blank">click here</a>
+                            </span>
+                            <button
+                                id="download-data"
+                                class="button is-success is-small mt-0 mb-0"
+                                @click="downloadData"
+                            >
+                                Download Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data tables -->
+                <div class="columns mt-0 mb-0 is-centered" x-show="showResults">
+                    <div class="column is-11">
+                        <div
+                            style="display: flex; align-items: center; cursor: pointer"
+                            @click="showTables.coloc = !showTables.coloc"
+                        >
+                            <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
+                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Coloc Results</h4>
+                            <h6 class="subtitle is-6 mb-2" style="margin-bottom: 0; font-size: 10px">
+                                (Truncated at 50 groups)
+                            </h6>
+                        </div>
+                        <results-table
+                            id="coloc-table"
+                            :data="getDataForColocTable"
+                            x-show="showTables.coloc"
+                        ></results-table>
+
+                        <div
+                            x-show="doRareResultsExist"
+                            style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
+                            @click="showTables.rare = !showTables.rare"
+                        >
+                            <span
+                                x-text="showTables.rare ? '▼' : '►'"
+                                style="margin-right: 8px; display: inline"
+                            ></span>
+                            <h4 class="title is-4 mb-2" style="margin: 0; display: inline; vertical-align: middle">
+                                Rare Results
+                            </h4>
+                        </div>
+                        <results-table
+                            id="rare-table"
+                            :data="getDataForRareTable"
+                            x-show="showTables.rare && doRareResultsExist"
+                        ></results-table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</body>
-
+    </body>
 </html>

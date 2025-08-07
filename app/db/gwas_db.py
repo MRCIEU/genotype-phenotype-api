@@ -4,16 +4,23 @@ from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
-from app.models.schemas import GwasStatus, ProcessGwasRequest, UploadColoc, UploadStudyExtraction
+from app.models.schemas import (
+    GwasStatus,
+    ProcessGwasRequest,
+    UploadColocGroup,
+    UploadColocPair,
+    UploadStudyExtraction,
+)
 from app.db.utils import log_performance
 
 settings = get_settings()
+
 
 class GwasDBClient:
     @retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=4, max=10),
-        reraise=True
+        reraise=True,
     )
     def connect(self) -> duckdb.DuckDBPyConnection:
         """Connect to DuckDB with retries"""
@@ -42,7 +49,7 @@ class GwasDBClient:
             return result
         finally:
             conn.close()
-    
+
     @log_performance
     def get_colocs_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
@@ -113,11 +120,14 @@ class GwasDBClient:
             study_placeholders = ", ".join(["?" for _ in study_fields])
             for study in study_extractions:
                 values = [getattr(study, field) for field in study_fields]
-                result = conn.execute(f"""
+                result = conn.execute(
+                    f"""
                     INSERT INTO study_extractions ({study_fields_str})
                     VALUES ({study_placeholders})
                     RETURNING *
-                """, values).fetchone()
+                """,
+                    values,
+                ).fetchone()
                 results.append(result)
             conn.commit()
         finally:
@@ -125,18 +135,43 @@ class GwasDBClient:
         return results
 
     @log_performance
-    def populate_colocs(self, colocs: List[UploadColoc]):
+    def populate_colocs(self, colocs: List[UploadColocGroup]):
         conn = self.connect()
         try:
-            coloc_fields = list(UploadColoc.model_fields.keys())
+            coloc_fields = list(UploadColocGroup.model_fields.keys())
             coloc_fields_str = ", ".join(coloc_fields)
             coloc_placeholders = ", ".join(["?" for _ in coloc_fields])
+
             for coloc in colocs:
                 values = [getattr(coloc, field) for field in coloc_fields]
-                conn.execute(f"""
-                    INSERT INTO colocalisations ({coloc_fields_str})
+                conn.execute(
+                    f"""
+                    INSERT INTO coloc_groups ({coloc_fields_str})
                     VALUES ({coloc_placeholders})
-                """, values)
+                """,
+                    values,
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    @log_performance
+    def populate_coloc_pairs(self, coloc_pairs: List[UploadColocPair]):
+        conn = self.connect()
+        try:
+            coloc_pair_fields = list(UploadColocPair.model_fields.keys())
+            coloc_pair_fields_str = ", ".join(coloc_pair_fields)
+            coloc_pair_placeholders = ", ".join(["?" for _ in coloc_pair_fields])
+
+            for coloc_pair in coloc_pairs:
+                values = [getattr(coloc_pair, field) for field in coloc_pair_fields]
+                conn.execute(
+                    f"""
+                    INSERT INTO coloc_pairs ({coloc_pair_fields_str})
+                    VALUES ({coloc_pair_placeholders})
+                """,
+                    values,
+                )
             conn.commit()
         finally:
             conn.close()

@@ -1,11 +1,11 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import GeneResponse
 
 client = TestClient(app)
 
-def test_get_genes_with_colocs():
+
+def test_get_genes_with_coloc_groups():
     response = client.get("/v1/genes/WNT7B")
     assert response.status_code == 200
     genes = response.json()
@@ -18,9 +18,9 @@ def test_get_genes_with_colocs():
     assert gene_response.gene.chr is not None
     assert gene_response.gene.start is not None
     assert gene_response.gene.stop is not None
-    assert gene_response.colocs is not None
+    assert gene_response.coloc_groups is not None
 
-    for coloc in gene_response.colocs:
+    for coloc in gene_response.coloc_groups:
         assert coloc.coloc_group_id is not None
         assert coloc.study_extraction_id is not None
         assert coloc.chr is not None
@@ -36,6 +36,3 @@ def test_get_genes_with_colocs():
         assert rare_result.chr is not None
         assert rare_result.bp is not None
         assert rare_result.min_p is not None
-
-
-

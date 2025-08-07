@@ -1,9 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import SearchTerm, VariantSearchResponse
 
 client = TestClient(app)
+
 
 def test_get_search_options():
     response = client.get("/v1/search/options")
@@ -17,23 +17,29 @@ def test_get_search_options():
         assert search_term.type is not None
         assert search_term.type_id is not None
         assert search_term.name is not None
-    
+        if search_term.type == "gene":
+            assert search_term.alt_name is not None
+
+
 def test_search_variant_by_rsid():
-    response = client.get("/v1/search/variant/rs6441921")
+    response = client.get("/v1/search/variant/rs17078078")
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)
 
     assert len(variants.original_variants) > 0
-    assert len(variants.proxy_variants) == 0
-    assert variants.original_variants[0].num_colocs == 0
+    assert len(variants.original_variants[0].ld_proxies) > 0
+    assert len(variants.proxy_variants) > 0
+    assert len(variants.proxy_variants[0].ld_proxies) > 0
+
 
 def test_search_variant_by_chr_bp():
-    response = client.get("/v1/search/variant/3:45576631")
+    response = client.get("/v1/search/variant/3:45579683")
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)
 
     assert len(variants.original_variants) > 0
-    assert len(variants.proxy_variants) == 0
-    assert variants.original_variants[0].num_colocs == 0
+    assert len(variants.original_variants[0].ld_proxies) > 0
+    assert len(variants.proxy_variants) > 0
+    assert len(variants.proxy_variants[0].ld_proxies) > 0

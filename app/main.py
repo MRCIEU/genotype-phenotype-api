@@ -11,8 +11,8 @@ from app.logging_config import get_logger
 settings = get_settings()
 logger = get_logger("app.main")
 
+
 def create_app() -> FastAPI:
-    logger.info("Starting application")
     if not settings.DEBUG:
         sentry_sdk.init(dsn=settings.SENTRY_DSN, send_default_pii=True)
 
@@ -23,7 +23,7 @@ def create_app() -> FastAPI:
         debug=settings.DEBUG,
         docs_url="/docs",
         redoc_url="/redoc",
-        openapi_url="/openapi.json"
+        openapi_url="/openapi.json",
     )
 
     app.add_middleware(SecurityMiddleware)
@@ -38,11 +38,11 @@ def create_app() -> FastAPI:
             "http://127.0.0.1:80",
             "http://127.0.0.1:5173",
             "http://gpmap.opengwas.io",
-            "https://gpmap.opengwas.io/"
+            "https://gpmap.opengwas.io/",
         ],
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"]
+        allow_headers=["*"],
     )
 
     @app.get("/health")
@@ -54,9 +54,15 @@ def create_app() -> FastAPI:
         peeked_queue = redis_client.peek_queue(redis_client.process_gwas_queue)
         dead_letter_queue = redis_client.peek_queue(redis_client.process_gwas_dlq)
 
-        return {"status": "healthy", "queue_size": len(peeked_queue), "peeked_queue": peeked_queue, "dead_letter_queue": len(dead_letter_queue)}
+        return {
+            "status": "healthy",
+            "queue_size": len(peeked_queue),
+            "peeked_queue": peeked_queue,
+            "dead_letter_queue": len(dead_letter_queue),
+        }
 
     app.include_router(api_router, prefix="/v1")
     return app
+
 
 app = create_app()

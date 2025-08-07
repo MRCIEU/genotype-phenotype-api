@@ -1,133 +1,202 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
+        <title>GPM Gene</title>
+        <script type="module" src="/main.js"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
 
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-    <title>GPM Gene</title>
-    <script type="module" src="/main.js"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+            gtag("config", "G-JRYWRJTDBP");
+        </script>
+    </head>
 
-        gtag('config', 'G-JRYWRJTDBP');
-    </script>
-</head>
+    <body>
+        <div id="wait-to-load" style="display: none">
+            <div id="gene" x-data="gene" x-init="loadData">
+                <navigation-bar></navigation-bar>
 
-<body>
-    <div id="wait-to-load" style="display:none;">
-        <div id="gene" x-data="gene" x-init="loadData">
-            <navigation-bar></navigation-bar>
-
-            <div class="columns mt-4 mb-0">
-                <div class="column is-10">
-                    <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
-                    <h6 class="has-text-centered mb-0 mt-0">
-                        Gene Range: <span x-text="genomicRange"></span>
-                    </h6>
-                    <h6 class="has-text-centered mb-0"><a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a></h6>
-                    <h6 class="has-text-centered mb-0">
-                        <a class="button is-link is-small is-centered is-light" x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName" target="_blank">
-                            <span>NCBI Gene</span>
-                        </a>
-                    </h6>
-                </div>
-                <div class="column is-2">
-                    <div x-show="!filteredColocDataExist" class="notification is-danger is-light" style="padding: 5px; margin-right: 5px;">
+                <div class="columns mt-4 mb-0">
+                    <div class="column is-10">
+                        <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
+                        <h6 class="has-text-centered mb-0 mt-0">Gene Range: <span x-text="genomicRange"></span></h6>
+                        <h6 class="has-text-centered mb-0">
+                            <a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a>
+                        </h6>
+                        <h6 class="has-text-centered mb-0">
+                            <a
+                                class="button is-link is-small is-centered is-light"
+                                x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName"
+                                target="_blank"
+                            >
+                                <span>NCBI Gene</span>
+                            </a>
+                        </h6>
+                    </div>
+                    <div class="column is-2">
+                        <div
+                            x-show="!filteredColocDataExist"
+                            class="notification is-danger is-light"
+                            style="padding: 5px; margin-right: 5px"
+                        >
                             Please change current filter settings for results to appear.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Trait by position graph and options -->
-            <div class="columns mt-2">
-                <div class="column is-10">
-                    <div class="is-divider mt-0 mb-2"></div>
-                    <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h3>
-                    <p class="is-size-7 has-text-centered">Displays colocalising studies that are either</p>
-                    <p class="is-size-7 has-text-centered">(a) within the BP range of the gene, or </p>
-                    <p class="is-size-7 has-text-centered">(b) annotated by the QTL resource as associated with that Gene (within +/-1Mb)</p>
-                    <div x-model="initTraitByPositionGraph" id="trait-by-position-chart"></div>
-                </div>
-
-                <div class="column is-2">
-                    <graph-options></graph-options>
-                </div>
-            </div>
-
-            <!-- Associated genes graph -->
-            <div class="is-divider mt-0 mb-2"></div>
-            <h4 class="title is-3 has-text-centered mb-0">Associated Genes</h4>
-            <p class="is-size-7 has-text-centered" x-text="'Displays every gene that has been associated with '+ geneName +' in the selected studies.'"></p>
-            <p class="is-size-7 has-text-centered">The association can come by means of colocalization with a causal variant associated with the gene, or by proximity to gene region</p>
-
-            <div class="column is-10" x-model="initAssociatedGenesGraph" id="associated-genes-plot"></div>
-
-            <!-- Display filters and Download button -->
-            <div class="columns is-centered mb-0 mt-0 pb-0 pt-0">
-                <div class="column is-11">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <button id="reset-display" class="button is-small mt-0 mb-0" @click="removeDisplayFilters">
-                                Reset Display
-                            </button>
-                            <div style="position: relative;">
-                                <input
-                                    type="text"
-                                    class="input is-small"
-                                    :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
-                                    x-model="traitSearch.text"
-                                    @focus="traitSearch.showDropDown = true"
-                                    @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
-                                    style="width: 400px;"
-                                >
-                                <div
-                                    class="dropdown-content"
-                                    x-show="traitSearch.showDropDown"
-                                    style="position: absolute; top: 100%; min-width: 100%; z-index: 10; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #dbdbdb; border-radius: 4px; white-space: nowrap;"
-                                >
-                                    <template x-for="trait in getTraitsToFilterBy()" :key="trait">
-                                        <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
-                                    </template>
-                                </div>
-                            </div>
-                            <span x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp || displayFilters.gene" class="tag is-light" style="margin-left: 0.5rem;">
-                                Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
-                                <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
-                                <b x-show="displayFilters.candidateSnp" x-text="'SNP: ' + displayFilters.candidateSnp"></b>&nbsp;
-                                <b x-show="displayFilters.gene" x-text="'Gene: ' + displayFilters.gene"></b>
-                            </span>
                         </div>
-                        <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem;">
-                            Data has been downloaded without GWAS summary statistics. For more information <a href="data.html#data-availability" target="_blank">click here</a>
-                        </span>
-                        <button id="download-data" class="button is-success is-small mt-0 mb-0" @click="downloadData">
-                            Download Data
-                        </button>
                     </div>
                 </div>
-            </div>
-            <!-- Data tables -->
-            <div class="columns mt-0 mb-0 is-centered">
-                <div class="column is-11">
-                    <div style="display: flex; align-items: center; cursor: pointer;" @click="showTables.coloc = !showTables.coloc">
-                        <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px;"></span>
-                        <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Coloc Results</h4>
-                    </div>
-                    <results-table id='coloc-table' :data="getDataForColocTable" x-show="showTables.coloc"></results-table>
 
-                    <div style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem;" @click="showTables.rare = !showTables.rare">
-                        <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px;"></span>
-                        <h4 class="title is-4 mb-2" style="margin-bottom: 0;">Rare Results</h4>
+                <!-- Trait by position graph and options -->
+                <div class="columns mt-2">
+                    <div class="column is-10">
+                        <div class="is-divider mt-0 mb-2"></div>
+                        <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h4>
+                        <p class="is-size-7 has-text-centered">Displays colocalising studies that are either</p>
+                        <p class="is-size-7 has-text-centered">(a) within the BP range of the gene, or</p>
+                        <p class="is-size-7 has-text-centered">
+                            (b) annotated by the QTL resource as associated with that Gene (within +/-1Mb)
+                        </p>
+                        <div x-model="initTraitByPositionGraph" id="trait-by-position-chart"></div>
                     </div>
-                    <results-table id='rare-table' :data="getDataForRareTable" x-show="showTables.rare"></results-table>
+
+                    <div class="column is-2">
+                        <graph-options></graph-options>
+                    </div>
+                </div>
+
+                <!-- Associated genes graph -->
+                <div class="is-divider mt-0 mb-2"></div>
+                <h4 class="title is-3 has-text-centered mb-0">Associated Genes</h4>
+                <p
+                    class="is-size-7 has-text-centered"
+                    x-text="'Displays every gene that has been associated with '+ geneName +' in the selected studies.'"
+                ></p>
+                <p class="is-size-7 has-text-centered">
+                    The association can come by means of colocalization with a causal variant associated with the gene,
+                    or by proximity to gene region
+                </p>
+
+                <div class="column is-10" x-model="initAssociatedGenesGraph" id="associated-genes-plot"></div>
+
+                <!-- Display filters and Download button -->
+                <div class="columns is-centered mb-0 mt-0 pb-0 pt-0">
+                    <div class="column is-11">
+                        <div
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                min-height: 0;
+                                height: auto;
+                                padding-top: 0;
+                                padding-bottom: 0;
+                                justify-content: space-between;
+                            "
+                        >
+                            <div style="display: flex; align-items: center; gap: 0.5rem">
+                                <button
+                                    id="reset-display"
+                                    class="button is-small mt-0 mb-0"
+                                    @click="removeDisplayFilters"
+                                >
+                                    Reset Display
+                                </button>
+                                <div style="position: relative">
+                                    <input
+                                        type="text"
+                                        class="input is-small"
+                                        :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
+                                        x-model="traitSearch.text"
+                                        @focus="traitSearch.showDropDown = true"
+                                        @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
+                                        style="width: 400px"
+                                    />
+                                    <div
+                                        class="dropdown-content"
+                                        x-show="traitSearch.showDropDown"
+                                        style="
+                                            position: absolute;
+                                            top: 100%;
+                                            min-width: 100%;
+                                            z-index: 10;
+                                            max-height: 300px;
+                                            overflow-y: auto;
+                                            background: white;
+                                            border: 1px solid #dbdbdb;
+                                            border-radius: 4px;
+                                            white-space: nowrap;
+                                        "
+                                    >
+                                        <template x-for="trait in getTraitsToFilterBy()" :key="trait">
+                                            <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
+                                        </template>
+                                    </div>
+                                </div>
+                                <span
+                                    x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp || displayFilters.gene"
+                                    class="tag is-light"
+                                    style="margin-left: 0.5rem"
+                                >
+                                    Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
+                                    <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
+                                    <b
+                                        x-show="displayFilters.candidateSnp"
+                                        x-text="'SNP: ' + displayFilters.candidateSnp"
+                                    ></b
+                                    >&nbsp;
+                                    <b x-show="displayFilters.gene" x-text="'Gene: ' + displayFilters.gene"></b>
+                                </span>
+                            </div>
+                            <span x-show="downloadClicked" style="margin-right: 1rem; font-size: 0.8rem">
+                                Data has been downloaded without GWAS summary statistics. For more information
+                                <a href="data.html#data-availability" target="_blank">click here</a>
+                            </span>
+                            <button
+                                id="download-data"
+                                class="button is-success is-small mt-0 mb-0"
+                                @click="downloadData"
+                            >
+                                Download Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Data tables -->
+                <div class="columns mt-0 mb-0 is-centered">
+                    <div class="column is-11">
+                        <div
+                            style="display: flex; align-items: center; cursor: pointer"
+                            @click="showTables.coloc = !showTables.coloc"
+                        >
+                            <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
+                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Coloc Results</h4>
+                        </div>
+                        <results-table
+                            id="coloc-table"
+                            :data="getDataForColocTable"
+                            x-show="showTables.coloc"
+                        ></results-table>
+
+                        <div
+                            style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
+                            @click="showTables.rare = !showTables.rare"
+                        >
+                            <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
+                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Rare Results</h4>
+                        </div>
+                        <results-table
+                            id="rare-table"
+                            :data="getDataForRareTable"
+                            x-show="showTables.rare"
+                        ></results-table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</body>
-
-</html> 
+    </body>
+</html>

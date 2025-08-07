@@ -1,10 +1,10 @@
-import constants from './constants.js'
+import constants from "./constants.js";
 
 export default function contact() {
     return {
-        email: '',
-        reason: '',
-        message: '',
+        email: "",
+        reason: "",
+        message: "",
         submitting: false,
         successMessage: false,
         errorMessage: false,
@@ -15,27 +15,28 @@ export default function contact() {
             this.errorMessage = false;
 
             try {
-                const response = await fetch(constants.apiUrl + '/info/contact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const response = await fetch(constants.apiUrl + "/info/contact", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         email: this.email,
                         reason: this.reason,
-                        message: this.message
-                    })
+                        message: this.message,
+                    }),
                 });
                 if (response.ok) {
-                    this.successMessage = 'Your message has been sent!';
-                    this.email = '';
-                    this.reason = '';
-                    this.message = '';
+                    this.successMessage = "Your message has been sent!";
+                    this.email = "";
+                    this.reason = "";
+                    this.message = "";
                 } else {
-                    this.errorMessage = 'There was a problem sending your message.';
+                    this.errorMessage = "There was a problem sending your message.";
                 }
             } catch (e) {
-                this.errorMessage = 'There was a problem sending your message.';
+                console.error(e);
+                this.errorMessage = "There was a problem sending your message.";
             }
             this.submitting = false;
-        }
-    }
+        },
+    };
 }

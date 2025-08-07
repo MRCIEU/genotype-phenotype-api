@@ -1,10 +1,10 @@
-import Alpine from 'alpinejs'
+import Alpine from "alpinejs";
 import * as d3 from "d3";
-import JSZip from 'jszip'
+import JSZip from "jszip";
 
-import constants from './constants.js'
-import downloads from './downloads.js'
-import graphTransformations from './graphTransformations.js'
+import constants from "./constants.js";
+import downloads from "./downloads.js";
+import graphTransformations from "./graphTransformations.js";
 
 //TODO: look at thissss: https://observablehq.com/@d3/force-directed-graph-component
 
@@ -22,59 +22,59 @@ export default function snp() {
         highlightedStudy: null,
 
         async loadData() {
-            let variantId = (new URLSearchParams(location.search).get('id'))
+            let variantId = new URLSearchParams(location.search).get("id");
 
             try {
-                const response = await fetch(constants.apiUrl + '/variants/' + variantId)
+                const response = await fetch(constants.apiUrl + "/variants/" + variantId);
                 if (!response.ok) {
-                    this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
-                    return
+                    this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + "/variants/" + variantId}`;
+                    return;
                 }
-                this.data = await response.json()
+                this.data = await response.json();
 
-                document.title = 'GP Map: ' +  this.getSNPName()
-                await this.getSvgData(variantId)
+                document.title = "GP Map: " + this.getSNPName();
+                await this.getSvgData(variantId);
 
-                this.data.colocs = this.data.colocs.map(coloc => ({
+                this.data.coloc_groups = this.data.coloc_groups.map(coloc => ({
                     ...coloc,
                     tissue: coloc.tissue ? coloc.tissue : "N/A",
-                    cis_trans: coloc.cis_trans? coloc.cis_trans : "N/A"
-                })) 
-                this.data.colocs.sort((a, b) => a.data_type.localeCompare(b.data_type));
+                    cis_trans: coloc.cis_trans ? coloc.cis_trans : "N/A",
+                }));
+                this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
-                const ld_block = this.data.colocs[0].ld_block
-                const ld_info = ld_block.split(/[\/-]/)
-                this.data.variant.min_bp = ld_info[2]
-                this.data.variant.max_bp = ld_info[3]
+                const ld_block = this.data.coloc_groups[0].ld_block;
+                const ld_info = ld_block.split(/[/-]/);
+                this.data.variant.min_bp = ld_info[2];
+                this.data.variant.max_bp = ld_info[3];
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error("Error loading data:", error);
             }
         },
 
         async getSvgData(variantId) {
             if (constants.isLocal) {
-                variantId = 'test'
+                variantId = "test";
             }
-            const svgsUrl = `${constants.assetBaseUrl}/snp_${variantId}_svgs.zip`
-            const zipResponse = await fetch(svgsUrl)
-            const zipBlob = await zipResponse.blob()
-            const zip = await JSZip.loadAsync(zipBlob)
+            const svgsUrl = `${constants.assetBaseUrl}/snp_${variantId}_svgs.zip`;
+            const zipResponse = await fetch(svgsUrl);
+            const zipBlob = await zipResponse.blob();
+            const zip = await JSZip.loadAsync(zipBlob);
 
             this.svgs = [];
             const entries = Object.entries(zip.files);
             for (let i = 0; i < entries.length; i++) {
                 const [filename, file] = entries[i];
-                let studyExtractionId = parseInt(filename.split('.svg')[0]);
+                let studyExtractionId = parseInt(filename.split(".svg")[0]);
                 if (constants.isLocal) {
-                    studyExtractionId = this.data.colocs[i%this.data.colocs.length].study_extraction_id;
+                    studyExtractionId = this.data.coloc_groups[i % this.data.coloc_groups.length].study_extraction_id;
                 }
-                const svgContent = await file.async('text');
+                const svgContent = await file.async("text");
                 this.svgs.push({ studyExtractionId, svgContent });
             }
         },
 
         getSNPName() {
-            return this.data ? this.data.variant.rsid.split(',')[0] : '...'
+            return this.data ? this.data.variant.rsid.split(",")[0] : "...";
         },
 
         getVariantData() {
@@ -82,239 +82,235 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.filteredData.colocs: [];
+            return this.data ? this.filteredData.colocs : [];
         },
 
         downloadDataOnly() {
-            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) {
                 return;
             }
             downloads.downloadDataToZip(this.data, this.getSNPName());
         },
 
         async downloadDataAndGWAS() {
-            if (!this.data || !this.data.colocs || this.data.colocs.length === 0) {
+            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) {
                 return;
             }
-            const response = await fetch(constants.apiUrl + '/variants/' + this.data.variant.id + '/summary-stats')
+            const response = await fetch(constants.apiUrl + "/variants/" + this.data.variant.id + "/summary-stats");
             if (!response.ok) {
-                this.errorMessage = `Failed to download summary stats: ${response.status} ${constants.apiUrl + '/variants/' + variantId}`
-                return
+                this.errorMessage = `Failed to download summary stats: ${response.status} ${constants.apiUrl + "/variants/" + this.data.variant.id}`;
+                return;
             }
-            const zipBlob = await response.blob()
+            const zipBlob = await response.blob();
             downloads.downloadDataToZip(this.data, this.getSNPName(), zipBlob);
         },
 
         filterDataForGraphs() {
-            if (!this.data) return
-            const graphOptions = Alpine.store('graphOptionStore');
-            this.filteredData.colocs = this.data.colocs.filter(coloc => {
-                let graphOptionFilters = (coloc.min_p <= graphOptions.pValue &&
-                    coloc.posterior_prob >= graphOptions.coloc &&
-                    (graphOptions.includeTrans ? true : coloc.cis_trans !== 'trans') &&
-                    (graphOptions.traitType === 'all' ? true : 
-                     graphOptions.traitType === 'molecular' ? coloc.data_type !== 'Phenotype' :
-                     graphOptions.traitType === 'phenotype' ? coloc.data_type === 'Phenotype' : true))
+            if (!this.data) return;
+            const graphOptions = Alpine.store("graphOptionStore");
+            this.filteredData.colocs = this.data.coloc_groups.filter(coloc => {
+                let graphOptionFilters =
+                    coloc.min_p <= graphOptions.pValue &&
+                    graphOptions.colocType === coloc.group_threshold &&
+                    (graphOptions.includeTrans ? true : coloc.cis_trans !== "trans") &&
+                    (graphOptions.traitType === "all"
+                        ? true
+                        : graphOptions.traitType === "molecular"
+                          ? coloc.data_type !== "Phenotype"
+                          : graphOptions.traitType === "phenotype"
+                            ? coloc.data_type === "Phenotype"
+                            : true);
 
                 if (Object.values(graphOptions.categories).some(c => c)) {
-                    graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true
+                    graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true;
                 }
 
-                return graphOptionFilters
+                return graphOptionFilters;
             });
             this.filteredData.svgs = this.svgs.filter(svg => {
-                return this.filteredData.colocs.some(coloc => coloc.study_extraction_id === svg.studyExtractionId)
+                return this.filteredData.colocs.some(coloc => coloc.study_extraction_id === svg.studyExtractionId);
             });
-            // this.filteredData.colocs.sort((a, b) => a.association.beta - b.association.beta);
+            // this.data.coloc_groups.sort((a, b) => a.association.beta - b.association.beta);
         },
 
         initForestPlot() {
             this.filterDataForGraphs();
             const chartContainer = document.getElementById("forest-plot");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getForestPlot())
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getForestPlot());
         },
 
         initChordDiagram() {
             this.filterDataForGraphs();
             const chartContainer = document.getElementById("snp-chord-diagram");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getChordDiagram())
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getChordDiagram());
         },
 
         initManhattanPlotOverlay() {
             this.filterDataForGraphs();
             const chartContainer = document.getElementById("manhattan-plot");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getManhattanPlotOverlay())
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
+                this.getManhattanPlotOverlay()
+            );
         },
-
 
         getChordDiagram() {
             if (!this.data) return;
             const self = this;
-            const chartElement = document.getElementById('snp-chord-diagram');
-            chartElement.innerHTML = '';
+            const chartElement = document.getElementById("snp-chord-diagram");
+            chartElement.innerHTML = "";
 
             const chartContainer = d3.select("#snp-chord-diagram");
             chartContainer.select("svg").remove();
-            let graphWidth = chartContainer.node().getBoundingClientRect().width - 50
-            let graphHeight = 500
+            let graphWidth = chartContainer.node().getBoundingClientRect().width - 50;
+            let graphHeight = 500;
 
             const graphConstants = {
                 width: graphWidth,
                 height: graphHeight,
                 innerRadius: Math.min(graphWidth, graphHeight) * 0.45,
                 outerRadius: Math.min(graphWidth, graphHeight) * 0.45 * 1.01,
-            }
+            };
 
             // Set dimensions
             const innerRadius = Math.min(graphConstants.width, graphConstants.height) * 0.45;
             const outerRadius = innerRadius * 1.01;
 
             // Append SVG
-            const svg = d3.select('#snp-chord-diagram')
-                .append('svg')
-                .attr('width', graphConstants.width)
-                .attr('height', graphConstants.height)
-                .append('g')
-                .attr('transform', `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
+            const svg = d3
+                .select("#snp-chord-diagram")
+                .append("svg")
+                .attr("width", graphConstants.width)
+                .attr("height", graphConstants.height)
+                .append("g")
+                .attr("transform", `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
 
-            // Process data
-            const candidate_snp = this.data.variant.RSID;
+            const display_snp = this.data.variant.RSID;
             const colocs = this.filteredData.colocs;
 
-            // Extract unique data_types
-            const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
+            const fixedColorMap = constants.orderedDataTypes
+                .map((dataType, index) => ({
+                    [dataType]: constants.colors.palette[index],
+                }))
+                .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
-            // Extract unique traits
+            const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
             const traits = colocs.map(d => d.trait_name);
 
-            // Combine candidate_snp and traits into nodes
-            const nodes = [candidate_snp, ...traits];
+            const nodes = [display_snp, ...traits];
 
-            // Create data_type mapping for coloring
             const dataTypeMap = {};
             colocs.forEach(coloc => {
                 dataTypeMap[coloc.trait_name] = coloc.data_type;
             });
 
-            // Create color scale based on data_type
-            const color = d3.scaleOrdinal()
-                .domain(dataTypes)
-                .range(constants.colors.palette);
+            const color = d3.scaleOrdinal().domain(Object.keys(fixedColorMap)).range(Object.values(fixedColorMap));
 
-            // Create index mapping
             const indexMap = {};
             nodes.forEach((node, i) => {
                 indexMap[node] = i;
             });
 
-            // Initialize matrix
-            const matrix = Array(nodes.length).fill(null).map(() => Array(nodes.length).fill(0));
+            const matrix = Array(nodes.length)
+                .fill(null)
+                .map(() => Array(nodes.length).fill(0));
 
-            // Populate matrix: connections from candidate_snp to each trait
             colocs.forEach(coloc => {
-                const source = indexMap[candidate_snp];
+                const source = indexMap[display_snp];
                 const target = indexMap[coloc.trait_name];
-                matrix[source][target] = 1; // Each trait connects once to the SNP
+                matrix[source][target] = 1;
             });
 
-            // Define chord layout
-            const chordGenerator = d3.chord()
-                .padAngle(0.005)
-                .sortSubgroups(d3.descending);
-
+            const chordGenerator = d3.chord().padAngle(0.005).sortSubgroups(d3.descending);
             const chords = chordGenerator(matrix);
+            const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+            const ribbon = d3.ribbon().radius(innerRadius);
+            const group = svg.selectAll(".group").data(chords.groups).enter().append("g").attr("class", "group");
 
-            // Define arc generator
-            const arc = d3.arc()
-                .innerRadius(innerRadius)
-                .outerRadius(outerRadius);
-
-            // Define ribbon generator
-            const ribbon = d3.ribbon()
-                .radius(innerRadius);
-
-            // Add groups (candidate_snp and traits)
-            const group = svg.selectAll('.group')
-                .data(chords.groups)
-                .enter().append('g')
-                .attr('class', 'group');
-
-            group.append('path')
-                .style('fill', d => {
+            group
+                .append("path")
+                .style("fill", d => {
                     const name = nodes[d.index];
-                    if (name === candidate_snp) {
-                        return '#808080'; // Gray for SNP
+                    if (name === display_snp) {
+                        return "#808080";
                     }
                     return color(dataTypeMap[name]);
                 })
-                .style('stroke', d => d3.rgb(color(dataTypeMap[nodes[d.index]])).darker())
-                .attr('d', arc)
-                .on('mouseover', function(event, d) {
-                    d3.select(this).transition().duration(200).style('fill', d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
+                .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.index]])).darker())
+                .attr("d", arc)
+                .on("mouseover", function (_, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style("fill", d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
                 })
-                .on('mouseout', function(event, d) {
-                    d3.select(this).transition().duration(200).style('fill', nodes[d.index] === candidate_snp ? '#808080' : color(dataTypeMap[nodes[d.index]]));
+                .on("mouseout", function (_, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style("fill", nodes[d.index] === display_snp ? "#808080" : color(dataTypeMap[nodes[d.index]]));
                 });
 
-            // Add chords
-            svg.selectAll('.chord')
+            svg.selectAll(".chord")
                 .data(chords)
-                .enter().append('path')
-                .attr('class', 'chord')
-                .attr('d', ribbon)
-                .style('fill', d => {
+                .enter()
+                .append("path")
+                .attr("class", "chord")
+                .attr("d", ribbon)
+                .style("fill", d => {
                     const trait = nodes[d.target.index];
                     return color(dataTypeMap[trait]);
                 })
-                .style('stroke', d => d3.rgb(color(dataTypeMap[nodes[d.target.index]])).darker())
-                .attr('opacity', 0.7)
-                .on('mouseover', function(event, d) {
-                    d3.select(this).transition().duration(200).attr('opacity', 1);
+                .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.target.index]])).darker())
+                .attr("opacity", 0.7)
+                .on("mouseover", function (event, d) {
+                    d3.select(this).transition().duration(200).attr("opacity", 1);
                     const coloc = self.filteredData.colocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
                     self.highlightedStudy = coloc.study_extraction_id;
                     self.svgs = self.svgs.sort((a, b) =>
-                        a.studyExtractionId === coloc.study_extraction_id ? 1 : b.studyExtractionId === coloc.study_extraction_id ? -1 : 0
+                        a.studyExtractionId === coloc.study_extraction_id
+                            ? 1
+                            : b.studyExtractionId === coloc.study_extraction_id
+                              ? -1
+                              : 0
                     );
                     let tooltipColor = "white";
                     if (coloc.association) {
                         tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
                     }
-                    d3.select('#snp-chord-diagram')
-                            .append('div')
-                            .attr('class', 'tooltip')
-                            .style('position', 'absolute')
-                            .style('background-color', tooltipColor)
-                            .style('padding', '5px')
-                            .style('border', '1px solid black')
-                            .style('border-radius', '5px')
-                            .style('left', `${event.pageX + 10}px`)
-                            .style('top', `${event.pageY - 10}px`)
-                            .html(`Trait: ${coloc.trait_name}<br>
+                    d3
+                        .select("#snp-chord-diagram")
+                        .append("div")
+                        .attr("class", "tooltip")
+                        .style("position", "absolute")
+                        .style("background-color", tooltipColor)
+                        .style("padding", "5px")
+                        .style("border", "1px solid black")
+                        .style("border-radius", "5px")
+                        .style("left", `${event.pageX + 10}px`)
+                        .style("top", `${event.pageY - 10}px`).html(`Trait: ${coloc.trait_name}<br>
                                         P-value: ${coloc.min_p.toExponential(2)}<br>
                                         Cis/Trans: ${coloc.cis_trans}<br>
-                                        BETA: ${coloc.association ? coloc.association.beta: "N/A"}
+                                        BETA: ${coloc.association ? coloc.association.beta : "N/A"}
                                         `);
                 })
-                .on('mouseout', function(event, d) {
-                    d3.select(this).transition().duration(200).attr('opacity', 0.7);
-                    d3.selectAll('.tooltip').remove();
-                })
+                .on("mouseout", function () {
+                    d3.select(this).transition().duration(200).attr("opacity", 0.7);
+                    d3.selectAll(".tooltip").remove();
+                });
 
-            // Add legend
-            const legend = svg.append("g")
+            // Add legend - only show data types that are actually present
+            const legend = svg
+                .append("g")
                 .attr("class", "legend")
                 .attr("transform", `translate(${-graphConstants.width / 2 + 20}, ${-graphConstants.height / 2 + 20})`);
 
             dataTypes.forEach((type, i) => {
-                const legendItem = legend.append("g")
-                    .attr("transform", `translate(0, ${i * 20})`);
+                const legendItem = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
 
-                legendItem.append("rect")
-                    .attr("width", 18)
-                    .attr("height", 18)
-                    .attr("fill", color(type));
+                legendItem.append("rect").attr("width", 18).attr("height", 18).attr("fill", color(type));
 
-                legendItem.append("text")
+                legendItem
+                    .append("text")
                     .attr("x", 24)
                     .attr("y", 9)
                     .attr("dy", "0.35em")
@@ -323,15 +319,12 @@ export default function snp() {
             });
 
             // Add SNP to legend
-            const snpLegend = legend.append("g")
-                .attr("transform", `translate(0, ${dataTypes.length * 20})`);
+            const snpLegend = legend.append("g").attr("transform", `translate(0, ${dataTypes.length * 20})`);
 
-            snpLegend.append("rect")
-                .attr("width", 18)
-                .attr("height", 18)
-                .attr("fill", "#808080");
+            snpLegend.append("rect").attr("width", 18).attr("height", 18).attr("fill", "#808080");
 
-            snpLegend.append("text")
+            snpLegend
+                .append("text")
                 .attr("x", 24)
                 .attr("y", 9)
                 .attr("dy", "0.35em")
@@ -349,30 +342,28 @@ export default function snp() {
             let width = plotContainer.node().getBoundingClientRect().width;
             const height = this.filteredData.colocs.length * 27;
 
-            const svg = plotContainer.append("svg")
+            const svg = plotContainer
+                .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            // Filter out items without association data
-            const validData = this.filteredData.colocs.filter(d => d.association && d.association.beta !== null && d.association.se !== null);
-            
-            // Calculate the range for the x-axis
+            const validData = this.filteredData.colocs.filter(
+                d => d.association && d.association.beta !== null && d.association.se !== null
+            );
+
             const maxAbsBeta = d3.max(validData, d => Math.abs(d.association.beta));
             const xRange = [-maxAbsBeta * 1.5, maxAbsBeta * 1.5];
 
-            // Create scales
-            const x = d3.scaleLinear()
-                .domain(xRange)
-                .range([0, width]);
+            const x = d3.scaleLinear().domain(xRange).range([0, width]);
 
-            const y = d3.scaleBand()
-                .domain(validData.map(d => d.trait_name))
+            const y = d3
+                .scaleBand()
+                .domain(validData.map(d => d.study_extraction_id))
                 .range([0, height])
-                .padding(0.1);
+                .padding(0);
 
-            // Add x-axis
             svg.append("g")
                 .attr("transform", `translate(0,${height})`)
                 .call(d3.axisBottom(x))
@@ -380,13 +371,8 @@ export default function snp() {
                 .style("font-size", "10px")
                 .attr("transform", "rotate(-65) translate(-15,-10)");
 
-            // Add y-axis
-            svg.append("g")
-                .call(d3.axisLeft(y).tickSize(0).tickFormat(""))
-                .selectAll(".domain")
-                .attr("stroke", "#ddd");
+            svg.append("g").call(d3.axisLeft(y).tickSize(0).tickFormat("")).selectAll(".domain").attr("stroke", "#ddd");
 
-            // Add vertical line at x=0
             svg.append("line")
                 .attr("x1", x(0))
                 .attr("y1", 0)
@@ -395,13 +381,11 @@ export default function snp() {
                 .attr("stroke", "#000")
                 .attr("stroke-width", 1);
 
-            // Add points and confidence intervals
             validData.forEach(d => {
                 const beta = d.association.beta;
                 const se = d.association.se;
-                const yPos = y(d.trait_name) + y.bandwidth() / 2;
+                const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
 
-                // Add confidence interval line
                 svg.append("line")
                     .attr("x1", x(beta - 1.96 * se))
                     .attr("y1", yPos)
@@ -410,21 +394,19 @@ export default function snp() {
                     .attr("stroke", beta > 0 ? "#afe1af" : "#ee4b2b")
                     .attr("stroke-width", 2);
 
-                // Add point estimate
                 svg.append("circle")
                     .attr("cx", x(beta))
                     .attr("cy", yPos)
                     .attr("r", 4)
                     .attr("fill", beta > 0 ? "#afe1af" : "#ee4b2b");
 
-                // Add tooltip
-                svg.append("title")
-                    .text(`Beta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`);
+                svg.append("title").text(
+                    `Study ID: ${d.study_extraction_id}\nTrait: ${d.trait_name}\nBeta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`
+                );
             });
 
-            // Add axis labels
             svg.append("text")
-                .attr("transform", `translate(${width/2}, ${height + margin.bottom})`)
+                .attr("transform", `translate(${width / 2}, ${height + margin.bottom})`)
                 .style("text-anchor", "middle")
                 .style("font-size", "12px")
                 .text("Effect Size (Beta)");
@@ -436,28 +418,25 @@ export default function snp() {
             const width = document.getElementById("manhattan-plot").clientWidth;
             const originalSvgWidth = 1000;
             const height = 200;
-            const margin = {top: 30, right: 30, bottom: 50, left: 20};
+            const margin = { top: 30, right: 30, bottom: 50, left: 20 };
 
             const minBP = this.data.variant.min_bp / 1e6;
             const maxBP = this.data.variant.max_bp / 1e6;
 
-            // Set up scales
-            const x = d3.scaleLinear()
+            const x = d3
+                .scaleLinear()
                 .domain([minBP, maxBP])
                 .range([margin.left, width - margin.right]);
 
-            // Create SVG
-            const svg = d3.select("#manhattan-plot")
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height);
+            const svg = d3.select("#manhattan-plot").append("svg").attr("width", width).attr("height", height);
 
-            // Add axes
             svg.append("g")
                 .attr("transform", `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x)
-                    .ticks((maxBP - minBP) / 0.1) // one tick every 0.1 Mb
-                    .tickFormat(d3.format(".1f"))
+                .call(
+                    d3
+                        .axisBottom(x)
+                        .ticks((maxBP - minBP) / 0.1)
+                        .tickFormat(d3.format(".1f"))
                 );
             svg.append("text")
                 .attr("x", width / 2)
@@ -476,9 +455,8 @@ export default function snp() {
                 .attr("stroke", "red")
                 .attr("stroke-width", 0.8)
                 .attr("opacity", 0.8);
-            
 
-            this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }, i) => {
+            this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }) => {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(svgContent, "image/svg+xml");
                 let importedSvg = doc.documentElement;
@@ -490,18 +468,18 @@ export default function snp() {
                 importedSvg.setAttribute("viewBox", `0 0 ${originalSvgWidth} ${height}`);
 
                 if (this.highlightedStudy === studyExtractionId) {
-                    importedSvg.querySelectorAll('g, path').forEach(element => {
-                        element.removeAttribute('class');
-                        element.removeAttribute('style');
-                        element.setAttribute('fill', '#1976d2');
-                        element.setAttribute('stroke', '#1976d2');
-                        element.setAttribute('opacity', '0.9');
+                    importedSvg.querySelectorAll("g, path").forEach(element => {
+                        element.removeAttribute("class");
+                        element.removeAttribute("style");
+                        element.setAttribute("fill", "#1976d2");
+                        element.setAttribute("stroke", "#1976d2");
+                        element.setAttribute("opacity", "0.9");
                     });
                 } else {
-                    importedSvg.querySelectorAll('g, path').forEach(element => {
-                        element.removeAttribute('class');
-                        element.removeAttribute('style');
-                        element.setAttribute('opacity', '0.4');
+                    importedSvg.querySelectorAll("g, path").forEach(element => {
+                        element.removeAttribute("class");
+                        element.removeAttribute("style");
+                        element.setAttribute("opacity", "0.4");
                     });
                 }
                 let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -521,7 +499,8 @@ export default function snp() {
             });
 
             // Add and update the dynamic marker text
-            const markerTextElement = svg.append("text")
+            const markerTextElement = svg
+                .append("text")
                 .attr("id", "highlighted-marker")
                 .attr("x", margin.left)
                 .attr("y", margin.top)
@@ -539,7 +518,7 @@ export default function snp() {
                     markerTextElement.text(`${traitName}${pValueText}`);
 
                     const plotWidth = width - margin.left - margin.right;
-                    
+
                     // Truncate text if it overflows the plot width
                     while (markerTextElement.node().getBBox().width > plotWidth && traitName.length > 3) {
                         traitName = traitName.slice(0, -1);
@@ -547,6 +526,6 @@ export default function snp() {
                     }
                 }
             }
-        }
-    }
-} 
+        },
+    };
+}

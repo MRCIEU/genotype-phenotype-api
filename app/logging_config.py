@@ -11,6 +11,7 @@ settings = get_settings()
 log_dir = Path(settings.DATA_DIR, "logs")
 log_dir.mkdir(exist_ok=True, parents=True)
 
+
 def time_endpoint(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
@@ -23,7 +24,9 @@ def time_endpoint(func):
             execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
             # TODO I can't figure out how to get the execution time into the log (using bind or opt), so just logging it here for now
             logger.info(f"{func.__name__} completed {execution_time:.2f}ms")
+
     return wrapper
+
 
 class Formatter:
     def __init__(self):
@@ -48,11 +51,13 @@ def path_filter(record):
     try:
         exclude_paths = ["/health", "/favicon.ico"]
         return not any(path in record["message"] for path in exclude_paths)
-    except:
+    except Exception:
         return True
+
 
 def is_running_tests():
     return "pytest" in sys.modules
+
 
 # Remove default handlers
 logger.remove()
@@ -65,7 +70,7 @@ if not is_running_tests():
         level="DEBUG" if settings.DEBUG else "INFO",
         backtrace=True,
         diagnose=True,
-        serialize=False
+        serialize=False,
     )
 
 if not settings.DEBUG:
@@ -78,8 +83,9 @@ if not settings.DEBUG:
         level="INFO",
         backtrace=True,
         diagnose=True,
-        serialize=False
+        serialize=False,
     )
+
 
 class InterceptHandler(logging.Handler):
     def emit(self, record):
@@ -94,9 +100,8 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 # Configure standard library logging to use our handler
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
@@ -106,5 +111,6 @@ for name in logging.root.manager.loggerDict.keys():
     logging.getLogger(name).handlers = []
     logging.getLogger(name).propagate = True
 
+
 def get_logger(name):
-    return logger.bind(name=name) 
+    return logger.bind(name=name)

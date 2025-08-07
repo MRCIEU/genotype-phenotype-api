@@ -7,6 +7,7 @@ from app.models.schemas import ExtendedStudyExtraction
 
 settings = get_settings()
 
+
 class SummaryStatService:
     def __init__(self):
         self.summary_stats_dir = settings.SUMMARY_STATS_DIR

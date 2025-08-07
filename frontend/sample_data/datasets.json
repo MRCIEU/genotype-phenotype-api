@@ -1,22 +1,22 @@
 {
-  "datasets": [
-    {
-      "name": "Open GWAS",
-      "source": "https://gwas.mrcieu.ac.uk/datasets/?gwas_id__icontains=ebi-a",
-      "type": "Phenotype",
-      "number_of_studies": 2500
-    },
-    {
-      "name": "GTEx eQTL",
-      "source": "https://www.gtexportal.org/home/downloads/adult-gtex/qtl",
-      "type": "Gene Expression",
-      "number_of_studies": 82344
-    },
-    {
-      "name": "GTEx sQTL",
-      "source": "https://www.gtexportal.org/home/downloads/adult-gtex/qtl",
-      "type": "Splice Variant",
-      "number_of_studies": 82344
-    }
-  ]
+    "datasets": [
+        {
+            "name": "Open GWAS",
+            "source": "https://gwas.mrcieu.ac.uk/datasets/?gwas_id__icontains=ebi-a",
+            "type": "Phenotype",
+            "number_of_studies": 2500
+        },
+        {
+            "name": "GTEx eQTL",
+            "source": "https://www.gtexportal.org/home/downloads/adult-gtex/qtl",
+            "type": "Gene Expression",
+            "number_of_studies": 82344
+        },
+        {
+            "name": "GTEx sQTL",
+            "source": "https://www.gtexportal.org/home/downloads/adult-gtex/qtl",
+            "type": "Splice Variant",
+            "number_of_studies": 82344
+        }
+    ]
 }

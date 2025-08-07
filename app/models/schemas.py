@@ -4,12 +4,15 @@ import json
 from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional, Union
 
+
 class Singleton(type):
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
+
 
 class StudyDataType(Enum):
     splice_variant = "Splice Variant"
@@ -18,10 +21,17 @@ class StudyDataType(Enum):
     protein = "Protein"
     phenotype = "Phenotype"
 
+
 class VariantType(Enum):
     common = "Common"
     rare_exome = "Rare Exome"
     rare_wgs = "Rare WGS"
+
+
+class ColocGroupThreshold(Enum):
+    strong = "Strong"
+    moderate = "Moderate"
+
 
 class StudySource(BaseModel):
     id: int
@@ -29,6 +39,7 @@ class StudySource(BaseModel):
     name: str
     url: str
     doi: str
+
 
 class Association(BaseModel):
     snp_id: int
@@ -39,23 +50,29 @@ class Association(BaseModel):
     eaf: float
     imputed: bool
 
-class Coloc(BaseModel):
+
+class ColocPair(BaseModel):
+    study_extraction_a_id: int
+    study_extraction_b_id: int
+    ld_block_id: int
+    h3: float
+    h4: float
+    spurious: bool
+
+
+class ColocGroup(BaseModel):
+    coloc_group_id: int
+    study_id: int
     study_extraction_id: int
     snp_id: int
     ld_block_id: int
-    coloc_group_id: int
-    iteration: int
-    unique_study_id: str
-    posterior_prob: float
-    regional_prob: float
-    posterior_explained_by_snp: float
-    candidate_snp: str
-    study_id: int
+    group_threshold: str
     chr: Optional[int] = None
     bp: Optional[int] = None
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
+    display_snp: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
@@ -68,6 +85,7 @@ class Coloc(BaseModel):
     def validate_data_type(cls, v):
         return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
+
 class LdBlock(BaseModel):
     id: int
     chr: int
@@ -76,11 +94,13 @@ class LdBlock(BaseModel):
     ancestry: str
     ld_block: str
 
+
 class Ld(BaseModel):
     lead_snp_id: int
     variant_snp_id: int
     ld_block_id: int
     r: float
+
 
 class Gene(BaseModel):
     id: int
@@ -88,21 +108,24 @@ class Gene(BaseModel):
     gene: str
     description: Optional[str] = None
     gene_biotype: Optional[str] = None
-    chr: int 
+    chr: int
     start: int
     stop: int
     strand: int
     source: Optional[str] = None
     genes_in_region: Optional[List[Gene]] = None
 
+
 class GeneMetadata(BaseModel):
     symbol: str
-    chr: int 
+    chr: int
     min_bp: int
     max_bp: int
 
-class ExtendedColoc(Coloc):
+
+class ExtendedColocGroup(ColocGroup):
     association: Optional[Association] = None
+
 
 class Trait(BaseModel):
     id: int
@@ -116,6 +139,7 @@ class Trait(BaseModel):
     @field_validator("data_type")
     def validate_data_type(cls, v):
         return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
+
 
 class BasicTraitResponse(BaseModel):
     id: int
@@ -136,30 +160,31 @@ class BasicTraitResponse(BaseModel):
     def validate_variant_type(cls, v):
         return VariantType[v].value if enum_has_member(VariantType, v) else v
 
+
 class GetTraitsResponse(BaseModel):
     traits: List[BasicTraitResponse]
+
 
 class GetStudySourcesResponse(BaseModel):
     sources: List[StudySource]
 
+
 class Study(BaseModel):
     id: int
     data_type: str
-    data_format: str
     study_name: str
     trait_id: int
     ancestry: Optional[str] = None
     sample_size: Optional[int] = None
     category: Optional[str] = None
-    study_location: str
-    extracted_location: str
     probe: Optional[str] = None
     tissue: Optional[str] = None
     source_id: Optional[int] = None
     variant_type: Optional[str] = None
     p_value_threshold: float
-    gene: Optional[str] = None
     gene_id: Optional[int] = None
+    gene: Optional[str] = None
+    ensg: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -168,6 +193,7 @@ class Study(BaseModel):
     @field_validator("variant_type")
     def validate_variant_type(cls, v):
         return VariantType[v].value if enum_has_member(VariantType, v) else v
+
 
 class StudyExtraction(BaseModel):
     id: int
@@ -178,7 +204,9 @@ class StudyExtraction(BaseModel):
     unique_study_id: str
     study: str
     file: str
-    chr: int 
+    svg_file: Optional[str] = None
+    file_with_lbfs: Optional[str] = None
+    chr: int
     bp: int
     min_p: float
     cis_trans: Optional[str] = None
@@ -186,6 +214,7 @@ class StudyExtraction(BaseModel):
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
+
 
 class ExtendedStudyExtraction(StudyExtraction):
     trait_name: str
@@ -197,23 +226,28 @@ class ExtendedStudyExtraction(StudyExtraction):
     def validate_data_type(cls, v):
         return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
+
 class SearchTerm(BaseModel):
     type: str
     name: Optional[str] = None
+    alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
+    num_extractions: Optional[int] = None
+    num_coloc_groups: Optional[int] = None
+    num_coloc_studies: Optional[int] = None
+    num_rare_results: Optional[int] = None
+
 
 class RareResult(BaseModel):
     rare_result_group_id: int
+    study_id: int
     study_extraction_id: int
     snp_id: int
     ld_block_id: int
-    unique_study_id: str
-    candidate_snp: str
-    study_id: int
-    file: str
     chr: int
     bp: int
     min_p: float
+    display_snp: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
@@ -227,16 +261,21 @@ class RareResult(BaseModel):
     def validate_data_type(cls, v):
         return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
+
 class ExtendedRareResult(RareResult):
     association: Optional[Association] = None
+
 
 class Variant(BaseModel):
     id: int
     snp: str
+    display_snp: str
     chr: int
     bp: int
     ea: str
     oa: str
+    ref_allele: str
+    flipped: bool
     gene_id: Optional[int] = None
     gene: str
     feature_type: str
@@ -260,60 +299,76 @@ class Variant(BaseModel):
     sas_af: Optional[float] = None
     associations: Optional[List[Association]] = None
 
+
 class ExtendedVariant(Variant):
     num_colocs: Optional[int] = None
-    num_rare_variants: Optional[int] = None
+    coloc_groups: Optional[List[ColocGroup]] = None
+    num_rare_results: Optional[int] = None
+    rare_results: Optional[List[RareResult]] = None
     ld_proxies: Optional[List[Ld]] = None
+
 
 class GetGenesResponse(BaseModel):
     genes: List[Gene]
 
+
 class GeneResponse(BaseModel):
     gene: Gene
-    colocs: List[Coloc]
+    coloc_groups: List[ColocGroup]
+    coloc_pairs: Optional[List[ColocPair]] = None
     rare_results: List[RareResult]
     variants: List[Variant]
     study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
+
 
 class RegionResponse(BaseModel):
     region: LdBlock
-    genes_in_region: List[Gene] 
-    colocs: List[Coloc]
+    genes_in_region: List[Gene]
+    coloc_groups: List[ColocGroup]
     rare_results: List[RareResult]
     variants: List[Variant]
     tissues: List[str]
 
+
 class VariantResponse(BaseModel):
     variant: Variant
-    colocs: List[ExtendedColoc]
+    coloc_groups: List[ExtendedColocGroup]
+    coloc_pairs: Optional[List[ColocPair]] = None
     rare_results: List[ExtendedRareResult]
     study_extractions: List[ExtendedStudyExtraction]
 
+
 class VariantSummaryStatsResponse(BaseModel):
     variant: Variant
+
 
 class VariantSearchResponse(BaseModel):
     original_variants: List[ExtendedVariant]
     proxy_variants: List[ExtendedVariant]
 
+
 class TraitResponse(BaseModel):
     trait: Trait | GwasUpload
-    colocs: Optional[List[Coloc]] | Optional[List[ExtendedUploadColoc]] = None
+    coloc_groups: Optional[List[ColocGroup]] | Optional[List[ExtendedUploadColocGroup]] = None
+    coloc_pairs: Optional[List[ColocPair]] = None
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
     associations: Optional[List[Association]] = None
+
 
 class GwasStatus(Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
 
+
 class ContactRequest(BaseModel):
     email: str
     reason: str
     message: str
+
 
 class ProcessGwasRequest(BaseModel):
     guid: Optional[str] = None
@@ -334,11 +389,14 @@ class ProcessGwasRequest(BaseModel):
     def to_py_dict(cls, data):
         return json.loads(data)
 
+
 class UpdateGwasRequest(BaseModel):
     success: bool
     failure_reason: Optional[str] = None
-    coloc_results: Optional[List[UploadColoc]] = None
+    coloc_pairs: Optional[List[UploadColocPair]] = None
+    coloc_groups: Optional[List[UploadColocGroup]] = None
     study_extractions: Optional[List[UploadStudyExtraction]] = None
+
 
 class GwasColumnNames(BaseModel):
     SNP: Optional[str] = None
@@ -353,10 +411,12 @@ class GwasColumnNames(BaseModel):
     SE: Optional[str] = None
     EAF: Optional[str] = None
 
+
 class GwasState(BaseModel):
     guid: str
     state: Optional[GwasStatus] = None
     message: Optional[str] = None
+
 
 class GwasUpload(BaseModel):
     id: int
@@ -370,6 +430,7 @@ class GwasUpload(BaseModel):
     doi: str
     should_be_added: bool
     status: GwasStatus
+
 
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None
@@ -387,12 +448,10 @@ class UploadStudyExtraction(BaseModel):
     ld_block: Optional[str] = None
     gene: Optional[str] = None
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
 
 
-class UploadColoc(BaseModel):
+class UploadColocGroup(BaseModel):
     gwas_upload_id: Optional[int] = None
     upload_study_extraction_id: Optional[int] = None
     existing_study_extraction_id: Optional[int] = None
@@ -404,7 +463,7 @@ class UploadColoc(BaseModel):
     posterior_prob: Optional[float] = None
     regional_prob: Optional[float] = None
     posterior_explained_by_snp: Optional[float] = None
-    candidate_snp: Optional[str] = None
+    display_snp: Optional[str] = None
     study_id: Optional[int] = None
     chr: Optional[int] = None
     bp: Optional[int] = None
@@ -414,11 +473,23 @@ class UploadColoc(BaseModel):
     gene: Optional[str] = None
     gene_id: Optional[int] = None
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
 
-class ExtendedUploadColoc(UploadColoc):
+
+class UploadColocPair(BaseModel):
+    gwas_upload_id: Optional[int] = None
+    existing_study_extraction_id: Optional[int] = None
+    snp_id: Optional[int] = None
+    ld_block_id: Optional[int] = None
+    coloc_group_id: Optional[int] = None
+    study_extraction_a_id: int
+    study_extraction_b_id: int
+    ld_block_id: int
+    h3: float
+    h4: float
+
+
+class ExtendedUploadColocGroup(UploadColocGroup):
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
@@ -429,26 +500,26 @@ class ExtendedUploadColoc(UploadColoc):
     def validate_data_type(cls, v):
         return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
+
 class GPMapMetadata(BaseModel):
     num_common_studies: int
     num_rare_studies: int
     num_molecular_studies: int
     num_coloc_groups: int
     num_causal_variants: int
-    
 
-def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple], tuple]) -> Union[List[BaseModel], BaseModel]:
+
+def convert_duckdb_to_pydantic_model(
+    model: BaseModel, results: Union[List[tuple], tuple]
+) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):
-        if len(results) == 0: return []
+        if len(results) == 0:
+            return []
         converted = []
         for row in results:
             if row and not all(v is None for v in row):
-                model_dict = {
-                    field: row[idx] 
-                    for idx, field in enumerate(model.model_fields.keys())
-                    if idx < len(row)
-                }
+                model_dict = {field: row[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(row)}
                 converted.append(model(**model_dict))
             else:
                 converted.append(None)
@@ -457,15 +528,13 @@ def convert_duckdb_to_pydantic_model(model: BaseModel, results: Union[List[tuple
     # Handle single tuple case
     elif isinstance(results, tuple):
         if results and not all(v is None for v in results):
-            return model(**{
-                field: results[idx] 
-                for idx, field in enumerate(model.model_fields.keys())
-                if idx < len(results)
-            })
+            return model(
+                **{field: results[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(results)}
+            )
         return None
     else:
         raise ValueError("Results must be a list of tuples or a single tuple.")
 
+
 def enum_has_member(enum_class, key: str) -> bool:
     return key in enum_class.__members__
-
