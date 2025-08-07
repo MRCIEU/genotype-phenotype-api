@@ -171,8 +171,8 @@ export default function pheontype() {
                 traitId = minP < 1e-10 ? "gwas" : "short_gwas";
             }
 
-            const metadataUrl = `${constants.assetBaseUrl}/${traitId}_metadata.json`;
-            const svgsUrl = `${constants.assetBaseUrl}/${traitId}_svgs.zip`;
+            const metadataUrl = `${constants.assetBaseUrl}/traits/${traitId}_metadata.json`;
+            const svgsUrl = `${constants.assetBaseUrl}/traits/${traitId}_svgs.zip`;
 
             const response = await fetch(metadataUrl);
             if (!response.ok) {

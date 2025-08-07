@@ -33,7 +33,6 @@ export default function snp() {
                 this.data = await response.json();
 
                 document.title = "GP Map: " + this.getSNPName();
-                await this.getSvgData(variantId);
 
                 this.data.coloc_groups = this.data.coloc_groups.map(coloc => ({
                     ...coloc,
@@ -41,6 +40,8 @@ export default function snp() {
                     cis_trans: coloc.cis_trans ? coloc.cis_trans : "N/A",
                 }));
                 this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
+                const colocGroupId = this.data.coloc_groups[0].coloc_group_id;
+                await this.getSvgData(colocGroupId);
 
                 const ld_block = this.data.coloc_groups[0].ld_block;
                 const ld_info = ld_block.split(/[/-]/);
@@ -51,11 +52,11 @@ export default function snp() {
             }
         },
 
-        async getSvgData(variantId) {
+        async getSvgData(colocGroupId) {
             if (constants.isLocal) {
-                variantId = "test";
+                colocGroupId = "test";
             }
-            const svgsUrl = `${constants.assetBaseUrl}/snp_${variantId}_svgs.zip`;
+            const svgsUrl = `${constants.assetBaseUrl}/groups/coloc_group_${colocGroupId}_svgs.zip`;
             const zipResponse = await fetch(svgsUrl);
             const zipBlob = await zipResponse.blob();
             const zip = await JSZip.loadAsync(zipBlob);

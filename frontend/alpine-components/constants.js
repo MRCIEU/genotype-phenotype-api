@@ -7,7 +7,7 @@ export default {
     assetBaseUrl:
         import.meta.env.MODE === "development" || !import.meta.env.PROD
             ? "/assets/images/"
-            : "https://gpmap.opengwas.io/assets",
+            : "https://gpmap.opengwas.io/static/svgs",
     maxBpPerChr: {
         1: 249250621,
         2: 243199373,
