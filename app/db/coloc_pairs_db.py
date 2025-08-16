@@ -20,12 +20,31 @@ class ColocPairsDBClient:
     def __init__(self):
         self.coloc_pairs_conn = get_coloc_pairs_db_connection()
 
-    def _fetch_coloc_pairs(self, condition: str):
+    @log_performance
+    def get_coloc_pairs_for_study(
+        self,
+        study_extraction_ids_of_study: List[int],
+        other_study_extraction_ids: List[int],
+        h3_threshold: float = 0.0,
+        h4_threshold: float = 0.8,
+    ):
+        study_extraction_ids_of_study = ",".join(f"{study_id}" for study_id in study_extraction_ids_of_study)
+        other_study_extraction_ids = ",".join(f"{study_id}" for study_id in other_study_extraction_ids)
         query = f"""
-            SELECT * FROM coloc_pairs WHERE {condition}
+            SELECT * FROM (
+                SELECT * FROM coloc_pairs
+                WHERE study_extraction_a_id IN ({study_extraction_ids_of_study})
+                    OR study_extraction_b_id IN ({study_extraction_ids_of_study})
+                    AND h4 >= {h4_threshold}
+                    AND h3 >= {h3_threshold}
+            )
+            WHERE study_extraction_a_id IN ({other_study_extraction_ids})
+                OR study_extraction_b_id IN ({other_study_extraction_ids})
+                AND h4 >= {h4_threshold}
+                AND h3 >= {h3_threshold}
         """
         return self.coloc_pairs_conn.execute(query).fetchall()
-
+    
     @log_performance
     def get_coloc_pairs_for_study_extraction_matches(
         self,
@@ -38,9 +57,9 @@ class ColocPairsDBClient:
 
         formatted_study_extraction_ids = ",".join(f"{study_id}" for study_id in study_extraction_ids)
 
-        # Most performant approach: Use IN clauses to find all pairs where both IDs are in our list
-        return self._fetch_coloc_pairs(f"""
-            study_extraction_a_id IN ({formatted_study_extraction_ids}) 
+        return self.coloc_pairs_conn.execute(f"""
+            SELECT * FROM coloc_pairs
+            WHERE study_extraction_a_id IN ({formatted_study_extraction_ids}) 
             AND study_extraction_b_id IN ({formatted_study_extraction_ids})
             AND h4 >= {h4_threshold} AND h3 >= {h3_threshold}
         """)

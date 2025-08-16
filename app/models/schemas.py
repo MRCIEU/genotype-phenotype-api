@@ -80,6 +80,8 @@ class ColocGroup(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+    source_id: int
+    source_name: str
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -320,6 +322,7 @@ class GeneResponse(BaseModel):
     variants: List[Variant]
     study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
+    associations: Optional[List[Association]] = None
 
 
 class RegionResponse(BaseModel):
@@ -329,6 +332,7 @@ class RegionResponse(BaseModel):
     rare_results: List[RareResult]
     variants: List[Variant]
     tissues: List[str]
+    associations: Optional[List[Association]] = None
 
 
 class VariantResponse(BaseModel):
@@ -337,6 +341,7 @@ class VariantResponse(BaseModel):
     coloc_pairs: Optional[List[ColocPair]] = None
     rare_results: List[ExtendedRareResult]
     study_extractions: List[ExtendedStudyExtraction]
+    associations: Optional[List[Association]] = None
 
 
 class VariantSummaryStatsResponse(BaseModel):

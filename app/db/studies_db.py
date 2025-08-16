@@ -80,18 +80,24 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     def _fetch_colocs(self, condition: str):
-        # TODO: Remove this once we filter colocs when creating the db
         query = f"""
             SELECT coloc_groups.*, 
             study_extractions.chr, study_extractions.bp, study_extractions.min_p, study_extractions.cis_trans,
             study_extractions.ld_block, snp_annotations.display_snp, study_extractions.gene, study_extractions.gene_id,
-            traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue 
+            traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue,
+            study_sources.id as source_id, study_sources.name as source_name
             FROM coloc_groups 
             JOIN studies ON coloc_groups.study_id = studies.id
             JOIN snp_annotations on coloc_groups.snp_id = snp_annotations.id 
             JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE coloc_groups.coloc_group_id IN (SELECT DISTINCT coloc_group_id FROM coloc_groups WHERE {condition})
+            JOIN study_sources ON studies.source_id = study_sources.id
+            WHERE coloc_groups.coloc_group_id IN (
+                SELECT DISTINCT coloc_group_id
+                FROM coloc_groups
+                JOIN study_extractions on coloc_groups.study_extraction_id = study_extractions.id
+                WHERE {condition}
+            );
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -138,29 +144,29 @@ class StudiesDBClient:
 
     @log_performance
     def get_colocs_for_variant(self, snp_id: int):
-        return self._fetch_colocs(f"snp_id = {snp_id}")
+        return self._fetch_colocs(f"coloc_groups.snp_id = {snp_id}")
 
     @log_performance
     def get_colocs_for_variants(self, snp_ids: List[int]):
         formatted_snp_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
-        return self._fetch_colocs(f"snp_id IN ({formatted_snp_ids})")
+        return self._fetch_colocs(f"coloc_groups.snp_id IN ({formatted_snp_ids})")
 
     @log_performance
-    def get_all_colocs_for_gene(self, symbol: str):
-        return self._fetch_colocs(f"studies.gene = '{symbol}' AND study_extractions.cis_trans = 'cis'")
+    def get_all_colocs_for_gene(self, gene_id: int):
+        return self._fetch_colocs(f"study_extractions.gene_id = {gene_id} AND study_extractions.cis_trans = 'cis'")
 
     @log_performance
     def get_all_colocs_for_ld_block(self, ld_block_id: int):
-        return self._fetch_colocs(f"ld_block_id = {ld_block_id}")
+        return self._fetch_colocs(f"coloc_groups.ld_block_id = {ld_block_id}")
 
     @log_performance
     def get_all_colocs_for_study(self, study_id: str):
-        return self._fetch_colocs(f"study_id = '{study_id}'")
+        return self._fetch_colocs(f"coloc_groups.study_id = '{study_id}'")
 
     @log_performance
     def get_all_colocs_for_study_extraction_ids(self, study_extraction_ids: List[int]):
         formatted_ids = ",".join(f"{id}" for id in study_extraction_ids)
-        return self._fetch_colocs(f"study_extraction_id IN ({formatted_ids})")
+        return self._fetch_colocs(f"coloc_groups.study_extraction_id IN ({formatted_ids})")
 
     def _fetch_rare_results(self, condition: str):
         query = f"""
@@ -173,7 +179,12 @@ class StudiesDBClient:
             JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
             JOIN traits ON studies.trait_id = traits.id
             JOIN ld_blocks ON rare_results.ld_block_id = ld_blocks.id
-            WHERE rare_results.rare_result_group_id IN (SELECT DISTINCT rare_result_group_id FROM rare_results WHERE {condition})
+            WHERE rare_results.rare_result_group_id IN (
+                SELECT DISTINCT rare_result_group_id
+                FROM rare_results
+                JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
+                WHERE {condition}
+            )
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -189,27 +200,27 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_rare_results_for_gene(self, symbol: str):
-        return self._fetch_rare_results(f"studies.gene = '{symbol}'")
+    def get_rare_results_for_gene(self, gene_id: int):
+        return self._fetch_rare_results(f"study_extractions.gene_id = {gene_id}")
 
     @log_performance
     def get_rare_results_for_study_extraction_ids(self, study_extraction_ids: List[int]):
         formatted_ids = ",".join(f"{id}" for id in study_extraction_ids)
-        return self._fetch_rare_results(f"study_extraction_id IN ({formatted_ids})")
+        return self._fetch_rare_results(f"rare_results.study_extraction_id IN ({formatted_ids})")
 
     @log_performance
     def get_rare_results_for_variants(self, snp_ids: List[int]):
         formatted_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
-        return self._fetch_rare_results(f"snp_id IN ({formatted_ids})")
+        return self._fetch_rare_results(f"rare_results.snp_id IN ({formatted_ids})")
 
     @log_performance
     def get_rare_results_for_study_ids(self, study_ids: List[int]):
         formatted_ids = ",".join(f"{id}" for id in study_ids)
-        return self._fetch_rare_results(f"study_id IN ({formatted_ids})")
+        return self._fetch_rare_results(f"rare_results.study_id IN ({formatted_ids})")
 
     @log_performance
     def get_rare_results_for_ld_block(self, ld_block_id: int):
-        return self._fetch_rare_results(f"ld_block_id = {ld_block_id}")
+        return self._fetch_rare_results(f"rare_results.ld_block_id = {ld_block_id}")
 
     @log_performance
     def get_trait_names_for_search(self):
@@ -338,16 +349,16 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, symbol: str):
+    def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, gene_id: int):
         return self.studies_conn.execute(
             """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
             WHERE (study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ?)
-               OR (study_extractions.gene = ? AND study_extractions.cis_trans = 'cis')
+               OR (study_extractions.gene_id = ? AND study_extractions.cis_trans = 'cis')
             """,
-            (chr, bp_start, bp_end, symbol),
+            (chr, bp_start, bp_end, gene_id),
         ).fetchall()
 
     @log_performance
