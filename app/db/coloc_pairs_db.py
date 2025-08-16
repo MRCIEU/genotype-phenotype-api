@@ -57,9 +57,11 @@ class ColocPairsDBClient:
 
         formatted_study_extraction_ids = ",".join(f"{study_id}" for study_id in study_extraction_ids)
 
-        return self.coloc_pairs_conn.execute(f"""
+        query = f"""
             SELECT * FROM coloc_pairs
             WHERE study_extraction_a_id IN ({formatted_study_extraction_ids}) 
             AND study_extraction_b_id IN ({formatted_study_extraction_ids})
             AND h4 >= {h4_threshold} AND h3 >= {h3_threshold}
-        """)
+        """
+
+        return self.coloc_pairs_conn.execute(query).fetchall()
