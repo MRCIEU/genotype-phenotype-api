@@ -170,7 +170,7 @@ export default {
                 studies,
                 variant: variant,
                 bp: variant ? variant.bp / 1000000 : 0,
-            }
+            };
         });
 
         const xScale = d3.scaleLinear().domain([this.minMbp, this.maxMbp]).nice().range([0, innerWidth]);
