@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
+    Association,
     Gene,
     ExtendedStudyExtraction,
     ColocGroup,
@@ -39,6 +40,7 @@ async def get_genes() -> GetGenesResponse:
 @time_endpoint
 async def get_gene(
     gene_identifier: str = Path(..., description="Gene Symbol or ID"),
+    include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
     include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> GeneResponse:
@@ -71,31 +73,32 @@ async def get_gene(
         ]
         gene.genes_in_region = genes_in_region
 
-        study_extractions = studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.gene)
+        study_extractions = studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.id)
         if study_extractions is not None:
             study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
             study_extraction_ids = [s.id for s in study_extractions]
 
         region_colocs = studies_db.get_all_colocs_for_study_extraction_ids(study_extraction_ids)
-        gene_colocs = studies_db.get_all_colocs_for_gene(gene.gene)
-        coloc_groups = region_colocs + gene_colocs
-        if coloc_groups is not None:
-            coloc_groups = convert_duckdb_to_pydantic_model(ColocGroup, coloc_groups)
-            study_extraction_ids = [coloc.study_extraction_id for coloc in coloc_groups]
+        gene_colocs = studies_db.get_all_colocs_for_gene(gene.id)
+        coloc_groups = (region_colocs or []) + (gene_colocs or [])
+        coloc_groups = list(set(coloc_groups)) if coloc_groups else []
 
-            snp_ids = [coloc.snp_id for coloc in coloc_groups]
-            variants = studies_db.get_variants(snp_ids=snp_ids)
-            variants = convert_duckdb_to_pydantic_model(Variant, variants)
-        else:
-            variants = []
+        associations = None
+        if include_associations:
+            study_ids = [coloc.study_id for coloc in coloc_groups] + [s.study_id for s in study_extractions]
+            snp_ids = [coloc.snp_id for coloc in coloc_groups] + [s.snp_id for s in study_extractions]
+            associations = studies_db.get_associations(snp_ids=snp_ids, study_ids=study_ids)
+            associations = convert_duckdb_to_pydantic_model(Association, associations)
 
         study_rare_results = studies_db.get_rare_results_for_study_extraction_ids(study_extraction_ids)
-        gene_rare_results = studies_db.get_rare_results_for_gene(gene.gene)
-        rare_results = study_rare_results + gene_rare_results
-        # TODO: Remove this once we have fixed the rare results in the pipeline
-        rare_results = [r for r in rare_results if r[2] is not None]
+
+        gene_rare_results = studies_db.get_rare_results_for_gene(gene.id)
+        rare_results = list(set(study_rare_results + gene_rare_results))
+
         if rare_results is not None:
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
+        if coloc_groups is not None:
+            coloc_groups = convert_duckdb_to_pydantic_model(ColocGroup, coloc_groups)
 
         coloc_pairs = None
         if include_coloc_pairs:
@@ -109,6 +112,16 @@ async def get_gene(
             )
             coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
 
+        variants = None
+        if rare_results or coloc_groups or study_extractions:
+            snp_ids = (
+                [coloc.snp_id for coloc in (coloc_groups or [])]
+                + [rare_result.snp_id for rare_result in (rare_results or [])]
+                + [study_extraction.snp_id for study_extraction in (study_extractions or [])]
+            )
+            variants = studies_db.get_variants(snp_ids=snp_ids)
+            variants = convert_duckdb_to_pydantic_model(Variant, variants)
+
         return GeneResponse(
             tissues=tissues,
             gene=gene,
@@ -116,6 +129,7 @@ async def get_gene(
             coloc_pairs=coloc_pairs,
             variants=variants,
             study_extractions=study_extractions,
+            associations=associations,
             rare_results=rare_results,
         )
     except HTTPException as e:

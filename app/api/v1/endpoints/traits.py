@@ -85,7 +85,7 @@ async def get_trait(
 
         associations = None
         if include_associations:
-            snp_ids = [s.snp_id for s in study_extractions]
+            snp_ids = [s.snp_id for s in study_extractions] + [coloc.snp_id for coloc in colocs]
             study_ids = [trait.common_study.id]
             if trait.rare_study is not None:
                 study_ids.append(trait.rare_study.id)

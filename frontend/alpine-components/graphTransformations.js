@@ -118,7 +118,7 @@ export default {
 
     getTooltip(content, event) {
         // If the tooltip would overflow the right edge, expand left
-        // We need to allow the DOM to update so we can measure the tooltip
+        // We need to allow the DOM to update so we can measure the tooltip, hence the setTimeout
         const tooltip = d3
             .select("body")
             .append("div")
@@ -163,12 +163,15 @@ export default {
         };
         const innerWidth = graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
 
-        const snpGroups = Object.entries(this.filteredData.groupedResults).map(([snp, studies]) => ({
-            snp,
-            studies,
-            variant: this.data.variants.find(variant => variant.display_snp === snp),
-            bp: this.data.variants.find(variant => variant.display_snp === snp).bp / 1000000,
-        }));
+        const snpGroups = Object.entries(this.filteredData.groupedResults).map(([snp, studies]) => {
+            const variant = this.data.variants.find(variant => variant.display_snp === snp);
+            return {
+                snp,
+                studies,
+                variant: variant,
+                bp: variant ? variant.bp / 1000000 : 0,
+            };
+        });
 
         const xScale = d3.scaleLinear().domain([this.minMbp, this.maxMbp]).nice().range([0, innerWidth]);
 
