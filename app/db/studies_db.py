@@ -28,10 +28,12 @@ class StudiesDBClient:
         """
         return self.studies_conn.execute(query).fetchall()
 
+    @log_performance
     def get_trait(self, trait_id: str):
-        query = f"SELECT * FROM traits WHERE id = '{trait_id}'"
-        return self.studies_conn.execute(query).fetchone()
+        query = "SELECT * FROM traits WHERE id = ?"
+        return self.studies_conn.execute(query, [trait_id]).fetchone()
 
+    @log_performance
     def get_study_sources(self):
         query = "SELECT * FROM study_sources"
         return self.studies_conn.execute(query).fetchall()
@@ -47,39 +49,44 @@ class StudiesDBClient:
 
         return self.studies_conn.execute(query).fetchall()
 
+    @log_performance
     def get_studies(self, limit: int = None):
-        if limit is None:
-            query = "SELECT * FROM studies"
-        else:
-            query = f"SELECT * FROM studies LIMIT {limit}"
-
-        return self.studies_conn.execute(query).fetchall()
+        query = "SELECT * FROM studies LIMIT ?"
+        return self.studies_conn.execute(query, [limit]).fetchall()
 
     @log_performance
     def get_study(self, study_id: str):
-        query = f"SELECT * FROM studies WHERE id = '{study_id}'"
-        return self.studies_conn.execute(query).fetchone()
+        query = "SELECT * FROM studies WHERE id = ?"
+        return self.studies_conn.execute(query, [study_id]).fetchone()
 
     @log_performance
     def get_studies_by_trait_id(self, trait_id: str):
-        query = f"SELECT * FROM studies WHERE trait_id = '{trait_id}'"
-        return self.studies_conn.execute(query).fetchall()
+        query = "SELECT * FROM studies WHERE trait_id = ?"
+        return self.studies_conn.execute(query, [trait_id]).fetchall()
 
     @log_performance
     def get_studies_by_id(self, study_ids: List[int]):
-        formatted_ids = ",".join(f"({i}, {id if id is not None else 'NULL'})" for i, id in enumerate(study_ids))
+        if not study_ids:
+            return []
+        
+        placeholders = ",".join(["(?, ?)" for _ in study_ids])
         query = f"""
             WITH input_studies AS (
-                SELECT * FROM (VALUES {formatted_ids}) as t(row_num, id)
+                SELECT * FROM (VALUES {placeholders}) as t(row_num, id)
             )
             SELECT studies.*
             FROM input_studies
             LEFT JOIN studies ON COALESCE(input_studies.id, -1) = COALESCE(studies.id, -1)
             ORDER BY input_studies.row_num
         """
-        return self.studies_conn.execute(query).fetchall()
+        
+        params = []
+        for i, study_id in enumerate(study_ids):
+            params.extend([i, study_id])
+        
+        return self.studies_conn.execute(query, params).fetchall()
 
-    def _fetch_colocs(self, condition: str):
+    def _fetch_colocs(self, condition: str, params: List = None):
         query = f"""
             SELECT coloc_groups.*, 
             study_extractions.chr, study_extractions.bp, study_extractions.min_p, study_extractions.cis_trans,
@@ -99,6 +106,8 @@ class StudiesDBClient:
                 WHERE {condition}
             );
         """
+        if params:
+            return self.studies_conn.execute(query, params).fetchall()
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
@@ -144,31 +153,37 @@ class StudiesDBClient:
 
     @log_performance
     def get_colocs_for_variant(self, snp_id: int):
-        return self._fetch_colocs(f"coloc_groups.snp_id = {snp_id}")
+        return self._fetch_colocs("coloc_groups.snp_id = ?", [snp_id])
 
     @log_performance
     def get_colocs_for_variants(self, snp_ids: List[int]):
-        formatted_snp_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
-        return self._fetch_colocs(f"coloc_groups.snp_id IN ({formatted_snp_ids})")
+        if not snp_ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in snp_ids])
+        return self._fetch_colocs(f"coloc_groups.snp_id IN ({placeholders})", snp_ids)
 
     @log_performance
     def get_all_colocs_for_gene(self, gene_id: int):
-        return self._fetch_colocs(f"study_extractions.gene_id = {gene_id} AND study_extractions.cis_trans = 'cis'")
+        return self._fetch_colocs("study_extractions.gene_id = ? AND study_extractions.cis_trans = 'cis'", [gene_id])
 
     @log_performance
     def get_all_colocs_for_ld_block(self, ld_block_id: int):
-        return self._fetch_colocs(f"coloc_groups.ld_block_id = {ld_block_id}")
+        return self._fetch_colocs("coloc_groups.ld_block_id = ?", [ld_block_id])
 
     @log_performance
     def get_all_colocs_for_study(self, study_id: str):
-        return self._fetch_colocs(f"coloc_groups.study_id = '{study_id}'")
+        return self._fetch_colocs("coloc_groups.study_id = ?", [study_id])
 
     @log_performance
     def get_all_colocs_for_study_extraction_ids(self, study_extraction_ids: List[int]):
-        formatted_ids = ",".join(f"{id}" for id in study_extraction_ids)
-        return self._fetch_colocs(f"coloc_groups.study_extraction_id IN ({formatted_ids})")
+        if not study_extraction_ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in study_extraction_ids])
+        return self._fetch_colocs(f"coloc_groups.study_extraction_id IN ({placeholders})", study_extraction_ids)
 
-    def _fetch_rare_results(self, condition: str):
+    def _fetch_rare_results(self, condition: str, params: List = None):
         query = f"""
             SELECT rare_results.*,
             study_extractions.chr, study_extractions.bp, study_extractions.min_p, snp_annotations.display_snp, study_extractions.gene, study_extractions.gene_id,
@@ -186,6 +201,8 @@ class StudiesDBClient:
                 WHERE {condition}
             )
         """
+        if params:
+            return self.studies_conn.execute(query, params).fetchall()
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
@@ -201,26 +218,35 @@ class StudiesDBClient:
 
     @log_performance
     def get_rare_results_for_gene(self, gene_id: int):
-        return self._fetch_rare_results(f"study_extractions.gene_id = {gene_id}")
+        return self._fetch_rare_results("study_extractions.gene_id = ?", [gene_id])
 
     @log_performance
     def get_rare_results_for_study_extraction_ids(self, study_extraction_ids: List[int]):
-        formatted_ids = ",".join(f"{id}" for id in study_extraction_ids)
-        return self._fetch_rare_results(f"rare_results.study_extraction_id IN ({formatted_ids})")
+        if not study_extraction_ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in study_extraction_ids])
+        return self._fetch_rare_results(f"rare_results.study_extraction_id IN ({placeholders})", study_extraction_ids)
 
     @log_performance
     def get_rare_results_for_variants(self, snp_ids: List[int]):
-        formatted_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
-        return self._fetch_rare_results(f"rare_results.snp_id IN ({formatted_ids})")
+        if not snp_ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in snp_ids])
+        return self._fetch_rare_results(f"rare_results.snp_id IN ({placeholders})", snp_ids)
 
     @log_performance
     def get_rare_results_for_study_ids(self, study_ids: List[int]):
-        formatted_ids = ",".join(f"{id}" for id in study_ids)
-        return self._fetch_rare_results(f"rare_results.study_id IN ({formatted_ids})")
+        if not study_ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in study_ids])
+        return self._fetch_rare_results(f"rare_results.study_id IN ({placeholders})", study_ids)
 
     @log_performance
     def get_rare_results_for_ld_block(self, ld_block_id: int):
-        return self._fetch_rare_results(f"rare_results.ld_block_id = {ld_block_id}")
+        return self._fetch_rare_results("rare_results.ld_block_id = ?", [ld_block_id])
 
     @log_performance
     def get_trait_names_for_search(self):
@@ -230,6 +256,125 @@ class StudiesDBClient:
             JOIN studies ON traits.id = studies.trait_id 
             WHERE traits.data_type = '{StudyDataType.phenotype.name}' AND studies.variant_type = '{VariantType.common.name}'
         """).fetchall()
+
+    @log_performance
+    def get_gene(self, symbol: str = None, id: int = None):
+        if symbol:
+            query = "SELECT * FROM gene_annotations WHERE gene = ?"
+            return self.studies_conn.execute(query, [symbol]).fetchone()
+        elif id:
+            query = "SELECT * FROM gene_annotations WHERE id = ?"
+            return self.studies_conn.execute(query, [id]).fetchone()
+        else:
+            raise ValueError("Either gene or id must be provided")
+
+    @log_performance
+    def get_variant(self, snp_id: int):
+        query = "SELECT * FROM snp_annotations WHERE id = ?"
+        return self.studies_conn.execute(query, [snp_id]).fetchone()
+
+    @log_performance
+    def get_genes(self):
+        query = "SELECT * FROM gene_annotations"
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_genes_by_gene_ids(self, gene_ids: List[int]):
+        if not gene_ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in gene_ids])
+        query = f"SELECT * FROM gene_annotations WHERE id IN ({placeholders})"
+        return self.studies_conn.execute(query, gene_ids).fetchall()
+
+    @log_performance
+    def get_variants(
+        self,
+        snp_ids: List[int] = None,
+        variants: List[str] = None,
+        variant_prefixes: List[str] = None,
+        rsids: List[str] = None,
+        grange: List[str] = None,
+    ):
+        if not snp_ids and not variants and not variant_prefixes and not rsids and not grange:
+            return []
+
+        query = "SELECT * FROM snp_annotations WHERE "
+        params = []
+        
+        if snp_ids:
+            placeholders = ",".join(["?" for _ in snp_ids])
+            query += f"id IN ({placeholders})"
+            params.extend(snp_ids)
+        elif rsids:
+            placeholders = ",".join(["?" for _ in rsids])
+            query += f"rsid IN ({placeholders})"
+            params.extend(rsids)
+        elif grange:
+            chr, position = grange.split(":")
+            start_bp, end_bp = position.split("-")
+            start_bp, end_bp = int(start_bp), int(end_bp)
+            query += "chr = ? AND bp BETWEEN ? AND ?"
+            params.extend([chr, start_bp, end_bp])
+        elif variants:
+            placeholders = ",".join(["?" for _ in variants])
+            query += f"snp IN ({placeholders})"
+            params.extend(variants)
+        elif variant_prefixes:
+            placeholders = ",".join(["?" for _ in variant_prefixes])
+            query += f"SPLIT_PART(snp, '_', 1) IN ({placeholders})"
+            params.extend(variant_prefixes)
+
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_tissues(self):
+        return self.studies_conn.execute("SELECT DISTINCT tissue FROM studies WHERE tissue IS NOT NULL").fetchall()
+
+    @log_performance
+    def get_variants_by_snp_strings(self, variants: List[str]):
+        if not variants:
+            return []
+        
+        placeholders = ",".join(["(?, ?)" for _ in variants])
+        query = f"""
+            WITH input_variants AS (
+                SELECT * FROM (VALUES {placeholders}) as t(row_num, variant)
+            )
+            SELECT snp_annotations.* 
+            FROM input_variants 
+            LEFT JOIN snp_annotations ON input_variants.variant = snp_annotations.snp 
+            ORDER BY input_variants.row_num
+        """
+        
+        params = []
+        for i, variant in enumerate(variants):
+            params.extend([i, variant])
+        
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_snp_ids_by_snps(self, snps: List[str]):
+        if not snps:
+            return []
+        
+        placeholders = ",".join(["?" for _ in snps])
+        query = f"SELECT id FROM snp_annotations WHERE snp IN ({placeholders})"
+        return self.studies_conn.execute(query, snps).fetchall()
+
+    @log_performance
+    def get_coloc_metadata(self):
+        query = """
+            SELECT MAX(coloc_group_id) as count FROM coloc_groups 
+        """
+        coloc_groups = self.studies_conn.execute(query).fetchone()
+
+        query = """
+            SELECT COUNT(DISTINCT snp_id) as count
+            FROM coloc_groups
+        """
+        unique_snps = self.studies_conn.execute(query).fetchone()
+        return coloc_groups[0], unique_snps[0]
 
     @log_performance
     def get_gene_names(self):
@@ -249,63 +394,71 @@ class StudiesDBClient:
 
     @log_performance
     def get_study_extractions_for_study(self, study_id: str):
-        query = f"""
+        query = """
             SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.study_id = '{study_id}'
+            WHERE study_extractions.study_id = ?
         """
-        return self.studies_conn.execute(query).fetchall()
+        return self.studies_conn.execute(query, [study_id]).fetchall()
 
     @log_performance
     def get_study_extractions_for_variant(self, snp_id: int):
-        query = f"""
+        query = """
             SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.snp_id = {snp_id}
+            WHERE study_extractions.snp_id = ?
         """
-        return self.studies_conn.execute(query).fetchall()
+        return self.studies_conn.execute(query, [snp_id]).fetchall()
 
     @log_performance
     def get_study_extractions(self, unique_study_id: str = None):
         if unique_study_id:
-            query = f"""
-                SELECT * FROM study_extractions WHERE unique_study_id = '{unique_study_id}'
-            """
+            query = "SELECT * FROM study_extractions WHERE unique_study_id = ?"
+            return self.studies_conn.execute(query, [unique_study_id]).fetchall()
         else:
-            query = """
-                SELECT * FROM study_extractions
-            """
-        return self.studies_conn.execute(query).fetchall()
+            query = "SELECT * FROM study_extractions"
+            return self.studies_conn.execute(query).fetchall()
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):
-        formatted_ids = ",".join(f"{id}" for id in ids)
+        if not ids:
+            return []
+        
+        placeholders = ",".join(["?" for _ in ids])
         query = f"""
             SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.id IN ({formatted_ids})
+            WHERE study_extractions.id IN ({placeholders})
         """
-        return self.studies_conn.execute(query).fetchall()
+        return self.studies_conn.execute(query, ids).fetchall()
 
     @log_performance
     def get_study_extractions_by_unique_study_id(self, unique_study_ids: List[str]):
-        values_list = ", ".join([f"({i}, '{v}')" for i, v in enumerate(unique_study_ids)])
+        if not unique_study_ids:
+            return []
+        
+        placeholders = ",".join(["(?, ?)" for _ in unique_study_ids])
         query = f"""
             WITH input_studies AS (
-                SELECT * FROM (VALUES {values_list}) as t(row_num, unique_study_id)
+                SELECT * FROM (VALUES {placeholders}) as t(row_num, unique_study_id)
             )
             SELECT study_extractions.*
             FROM input_studies 
             LEFT JOIN study_extractions ON input_studies.unique_study_id = study_extractions.unique_study_id
             ORDER BY input_studies.row_num
         """
-        return self.studies_conn.execute(query).fetchall()
+        
+        params = []
+        for i, study_id in enumerate(unique_study_ids):
+            params.extend([i, study_id])
+        
+        return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
     def get_num_coloc_groups_per_gene(self):
@@ -363,128 +516,38 @@ class StudiesDBClient:
 
     @log_performance
     def get_study_extractions_in_ld_block(self, ld_block_id: int):
-        return self.studies_conn.execute(f"""
+        query = """
             SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.ld_block_id = {ld_block_id}
-        """).fetchall()
+            WHERE study_extractions.ld_block_id = ?
+        """
+        return self.studies_conn.execute(query, [ld_block_id]).fetchall()
 
     @log_performance
     def get_ld_block(self, ld_block_id: int):
-        query = f"SELECT * FROM ld_blocks WHERE id = {ld_block_id}"
-        return self.studies_conn.execute(query).fetchone()
+        query = "SELECT * FROM ld_blocks WHERE id = ?"
+        return self.studies_conn.execute(query, [ld_block_id]).fetchone()
 
     @log_performance
     def get_ld_blocks_by_ld_block(self, ld_blocks: List[str]):
-        values_list = ", ".join([f"({i}, '{v}')" for i, v in enumerate(ld_blocks)])
+        if not ld_blocks:
+            return []
+        
+        placeholders = ",".join(["(?, ?)" for _ in ld_blocks])
         query = f"""
             WITH input_blocks AS (
-                SELECT * FROM (VALUES {values_list}) as t(row_num, ld_block)
+                SELECT * FROM (VALUES {placeholders}) as t(row_num, ld_block)
             )
             SELECT ld_blocks.* 
             FROM input_blocks 
             LEFT JOIN ld_blocks ON input_blocks.ld_block = ld_blocks.ld_block
             ORDER BY input_blocks.row_num
         """
-        return self.studies_conn.execute(query).fetchall()
-
-    @log_performance
-    def get_gene(self, symbol: str = None, id: int = None):
-        if symbol:
-            condition = f"gene = '{symbol}'"
-        elif id:
-            condition = f"id = {id}"
-        else:
-            raise ValueError("Either gene or id must be provided")
-        query = f"SELECT * FROM gene_annotations WHERE {condition}"
-        return self.studies_conn.execute(query).fetchone()
-
-    @log_performance
-    def get_variant(self, snp_id: int):
-        query = f"SELECT * FROM snp_annotations WHERE id = {snp_id}"
-        return self.studies_conn.execute(query).fetchone()
-
-    @log_performance
-    def get_genes(self):
-        query = "SELECT * FROM gene_annotations"
-        return self.studies_conn.execute(query).fetchall()
-
-    @log_performance
-    def get_genes_by_gene_ids(self, gene_ids: List[int]):
-        formatted_ids = ",".join(f"{id}" for id in gene_ids)
-        query = f"SELECT * FROM gene_annotations WHERE id IN ({formatted_ids})"
-        return self.studies_conn.execute(query).fetchall()
-
-    @log_performance
-    def get_variants(
-        self,
-        snp_ids: List[int] = None,
-        variants: List[str] = None,
-        variant_prefixes: List[str] = None,
-        rsids: List[str] = None,
-        grange: List[str] = None,
-    ):
-        if not snp_ids and not variants and not variant_prefixes and not rsids and not grange:
-            return []
-
-        query = "SELECT * FROM snp_annotations WHERE "
-        if snp_ids:
-            formatted_snp_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
-            query += f"id IN ({formatted_snp_ids})"
-        elif rsids:
-            formatted_rsids = ",".join(f"'{rsid}'" for rsid in rsids)
-            query += f"rsid IN ({formatted_rsids})"
-        elif grange:
-            chr, position = grange.split(":")
-            start_bp, end_bp = position.split("-")
-            start_bp, end_bp = int(start_bp), int(end_bp)
-            query += f"""chr = {chr} AND bp BETWEEN {start_bp} AND {end_bp}"""
-        elif variants:
-            formatted_variants = ",".join(f"'{variant}'" for variant in variants)
-            query += f"snp IN ({formatted_variants})"
-        elif variant_prefixes:
-            formatted_variant_prefixes = ",".join(f"'{variant_prefix}'" for variant_prefix in variant_prefixes)
-            query += f"SPLIT_PART(snp, '_', 1) IN ({formatted_variant_prefixes})"
-
-        return self.studies_conn.execute(query).fetchall()
-
-    @log_performance
-    def get_tissues(self):
-        return self.studies_conn.execute("SELECT DISTINCT tissue FROM studies WHERE tissue IS NOT NULL").fetchall()
-
-    @log_performance
-    def get_variants_by_snp_strings(self, variants: List[str]):
-        values_list = ", ".join([f"({i}, '{v}')" for i, v in enumerate(variants)])
-        query = f"""
-            WITH input_variants AS (
-                SELECT * FROM (VALUES {values_list}) as t(row_num, variant)
-            )
-            SELECT snp_annotations.* 
-            FROM input_variants 
-            LEFT JOIN snp_annotations ON input_variants.variant = snp_annotations.snp 
-            ORDER BY input_variants.row_num
-        """
-
-        return self.studies_conn.execute(query).fetchall()
-
-    @log_performance
-    def get_snp_ids_by_snps(self, snps: List[str]):
-        formatted_snps = ",".join(f"'{snp}'" for snp in snps)
-        query = f"SELECT id FROM snp_annotations WHERE id IN ({formatted_snps})"
-        return self.studies_conn.execute(query).fetchall()
-
-    @log_performance
-    def get_coloc_metadata(self):
-        query = """
-            SELECT MAX(coloc_group_id) as count FROM coloc_groups 
-        """
-        coloc_groups = self.studies_conn.execute(query).fetchone()
-
-        query = """
-            SELECT COUNT(DISTINCT snp_id) as count
-            FROM coloc_groups
-        """
-        unique_snps = self.studies_conn.execute(query).fetchone()
-        return coloc_groups[0], unique_snps[0]
+        
+        params = []
+        for i, ld_block in enumerate(ld_blocks):
+            params.extend([i, ld_block])
+        
+        return self.studies_conn.execute(query, params).fetchall()
