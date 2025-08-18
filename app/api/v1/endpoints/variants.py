@@ -133,17 +133,13 @@ async def get_variant(
         for coloc in colocs:
             association = next((u for u in associations if u.study_id == coloc.study_id), None)
             if association is None:
-                # TODO: Remove this once we have fixed the data
                 logger.warning(f"Association not found for variant {snp_id} and study {coloc.study_id}")
-                # raise HTTPException(status_code=400, detail="Association not found for variant and study")
             extended_colocs.append(ExtendedColocGroup(**coloc.model_dump(), association=association))
         extended_rare_results = []
         for rare_result in rare_results:
             association = next((u for u in associations if u.study_id == rare_result.study_id), None)
             if association is None:
-                # TODO: Remove this once we have fixed the data
                 logger.warning(f"Association not found for variant {snp_id} and study {rare_result.study_id}")
-                # raise HTTPException(status_code=400, detail="Association not found for variant and study")
             extended_rare_results.append(ExtendedRareResult(**rare_result.model_dump(), association=association))
 
         return VariantResponse(
