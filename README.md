@@ -33,7 +33,7 @@ You will need to have the following installed:
 
    There are 2 `.env` files, one for frontend and one for backend.
 
-   It's easiest to use the `.env.test` file as a template.  This will use a small curated test database in `tests/test_data/gpm_small.db`
+   It's easiest to use the `.env.test` file as a template.  This will use a small curated set of test databases in `tests/test_data/`
 
    * `cp .env.test .env`
    * `cp frontend/.env.test frontend/.env`

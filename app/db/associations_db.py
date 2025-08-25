@@ -1,6 +1,6 @@
 from app.config import get_settings
 from functools import lru_cache
-from typing import List
+from typing import List, Tuple
 import duckdb
 
 from app.db.utils import log_performance
@@ -22,12 +22,13 @@ class AssociationsDBClient:
         if not study_ids or not snp_id:
             return []
 
-        formatted_study_ids = ",".join(f"{study_id}" for study_id in study_ids)
+        placeholders = ",".join(["?" for _ in study_ids])
         query = f"""
             SELECT * FROM associations 
-            WHERE study_id IN ({formatted_study_ids}) AND snp_id = {snp_id}
+            WHERE study_id IN ({placeholders}) AND snp_id = ?
         """
-        return self.associations_conn.execute(query).fetchall()
+        params = study_ids + [snp_id]
+        return self.associations_conn.execute(query, params).fetchall()
 
     @log_performance
     def get_associations(
@@ -40,15 +41,33 @@ class AssociationsDBClient:
             return []
 
         query = "SELECT * FROM associations WHERE 1=1"
+        params = []
+
         if snp_ids:
-            formatted_snp_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
-            query += f" AND snp_id IN ({formatted_snp_ids})"
+            placeholders = ",".join(["?" for _ in snp_ids])
+            query += f" AND snp_id IN ({placeholders})"
+            params.extend(snp_ids)
 
         if study_ids:
-            formatted_study_ids = ",".join(f"{study_id}" for study_id in study_ids)
-            query += f" AND study_id IN ({formatted_study_ids})"
+            placeholders = ",".join(["?" for _ in study_ids])
+            query += f" AND study_id IN ({placeholders})"
+            params.extend(study_ids)
 
         if p_value_threshold is not None:
-            query += f" AND p <= {p_value_threshold}"
+            query += " AND p <= ?"
+            params.append(p_value_threshold)
 
-        return self.associations_conn.execute(query).fetchall()
+        return self.associations_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_associations_by_snp_study_pairs(self, snp_study_pairs: List[Tuple[int, int]]):
+        if not snp_study_pairs:
+            return []
+
+        flattened_pairs = [item for pair in snp_study_pairs for item in pair]
+        placeholders = ",".join(["(?, ?)" for _ in snp_study_pairs])
+
+        query = f"""
+            SELECT * FROM associations WHERE (snp_id, study_id) IN ({placeholders})
+        """
+        return self.associations_conn.execute(query, flattened_pairs).fetchall()

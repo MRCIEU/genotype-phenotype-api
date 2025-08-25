@@ -102,7 +102,14 @@ async def get_variant(
 
         if not colocs and not rare_results and not study_extractions:
             variant = convert_duckdb_to_pydantic_model(Variant, variant)
-            return VariantResponse(variant=variant, colocs=[], rare_results=[], study_extractions=[])
+            return VariantResponse(
+                variant=variant,
+                coloc_groups=[],
+                rare_results=[],
+                study_extractions=[],
+                coloc_pairs=[],
+                associations=[],
+            )
 
         colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)

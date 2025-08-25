@@ -22,6 +22,8 @@ export default defineConfig({
                 region: resolve(__dirname, "region.html"),
                 snp: resolve(__dirname, "snp.html"),
                 about: resolve(__dirname, "about.html"),
+                data: resolve(__dirname, "data.html"),
+                contact: resolve(__dirname, "contact.html"),
                 "navigation-bar": resolve(__dirname, "web-components/navigation-bar.html"),
                 "graph-options": resolve(__dirname, "web-components/graph-options.html"),
                 "pipeline-summary": resolve(__dirname, "web-components/pipeline-summary.html"),
