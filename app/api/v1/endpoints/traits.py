@@ -2,7 +2,6 @@ import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
-from app.db.associations_db import AssociationsDBClient
 from app.models.schemas import (
     BasicTraitResponse,
     ColocGroup,
@@ -14,11 +13,11 @@ from app.models.schemas import (
     TraitResponse,
     Trait,
     VariantType,
-    Association,
     convert_duckdb_to_pydantic_model,
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
+from app.services.associations_service import AssociationsService
 
 router = APIRouter()
 
@@ -49,8 +48,8 @@ async def get_trait(
 ) -> TraitResponse:
     try:
         db = StudiesDBClient()
-        associations_db = AssociationsDBClient()
         coloc_pairs_db = ColocPairsDBClient()
+        associations_service = AssociationsService()
 
         trait = db.get_trait(trait_id)
         if trait is None:
@@ -72,6 +71,8 @@ async def get_trait(
         colocs = db.get_all_colocs_for_study(trait.common_study.id)
         if colocs is not None:
             colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
+        else:
+            colocs = []
 
         coloc_pairs = None
         if include_coloc_pairs:
@@ -85,12 +86,7 @@ async def get_trait(
 
         associations = None
         if include_associations:
-            snp_ids = [s.snp_id for s in study_extractions] + [coloc.snp_id for coloc in colocs]
-            study_ids = [trait.common_study.id]
-            if trait.rare_study is not None:
-                study_ids.append(trait.rare_study.id)
-            associations = associations_db.get_associations(snp_ids, study_ids)
-            associations = convert_duckdb_to_pydantic_model(Association, associations)
+            associations = associations_service.get_associations(study_extractions, colocs, rare_results)
 
         return TraitResponse(
             trait=trait,

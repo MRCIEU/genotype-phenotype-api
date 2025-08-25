@@ -28,9 +28,62 @@
                         <h1>About</h1>
                         <p>The Genotype-Phenotype Map is comprised of 3 distinct efforts</p>
                         <ul>
-                            <li>The data processing pipeline</li>
-                            <li>An R package</li>
-                            <li>The website, API, database, and GWAS processing queue</li>
+                            <li>
+                                <a href="https://github.com/MRCIEU/genotype-phenotype-map"
+                                    >The data processing pipeline (which includes GWAS Upload)</a
+                                >
+                            </li>
+                            <li><a href="https://github.com/MRCIEU/gpmapr">An R package</a></li>
+                            <li><a href="https://github.com/MRCIEU/genotype-phenotype-api">The website and API</a></li>
+                        </ul>
+
+                        <h2>Nomenclature</h2>
+                        <p>We have defined these words as follows:</p>
+                        <ul>
+                            <li><b>Study</b>: Summary statistics related to a single trait or QTL measurement.</li>
+                            <li>
+                                <b>Trait</b>: A collection of studies that are related to a single measurement. For
+                                example, a trait may have a rare variant study and a common variant study associated
+                                with it.
+                            </li>
+                            <li>
+                                <b>Trait Category</b>: A manually curated map between a phenotypic trait and a higher
+                                level category. For example, "Height" would be mapped to "Anthropometric".
+                            </li>
+                            <li>
+                                <b>Study Extraction</b>: A finemapped subset of a study that has a p-value below the
+                                cutoff of 1.5e-4 associated with it.
+                            </li>
+                            <li>
+                                <b>LD Block / Region</b>: A region of the genome that has been segmented into smaller
+                                regions based on LD (using LDetect).
+                            </li>
+                            <li>
+                                <b>Colocalization</b>: A statistical test that determines if a SNP is associated with a
+                                trait.
+                                <ul>
+                                    <li><b>Coloc Pair</b>: A pair of SNPs that are associated with a trait.</li>
+                                    <li>
+                                        <b>Coloc Group</b>: A group of SNPs that are clustered based on coloc pairs.
+                                    </li>
+                                    <li>
+                                        <b>Strong Coloc</b>: A coloc group that includes coloc pairs with a posterior
+                                        probability greater than 0.8.
+                                    </li>
+                                    <li>
+                                        <b>Moderate Coloc</b>: A coloc group that includes coloc pairs with a posterior
+                                        probability greater than 0.6.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <b>Rare Variant Analysis</b>: A statistical test that determines if a SNP is associated
+                                with a trait.
+                            </li>
+                            <li>
+                                <b>Association</b>: A statistical test that determines if a SNP is associated with a
+                                trait.
+                            </li>
                         </ul>
                         <h2>Data Processing Pipeline</h2>
                         <div class="columns mt-6 is-centered">
