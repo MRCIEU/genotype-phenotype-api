@@ -6,7 +6,8 @@ client = TestClient(app)
 
 
 def test_get_trait_by_id():
-    response = client.get("/v1/traits/5020")
+    trait_id = 5020
+    response = client.get(f"/v1/traits/{trait_id}")
     assert response.status_code == 200
     traits = response.json()
     assert traits is not None
@@ -22,6 +23,16 @@ def test_get_trait_by_id():
         assert coloc.chr is not None
         assert coloc.bp is not None
         assert coloc.min_p is not None
+    grouped_colocs = {}
+
+    for coloc in trait_response.coloc_groups:
+        if coloc.coloc_group_id not in grouped_colocs:
+            grouped_colocs[coloc.coloc_group_id] = []
+        grouped_colocs[coloc.coloc_group_id].append(coloc)
+
+    for group in grouped_colocs.values():
+        assert any(coloc.trait_id == trait_id for coloc in group), "Each coloc group should contain the queried trait"
+
     for study in trait_response.study_extractions:
         assert study.unique_study_id is not None
         assert study.chr is not None
@@ -38,6 +49,7 @@ def test_get_trait_by_id():
 
 def test_get_trait_by_id_with_associations():
     response = client.get("/v1/traits/5020?include_associations=true")
+    print(response.json())
     assert response.status_code == 200
     traits = response.json()
     assert traits is not None

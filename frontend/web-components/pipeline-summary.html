@@ -10,95 +10,113 @@
         </thead>
         <tbody>
             <tr class="odd">
+                <td align="left">Brain Meta</td>
+                <td align="left">16,520</td>
+            </tr>
+            <tr class="even">
+                <td align="left">EBI GWAS Catalog</td>
+                <td align="left">2,796</td>
+            </tr>
+            <tr class="odd">
                 <td align="left">UK Biobank ExWAS Genebass</td>
                 <td align="left">3,229</td>
             </tr>
             <tr class="even">
-                <td align="left">UK Biobank Proteomics</td>
-                <td align="left">2,622</td>
+                <td align="left">GoDMC</td>
+                <td align="left">179,947</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">UK Biobank AstraZeneca PheWAS Portal v5.5</td>
+                <td align="left">7,605</td>
+            </tr>
+            <tr class="even">
+                <td align="left">eQTLGen</td>
+                <td align="left">17,110</td>
             </tr>
             <tr class="odd">
                 <td align="left">UK Biobank</td>
                 <td align="left">2,341</td>
             </tr>
             <tr class="even">
+                <td align="left">Brain eMeta</td>
+                <td align="left">17,554</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">GTEx Atlas</td>
+                <td align="left">2,577,980</td>
+            </tr>
+            <tr class="even">
                 <td align="left">UK Biobank ExWAS Complex Traits</td>
                 <td align="left">3,327</td>
             </tr>
             <tr class="odd">
-                <td align="left">eQTLGen</td>
-                <td align="left">17,110</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Brain Meta</td>
-                <td align="left">16,519</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Brain eMeta</td>
-                <td align="left">17,914</td>
-            </tr>
-            <tr class="even">
-                <td align="left">UK Biobank AstraZeneca PheWAS Portal v5.5</td>
-                <td align="left">7,605</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">GTEx Atlas</td>
-                <td align="left">2,578,818</td>
-            </tr>
-            <tr class="even">
-                <td align="left">EBI GWAS Catalog</td>
-                <td align="left">2,796</td>
-            </tr>
-        </tbody>
-    </table>
-    <p>Broken down by data type:</p>
-    <table>
-        <thead>
-            <tr class="header">
-                <th align="left">data_type</th>
-                <th align="left">num_studies</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">phenotype</td>
-                <td align="left">16,673</td>
-            </tr>
-            <tr class="even">
-                <td align="left">gene_expression</td>
-                <td align="left">791,453</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">protein</td>
-                <td align="left">5,247</td>
-            </tr>
-            <tr class="even">
-                <td align="left">splice_variant</td>
-                <td align="left">1,838,908</td>
+                <td align="left">UK Biobank Proteomics</td>
+                <td align="left">2,622</td>
             </tr>
         </tbody>
     </table>
 </div>
-<div id="study-breakdown" class="section level3">
-    <h3>Study Breakdown</h3>
+<div id="study-breakdown-by-data-type" class="section level3">
+    <h3>Study Breakdown by data type:</h3>
     <table>
         <colgroup>
-            <col width="12%" />
-            <col width="9%" />
-            <col width="17%" />
-            <col width="17%" />
-            <col width="17%" />
-            <col width="10%" />
-            <col width="7%" />
-            <col width="7%" />
+            <col width="20%" />
+            <col width="15%" />
+            <col width="20%" />
+            <col width="23%" />
+            <col width="21%" />
         </colgroup>
         <thead>
             <tr class="header">
                 <th align="left">data_type</th>
                 <th align="left">num_studies</th>
-                <th align="left">num_extracted_regions</th>
-                <th align="left">extracted_region_ratio</th>
-                <th align="left">num_study_extractions</th>
+                <th align="left">num_extractions</th>
+                <th align="left">common_extractions</th>
+                <th align="left">rare_extractions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td align="left">methylation</td>
+                <td align="left">179,947</td>
+                <td align="left">179,947</td>
+                <td align="left">179,947</td>
+                <td align="left">NA</td>
+            </tr>
+            <tr class="even">
+                <td align="left">phenotype</td>
+                <td align="left">16,673</td>
+                <td align="left">2,318,962</td>
+                <td align="left">1,754,833</td>
+                <td align="left">564,129</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">gene_expression</td>
+                <td align="left">791,022</td>
+                <td align="left">946,320</td>
+                <td align="left">946,320</td>
+                <td align="left">NA</td>
+            </tr>
+            <tr class="even">
+                <td align="left">protein</td>
+                <td align="left">5,247</td>
+                <td align="left">157,152</td>
+                <td align="left">62,219</td>
+                <td align="left">94,933</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">splice_variant</td>
+                <td align="left">1,838,142</td>
+                <td align="left">2,009,862</td>
+                <td align="left">2,009,862</td>
+                <td align="left">NA</td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <thead>
+            <tr class="header">
+                <th align="left">data_type</th>
                 <th align="left">finemap_ratio</th>
                 <th align="left">num_cis</th>
                 <th align="left">num_trans</th>
@@ -106,44 +124,34 @@
         </thead>
         <tbody>
             <tr class="odd">
-                <td align="left">splice_variant</td>
-                <td align="left">1,838,904</td>
-                <td align="left">1,839,478</td>
-                <td align="left">1.00</td>
-                <td align="left">2,040,509</td>
-                <td align="left">1.11</td>
-                <td align="left">2,040,509</td>
-                <td align="left">0</td>
+                <td align="left">gene_expression</td>
+                <td align="left">1.20</td>
+                <td align="left">945,177</td>
+                <td align="left">770</td>
             </tr>
             <tr class="even">
-                <td align="left">gene_expression</td>
-                <td align="left">791,439</td>
-                <td align="left">791,439</td>
-                <td align="left">1.00</td>
-                <td align="left">970,187</td>
-                <td align="left">1.23</td>
-                <td align="left">969,423</td>
-                <td align="left">764</td>
+                <td align="left">splice_variant</td>
+                <td align="left">1.10</td>
+                <td align="left">2,009,667</td>
+                <td align="left">0</td>
             </tr>
             <tr class="odd">
+                <td align="left">protein</td>
+                <td align="left">3.93</td>
+                <td align="left">6,241</td>
+                <td align="left">55,930</td>
+            </tr>
+            <tr class="even">
                 <td align="left">phenotype</td>
-                <td align="left">16,643</td>
-                <td align="left">1,575,726</td>
-                <td align="left">94.68</td>
-                <td align="left">2,136,035</td>
-                <td align="left">1.36</td>
+                <td align="left">1.47</td>
                 <td align="left">0</td>
                 <td align="left">0</td>
             </tr>
-            <tr class="even">
-                <td align="left">protein</td>
-                <td align="left">5,247</td>
-                <td align="left">40,016</td>
-                <td align="left">7.63</td>
-                <td align="left">100,103</td>
-                <td align="left">2.50</td>
-                <td align="left">6,248</td>
-                <td align="left">56,381</td>
+            <tr class="odd">
+                <td align="left">methylation</td>
+                <td align="left">1.00</td>
+                <td align="left">179,841</td>
+                <td align="left">0</td>
             </tr>
         </tbody>
     </table>
@@ -164,61 +172,301 @@
         </thead>
         <tbody>
             <tr class="odd">
-                <td align="left">splice_variant</td>
-                <td align="left">925,816</td>
-                <td align="left">503,714</td>
-                <td align="left">610,979</td>
+                <td align="left">gene_expression</td>
+                <td align="left">223,661</td>
+                <td align="left">263,623</td>
+                <td align="left">459,036</td>
             </tr>
             <tr class="even">
-                <td align="left">gene_expression</td>
-                <td align="left">221,908</td>
-                <td align="left">259,492</td>
-                <td align="left">488,787</td>
+                <td align="left">splice_variant</td>
+                <td align="left">926,571</td>
+                <td align="left">510,193</td>
+                <td align="left">573,098</td>
             </tr>
             <tr class="odd">
-                <td align="left">phenotype</td>
-                <td align="left">1,362,970</td>
-                <td align="left">380,103</td>
-                <td align="left">392,962</td>
+                <td align="left">protein</td>
+                <td align="left">70,547</td>
+                <td align="left">26,944</td>
+                <td align="left">59,661</td>
             </tr>
             <tr class="even">
-                <td align="left">protein</td>
-                <td align="left">36,199</td>
-                <td align="left">14,978</td>
-                <td align="left">48,926</td>
+                <td align="left">phenotype</td>
+                <td align="left">1,601,021</td>
+                <td align="left">408,607</td>
+                <td align="left">309,334</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">methylation</td>
+                <td align="left">1,727</td>
+                <td align="left">4,036</td>
+                <td align="left">174,184</td>
             </tr>
         </tbody>
     </table>
 </div>
-<div id="number-of-colocs-per-data-type" class="section level3">
-    <h3>Number of colocs per data type</h3>
+<div id="number-of-coloc-pairs-with-h4-0.8-per-data-type" class="section level3">
+    <h3>Number of coloc pairs with H4 &gt; 0.8 per data type</h3>
+    <table>
+        <colgroup>
+            <col width="10%" />
+            <col width="7%" />
+            <col width="14%" />
+            <col width="23%" />
+            <col width="20%" />
+            <col width="22%" />
+        </colgroup>
+        <thead>
+            <tr class="header">
+                <th align="left">data_type</th>
+                <th align="left">num_colocs</th>
+                <th align="left">num_study_extractions</th>
+                <th align="left">num_study_extractions_not_in_coloc</th>
+                <th align="left">num_study_extractions_in_coloc</th>
+                <th align="left">percent_extractions_not_in_colocs</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td align="left">gene_expression</td>
+                <td align="left">22,239,093</td>
+                <td align="left">946,320</td>
+                <td align="left">167,906</td>
+                <td align="left">778,414</td>
+                <td align="left">18%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">splice_variant</td>
+                <td align="left">42,004,117</td>
+                <td align="left">2,009,862</td>
+                <td align="left">561,336</td>
+                <td align="left">1,448,526</td>
+                <td align="left">28%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">protein</td>
+                <td align="left">2,932,092</td>
+                <td align="left">62,219</td>
+                <td align="left">9,173</td>
+                <td align="left">53,046</td>
+                <td align="left">15%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">phenotype</td>
+                <td align="left">9,667,204</td>
+                <td align="left">1,754,833</td>
+                <td align="left">1,126,765</td>
+                <td align="left">628,068</td>
+                <td align="left">64%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">methylation</td>
+                <td align="left">2,372,551</td>
+                <td align="left">179,947</td>
+                <td align="left">20,786</td>
+                <td align="left">159,161</td>
+                <td align="left">12%</td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <colgroup>
+            <col width="15%" />
+            <col width="11%" />
+            <col width="24%" />
+            <col width="20%" />
+            <col width="28%" />
+        </colgroup>
+        <thead>
+            <tr class="header">
+                <th align="left">data_type</th>
+                <th align="left">num_studies</th>
+                <th align="left">num_studies_not_in_colocs</th>
+                <th align="left">num_studies_in_colocs</th>
+                <th align="left">percent_studies_not_in_colocs</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td align="left">gene_expression</td>
+                <td align="left">791,022</td>
+                <td align="left">152,792</td>
+                <td align="left">793,528</td>
+                <td align="left">19%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">splice_variant</td>
+                <td align="left">1,838,142</td>
+                <td align="left">551,783</td>
+                <td align="left">1,458,079</td>
+                <td align="left">30%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">protein</td>
+                <td align="left">2,622</td>
+                <td align="left">125</td>
+                <td align="left">62,094</td>
+                <td align="left">5%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">phenotype</td>
+                <td align="left">5,137</td>
+                <td align="left">0</td>
+                <td align="left">1,754,833</td>
+                <td align="left">0%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">methylation</td>
+                <td align="left">179,947</td>
+                <td align="left">20,786</td>
+                <td align="left">159,161</td>
+                <td align="left">12%</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
-<div id="direction-concordance" class="section level3">
-    <h3>Direction concordance?</h3>
+<div id="matrix-of-coloc-results-by-data-type-and-by-cis-trans" class="section level2">
+    <h2>Matrix of coloc results by data type and by cis-trans:</h2>
+    <table>
+        <caption>
+            Number of colocalizations (H4 &gt; 0.8) between data types
+        </caption>
+        <colgroup>
+            <col width="20%" />
+            <col width="20%" />
+            <col width="18%" />
+            <col width="12%" />
+            <col width="12%" />
+            <col width="15%" />
+        </colgroup>
+        <thead>
+            <tr class="header">
+                <th align="left"></th>
+                <th align="left">gene_expression</th>
+                <th align="left">splice_variant</th>
+                <th align="left">protein</th>
+                <th align="left">phenotype</th>
+                <th align="left">methylation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td align="left">gene_expression</td>
+                <td align="left">6,882,803</td>
+                <td align="left">12,685,794</td>
+                <td align="left">231,672</td>
+                <td align="left">1,644,455</td>
+                <td align="left">794,369</td>
+            </tr>
+            <tr class="even">
+                <td align="left">splice_variant</td>
+                <td align="left">NA</td>
+                <td align="left">25,822,288</td>
+                <td align="left">354,830</td>
+                <td align="left">2,210,878</td>
+                <td align="left">930,327</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">protein</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">1,052,027</td>
+                <td align="left">1,252,027</td>
+                <td align="left">41,536</td>
+            </tr>
+            <tr class="even">
+                <td align="left">phenotype</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">4,208,613</td>
+                <td align="left">351,231</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">methylation</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">255,088</td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <caption>
+            Number of colocalizations (H4 &gt; 0.8) between cis-trans
+        </caption>
+        <thead>
+            <tr class="header">
+                <th align="left"></th>
+                <th align="left">cis</th>
+                <th align="left">trans</th>
+                <th align="left">phenotype</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td align="left">cis</td>
+                <td align="left">47,418,857</td>
+                <td align="left">584,160</td>
+                <td align="left">4,222,180</td>
+            </tr>
+            <tr class="even">
+                <td align="left">trans</td>
+                <td align="left">NA</td>
+                <td align="left">1,045,569</td>
+                <td align="left">1,237,852</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">phenotype</td>
+                <td align="left">NA</td>
+                <td align="left">NA</td>
+                <td align="left">4,209,320</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
-<div id="breakdown-by-dataset" class="section level2">
-    <h2>Breakdown by dataset:</h2>
-    <p>Compared to last pipeline run:</p>
-</div>
-<div id="imputed-vs.-finemapped-results-per-dataset" class="section level1">
-    <h1>Imputed vs. Finemapped Results per dataset:</h1>
-    <p>Compared to last pipeline run:</p>
-</div>
-<div id="number-of-hyprcoloc-clusters-by-posterior_prob-across-all-studies" class="section level1">
-    <h1>Number of hyprcoloc clusters by posterior_prob (across all studies)</h1>
-    <p>Compared to last pipeline run:</p>
-</div>
-<div id="coloc-results-broken-down-p-val-threshold-and-data-source" class="section level1">
-    <h1>Coloc Results Broken Down p-val threshold and data source:</h1>
-    <p>Compared to last pipeline run:</p>
-</div>
-<div id="coloc-results-broken-down-by-cis-trans-or-phenotype" class="section level1">
-    <h1>Coloc results broken down by cis, trans, or phenotype</h1>
-    <p>Compared to last pipeline run:</p>
-</div>
-<div id="pipeline-metadata" class="section level1">
-    <h1>Pipeline Metadata</h1>
-    <p>sum of results across all LD blocks</p>
-    <p>mean of results per LD block</p>
-    <p>Regions worst finemapping rate</p>
+<div id="number-of-coloc-pairs-by-h4-threshold-across-all-studies" class="section level2">
+    <h2>Number of coloc pairs by h4 threshold (across all studies)</h2>
+    <table>
+        <thead>
+            <tr class="header">
+                <th align="left">coloc_threshold</th>
+                <th align="left">num_results</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="odd">
+                <td align="left">&gt; 0.99</td>
+                <td align="left">16,858,159</td>
+            </tr>
+            <tr class="even">
+                <td align="left">&gt; 0.95</td>
+                <td align="left">32,700,033</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">&gt; 0.90</td>
+                <td align="left">44,010,377</td>
+            </tr>
+            <tr class="even">
+                <td align="left">&gt; 0.85</td>
+                <td align="left">52,210,866</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">&gt; 0.80</td>
+                <td align="left">58,717,938</td>
+            </tr>
+            <tr class="even">
+                <td align="left">&gt; 0.75</td>
+                <td align="left">64,250,081</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">&gt; 0.65</td>
+                <td align="left">73,649,544</td>
+            </tr>
+            <tr class="even">
+                <td align="left">&gt; 0.60</td>
+                <td align="left">77,825,957</td>
+            </tr>
+        </tbody>
+    </table>
 </div>

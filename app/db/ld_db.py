@@ -19,20 +19,19 @@ class LdDBClient:
 
     @log_performance
     def get_ld_proxies(self, snp_ids: List[int]):
-        formatted_snp_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
+        placeholders = ",".join(["?"] * len(snp_ids))
         query = f"""
             SELECT * FROM ld
-            WHERE (lead_snp_id IN ({formatted_snp_ids}) OR variant_snp_id IN ({formatted_snp_ids}))
-            AND abs(r) > 0.894
+            WHERE (lead_snp_id IN ({placeholders}) OR variant_snp_id IN ({placeholders})) AND abs(r) > 0.894
         """
-        return self.ld_conn.execute(query).fetchall()
+        return self.ld_conn.execute(query, snp_ids + snp_ids).fetchall()
 
     @log_performance
     def get_ld_matrix(self, snp_ids: List[int]):
-        formatted_snp_ids = ",".join(f"{snp_id}" for snp_id in snp_ids)
+        placeholders = ",".join(["?"] * len(snp_ids))
         query = f"""
             SELECT * FROM 
-                (SELECT * FROM ld WHERE lead_snp_id IN ({formatted_snp_ids}))
-                WHERE variant_snp_id IN ({formatted_snp_ids}) AND variant_snp_id > lead_snp_id
+                (SELECT * FROM ld WHERE lead_snp_id IN ({placeholders}))
+                WHERE variant_snp_id IN ({placeholders}) AND variant_snp_id > lead_snp_id
         """
-        return self.ld_conn.execute(query).fetchall()
+        return self.ld_conn.execute(query, snp_ids + snp_ids).fetchall()
