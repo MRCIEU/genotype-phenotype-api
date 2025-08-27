@@ -30,7 +30,7 @@ class ColocPairsDBClient:
         if not study_extraction_ids:
             return []
 
-        query = f"""
+        query = """
             SELECT * FROM coloc_pairs
             WHERE study_extraction_a_id IN (SELECT * FROM UNNEST(?))
                 AND study_extraction_b_id IN (SELECT * FROM UNNEST(?))

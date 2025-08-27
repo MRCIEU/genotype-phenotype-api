@@ -12,6 +12,7 @@ from app.models.schemas import (
 
 logger = get_logger(__name__)
 
+
 class AssociationsService:
     def __init__(self):
         self.associations_db = AssociationsDBClient()

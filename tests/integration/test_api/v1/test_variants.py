@@ -27,8 +27,6 @@ def test_get_variants_by_variants(variants_in_studies_db):
         assert variant_model.associations is None
 
 
-
-
 def test_get_variants_by_rsids(variants_in_studies_db):
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
     response = client.get(f"/v1/variants?rsids={rsids[0]}&rsids={rsids[1]}")
