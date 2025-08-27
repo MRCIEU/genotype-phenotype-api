@@ -97,7 +97,7 @@ class StudiesDBClient:
             JOIN studies ON coloc_groups.study_id = studies.id
             JOIN snp_annotations on coloc_groups.snp_id = snp_annotations.id 
             JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
-            JOIN gene_annotations on study_extractions.gene_id = gene_annotations.id
+            LEFT JOIN gene_annotations on study_extractions.gene_id = gene_annotations.id
             JOIN traits ON studies.trait_id = traits.id
             JOIN study_sources ON studies.source_id = study_sources.id
             WHERE coloc_groups.coloc_group_id IN (
@@ -180,7 +180,7 @@ class StudiesDBClient:
             JOIN studies ON rare_results.study_id = studies.id
             JOIN snp_annotations ON rare_results.snp_id = snp_annotations.id
             JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
-            JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
+            LEFT JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
             JOIN traits ON studies.trait_id = traits.id
             JOIN ld_blocks ON rare_results.ld_block_id = ld_blocks.id
             WHERE rare_results.rare_result_group_id IN (

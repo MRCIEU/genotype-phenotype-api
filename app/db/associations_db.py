@@ -25,9 +25,9 @@ class AssociationsDBClient:
         placeholders = ",".join(["?" for _ in study_ids])
         query = f"""
             SELECT * FROM associations 
-            WHERE study_id IN ({placeholders}) AND snp_id = ?
+            WHERE snp_id = ? AND study_id IN ({placeholders})
         """
-        params = study_ids + [snp_id]
+        params = [snp_id] + study_ids
         return self.associations_conn.execute(query, params).fetchall()
 
     @log_performance

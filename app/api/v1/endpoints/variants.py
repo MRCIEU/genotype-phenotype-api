@@ -31,10 +31,6 @@ async def get_variants(
     variants: List[str] = Query(None, description="List of variants to filter results"),
     rsids: List[str] = Query(None, description="List of rsids to filter results"),
     grange: str = Query(None, description="grange to filter results"),
-    include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
-    include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
-    h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
-    p_value_threshold: float = Query(None, description="P-value threshold to filter results"),
 ) -> List[Variant]:
     try:
         if sum([bool(snp_ids), bool(rsids), bool(grange)]) > 1:
@@ -49,28 +45,9 @@ async def get_variants(
             )
 
         studies_db = StudiesDBClient()
-        associations_db = AssociationsDBClient()
-        coloc_pairs_db = ColocPairsDBClient()
 
         variants = studies_db.get_variants(snp_ids=snp_ids, variants=variants, rsids=rsids, grange=grange)
         variants = convert_duckdb_to_pydantic_model(Variant, variants)
-        variant_ids = [variant.id for variant in variants]
-
-        if include_associations:
-            associations = associations_db.get_associations(snp_ids=variant_ids, p_value_threshold=p_value_threshold)
-            associations = convert_duckdb_to_pydantic_model(Association, associations)
-
-            for variant in variants:
-                variant.associations = [association for association in associations if association.snp_id == variant.id]
-
-        if include_coloc_pairs:
-            study_extraction_ids = [variant.study_extraction_id for variant in variants]
-            coloc_pairs = coloc_pairs_db.get_coloc_pairs_for_study_extraction_matches(
-                study_extraction_ids, h4_threshold=h4_threshold
-            )
-            coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
-            for variant in variants:
-                variant.coloc_pairs = [coloc_pair for coloc_pair in coloc_pairs if coloc_pair.snp_id == variant.id]
 
         return variants
 

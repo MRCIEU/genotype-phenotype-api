@@ -29,16 +29,15 @@ class ColocPairsDBClient:
     ):
         if not study_extraction_ids:
             return []
-        placeholders = ",".join(["?" for _ in study_extraction_ids])
 
         query = f"""
             SELECT * FROM coloc_pairs
-            WHERE study_extraction_a_id IN ({placeholders})
-                AND study_extraction_b_id IN ({placeholders})
+            WHERE study_extraction_a_id IN (SELECT * FROM UNNEST(?))
+                AND study_extraction_b_id IN (SELECT * FROM UNNEST(?))
                 AND h4 >= ?
                 AND h3 >= ?
                 AND spurious = FALSE
         """
 
-        params = study_extraction_ids + study_extraction_ids + [h4_threshold, h3_threshold]
+        params = [study_extraction_ids, study_extraction_ids, h4_threshold, h3_threshold]
         return self.coloc_pairs_conn.execute(query, params).fetchall()

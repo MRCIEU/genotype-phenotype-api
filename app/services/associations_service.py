@@ -1,5 +1,6 @@
 from typing import List
 from app.db.associations_db import AssociationsDBClient
+from app.logging_config import get_logger
 from app.models.schemas import (
     Association,
     ColocGroup,
@@ -9,6 +10,7 @@ from app.models.schemas import (
     convert_duckdb_to_pydantic_model,
 )
 
+logger = get_logger(__name__)
 
 class AssociationsService:
     def __init__(self):
@@ -29,6 +31,7 @@ class AssociationsService:
             + [(coloc.snp_id, coloc.study_id) for coloc in colocs]
             + [(r.snp_id, r.study_id) for r in rare_results]
         )
+        logger.info(f"Getting associations for {len(snp_study_pairs)} SNP-study pairs")
 
         associations = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
         associations = convert_duckdb_to_pydantic_model(Association, associations)

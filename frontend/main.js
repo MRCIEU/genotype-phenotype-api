@@ -39,12 +39,12 @@ const graphOptions = {
     traitType: "all",
     includeTrans: false,
     categories: {
-        Anthropometric: false,
+        "Anthropometric": false,
         "Blood Cell Measure": false,
         "Clinical Measure": false,
         "Health Trait / Disease Outcome": false,
         "Operation / Treatment": false,
-        Physiological: false,
+        "Physiological": false,
         "Social / Behavioural": false,
     },
     pValueOptions: [
