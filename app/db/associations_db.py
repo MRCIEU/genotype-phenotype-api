@@ -26,6 +26,7 @@ class AssociationsDBClient:
         query = f"""
             SELECT * FROM associations 
             WHERE snp_id = ? AND study_id IN ({placeholders})
+            LIMIT 100
         """
         params = [snp_id] + study_ids
         return self.associations_conn.execute(query, params).fetchall()
@@ -56,6 +57,8 @@ class AssociationsDBClient:
         if p_value_threshold is not None:
             query += " AND p <= ?"
             params.append(p_value_threshold)
+        
+        query += " LIMIT 100"
 
         return self.associations_conn.execute(query, params).fetchall()
 
@@ -67,7 +70,9 @@ class AssociationsDBClient:
         flattened_pairs = [item for pair in snp_study_pairs for item in pair]
         placeholders = ",".join(["(?, ?)" for _ in snp_study_pairs])
 
+        # TODO: Remove limit once the associations table is updated
         query = f"""
             SELECT * FROM associations WHERE (snp_id, study_id) IN ({placeholders})
+            LIMIT 100
         """
         return self.associations_conn.execute(query, flattened_pairs).fetchall()
