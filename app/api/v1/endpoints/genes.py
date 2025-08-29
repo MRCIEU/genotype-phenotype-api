@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Path, Query
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
-    Association,
     Gene,
     ExtendedStudyExtraction,
     ColocGroup,
@@ -17,6 +16,7 @@ import traceback
 
 from app.services.cache_service import DBCacheService
 from app.logging_config import get_logger, time_endpoint
+from app.services.associations_service import AssociationsService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -49,6 +49,7 @@ async def get_gene(
         tissues = cache_service.get_tissues()
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
+        associations_service = AssociationsService()
 
         gene_id = None
         try:
@@ -83,12 +84,6 @@ async def get_gene(
         coloc_groups = (region_colocs or []) + (gene_colocs or [])
         coloc_groups = list(set(coloc_groups)) if coloc_groups else []
 
-        associations = None
-        if include_associations:
-            study_ids = [coloc.study_id for coloc in coloc_groups] + [s.study_id for s in study_extractions]
-            snp_ids = [coloc.snp_id for coloc in coloc_groups] + [s.snp_id for s in study_extractions]
-            associations = studies_db.get_associations(snp_ids=snp_ids, study_ids=study_ids)
-            associations = convert_duckdb_to_pydantic_model(Association, associations)
 
         study_rare_results = studies_db.get_rare_results_for_study_extraction_ids(study_extraction_ids)
 
@@ -99,6 +94,10 @@ async def get_gene(
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
         if coloc_groups is not None:
             coloc_groups = convert_duckdb_to_pydantic_model(ColocGroup, coloc_groups)
+
+        associations = None
+        if include_associations:
+            associations = associations_service.get_associations(coloc_groups, rare_results)
 
         coloc_pairs = None
         if include_coloc_pairs:

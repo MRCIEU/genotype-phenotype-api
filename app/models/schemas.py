@@ -41,6 +41,12 @@ class StudySource(BaseModel):
     doi: str
 
 
+class AssociationMetadata(BaseModel):
+    start_snp_id: int
+    stop_snp_id: int
+    associations_table_name: str
+
+
 class Association(BaseModel):
     snp_id: int
     study_id: int
@@ -332,7 +338,6 @@ class RegionResponse(BaseModel):
     rare_results: List[RareResult]
     variants: List[Variant]
     tissues: List[str]
-    associations: Optional[List[Association]] = None
 
 
 class VariantResponse(BaseModel):
