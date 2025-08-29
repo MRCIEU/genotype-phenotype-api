@@ -13,7 +13,9 @@ settings = get_settings()
 
 @lru_cache()
 def get_coloc_pairs_db_connection():
-    return duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
+    connection = duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
+    connection.execute("PRAGMA memory_limit='8GB'")
+    return connection
 
 
 class ColocPairsDBClient:

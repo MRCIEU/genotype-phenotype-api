@@ -56,7 +56,15 @@ class AssociationsService:
                 associations = self.associations_db.get_associations_by_table_name(table_name, pairs)
                 associations = convert_duckdb_to_pydantic_model(Association, associations)
                 all_associations.extend(associations)
-        return all_associations
+        
+        # Filter associations to only include those that match the original snp_study_pairs
+        filtered_associations = []
+        snp_study_pairs_set = set(snp_study_pairs)
+        for association in all_associations:
+            if (association.snp_id, association.study_id) in snp_study_pairs_set:
+                filtered_associations.append(association)
+
+        return filtered_associations
 
 
     def flip_association_data_to_effect_allele(self, variants: List[Variant]):
