@@ -11,7 +11,9 @@ settings = get_settings()
 
 @lru_cache()
 def get_gpm_db_connection():
-    return duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)
+    connection = duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)
+    connection.execute("PRAGMA memory_limit='8GB'")
+    return connection
 
 
 class StudiesDBClient:
