@@ -55,6 +55,7 @@ def test_get_variants_by_grange():
 def test_get_variant_by_id(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants/{snp_ids[0]}")
+    print(response.json())
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None
@@ -76,6 +77,7 @@ def test_get_variant_by_id(variants_in_studies_db):
 def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants/{snp_ids[0]}?include_coloc_pairs=true")
+    print(response.json())
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None

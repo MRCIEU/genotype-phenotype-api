@@ -1,11 +1,9 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import StreamingResponse
-from app.db.associations_db import AssociationsDBClient
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
-    Association,
     ColocGroup,
     ColocPair,
     ExtendedColocGroup,
@@ -18,6 +16,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
+from app.services.associations_service import AssociationsService
 from app.services.summary_stat_service import SummaryStatService
 
 logger = get_logger(__name__)
@@ -67,8 +66,8 @@ async def get_variant(
 ) -> VariantResponse:
     try:
         studies_db = StudiesDBClient()
-        associations_db = AssociationsDBClient()
         coloc_pairs_db = ColocPairsDBClient()
+        associations_service = AssociationsService()
 
         variant = studies_db.get_variant(snp_id)
         if variant is None:
@@ -93,13 +92,7 @@ async def get_variant(
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
 
-        study_ids = (
-            [coloc.study_id for coloc in colocs]
-            + [rare_result.study_id for rare_result in rare_results]
-            + [study_extraction.study_id for study_extraction in study_extractions]
-        )
-        associations = associations_db.get_associations_for_variant_and_studies(snp_id, study_ids)
-        associations = convert_duckdb_to_pydantic_model(Association, associations)
+        associations = associations_service.get_associations(colocs, rare_results)
 
         coloc_pairs = None
         if include_coloc_pairs:

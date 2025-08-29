@@ -18,15 +18,21 @@ class AssociationsDBClient:
         self.associations_conn = get_associations_db_connection()
 
     @log_performance
+    def get_associations_metadata(self):
+        query = "SELECT * FROM associations_metadata"
+        return self.associations_conn.execute(query).fetchall()
+
+    @log_performance
     def get_associations_for_variant_and_studies(self, snp_id: int, study_ids: List[int]):
         if not study_ids or not snp_id:
             return []
+        
+        study_ids = study_ids[:100]
 
         placeholders = ",".join(["?" for _ in study_ids])
         query = f"""
             SELECT * FROM associations 
             WHERE snp_id = ? AND study_id IN ({placeholders})
-            LIMIT 100
         """
         params = [snp_id] + study_ids
         return self.associations_conn.execute(query, params).fetchall()
@@ -66,6 +72,8 @@ class AssociationsDBClient:
     def get_associations_by_snp_study_pairs(self, snp_study_pairs: List[Tuple[int, int]]):
         if not snp_study_pairs:
             return []
+        
+        snp_study_pairs = snp_study_pairs[:100]
 
         flattened_pairs = [item for pair in snp_study_pairs for item in pair]
         placeholders = ",".join(["(?, ?)" for _ in snp_study_pairs])
@@ -73,6 +81,18 @@ class AssociationsDBClient:
         # TODO: Remove limit once the associations table is updated
         query = f"""
             SELECT * FROM associations WHERE (snp_id, study_id) IN ({placeholders})
-            LIMIT 100
+        """
+        return self.associations_conn.execute(query, flattened_pairs).fetchall()
+
+    @log_performance
+    def get_associations_by_table_name(self, table_name: str, snp_study_pairs: List[Tuple[int, int]]):
+        if not snp_study_pairs:
+            return []
+        
+        flattened_pairs = [item for pair in snp_study_pairs for item in pair]
+        placeholders = ",".join(["(?, ?)" for _ in snp_study_pairs])
+
+        query = f"""
+            SELECT * FROM {table_name} WHERE (snp_id, study_id) IN ({placeholders})
         """
         return self.associations_conn.execute(query, flattened_pairs).fetchall()
