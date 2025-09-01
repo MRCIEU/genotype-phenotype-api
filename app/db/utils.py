@@ -13,6 +13,6 @@ def log_performance(func):
         finally:
             end_time = time.time()
             execution_time = (end_time - start_time) * 1000
-            logger.bind(execution_time=f"{execution_time:.2f}ms").debug(f"{func.__name__} completed")
+            logger.bind(execution_time=f"{execution_time:.2f}ms").info(f"{func.__name__} completed")
 
     return wrapper
