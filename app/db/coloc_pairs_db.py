@@ -32,6 +32,8 @@ class ColocPairsDBClient:
         if not study_extraction_ids:
             return []
 
+        study_extraction_ids = sorted(study_extraction_ids)
+
         query = """
             SELECT * FROM coloc_pairs
             WHERE study_extraction_a_id IN (SELECT * FROM UNNEST(?))

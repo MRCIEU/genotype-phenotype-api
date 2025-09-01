@@ -11,7 +11,9 @@ import graphTransformations from "./graphTransformations.js";
 export default function snp() {
     return {
         data: null,
+        svgZip: null,
         svgs: [],
+        loadingSvgs: new Set(),
         filteredData: {
             colocs: null,
             rare: null,
@@ -53,24 +55,50 @@ export default function snp() {
         },
 
         async getSvgData(colocGroupId) {
+            const initialSvgLoadNumber = 20;
             if (constants.isLocal) {
                 colocGroupId = "test";
             }
+
             const svgsUrl = `${constants.assetBaseUrl}/groups/coloc_group_${colocGroupId}_svgs.zip`;
             const zipResponse = await fetch(svgsUrl);
             const zipBlob = await zipResponse.blob();
-            const zip = await JSZip.loadAsync(zipBlob);
+            this.svgZip = await JSZip.loadAsync(zipBlob);
 
             this.svgs = [];
-            const entries = Object.entries(zip.files);
-            for (let i = 0; i < entries.length; i++) {
-                const [filename, file] = entries[i];
+            const entries = Object.entries(this.svgZip.files);
+            for (let i = 0; i < Math.min(entries.length, initialSvgLoadNumber); i++) {
+                const [filename, _] = entries[i];
                 let studyExtractionId = parseInt(filename.split(".svg")[0]);
+                await this.loadSpecificSvg(studyExtractionId);
+            }
+        },
+
+        async loadSpecificSvg(studyExtractionId) {
+            if (
+                this.loadingSvgs.has(studyExtractionId) ||
+                this.svgs.some(s => s.studyExtractionId === studyExtractionId)
+            ) {
+                return;
+            }
+            this.loadingSvgs.add(studyExtractionId);
+
+            try {
+                const entries = Object.entries(this.svgZip.files);
+
+                let [_, file] = [null, null];
                 if (constants.isLocal) {
-                    studyExtractionId = this.data.coloc_groups[i % this.data.coloc_groups.length].study_extraction_id;
+                    const fileIndex = studyExtractionId % entries.length;
+                    [_, file] = entries.find(entry => entry[0].includes(fileIndex.toString()));
+                } else {
+                    [_, file] = entries.find(entry => entry[0].includes(studyExtractionId.toString()));
                 }
+
+                const originalStudyExtractionId = studyExtractionId;
                 const svgContent = await file.async("text");
-                this.svgs.push({ studyExtractionId, svgContent });
+                this.svgs.push({ studyExtractionId: originalStudyExtractionId, svgContent });
+            } finally {
+                this.loadingSvgs.delete(studyExtractionId);
             }
         },
 
@@ -129,7 +157,10 @@ export default function snp() {
                 return graphOptionFilters;
             });
             this.filteredData.svgs = this.svgs.filter(svg => {
-                return this.filteredData.colocs.some(coloc => coloc.study_extraction_id === svg.studyExtractionId);
+                const hasMatch = this.filteredData.colocs.some(
+                    coloc => coloc.study_extraction_id === svg.studyExtractionId
+                );
+                return hasMatch;
             });
             // this.data.coloc_groups.sort((a, b) => a.association.beta - b.association.beta);
         },
@@ -264,37 +295,50 @@ export default function snp() {
                 .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.target.index]])).darker())
                 .attr("opacity", 0.7)
                 .on("mouseover", function (event, d) {
-                    d3.select(this).transition().duration(200).attr("opacity", 1);
-                    const coloc = self.filteredData.colocs.find(coloc => coloc.trait_name === nodes[d.target.index]);
-                    self.highlightedStudy = coloc.study_extraction_id;
-                    self.svgs = self.svgs.sort((a, b) =>
-                        a.studyExtractionId === coloc.study_extraction_id
-                            ? 1
-                            : b.studyExtractionId === coloc.study_extraction_id
-                              ? -1
-                              : 0
-                    );
-                    let tooltipColor = "white";
-                    if (coloc.association) {
-                        tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
+                    if (this.hoverTimeout) {
+                        clearTimeout(this.hoverTimeout);
                     }
-                    d3
-                        .select("#snp-chord-diagram")
-                        .append("div")
-                        .attr("class", "tooltip")
-                        .style("position", "absolute")
-                        .style("background-color", tooltipColor)
-                        .style("padding", "5px")
-                        .style("border", "1px solid black")
-                        .style("border-radius", "5px")
-                        .style("left", `${event.pageX + 10}px`)
-                        .style("top", `${event.pageY - 10}px`).html(`Trait: ${coloc.trait_name}<br>
-                                        P-value: ${coloc.min_p.toExponential(2)}<br>
-                                        Cis/Trans: ${coloc.cis_trans}<br>
-                                        BETA: ${coloc.association ? coloc.association.beta : "N/A"}
-                                        `);
+
+                    this.hoverTimeout = setTimeout(() => {
+                        d3.select(this).transition().duration(200).attr("opacity", 1);
+                        const coloc = self.filteredData.colocs.find(
+                            coloc => coloc.trait_name === nodes[d.target.index]
+                        );
+                        self.highlightedStudy = coloc.study_extraction_id;
+                        self.loadSpecificSvg(coloc.study_extraction_id);
+                        self.svgs = self.svgs.sort((a, b) =>
+                            a.studyExtractionId === coloc.study_extraction_id
+                                ? 1
+                                : b.studyExtractionId === coloc.study_extraction_id
+                                  ? -1
+                                  : 0
+                        );
+                        let tooltipColor = "white";
+                        if (coloc.association) {
+                            tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
+                        }
+                        d3
+                            .select("#snp-chord-diagram")
+                            .append("div")
+                            .attr("class", "tooltip")
+                            .style("position", "absolute")
+                            .style("background-color", tooltipColor)
+                            .style("padding", "5px")
+                            .style("border", "1px solid black")
+                            .style("border-radius", "5px")
+                            .style("left", `${event.pageX + 10}px`)
+                            .style("top", `${event.pageY - 10}px`).html(`Trait: ${coloc.trait_name}<br>
+                                            P-value: ${coloc.min_p.toExponential(2)}<br>
+                                            Cis/Trans: ${coloc.cis_trans}<br>
+                                            BETA: ${coloc.association ? coloc.association.beta : "N/A"}
+                                            `);
+                    }, 200);
                 })
                 .on("mouseout", function () {
+                    if (this.hoverTimeout) {
+                        clearTimeout(this.hoverTimeout);
+                        this.hoverTimeout = null;
+                    }
                     d3.select(this).transition().duration(200).attr("opacity", 0.7);
                     d3.selectAll(".tooltip").remove();
                 });
@@ -324,13 +368,7 @@ export default function snp() {
 
             snpLegend.append("rect").attr("width", 18).attr("height", 18).attr("fill", "#808080");
 
-            snpLegend
-                .append("text")
-                .attr("x", 24)
-                .attr("y", 9)
-                .attr("dy", "0.35em")
-                .text("Candidate SNP")
-                .style("font-size", "12px");
+            snpLegend.attr("x", 24).attr("y", 9).attr("dy", "0.35em").text("Candidate SNP").style("font-size", "12px");
         },
 
         getForestPlot() {
@@ -339,7 +377,7 @@ export default function snp() {
             const plotContainer = d3.select("#forest-plot");
             plotContainer.selectAll("*").remove();
 
-            const margin = { top: 50, right: 20, bottom: 40, left: 10 };
+            const margin = { top: 45, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
             const height = this.filteredData.colocs.length * 27;
 
@@ -350,18 +388,22 @@ export default function snp() {
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            const validData = this.filteredData.colocs.filter(
+            // Use all data points for y-axis scale, but filter for valid data when drawing
+            const allData = this.filteredData.colocs;
+            const validData = allData.filter(
                 d => d.association && d.association.beta !== null && d.association.se !== null
             );
 
-            const maxAbsBeta = d3.max(validData, d => Math.abs(d.association.beta));
+            // Calculate max beta from valid data only
+            const maxAbsBeta = validData.length > 0 ? d3.max(validData, d => Math.abs(d.association.beta)) : 1;
             const xRange = [-maxAbsBeta * 1.5, maxAbsBeta * 1.5];
 
             const x = d3.scaleLinear().domain(xRange).range([0, width]);
 
+            // Use all data points for y-axis scale to maintain spacing
             const y = d3
                 .scaleBand()
-                .domain(validData.map(d => d.study_extraction_id))
+                .domain(allData.map(d => d.study_extraction_id))
                 .range([0, height])
                 .padding(0);
 
@@ -382,28 +424,37 @@ export default function snp() {
                 .attr("stroke", "#000")
                 .attr("stroke-width", 1);
 
-            validData.forEach(d => {
-                const beta = d.association.beta;
-                const se = d.association.se;
+            allData.forEach(d => {
                 const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
 
-                svg.append("line")
-                    .attr("x1", x(beta - 1.96 * se))
-                    .attr("y1", yPos)
-                    .attr("x2", x(beta + 1.96 * se))
-                    .attr("y2", yPos)
-                    .attr("stroke", beta > 0 ? "#afe1af" : "#ee4b2b")
-                    .attr("stroke-width", 2);
+                const hasValidData = d.association && d.association.beta !== null && d.association.se !== null;
 
-                svg.append("circle")
-                    .attr("cx", x(beta))
-                    .attr("cy", yPos)
-                    .attr("r", 4)
-                    .attr("fill", beta > 0 ? "#afe1af" : "#ee4b2b");
+                if (hasValidData) {
+                    const beta = d.association.beta;
+                    const se = d.association.se;
 
-                svg.append("title").text(
-                    `Study ID: ${d.study_extraction_id}\nTrait: ${d.trait_name}\nBeta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`
-                );
+                    const group = svg.append("g");
+
+                    group
+                        .append("line")
+                        .attr("x1", x(beta - 1.96 * se))
+                        .attr("y1", yPos)
+                        .attr("x2", x(beta + 1.96 * se))
+                        .attr("y2", yPos)
+                        .attr("stroke", beta > 0 ? "#afe1af" : "#ee4b2b")
+                        .attr("stroke-width", 2);
+
+                    group
+                        .append("circle")
+                        .attr("cx", x(beta))
+                        .attr("cy", yPos)
+                        .attr("r", 4)
+                        .attr("fill", beta > 0 ? "#afe1af" : "#ee4b2b");
+
+                    group
+                        .append("title")
+                        .text(`Trait: ${d.trait_name}\nBeta: ${beta.toExponential(2)}\nSE: ${se.toExponential(2)}`);
+                }
             });
 
             svg.append("text")
@@ -445,18 +496,6 @@ export default function snp() {
                 .attr("text-anchor", "middle")
                 .text(`CHR ${this.data.variant.chr}`);
 
-            // Draw a thin red vertical line at the variant position
-            const variantMb = this.data.variant.bp / 1e6;
-            const variantX = x(variantMb);
-            svg.append("line")
-                .attr("x1", variantX)
-                .attr("x2", variantX)
-                .attr("y1", margin.top)
-                .attr("y2", height - margin.bottom)
-                .attr("stroke", "red")
-                .attr("stroke-width", 0.8)
-                .attr("opacity", 0.8);
-
             this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }) => {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(svgContent, "image/svg+xml");
@@ -483,13 +522,13 @@ export default function snp() {
                         element.setAttribute("opacity", "0.4");
                     });
                 }
+
                 let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
                 while (importedSvg.childNodes.length > 0) {
                     g.appendChild(importedSvg.childNodes[0]);
                 }
 
-                // Scale SVG to fit the D3 plot area
                 const plotWidth = width - margin.left - margin.right;
                 const plotHeight = height - margin.top - margin.bottom;
                 const scaleX = plotWidth / originalSvgWidth;
@@ -499,7 +538,18 @@ export default function snp() {
                 svg.node().appendChild(g);
             });
 
-            // Add and update the dynamic marker text
+            // Draw a thin red vertical line at the variant position (after SVGs so it appears on top)
+            const variantMb = this.data.variant.bp / 1e6;
+            const variantX = x(variantMb);
+            svg.append("line")
+                .attr("x1", variantX)
+                .attr("x2", variantX)
+                .attr("y1", margin.top)
+                .attr("y2", height - margin.bottom)
+                .attr("stroke", "red")
+                .attr("stroke-width", 0.8)
+                .attr("opacity", 0.8);
+
             const markerTextElement = svg
                 .append("text")
                 .attr("id", "highlighted-marker")
@@ -509,7 +559,7 @@ export default function snp() {
                 .attr("font-size", "18px")
                 .attr("font-weight", "bold")
                 .attr("fill", "#000")
-                .text(""); // Start empty
+                .text("");
 
             if (this.highlightedStudy) {
                 const study = this.filteredData.colocs.find(d => d.study_extraction_id === this.highlightedStudy);
