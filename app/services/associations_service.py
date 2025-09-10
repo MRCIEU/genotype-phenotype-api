@@ -51,7 +51,9 @@ class AssociationsService:
         all_associations = []
         for table_name, pairs in list(snp_study_pairs_by_table.items()):
             if len(pairs) > 0:
-                associations = self.associations_db.get_associations_by_table_name(table_name, pairs)
+                snp_ids = [pair[0] for pair in pairs]
+                associations = self.associations_db.get_associations_by_snps_table_name(table_name, snp_ids)
+                # associations = self.associations_db.get_associations_by_table_name(table_name, pairs)
                 associations = convert_duckdb_to_pydantic_model(Association, associations)
                 all_associations.extend(associations)
 
