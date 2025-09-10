@@ -17,8 +17,6 @@ logger = get_logger(__name__)
 class AssociationsService:
     def __init__(self):
         self.associations_db = AssociationsDBClient()
-        self.associations_metadata = self.get_associations_metadata()
-        self.metadata_to_pairs = {metadata.associations_table_name: [] for metadata in self.associations_metadata}
     
     @lru_cache(maxsize=1)
     def get_associations_metadata(self):
@@ -27,10 +25,11 @@ class AssociationsService:
         return metadata
     
     def split_association_query_by_metadata(self, snp_study_pairs: List[Tuple[int, int]]):
-        metadata_to_pairs = self.metadata_to_pairs.copy()
+        associations_metadata = self.get_associations_metadata()
+        metadata_to_pairs = {metadata.associations_table_name: [] for metadata in associations_metadata}
         
         for pair in snp_study_pairs:
-            for metadata in self.associations_metadata:
+            for metadata in associations_metadata:
                 if metadata.start_snp_id <= pair[0] <= metadata.stop_snp_id:
                     metadata_to_pairs[metadata.associations_table_name].append(pair)
         return metadata_to_pairs

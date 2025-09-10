@@ -47,6 +47,12 @@ class AssociationMetadata(BaseModel):
     associations_table_name: str
 
 
+class ColocPairMetadata(BaseModel):
+    start_id: int
+    stop_id: int
+    coloc_pairs_table_name: str
+
+
 class Association(BaseModel):
     snp_id: int
     study_id: int
@@ -141,6 +147,7 @@ class Trait(BaseModel):
     trait: str
     trait_name: str
     trait_category: Optional[str] = None
+    biological_category: Optional[str] = None
     common_study: Optional[Study] = None
     rare_study: Optional[Study] = None
 
@@ -155,6 +162,7 @@ class BasicTraitResponse(BaseModel):
     trait: str
     trait_name: str
     trait_category: Optional[str] = None
+    biological_category: Optional[str] = None
     variant_type: str
     sample_size: int
     category: str

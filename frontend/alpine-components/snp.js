@@ -11,7 +11,7 @@ import graphTransformations from "./graphTransformations.js";
 export default function snp() {
     return {
         data: null,
-        svgZip: null,
+        svgZips: {},
         svgs: [],
         loadingSvgs: new Set(),
         filteredData: {
@@ -42,8 +42,10 @@ export default function snp() {
                     cis_trans: coloc.cis_trans ? coloc.cis_trans : "N/A",
                 }));
                 this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
-                const colocGroupId = this.data.coloc_groups[0].coloc_group_id;
-                await this.getSvgData(colocGroupId);
+
+                let colocGroupIds = this.data.coloc_groups.map(coloc => coloc.coloc_group_id);
+                colocGroupIds = [...new Set(colocGroupIds)];
+                await this.getSvgData(colocGroupIds);
 
                 const ld_block = this.data.coloc_groups[0].ld_block;
                 const ld_info = ld_block.split(/[/-]/);
@@ -54,27 +56,27 @@ export default function snp() {
             }
         },
 
-        async getSvgData(colocGroupId) {
+        async getSvgData(colocGroupIds) {
             const initialSvgLoadNumber = 20;
             if (constants.isLocal) {
-                colocGroupId = "test";
+                colocGroupIds = ["test"];
             }
+            for (const colocGroupId of colocGroupIds) {
+                const svgsUrl = `${constants.assetBaseUrl}/groups/coloc_group_${colocGroupId}_svgs.zip`;
+                const zipResponse = await fetch(svgsUrl);
+                const zipBlob = await zipResponse.blob();
+                this.svgZips[colocGroupId] = await JSZip.loadAsync(zipBlob);
 
-            const svgsUrl = `${constants.assetBaseUrl}/groups/coloc_group_${colocGroupId}_svgs.zip`;
-            const zipResponse = await fetch(svgsUrl);
-            const zipBlob = await zipResponse.blob();
-            this.svgZip = await JSZip.loadAsync(zipBlob);
-
-            this.svgs = [];
-            const entries = Object.entries(this.svgZip.files);
-            for (let i = 0; i < Math.min(entries.length, initialSvgLoadNumber); i++) {
-                const [filename, _] = entries[i];
-                let studyExtractionId = parseInt(filename.split(".svg")[0]);
-                await this.loadSpecificSvg(studyExtractionId);
+                const entries = Object.entries(this.svgZips[colocGroupId].files);
+                for (let i = 0; i < Math.min(entries.length, initialSvgLoadNumber); i++) {
+                    const [filename, _] = entries[i];
+                    let studyExtractionId = parseInt(filename.split(".svg")[0]);
+                    await this.loadSpecificSvg(colocGroupId, studyExtractionId);
+                }
             }
         },
 
-        async loadSpecificSvg(studyExtractionId) {
+        async loadSpecificSvg(colocGroupId, studyExtractionId) {
             if (
                 this.loadingSvgs.has(studyExtractionId) ||
                 this.svgs.some(s => s.studyExtractionId === studyExtractionId)
@@ -84,14 +86,25 @@ export default function snp() {
             this.loadingSvgs.add(studyExtractionId);
 
             try {
-                const entries = Object.entries(this.svgZip.files);
+                const entries = Object.entries(this.svgZips[colocGroupId].files);
 
-                let [_, file] = [null, null];
+                let file = null;
                 if (constants.isLocal) {
                     const fileIndex = studyExtractionId % entries.length;
-                    [_, file] = entries.find(entry => entry[0].includes(fileIndex.toString()));
+                    const foundEntry = entries.find(entry => entry[0].includes(fileIndex.toString()));
+                    if (foundEntry) {
+                        file = foundEntry[1];
+                    }
                 } else {
-                    [_, file] = entries.find(entry => entry[0].includes(studyExtractionId.toString()));
+                    const foundEntry = entries.find(entry => entry[0].includes(studyExtractionId.toString()));
+                    if (foundEntry) {
+                        file = foundEntry[1];
+                    }
+                }
+
+                if (!file) {
+                    console.warn(`No SVG file found for study extraction ID: ${studyExtractionId}`);
+                    return;
                 }
 
                 const originalStudyExtractionId = studyExtractionId;
