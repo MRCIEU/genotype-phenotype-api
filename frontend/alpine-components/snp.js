@@ -77,6 +77,9 @@ export default function snp() {
         },
 
         async loadSpecificSvg(colocGroupId, studyExtractionId) {
+            if (constants.isLocal) {
+                colocGroupId = "test";
+            }
             if (
                 this.loadingSvgs.has(studyExtractionId) ||
                 this.svgs.some(s => s.studyExtractionId === studyExtractionId)
@@ -318,7 +321,7 @@ export default function snp() {
                             coloc => coloc.trait_name === nodes[d.target.index]
                         );
                         self.highlightedStudy = coloc.study_extraction_id;
-                        self.loadSpecificSvg(coloc.study_extraction_id);
+                        self.loadSpecificSvg(coloc.coloc_group_id, coloc.study_extraction_id);
                         self.svgs = self.svgs.sort((a, b) =>
                             a.studyExtractionId === coloc.study_extraction_id
                                 ? 1
