@@ -210,7 +210,7 @@ class StudiesDBClient:
         if not study_id:
             return []
 
-        return self._fetch_rare_results(f"study_id = ?", [study_id])
+        return self._fetch_rare_results("study_id = ?", [study_id])
 
     @log_performance
     def get_rare_results_for_ld_block(self, ld_block_id: int):

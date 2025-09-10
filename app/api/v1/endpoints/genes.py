@@ -84,7 +84,6 @@ async def get_gene(
         coloc_groups = (region_colocs or []) + (gene_colocs or [])
         coloc_groups = list(set(coloc_groups)) if coloc_groups else []
 
-
         study_rare_results = studies_db.get_rare_results_for_study_extraction_ids(study_extraction_ids)
 
         gene_rare_results = studies_db.get_rare_results_for_gene(gene.id)

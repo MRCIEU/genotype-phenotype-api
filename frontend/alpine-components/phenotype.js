@@ -294,7 +294,7 @@ export default function pheontype() {
 
         getPhenotypeGraph() {
             if (!this.svgs.metadata) return;
-            
+
             const chartContainer = document.getElementById("phenotype-chart");
             chartContainer.innerHTML = "";
 

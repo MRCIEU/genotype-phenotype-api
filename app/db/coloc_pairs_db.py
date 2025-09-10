@@ -26,10 +26,11 @@ class ColocPairsDBClient:
     def get_coloc_pairs_metadata(self):
         query = "SELECT * FROM coloc_pairs_metadata"
         return self.coloc_pairs_conn.execute(query).fetchall()
-    
+
     @log_performance
     def get_coloc_pairs_by_table_name(
-        self, table_name: str,
+        self,
+        table_name: str,
         study_extraction_a_ids: List[int],
         study_extraction_b_ids: List[int],
         h3_threshold: float = 0.0,
@@ -37,7 +38,7 @@ class ColocPairsDBClient:
     ):
         if not study_extraction_a_ids or not study_extraction_b_ids:
             return []
-        
+
         study_extraction_a_placeholders = ",".join(["?" for _ in study_extraction_a_ids])
         study_extraction_b_placeholders = ",".join(["?" for _ in study_extraction_b_ids])
 
@@ -49,7 +50,9 @@ class ColocPairsDBClient:
                 AND h4 >= ?
                 AND spurious = FALSE
         """
-        return self.coloc_pairs_conn.execute(query, study_extraction_a_ids + study_extraction_b_ids + [h3_threshold, h4_threshold]).fetchall()
+        return self.coloc_pairs_conn.execute(
+            query, study_extraction_a_ids + study_extraction_b_ids + [h3_threshold, h4_threshold]
+        ).fetchall()
 
     @log_performance
     def get_coloc_pairs_for_study_extraction_matches(
