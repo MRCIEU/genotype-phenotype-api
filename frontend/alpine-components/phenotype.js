@@ -286,7 +286,6 @@ export default function pheontype() {
 
         initPhenotypeGraph() {
             this.filterDataForGraphs();
-            if (!this.svgs.metadata) return;
             const chartContainer = document.getElementById("phenotype-chart");
             graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
                 this.getPhenotypeGraph()
@@ -294,6 +293,8 @@ export default function pheontype() {
         },
 
         getPhenotypeGraph() {
+            if (!this.svgs.metadata) return;
+
             const chartContainer = document.getElementById("phenotype-chart");
             chartContainer.innerHTML = "";
 

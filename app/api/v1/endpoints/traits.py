@@ -60,7 +60,7 @@ async def get_trait(
         studies = convert_duckdb_to_pydantic_model(Study, studies)
         trait = populate_trait_studies(trait, studies)
         if trait.rare_study is not None:
-            rare_results = db.get_rare_results_for_study_ids([trait.rare_study.id])
+            rare_results = db.get_rare_results_for_study_id(trait.rare_study.id)
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
         else:
             rare_results = []
@@ -83,6 +83,7 @@ async def get_trait(
             )
             coloc_pairs = coloc_pairs_db.get_coloc_pairs_for_study_extraction_matches(study_extraction_ids)
             coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+            logger.info(f"Found {len(coloc_pairs)} coloc pairs for {trait.id}")
 
         associations = None
         if include_associations:

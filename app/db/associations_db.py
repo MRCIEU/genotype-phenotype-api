@@ -28,7 +28,7 @@ class AssociationsDBClient:
     def get_associations_by_table_name(self, table_name: str, snp_study_pairs: List[Tuple[int, int]]):
         if not snp_study_pairs:
             return []
-        
+
         placeholders = ",".join(["?" for _ in snp_study_pairs])
         all_snp_ids = [pair[0] for pair in snp_study_pairs]
         all_study_ids = [pair[1] for pair in snp_study_pairs]
