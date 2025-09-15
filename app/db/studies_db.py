@@ -474,6 +474,18 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
+    def get_study_extractions_for_gene(self, gene_id: int):
+        return self.studies_conn.execute( """
+            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
+                FROM study_extractions 
+                JOIN studies ON study_extractions.study_id = studies.id
+                JOIN traits ON studies.trait_id = traits.id
+                WHERE study_extractions.gene_id = ?
+            """,
+            (gene_id,),
+        ).fetchall()
+    @log_performance
+
     def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, gene_id: int):
         return self.studies_conn.execute(
             """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue

@@ -25,17 +25,6 @@ class AssociationsDBClient:
         return self.associations_conn.execute(query).fetchall()
 
     @log_performance
-    def get_associations_by_snps_table_name(self, table_name: str, snp_ids: List[int]):
-        if not snp_ids:
-            return []
-
-        placeholders = ",".join(["?" for _ in snp_ids])
-        query = f"""
-            SELECT * FROM {table_name} WHERE snp_id IN ({placeholders})
-        """
-        return self.associations_conn.execute(query, snp_ids).fetchall()
-
-    @log_performance
     def get_associations_by_table_name(self, table_name: str, snp_study_pairs: List[Tuple[int, int]]):
         if not snp_study_pairs:
             return []
