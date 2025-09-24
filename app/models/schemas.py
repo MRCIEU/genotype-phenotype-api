@@ -1,8 +1,13 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from enum import Enum
 import json
 from pydantic import BaseModel, field_validator, model_validator
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Iterable
+from app.db.utils import log_performance
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class Singleton(type):
@@ -19,6 +24,8 @@ class StudyDataType(Enum):
     gene_expression = "Gene Expression"
     methylation = "Methylation"
     protein = "Protein"
+    cell_trait = "Cell Trait"
+    plasma_protein = "Plasma Protein"
     phenotype = "Phenotype"
 
 
@@ -26,11 +33,6 @@ class VariantType(Enum):
     common = "Common"
     rare_exome = "Rare Exome"
     rare_wgs = "Rare WGS"
-
-
-class ColocGroupThreshold(Enum):
-    strong = "Strong"
-    moderate = "Moderate"
 
 
 class StudySource(BaseModel):
@@ -53,32 +55,13 @@ class ColocPairMetadata(BaseModel):
     coloc_pairs_table_name: str
 
 
-class Association(BaseModel):
-    snp_id: int
-    study_id: int
-    beta: float
-    se: float
-    p: float
-    eaf: float
-    imputed: bool
-
-
-class ColocPair(BaseModel):
-    study_extraction_a_id: int
-    study_extraction_b_id: int
-    ld_block_id: int
-    h3: float
-    h4: float
-    spurious: bool
-
-
 class ColocGroup(BaseModel):
     coloc_group_id: int
     study_id: int
     study_extraction_id: int
     snp_id: int
     ld_block_id: int
-    group_threshold: str
+    connectedness: float
     chr: Optional[int] = None
     bp: Optional[int] = None
     min_p: Optional[float] = None
@@ -94,6 +77,7 @@ class ColocGroup(BaseModel):
     tissue: Optional[str] = None
     source_id: int
     source_name: str
+    source_url: str
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -138,7 +122,7 @@ class GeneMetadata(BaseModel):
 
 
 class ExtendedColocGroup(ColocGroup):
-    association: Optional[Association] = None
+    association: Optional[dict] = None  # allow raw dict rows to avoid overhead
 
 
 class Trait(BaseModel):
@@ -279,7 +263,7 @@ class RareResult(BaseModel):
 
 
 class ExtendedRareResult(RareResult):
-    association: Optional[Association] = None
+    association: Optional[dict] = None  # allow raw dict rows to avoid overhead
 
 
 class Variant(BaseModel):
@@ -313,7 +297,7 @@ class Variant(BaseModel):
     amr_af: Optional[float] = None
     afr_af: Optional[float] = None
     sas_af: Optional[float] = None
-    associations: Optional[List[Association]] = None
+    associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
 class ExtendedVariant(Variant):
@@ -331,12 +315,12 @@ class GetGenesResponse(BaseModel):
 class GeneResponse(BaseModel):
     gene: Gene
     coloc_groups: List[ColocGroup]
-    coloc_pairs: Optional[List[ColocPair]] = None
+    coloc_pairs: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
     rare_results: List[RareResult]
     variants: List[Variant]
     study_extractions: List[ExtendedStudyExtraction]
     tissues: List[str]
-    associations: Optional[List[Association]] = None
+    associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
 class RegionResponse(BaseModel):
@@ -351,10 +335,10 @@ class RegionResponse(BaseModel):
 class VariantResponse(BaseModel):
     variant: Variant
     coloc_groups: List[ExtendedColocGroup]
-    coloc_pairs: Optional[List[ColocPair]] = None
+    coloc_pairs: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
     rare_results: List[ExtendedRareResult]
     study_extractions: List[ExtendedStudyExtraction]
-    associations: Optional[List[Association]] = None
+    associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
 class VariantSummaryStatsResponse(BaseModel):
@@ -369,11 +353,11 @@ class VariantSearchResponse(BaseModel):
 class TraitResponse(BaseModel):
     trait: Trait | GwasUpload
     coloc_groups: Optional[List[ColocGroup]] | Optional[List[ExtendedUploadColocGroup]] = None
-    coloc_pairs: Optional[List[ColocPair]] = None
+    coloc_pairs: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
-    associations: Optional[List[Association]] = None
+    associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
 class GwasStatus(Enum):
@@ -527,20 +511,26 @@ class GPMapMetadata(BaseModel):
     num_causal_variants: int
 
 
+@log_performance
 def convert_duckdb_to_pydantic_model(
-    model: BaseModel, results: Union[List[tuple], tuple]
-) -> Union[List[BaseModel], BaseModel]:
+    model: Union[BaseModel, dataclass], results: Union[List[tuple], tuple]
+) -> Union[List[BaseModel], List[dataclass], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):
         if len(results) == 0:
             return []
         converted = []
-        for row in results:
-            if row and not all(v is None for v in row):
-                model_dict = {field: row[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(row)}
-                converted.append(model(**model_dict))
-            else:
-                converted.append(None)
+        if hasattr(model, "__dataclass_fields__"):
+            converted = [model(*row) for row in results if row and not all(v is None for v in row)]
+        else:
+            for row in results:
+                if row and not all(v is None for v in row):
+                    model_dict = {
+                        field: row[idx] for idx, field in enumerate(model.model_fields.keys()) if idx < len(row)
+                    }
+                    converted.append(model(**model_dict))
+                else:
+                    converted.append(None)
         return converted
 
     # Handle single tuple case
@@ -554,5 +544,25 @@ def convert_duckdb_to_pydantic_model(
         raise ValueError("Results must be a list of tuples or a single tuple.")
 
 
+@log_performance
+def convert_duckdb_tuples_to_dicts(
+    rows: Union[List[tuple], tuple],
+    columns: List[str],
+    as_generator: bool = False,
+) -> Union[List[dict], Iterable[dict]]:
+    if rows is None or not columns:
+        return [] if not as_generator else iter(())
+
+    if isinstance(rows, tuple):
+        rows = (rows,)
+
+    cols = columns
+    mapped = (dict(zip(cols, r)) for r in rows if r is not None)
+    return mapped if as_generator else list(mapped)
+
+
 def enum_has_member(enum_class, key: str) -> bool:
-    return key in enum_class.__members__
+    try:
+        return key in enum_class.__members__
+    except Exception:
+        return False

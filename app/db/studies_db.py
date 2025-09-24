@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import ColocGroupThreshold, StudyDataType, VariantType
+from app.models.schemas import StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -19,6 +19,11 @@ def get_gpm_db_connection():
 class StudiesDBClient:
     def __init__(self):
         self.studies_conn = get_gpm_db_connection()
+        self.common_data_types = [
+            f"'{StudyDataType.phenotype.name}'",
+            f"'{StudyDataType.cell_trait.name}'",
+            f"'{StudyDataType.plasma_protein.name}'",
+        ]
 
     @log_performance
     def get_traits(self):
@@ -26,7 +31,7 @@ class StudiesDBClient:
             SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry
             FROM traits
             JOIN studies ON traits.id = studies.trait_id
-            WHERE traits.data_type = '{StudyDataType.phenotype.name}'
+            WHERE traits.data_type IN ({",".join(self.common_data_types)})
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -103,19 +108,18 @@ class StudiesDBClient:
 
     @log_performance
     def get_num_coloc_groups_per_trait(self):
-        query = f"""
+        query = """
             SELECT traits.id, COUNT(DISTINCT coloc_group_id) as num_coloc_groups
             FROM coloc_groups
             JOIN studies ON coloc_groups.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
             GROUP BY traits.id
         """
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
     def get_num_coloc_studies_per_trait(self):
-        query = f"""
+        query = """
             SELECT 
                 traits.id,
                 COUNT(DISTINCT other_studies.id) as num_coloc_studies
@@ -124,7 +128,6 @@ class StudiesDBClient:
             JOIN coloc_groups ON studies.id = coloc_groups.study_id
             JOIN coloc_groups other_colocs ON coloc_groups.coloc_group_id = other_colocs.coloc_group_id
             JOIN studies other_studies ON other_colocs.study_id = other_studies.id
-            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
             GROUP BY traits.id
         """
         return self.studies_conn.execute(query).fetchall()
@@ -222,7 +225,7 @@ class StudiesDBClient:
             SELECT traits.id, traits.trait_name
             FROM traits
             JOIN studies ON traits.id = studies.trait_id 
-            WHERE traits.data_type = '{StudyDataType.phenotype.name}' AND studies.variant_type = '{VariantType.common.name}'
+            WHERE traits.data_type IN ({",".join(self.common_data_types)}) AND studies.variant_type = '{VariantType.common.name}'
         """).fetchall()
 
     @log_performance
@@ -259,12 +262,11 @@ class StudiesDBClient:
     def get_variants(
         self,
         snp_ids: List[int] = None,
-        variants: List[str] = None,
         variant_prefixes: List[str] = None,
         rsids: List[str] = None,
         grange: List[str] = None,
     ):
-        if not snp_ids and not variants and not variant_prefixes and not rsids and not grange:
+        if not snp_ids and not variant_prefixes and not rsids and not grange:
             return []
 
         query = "SELECT * FROM snp_annotations WHERE "
@@ -284,10 +286,6 @@ class StudiesDBClient:
             start_bp, end_bp = int(start_bp), int(end_bp)
             query += "chr = ? AND bp BETWEEN ? AND ?"
             params.extend([chr, start_bp, end_bp])
-        elif variants:
-            placeholders = ",".join(["?" for _ in variants])
-            query += f"snp IN ({placeholders})"
-            params.extend(variants)
         elif variant_prefixes:
             placeholders = ",".join(["?" for _ in variant_prefixes])
             query += f"SPLIT_PART(snp, '_', 1) IN ({placeholders})"
@@ -355,7 +353,7 @@ class StudiesDBClient:
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE studies.data_type = '{StudyDataType.phenotype.name}' AND studies.variant_type = '{VariantType.common.name}'
+            WHERE studies.data_type IN ({",".join(self.common_data_types)}) AND studies.variant_type = '{VariantType.common.name}'
             GROUP BY traits.id
         """
         return self.studies_conn.execute(query).fetchall()
@@ -430,24 +428,22 @@ class StudiesDBClient:
 
     @log_performance
     def get_num_coloc_groups_per_gene(self):
-        query = f"""
+        query = """
             SELECT gene_annotations.gene, COUNT(DISTINCT coloc_group_id) as num_coloc_groups
             FROM coloc_groups
             JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
             JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
-            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
             GROUP BY gene_annotations.gene
         """
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
     def get_num_coloc_studies_per_gene(self):
-        query = f"""
+        query = """
             SELECT gene_annotations.gene, COUNT(DISTINCT coloc_groups.study_id) as num_coloc_studies
             FROM coloc_groups
             JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
             JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
-            WHERE coloc_groups.group_threshold = '{ColocGroupThreshold.strong.name}'
             GROUP BY gene_annotations.gene
         """
         return self.studies_conn.execute(query).fetchall()
@@ -475,7 +471,8 @@ class StudiesDBClient:
 
     @log_performance
     def get_study_extractions_for_gene(self, gene_id: int):
-        return self.studies_conn.execute( """
+        return self.studies_conn.execute(
+            """
             SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
                 FROM study_extractions 
                 JOIN studies ON study_extractions.study_id = studies.id
@@ -484,8 +481,8 @@ class StudiesDBClient:
             """,
             (gene_id,),
         ).fetchall()
-    @log_performance
 
+    @log_performance
     def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, gene_id: int):
         return self.studies_conn.execute(
             """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue

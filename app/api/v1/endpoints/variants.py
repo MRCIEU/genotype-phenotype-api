@@ -5,7 +5,6 @@ from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     ColocGroup,
-    ColocPair,
     ExtendedColocGroup,
     ExtendedRareResult,
     ExtendedStudyExtraction,
@@ -13,6 +12,7 @@ from app.models.schemas import (
     Variant,
     VariantResponse,
     convert_duckdb_to_pydantic_model,
+    convert_duckdb_tuples_to_dicts,
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
@@ -45,7 +45,7 @@ async def get_variants(
 
         studies_db = StudiesDBClient()
 
-        variants = studies_db.get_variants(snp_ids=snp_ids, variants=variants, rsids=rsids, grange=grange)
+        variants = studies_db.get_variants(snp_ids=snp_ids, variant_prefixes=variants, rsids=rsids, grange=grange)
         variants = convert_duckdb_to_pydantic_model(Variant, variants)
 
         return variants
@@ -96,25 +96,25 @@ async def get_variant(
 
         coloc_pairs = None
         if include_coloc_pairs:
-            study_extraction_ids = (
-                [coloc.study_extraction_id for coloc in colocs]
-                + [rare_result.study_extraction_id for rare_result in rare_results]
-                + [study_extraction.id for study_extraction in study_extractions]
+            snp_ids = (
+                [coloc.snp_id for coloc in colocs]
+                + [rare_result.snp_id for rare_result in rare_results]
+                + [study_extraction.snp_id for study_extraction in study_extractions]
             )
-            coloc_pairs = coloc_pairs_db.get_coloc_pairs_for_study_extraction_matches(
-                study_extraction_ids, h4_threshold=h4_threshold
+            coloc_pair_rows, coloc_pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
+                snp_ids, h4_threshold=h4_threshold
             )
-            coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+            coloc_pairs = convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
 
         extended_colocs = []
         for coloc in colocs:
-            association = next((u for u in associations if u.study_id == coloc.study_id), None)
+            association = next((u for u in associations if u["study_id"] == coloc.study_id), None)
             if association is None:
                 logger.warning(f"Association not found for variant {snp_id} and study {coloc.study_id}")
             extended_colocs.append(ExtendedColocGroup(**coloc.model_dump(), association=association))
         extended_rare_results = []
         for rare_result in rare_results:
-            association = next((u for u in associations if u.study_id == rare_result.study_id), None)
+            association = next((u for u in associations if u["study_id"] == rare_result.study_id), None)
             if association is None:
                 logger.warning(f"Association not found for variant {snp_id} and study {rare_result.study_id}")
             extended_rare_results.append(ExtendedRareResult(**rare_result.model_dump(), association=association))

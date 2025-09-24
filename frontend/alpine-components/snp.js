@@ -153,10 +153,10 @@ export default function snp() {
         filterDataForGraphs() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
+            const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
             this.filteredData.colocs = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
-                    graphOptions.colocType === coloc.group_threshold &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== "trans") &&
                     (graphOptions.traitType === "all"
                         ? true
@@ -166,11 +166,12 @@ export default function snp() {
                             ? coloc.data_type === "Phenotype"
                             : true);
 
-                if (Object.values(graphOptions.categories).some(c => c)) {
-                    graphOptionFilters = graphOptionFilters && graphOptions.categories[coloc.trait_category] === true;
+                let categoryFilters = true;
+                if (selectedCategories.size > 0) {
+                    categoryFilters = selectedCategories.has(coloc.trait_category);
                 }
 
-                return graphOptionFilters;
+                return graphOptionFilters && categoryFilters;
             });
             this.filteredData.svgs = this.svgs.filter(svg => {
                 const hasMatch = this.filteredData.colocs.some(
@@ -407,7 +408,12 @@ export default function snp() {
             // Use all data points for y-axis scale, but filter for valid data when drawing
             const allData = this.filteredData.colocs;
             const validData = allData.filter(
-                d => d.association && d.association.beta !== null && d.association.se !== null
+                d =>
+                    d.association &&
+                    d.association.beta !== null &&
+                    d.association.beta !== 0 &&
+                    d.association.se !== null &&
+                    d.association.se !== 0
             );
 
             // Calculate max beta from valid data only
@@ -443,7 +449,12 @@ export default function snp() {
             allData.forEach(d => {
                 const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
 
-                const hasValidData = d.association && d.association.beta !== null && d.association.se !== null;
+                const hasValidData =
+                    d.association &&
+                    d.association.beta !== null &&
+                    d.association.beta !== 0 &&
+                    d.association.se !== null &&
+                    d.association.se !== 0;
 
                 if (hasValidData) {
                     const beta = d.association.beta;

@@ -68,6 +68,21 @@ export default {
         else return constants.colors.dataTypes.common;
     },
 
+    selectedTraitCategories(graphOptions) {
+        const selectedCategories = new Set(
+            Object.entries(graphOptions.categories).flatMap(([key, value]) => {
+                if (typeof value === "object" && value !== null) {
+                    return Object.entries(value)
+                        .filter(([, v]) => v === true)
+                        .map(([k]) => k);
+                }
+                if (value === true) return [key];
+                return [];
+            })
+        );
+        return selectedCategories;
+    },
+
     getOrderedTraits(groupedData, excludeTrait) {
         let allTraits = Object.values(groupedData).flatMap(c => c.map(c => c.trait_name));
 

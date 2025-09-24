@@ -8,9 +8,9 @@ from app.models.schemas import (
     GetGenesResponse,
     RareResult,
     Variant,
-    ColocPair,
     GeneResponse,
     convert_duckdb_to_pydantic_model,
+    convert_duckdb_tuples_to_dicts,
 )
 import traceback
 
@@ -74,7 +74,9 @@ async def get_gene(
         ]
         gene.genes_in_region = genes_in_region
 
-        study_extractions_in_region = studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.id)
+        study_extractions_in_region = studies_db.get_study_extractions_in_gene_region(
+            gene.chr, gene.start, gene.stop, gene.id
+        )
         study_extractions_of_gene = studies_db.get_study_extractions_for_gene(gene.id)
         study_extractions = study_extractions_in_region + study_extractions_of_gene
 
@@ -103,15 +105,15 @@ async def get_gene(
 
         coloc_pairs = None
         if include_coloc_pairs:
-            study_extraction_ids = (
-                [coloc.study_extraction_id for coloc in coloc_groups]
-                + [rare_result.study_extraction_id for rare_result in rare_results]
-                + [study_extraction.id for study_extraction in study_extractions]
+            snp_ids = (
+                [coloc.snp_id for coloc in coloc_groups]
+                + [rare_result.snp_id for rare_result in rare_results]
+                + [study_extraction.snp_id for study_extraction in study_extractions]
             )
-            coloc_pairs = coloc_pairs_db.get_coloc_pairs_for_study_extraction_matches(
-                study_extraction_ids, h4_threshold=h4_threshold
+            coloc_pair_rows, coloc_pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
+                snp_ids, h4_threshold=h4_threshold
             )
-            coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+            coloc_pairs = convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
 
         variants = None
         if rare_results or coloc_groups or study_extractions:

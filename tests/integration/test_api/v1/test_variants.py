@@ -1,8 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import (
-    Association,
-    ColocPair,
     ExtendedColocGroup,
     Variant,
     VariantResponse,
@@ -15,6 +13,7 @@ client = TestClient(app)
 def test_get_variants_by_variants(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}")
+    print(response.json())
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -30,6 +29,7 @@ def test_get_variants_by_variants(variants_in_studies_db):
 def test_get_variants_by_rsids(variants_in_studies_db):
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
     response = client.get(f"/v1/variants?rsids={rsids[0]}&rsids={rsids[1]}")
+    print(response.json())
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -40,8 +40,8 @@ def test_get_variants_by_rsids(variants_in_studies_db):
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 
-def test_get_variants_by_grange():
-    response = client.get("/v1/variants?grange=3:45576630-45579689")
+def test_get_variants_by_grange(variants_in_grange):
+    response = client.get(f"/v1/variants?grange={variants_in_grange}")
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -71,12 +71,12 @@ def test_get_variant_by_id(variants_in_studies_db):
         assert coloc.bp is not None
         assert coloc.min_p is not None
         if coloc.association is not None:
-            assert isinstance(coloc.association, Association)
+            assert isinstance(coloc.association, dict)
 
 
 def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants/{snp_ids[0]}?include_coloc_pairs=true")
+    response = client.get(f"/v1/variants/{snp_ids[1]}?include_coloc_pairs=true")
     print(response.json())
     assert response.status_code == 200
     variant = response.json()
@@ -88,11 +88,11 @@ def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
     for coloc in variant_response.coloc_groups:
         assert isinstance(coloc, ExtendedColocGroup)
         if coloc.association is not None:
-            assert isinstance(coloc.association, Association)
+            assert isinstance(coloc.association, dict)
     assert variant_response.coloc_pairs is not None
     assert len(variant_response.coloc_pairs) > 0
     for coloc_pair in variant_response.coloc_pairs:
-        assert isinstance(coloc_pair, ColocPair)
+        assert isinstance(coloc_pair, dict)
 
 
 def test_get_variant_summary_stats(variants_in_studies_db):

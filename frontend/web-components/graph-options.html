@@ -1,29 +1,4 @@
 <div id="graphOptions" x-data="graphOptions">
-    <span class="is-size-7">Coloc Posterior Probability:</span> <br />
-    <div class="ml-4">
-        <label class="radio is-size-7">
-            <input
-                type="radio"
-                name="colocType"
-                value="strong"
-                x-model="colocType"
-                @change="$store.graphOptionStore.colocType = 'strong'"
-            />
-            <span>Strong (h4>0.8)</span>
-        </label>
-        <label class="radio is-size-7">
-            <input
-                type="radio"
-                name="colocType"
-                value="moderate"
-                x-model="colocType"
-                @change="$store.graphOptionStore.colocType = 'moderate'"
-            />
-            <span>Moderate (h4>0.6)</span>
-        </label>
-    </div>
-    <hr class="divider mt-0 mb-0" />
-
     <span class="is-size-7">Study P-value: <span x-text="Number(pValue).toExponential()"></span></span> <br />
     <input
         class="slider is-four-fifths mt-0 mb-0"
@@ -61,14 +36,14 @@
         <div>
             <label
                 class="radio is-size-7"
-                :class="{ 'has-text-grey-light': Object.values($store.graphOptionStore.categories).some(c => c) }"
+                :class="{ 'has-text-grey-light': Object.entries($store.graphOptionStore.categories).some(([k,v]) => typeof v === 'object' ? Object.values(v).some(Boolean) : v === true) }"
             >
                 <input
                     type="radio"
                     name="traitType"
                     value="molecular"
                     x-model="traitType"
-                    :disabled="Object.values($store.graphOptionStore.categories).some(c => c)"
+                    :disabled="Object.entries($store.graphOptionStore.categories).some(([k,v]) => typeof v === 'object' ? Object.values(v).some(Boolean) : v === true)"
                     @change="$store.graphOptionStore.traitType = traitType"
                 />
                 <span>Molecular Only</span>
@@ -91,29 +66,86 @@
 
     <!-- Categories Section -->
     <span class="is-size-7 has-text-weight-bold">Trait Categories</span>
-    <div class="ml-4">
+    <div class="ml-0" x-data="{ expanded: {} }">
         <template x-for="category in Object.keys($store.graphOptionStore.categories)" :key="category">
-            <div>
-                <label
-                    class="checkbox is-size-7"
-                    :class="{ 'has-text-grey-light': $store.graphOptionStore.traitType === 'molecular' }"
+            <div class="mb-1">
+                <!-- Parent row -->
+                <div class="is-flex is-align-items-center">
+                    <div class="mr-0 ml-0" style="width: 16px">
+                        <button
+                            class="button is-ghost is-small p-0"
+                            x-show="typeof $store.graphOptionStore.categories[category] === 'object'"
+                            @click.prevent="expanded[category] = !expanded[category]"
+                            :aria-expanded="expanded[category] ? 'true' : 'false'"
+                            title="Show subcategories"
+                        >
+                            <span x-text="expanded[category] ? '▾' : '▸'"></span>
+                        </button>
+                    </div>
+                    <label
+                        class="checkbox is-size-7 mr-2"
+                        :class="{ 'has-text-grey-light': $store.graphOptionStore.traitType === 'molecular' }"
+                    >
+                        <template x-if="typeof $store.graphOptionStore.categories[category] === 'object'">
+                            <input
+                                type="checkbox"
+                                :disabled="$store.graphOptionStore.traitType === 'molecular'"
+                                :checked="Object.values($store.graphOptionStore.categories[category]).every(v => v === true)"
+                                @change="
+                                    const checked = $event.target.checked;
+                                    Object.keys($store.graphOptionStore.categories[category]).forEach(k => {
+                                        $store.graphOptionStore.categories[category][k] = checked;
+                                    });
+                                    if ($store.graphOptionStore.traitType === 'molecular') {
+                                        $store.graphOptionStore.traitType = 'all';
+                                    }
+                                "
+                            />
+                        </template>
+                        <template x-if="typeof $store.graphOptionStore.categories[category] !== 'object'">
+                            <input
+                                type="checkbox"
+                                :checked="$store.graphOptionStore.categories[category]"
+                                :disabled="$store.graphOptionStore.traitType === 'molecular'"
+                                @change="
+                                    $store.graphOptionStore.categories[category] = $event.target.checked;
+                                    if ($store.graphOptionStore.traitType === 'molecular') {
+                                        $store.graphOptionStore.traitType = 'all';
+                                    }
+                                "
+                            />
+                        </template>
+                        <span x-text="category"></span>
+                    </label>
+                </div>
+
+                <!-- Children list -->
+                <div
+                    class="ml-4 mt-1"
+                    x-show="expanded[category] && typeof $store.graphOptionStore.categories[category] === 'object'"
                 >
-                    <input
-                        type="checkbox"
-                        :checked="$store.graphOptionStore.categories[category]"
-                        :disabled="$store.graphOptionStore.traitType === 'molecular'"
-                        @change="
-                            $store.graphOptionStore.categories[category] = !categories[category];
-                            if ($store.graphOptionStore.traitType === 'molecular') {
-                                $store.graphOptionStore.traitType = 'all';
-                            }
-                            if ($store.graphOptionStore.categories[category] && $store.graphOptionStore.traitType === 'molecular') {
-                                $store.graphOptionStore.traitType = 'all';
-                            }
-                        "
-                    />
-                    <span x-text="category"></span>
-                </label>
+                    <template x-for="subCat in Object.keys($store.graphOptionStore.categories[category])" :key="subCat">
+                        <div>
+                            <label
+                                class="checkbox is-size-7"
+                                :class="{ 'has-text-grey-light': $store.graphOptionStore.traitType === 'molecular' }"
+                            >
+                                <input
+                                    type="checkbox"
+                                    :checked="$store.graphOptionStore.categories[category][subCat]"
+                                    :disabled="$store.graphOptionStore.traitType === 'molecular'"
+                                    @change="
+                                        $store.graphOptionStore.categories[category][subCat] = $event.target.checked;
+                                        if ($store.graphOptionStore.traitType === 'molecular') {
+                                            $store.graphOptionStore.traitType = 'all';
+                                        }
+                                    "
+                                />
+                                <span x-text="subCat"></span>
+                            </label>
+                        </div>
+                    </template>
+                </div>
             </div>
         </template>
     </div>

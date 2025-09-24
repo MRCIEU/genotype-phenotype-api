@@ -116,10 +116,11 @@ export default function pheontype() {
         filterDataForGraphs() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
+            const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
+            // Compute selected categories (supports nested structures)
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
-                    graphOptions.colocType === coloc.group_threshold &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== "trans") &&
                     (coloc.trait_id === this.data.trait.id ||
                         (graphOptions.traitType === "all"
@@ -132,9 +133,9 @@ export default function pheontype() {
                 let displayFilters = this.displayFilters.chr !== null ? coloc.chr == this.displayFilters.chr : true;
 
                 let categoryFilters = true;
-                if (Object.values(graphOptions.categories).some(c => c)) {
+                if (selectedCategories.size > 0) {
                     categoryFilters =
-                        graphOptions.categories[coloc.trait_category] === true || coloc.trait_id === this.data.trait.id;
+                        selectedCategories.has(coloc.trait_category) || coloc.trait_id === this.data.trait.id;
                 }
 
                 return graphOptionFilters && displayFilters && categoryFilters;

@@ -20,15 +20,16 @@ async def get_matrix(
         ld_db = LdDBClient()
         studies_db = StudiesDBClient()
         if variants:
-            snp_annotations = studies_db.get_variants(variants=variants)
+            snp_annotations = studies_db.get_variants(variant_prefixes=variants)
             snp_annotations = convert_duckdb_to_pydantic_model(Variant, snp_annotations)
             snp_ids = [snp_annotation.id for snp_annotation in snp_annotations]
 
+        print(snp_ids)
         if not snp_ids:
             raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
 
         ld_matrix = ld_db.get_ld_matrix(snp_ids)
-        if ld_matrix is None:
+        if ld_matrix is None or len(ld_matrix) == 0:
             raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
 
         response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
@@ -51,7 +52,7 @@ async def get_proxies(
         ld_db = LdDBClient()
         studies_db = StudiesDBClient()
         if variants:
-            snp_annotations = studies_db.get_variants(variants=variants)
+            snp_annotations = studies_db.get_variants(variant_prefixes=variants)
             snp_annotations = convert_duckdb_to_pydantic_model(Variant, snp_annotations)
             snp_ids = [snp_annotation.id for snp_annotation in snp_annotations]
 

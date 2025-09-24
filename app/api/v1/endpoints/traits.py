@@ -5,7 +5,6 @@ from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     BasicTraitResponse,
     ColocGroup,
-    ColocPair,
     GetTraitsResponse,
     RareResult,
     Study,
@@ -14,6 +13,7 @@ from app.models.schemas import (
     Trait,
     VariantType,
     convert_duckdb_to_pydantic_model,
+    convert_duckdb_tuples_to_dicts,
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
@@ -76,13 +76,13 @@ async def get_trait(
 
         coloc_pairs = None
         if include_coloc_pairs:
-            study_extraction_ids = (
-                [coloc.study_extraction_id for coloc in colocs]
-                + [rare_result.study_extraction_id for rare_result in rare_results]
-                + [study_extraction.id for study_extraction in study_extractions]
+            snp_ids = (
+                [coloc.snp_id for coloc in colocs]
+                + [rare_result.snp_id for rare_result in rare_results]
+                + [study_extraction.snp_id for study_extraction in study_extractions]
             )
-            coloc_pairs = coloc_pairs_db.get_coloc_pairs_for_study_extraction_matches(study_extraction_ids)
-            coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+            rows, columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(snp_ids)
+            coloc_pairs = convert_duckdb_tuples_to_dicts(rows, columns)
             logger.info(f"Found {len(coloc_pairs)} coloc pairs for {trait.id}")
 
         associations = None

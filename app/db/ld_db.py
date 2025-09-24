@@ -34,6 +34,6 @@ class LdDBClient:
         query = f"""
             SELECT * FROM 
                 (SELECT * FROM ld WHERE lead_snp_id IN ({placeholders}))
-                WHERE variant_snp_id IN ({placeholders}) AND variant_snp_id > lead_snp_id
+                WHERE variant_snp_id IN ({placeholders})
         """
         return self.ld_conn.execute(query, snp_ids + snp_ids).fetchall()
