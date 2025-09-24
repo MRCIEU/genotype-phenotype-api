@@ -101,19 +101,7 @@ export default function gene() {
         filterDataForGraphs() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
-
-            // Compute selected categories (supports nested structures)
-            const selectedCategories = new Set(
-                Object.entries(graphOptions.categories).flatMap(([key, value]) => {
-                    if (typeof value === "object" && value !== null) {
-                        return Object.entries(value)
-                            .filter(([, v]) => v === true)
-                            .map(([k]) => k);
-                    }
-                    if (value === true) return [key];
-                    return [];
-                })
-            );
+            const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
 
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =

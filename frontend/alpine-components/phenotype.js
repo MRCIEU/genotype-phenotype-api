@@ -117,7 +117,7 @@ export default function pheontype() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
             const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
-            // Compute selected categories (supports nested structures)
+
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&

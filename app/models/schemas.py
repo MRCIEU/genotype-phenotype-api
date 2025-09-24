@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from enum import Enum
 import json
 from pydantic import BaseModel, field_validator, model_validator
@@ -513,15 +512,14 @@ class GPMapMetadata(BaseModel):
 
 @log_performance
 def convert_duckdb_to_pydantic_model(
-    model: Union[BaseModel, dataclass], results: Union[List[tuple], tuple]
-) -> Union[List[BaseModel], List[dataclass], BaseModel]:
+    model: BaseModel,
+    results: Union[List[tuple], tuple]
+) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):
+        converted = []
         if len(results) == 0:
             return []
-        converted = []
-        if hasattr(model, "__dataclass_fields__"):
-            converted = [model(*row) for row in results if row and not all(v is None for v in row)]
         else:
             for row in results:
                 if row and not all(v is None for v in row):
