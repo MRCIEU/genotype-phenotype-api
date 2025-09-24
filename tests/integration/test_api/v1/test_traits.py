@@ -49,15 +49,14 @@ def test_get_trait_by_id():
 
 def test_get_trait_by_id_with_associations():
     response = client.get("/v1/traits/5020?include_associations=true")
-    print(response.json())
-    assert response.status_code == 200
     traits = response.json()
+    assert response.status_code == 200
     assert traits is not None
     trait_response = TraitResponse(**traits)
     assert trait_response.associations is not None
     assert len(trait_response.associations) > 0
     for association in trait_response.associations:
-        assert association.snp_id is not None
-        assert association.study_id is not None
-        assert association.beta is not None
-        assert association.se is not None
+        assert association["snp_id"] is not None
+        assert association["study_id"] is not None
+        assert association["beta"] is not None
+        assert association["se"] is not None

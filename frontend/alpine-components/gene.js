@@ -101,11 +101,11 @@ export default function gene() {
         filterDataForGraphs() {
             if (!this.data) return;
             const graphOptions = Alpine.store("graphOptionStore");
+            const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
 
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
-                    graphOptions.colocType === coloc.group_threshold &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== "trans") &&
                     (graphOptions.traitType === "all"
                         ? true
@@ -116,9 +116,9 @@ export default function gene() {
                             : true);
 
                 let categoryFilters = true;
-                if (Object.values(graphOptions.categories).some(c => c)) {
+                if (selectedCategories.size > 0) {
                     categoryFilters =
-                        graphOptions.categories[coloc.trait_category] === true || coloc.gene_id === this.data.gene.id;
+                        selectedCategories.has(coloc.trait_category) || coloc.gene_id === this.data.gene.id;
                 }
 
                 return graphOptionFilters && categoryFilters;
@@ -135,8 +135,8 @@ export default function gene() {
                     (graphOptions.includeTrans ? true : study.cis_trans !== "trans") &&
                     (graphOptions.onlyMolecularTraits ? study.data_type !== "Phenotype" : true);
 
-                if (Object.values(graphOptions.categories).some(c => c)) {
-                    graphOptionFilters = graphOptionFilters && graphOptions.categories[study.trait_category] === true;
+                if (selectedCategories.size > 0) {
+                    graphOptionFilters = graphOptionFilters && selectedCategories.has(study.trait_category);
                 }
 
                 return graphOptionFilters;
@@ -195,9 +195,7 @@ export default function gene() {
         },
 
         get ldBlockId() {
-            return this.data && this.filteredData.coloc_groups && this.filteredData.coloc_groups.length > 0
-                ? this.filteredData.coloc_groups[0].ld_block_id
-                : null;
+            return this.data && this.data.coloc_groups ? this.data.coloc_groups[0].ld_block_id : null;
         },
 
         getTraitsToFilterBy() {

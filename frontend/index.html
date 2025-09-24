@@ -47,7 +47,26 @@
                                         x-for="item in getItemsForSearch"
                                         :key="item.type_id"
                                     >
-                                        <a class="dropdown-item" x-text="item.name" @click="goToItem(item)"></a>
+                                        <a class="dropdown-item" @click="goToItem(item)">
+                                            <div>
+                                                <div x-text="item.name" class="has-text-weight-semibold"></div>
+                                                <div class="is-size-7 has-text-grey">
+                                                    <span
+                                                        x-show="item.num_rare_results > 0"
+                                                        x-text="item.num_rare_results + ' rare results'"
+                                                        class="has-text-danger"
+                                                    ></span>
+                                                    <span
+                                                        x-show="item.num_rare_results > 0 && item.num_coloc_groups > 0"
+                                                    >
+                                                        <br />
+                                                    </span>
+                                                    <span
+                                                        x-text="item.num_coloc_groups + ' colocalization groups'"
+                                                    ></span>
+                                                </div>
+                                            </div>
+                                        </a>
                                     </template>
                                 </div>
                             </div>
@@ -260,7 +279,8 @@
                                                         </label>
                                                     </div>
                                                     <p class="is-size-7">
-                                                        Size limit is 1GB. Please use zip/gzip to compress.
+                                                        Size limit is 1GB. Please use zip/gzip or remove rare variants
+                                                        to compress.
                                                     </p>
                                                 </div>
                                             </div>

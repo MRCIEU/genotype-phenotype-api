@@ -21,8 +21,9 @@ def test_get_search_options():
             assert search_term.alt_name is not None
 
 
-def test_search_variant_by_rsid():
-    response = client.get("/v1/search/variant/rs17078078")
+def test_search_variant_by_rsid(variants_in_studies_db):
+    rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
+    response = client.get(f"/v1/search/variant/{rsids[0]}")
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)
@@ -33,8 +34,9 @@ def test_search_variant_by_rsid():
     assert len(variants.proxy_variants[0].ld_proxies) > 0
 
 
-def test_search_variant_by_chr_bp():
-    response = client.get("/v1/search/variant/3:45579683")
+def test_search_variant_by_chr_bp(variants_in_studies_db):
+    variants = [variant["variant"] for variant in variants_in_studies_db.values()]
+    response = client.get(f"/v1/search/variant/{variants[0]}")
     assert response.status_code == 200
     variants = VariantSearchResponse(**response.json())
     assert isinstance(variants, VariantSearchResponse)

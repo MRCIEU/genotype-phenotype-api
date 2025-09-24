@@ -38,7 +38,6 @@ def test_get_ld_matrix_with_variants(variants_in_ld_db):
 def test_get_ld_proxy_with_snp_ids(variants_in_ld_db):
     snp_ids = list(variants_in_ld_db.keys())
     response = client.get(f"v1/ld/proxies?snp_ids={snp_ids[0]}&snp_ids={snp_ids[1]}")
-    print(response.json())
     assert response.status_code == 200
     ld_proxy = response.json()
     assert len(ld_proxy) > 0

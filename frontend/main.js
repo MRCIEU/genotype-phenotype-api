@@ -39,13 +39,35 @@ const graphOptions = {
     traitType: "all",
     includeTrans: false,
     categories: {
-        Anthropometric: false,
-        "Blood Cell Measure": false,
-        "Clinical Measure": false,
-        "Health Trait / Disease Outcome": false,
-        "Operation / Treatment": false,
-        Physiological: false,
-        "Social / Behavioural": false,
+        "Cell / Protein": {
+            "Cell Trait": false,
+            "Plasma Protein": false,
+        },
+        "Social / Behavioural": {
+            "Environmental Measures": false,
+            "Socioeconomic Measures": false,
+            "Behavioural Measures": false,
+        },
+        "Health Trait / Disease Outcome": {
+            Neoplasm: false,
+            "Disease Of Eye And Adnexa": false,
+            "Disease Of Ear And Mastoid Process": false,
+            "Disease Of Circulatory System": false,
+            "Disease Of Musculoskeletal System And Connective Tissue": false,
+            "Nervous System Disorders": false,
+            "Disease Of Blood And Blood-Forming Organs": false,
+            "Disease Of Skin And Subcutaneous Tissue": false,
+            "Disease Of Digestive System": false,
+            "Metabolic Disease": false,
+            "Disease Of Genitourinary System": false,
+            "Infectious Disease": false,
+        },
+        "Anthropometric Measures": false,
+        "Physiological Measures": false,
+        "Mental Disorder": false,
+        "Reproductive Measures": false,
+        "Neurological Disease": false,
+        "Psychiatric Measures": false,
     },
     pValueOptions: [
         0.00015, // 1.5e-4
@@ -61,6 +83,17 @@ const graphOptions = {
     updatePValue() {
         this.pValue = this.pValueOptions[this.pValueIndex];
         this.$store.graphOptionStore.pValue = this.pValue;
+    },
+    hasAnyCategorySelected() {
+        const categories = this.categories;
+        for (const [_, value] of Object.entries(categories)) {
+            if (typeof value === "object" && value !== null) {
+                if (Object.values(value).some(v => v === true)) return true;
+            } else if (value === true) {
+                return true;
+            }
+        }
+        return false;
     },
 };
 Alpine.data("graphOptions", () => Object.assign({}, graphOptions));

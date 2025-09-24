@@ -2,9 +2,9 @@ from functools import lru_cache
 from typing import List
 from app.logging_config import get_logger
 from app.models.schemas import (
-    ColocPair,
     ColocPairMetadata,
     convert_duckdb_to_pydantic_model,
+    convert_duckdb_tuples_to_dicts,
 )
 from app.db.coloc_pairs_db import ColocPairsDBClient
 
@@ -45,10 +45,10 @@ class ColocPairsService:
         all_coloc_pairs = []
         for table_name, ids in list(study_extraction_ids_by_table.items()):
             if len(ids) > 0:
-                coloc_pairs = self.coloc_pairs_db.get_coloc_pairs_by_table_name(
+                coloc_pair_rows, coloc_pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_table_name(
                     table_name, ids, study_extraction_ids, h3_threshold, h4_threshold
                 )
-                coloc_pairs = convert_duckdb_to_pydantic_model(ColocPair, coloc_pairs)
+                coloc_pairs = convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
                 all_coloc_pairs.extend(coloc_pairs)
 
         return all_coloc_pairs

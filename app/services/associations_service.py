@@ -3,12 +3,11 @@ from typing import List, Tuple
 from app.db.associations_db import AssociationsDBClient
 from app.logging_config import get_logger
 from app.models.schemas import (
-    Association,
     AssociationMetadata,
     ColocGroup,
     RareResult,
-    Variant,
     convert_duckdb_to_pydantic_model,
+    convert_duckdb_tuples_to_dicts,
 )
 
 logger = get_logger(__name__)
@@ -51,24 +50,15 @@ class AssociationsService:
         all_associations = []
         for table_name, pairs in list(snp_study_pairs_by_table.items()):
             if len(pairs) > 0:
-                associations = self.associations_db.get_associations_by_table_name(table_name, pairs)
-                associations = convert_duckdb_to_pydantic_model(Association, associations)
+                associations, columns = self.associations_db.get_associations_by_table_name(table_name, pairs)
+                associations = convert_duckdb_tuples_to_dicts(associations, columns)
                 all_associations.extend(associations)
 
         # Filter associations to only include those that match the original snp_study_pairs
         filtered_associations = []
         snp_study_pairs_set = set(snp_study_pairs)
         for association in all_associations:
-            if (association.snp_id, association.study_id) in snp_study_pairs_set:
+            if (association["snp_id"], association["study_id"]) in snp_study_pairs_set:
                 filtered_associations.append(association)
 
         return filtered_associations
-
-    def flip_association_data_to_effect_allele(self, variants: List[Variant]):
-        # TODO: Do we do it via flipped or via eaf?  I think we do it via flipped for consistency?
-        for variant in variants:
-            if variant.flipped:
-                for association in variant.associations:
-                    if association.eaf > 0.5:
-                        association.beta = -association.beta
-                        association.eaf = 1 - association.eaf

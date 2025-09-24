@@ -25,9 +25,13 @@ class AssociationsDBClient:
         return self.associations_conn.execute(query).fetchall()
 
     @log_performance
-    def get_associations_by_table_name(self, table_name: str, snp_study_pairs: List[Tuple[int, int]]):
+    def get_associations_by_table_name(
+        self,
+        table_name: str,
+        snp_study_pairs: List[Tuple[int, int]],
+    ) -> Tuple[List[tuple], List[str]]:
         if not snp_study_pairs:
-            return []
+            return [], []
 
         placeholders = ",".join(["?" for _ in snp_study_pairs])
         all_snp_ids = [pair[0] for pair in snp_study_pairs]
@@ -36,4 +40,7 @@ class AssociationsDBClient:
         query = f"""
             SELECT * FROM {table_name} WHERE snp_id IN ({placeholders}) AND study_id IN ({placeholders})
         """
-        return self.associations_conn.execute(query, all_snp_ids + all_study_ids).fetchall()
+        cursor = self.associations_conn.execute(query, all_snp_ids + all_study_ids)
+        rows = cursor.fetchall()
+        columns = [d[0] for d in cursor.description]
+        return rows, columns
