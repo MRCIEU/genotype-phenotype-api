@@ -17,6 +17,7 @@ import traceback
 from app.services.cache_service import DBCacheService
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
+from app.models.schemas import CisTrans
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -40,6 +41,7 @@ async def get_genes() -> GetGenesResponse:
 @time_endpoint
 async def get_gene(
     gene_identifier: str = Path(..., description="Gene Symbol or ID"),
+    include_trans: bool = Query(False, description="Whether to include trans-coloc results"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
     include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
@@ -77,7 +79,8 @@ async def get_gene(
         study_extractions_in_region = studies_db.get_study_extractions_in_gene_region(
             gene.chr, gene.start, gene.stop, gene.id
         )
-        study_extractions_of_gene = studies_db.get_study_extractions_for_gene(gene.id)
+        cis_trans = None if include_trans else CisTrans.cis
+        study_extractions_of_gene = studies_db.get_study_extractions_for_gene(gene.id, cis_trans)
         study_extractions = study_extractions_in_region + study_extractions_of_gene
 
         if study_extractions is not None:

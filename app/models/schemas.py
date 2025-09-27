@@ -18,6 +18,11 @@ class Singleton(type):
         return cls._instances[cls]
 
 
+class CisTrans(Enum):
+    cis = "cis"
+    trans = "trans"
+
+
 class StudyDataType(Enum):
     splice_variant = "Splice Variant"
     gene_expression = "Gene Expression"
@@ -512,8 +517,7 @@ class GPMapMetadata(BaseModel):
 
 @log_performance
 def convert_duckdb_to_pydantic_model(
-    model: BaseModel,
-    results: Union[List[tuple], tuple]
+    model: BaseModel, results: Union[List[tuple], tuple]
 ) -> Union[List[BaseModel], BaseModel]:
     """Convert DuckDB query results to a Pydantic model instance"""
     if isinstance(results, list):

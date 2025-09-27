@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import StudyDataType, VariantType
+from app.models.schemas import CisTrans, StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -95,7 +95,7 @@ class StudiesDBClient:
 
     def _fetch_colocs(self, condition: str, params: List = None):
         query = f"""
-            SELECT * FROM coloc_groups_wide 
+            SELECT * FROM coloc_groups_wide
             WHERE coloc_group_id IN (
                 SELECT DISTINCT coloc_group_id
                 FROM coloc_groups_wide
@@ -110,10 +110,10 @@ class StudiesDBClient:
     def get_num_coloc_groups_per_trait(self):
         query = """
             SELECT traits.id, COUNT(DISTINCT coloc_group_id) as num_coloc_groups
-            FROM coloc_groups
-            JOIN studies ON coloc_groups.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            GROUP BY traits.id
+                FROM coloc_groups
+                JOIN studies ON coloc_groups.study_id = studies.id
+                JOIN traits ON studies.trait_id = traits.id
+                GROUP BY traits.id
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -470,17 +470,22 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_study_extractions_for_gene(self, gene_id: int):
-        return self.studies_conn.execute(
-            """
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
+    def get_study_extractions_for_gene(self, gene_id: int, cis_trans: CisTrans = None):
+        query = """
+            SELECT study_extractions.*,
+            traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
                 FROM study_extractions 
                 JOIN studies ON study_extractions.study_id = studies.id
                 JOIN traits ON studies.trait_id = traits.id
                 WHERE study_extractions.gene_id = ?
-            """,
-            (gene_id,),
-        ).fetchall()
+            """
+        if cis_trans:
+            query += " AND study_extractions.cis_trans = ?"
+            params = (gene_id, cis_trans.value)
+        else:
+            params = (gene_id,)
+
+        return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
     def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, gene_id: int):

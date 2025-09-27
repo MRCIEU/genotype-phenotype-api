@@ -61,4 +61,5 @@ class AssociationsService:
             if (association["snp_id"], association["study_id"]) in snp_study_pairs_set:
                 filtered_associations.append(association)
 
+        logger.info(f"Returning {len(filtered_associations)} associations for {len(snp_study_pairs)}")
         return filtered_associations
