@@ -8,6 +8,7 @@ from app.db.utils import log_performance
 
 settings = get_settings()
 
+
 @lru_cache()
 def get_gpm_db_connection():
     connection = duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)

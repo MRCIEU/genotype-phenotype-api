@@ -5,6 +5,7 @@ variant_data = {
     "8466253": {"rsid": "rs79590116", "variant": "7:37964907"},
 }
 
+
 @pytest.fixture(scope="session")
 def variants_in_studies_db():
     return variant_data
@@ -16,6 +17,7 @@ def variants_in_ld_db():
         "8466140": "7:37945678",
         "8466253": "7:37964907",
     }
+
 
 @pytest.fixture(scope="session")
 def variants_in_grange():
