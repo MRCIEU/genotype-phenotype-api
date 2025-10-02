@@ -1,7 +1,3 @@
-from functools import wraps
-import json
-import hashlib
-from pydantic import BaseModel
 from app.models.schemas import (
     GPMapMetadata,
     Gene,
@@ -14,7 +10,7 @@ from app.models.schemas import (
 )
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
-from typing import List, Any, Callable
+from typing import List
 from app.logging_config import get_logger
 from app.services.redis_decorator import redis_cache
 
@@ -180,4 +176,3 @@ class StudiesService(metaclass=Singleton):
                 logger.info("No cache keys found to clear")
         except Exception as e:
             logger.error(f"Failed to clear studies Redis cache: {e}")
-    

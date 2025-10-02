@@ -245,6 +245,7 @@ class SearchTerm(BaseModel):
     num_coloc_studies: Optional[int] = None
     num_rare_results: Optional[int] = None
 
+
 class SearchTerms(BaseModel):
     search_terms: List[SearchTerm]
 

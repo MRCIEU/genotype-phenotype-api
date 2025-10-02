@@ -5,7 +5,7 @@ client = TestClient(app)
 
 
 def test_clear_cache(mock_redis_cache):
-    response = client.post(f"v1/internal/clear-cache")
+    response = client.post("v1/internal/clear-cache")
     print(response.json())
     assert response.status_code == 200
 

@@ -8,15 +8,17 @@ from app.db.redis import RedisClient
 
 logger = get_logger(__name__)
 
+
 def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseModel = None):
     """
     Redis caching decorator for database methods.
-    
+
     Args:
         expire: Cache expiration time in seconds (default: 0 = never expire)
         prefix: Key prefix for Redis cache keys
         model_class: Pydantic model class to cache
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -38,7 +40,7 @@ def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseMode
                         return cached_data
             except Exception as e:
                 logger.warning(f"Redis cache get failed for {cache_key}: {e}")
-            
+
             try:
                 result = func(self, *args, **kwargs)
                 if model_class is not None:
@@ -52,6 +54,7 @@ def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseMode
             except Exception as e:
                 logger.error(f"Function execution failed for {cache_key}: {e}")
                 raise
-        
+
         return wrapper
+
     return decorator

@@ -18,27 +18,31 @@ logger = get_logger(__name__)
 def conditional_redis_cache(min_size: int = 100, expire: int = 0, prefix: str = "associations_cache"):
     """
     Conditional wrapper that applies redis_cache only when colocs size >= min_size.
-    
+
     Args:
         min_size: Minimum size of colocs list to trigger caching (default: 100)
         expire: Cache expiration time in seconds (default: 0 = never expire)
         prefix: Key prefix for Redis cache keys
     """
+
     def decorator(func):
         cached_func = redis_cache(expire=expire, prefix=prefix)(func)
-        
+
         @wraps(func)
         def wrapper(self, colocs=None, *args, **kwargs):
             should_cache = colocs is not None and len(colocs) >= min_size
-            
+
             if should_cache:
                 logger.debug(f"Using cache for {func.__name__} - colocs size {len(colocs)} >= {min_size}")
                 return cached_func(self, colocs, *args, **kwargs)
             else:
-                logger.debug(f"Skipping cache for {func.__name__} - colocs size {len(colocs) if colocs else 0} < {min_size}")
+                logger.debug(
+                    f"Skipping cache for {func.__name__} - colocs size {len(colocs) if colocs else 0} < {min_size}"
+                )
                 return func(self, colocs, *args, **kwargs)
 
         return wrapper
+
     return decorator
 
 
@@ -95,7 +99,7 @@ class AssociationsService:
 
         logger.info(f"Returning {len(filtered_associations)} associations for {len(snp_study_pairs)}")
         return filtered_associations
-    
+
     def clear_cache(self):
         """Clear associations Redis cache entries (use with caution)"""
         try:

@@ -1,15 +1,5 @@
-
 import traceback
-from fastapi import APIRouter, HTTPException, Path
-from app.db.studies_db import StudiesDBClient
-from app.models.schemas import (
-    LdBlock,
-    RegionResponse,
-    ColocGroup,
-    RareResult,
-    Variant,
-    convert_duckdb_to_pydantic_model,
-)
+from fastapi import APIRouter, HTTPException
 from app.logging_config import get_logger, time_endpoint
 from app.services.studies_service import StudiesService
 from app.services.associations_service import AssociationsService

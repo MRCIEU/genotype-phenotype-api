@@ -5,11 +5,9 @@ import json
 import datetime
 from typing import Optional, Any
 from datetime import UTC
-from pydantic import BaseModel
 from app.models.schemas import Singleton
 
 settings = get_settings()
-
 
 
 class RedisClient(metaclass=Singleton):
@@ -19,11 +17,10 @@ class RedisClient(metaclass=Singleton):
         self.accepted_queue_names = [self.process_gwas_queue, self.process_gwas_dlq]
         self.scheduled_jobs_key = "scheduled_jobs"
         self.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
-    
+
     def get_cached_data(self, key: str):
         data = self.redis.get(key)
         return json.loads(data) if data else None
-    
 
     def set_cached_data(self, key: str, value: dict | str, expire: int = 0):
         if isinstance(value, dict):
