@@ -5,24 +5,34 @@ import json
 import datetime
 from typing import Optional, Any
 from datetime import UTC
+from pydantic import BaseModel
+from app.models.schemas import Singleton
 
 settings = get_settings()
 
 
-class RedisClient:
+
+class RedisClient(metaclass=Singleton):
     def __init__(self):
         self.process_gwas_queue = "process_gwas"
         self.process_gwas_dlq = f"{self.process_gwas_queue}_dlq"
         self.accepted_queue_names = [self.process_gwas_queue, self.process_gwas_dlq]
         self.scheduled_jobs_key = "scheduled_jobs"
         self.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
-
+    
     def get_cached_data(self, key: str):
         data = self.redis.get(key)
         return json.loads(data) if data else None
+    
 
-    def set_cached_data(self, key: str, value: dict, expire: int = 3600):
-        self.redis.set(key, json.dumps(value), ex=expire)
+    def set_cached_data(self, key: str, value: dict | str, expire: int = 0):
+        if isinstance(value, dict):
+            value = json.dumps(value)
+
+        if expire == 0:
+            self.redis.set(key, value)
+        else:
+            self.redis.set(key, value, ex=expire)
 
     def add_to_queue(self, queue_name: str, message: Any) -> bool:
         """

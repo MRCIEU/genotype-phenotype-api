@@ -9,7 +9,7 @@ from app.models.schemas import (
     convert_duckdb_to_pydantic_model,
 )
 
-from app.services.cache_service import DBCacheService
+from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.email_service import EmailService
 
@@ -36,8 +36,8 @@ async def get_study_sources() -> GetStudySourcesResponse:
 @time_endpoint
 async def get_gpmap_metadata():
     try:
-        cache_service = DBCacheService()
-        metadata = cache_service.get_gpmap_metadata()
+        studies_service = StudiesService()
+        metadata = studies_service.get_gpmap_metadata()
         return metadata
     except HTTPException as e:
         raise e

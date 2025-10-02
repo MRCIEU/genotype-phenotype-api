@@ -11,7 +11,7 @@ settings = get_settings()
 @lru_cache()
 def get_associations_db_connection():
     connection = duckdb.connect(settings.ASSOCIATIONS_DB_PATH, read_only=True)
-    connection.execute("PRAGMA memory_limit='8GB'")
+    connection.execute("PRAGMA memory_limit='4GB'")
     return connection
 
 

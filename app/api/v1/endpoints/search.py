@@ -7,19 +7,19 @@ from app.models.schemas import (
     ExtendedVariant,
     Ld,
     RareResult,
-    SearchTerm,
+    SearchTerms,
     VariantSearchResponse,
     convert_duckdb_to_pydantic_model,
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
-from app.services.cache_service import DBCacheService
+from app.services.studies_service import StudiesService
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/options", response_model=List[SearchTerm])
+@router.get("/options", response_model=SearchTerms)
 @time_endpoint
 async def get_search_options(response: Response):
     try:
@@ -27,8 +27,8 @@ async def get_search_options(response: Response):
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
         response.headers["Pragma"] = "no-cache"
 
-        cache_service = DBCacheService()
-        search_terms = cache_service.get_search_terms()
+        studies_service = StudiesService()
+        search_terms = studies_service.get_search_terms()
         return search_terms
 
     except HTTPException as e:

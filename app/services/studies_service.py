@@ -1,26 +1,34 @@
-from functools import lru_cache
+from functools import wraps
+import json
+import hashlib
+from pydantic import BaseModel
 from app.models.schemas import (
     GPMapMetadata,
     Gene,
     SearchTerm,
+    SearchTerms,
     Singleton,
     StudyDataType,
     VariantType,
     convert_duckdb_to_pydantic_model,
 )
 from app.db.studies_db import StudiesDBClient
-from typing import List
+from app.db.redis import RedisClient
+from typing import List, Any, Callable
 from app.logging_config import get_logger
+from app.services.redis_decorator import redis_cache
 
 logger = get_logger(__name__)
 
 
-class DBCacheService(metaclass=Singleton):
+class StudiesService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
+        self.redis_client = RedisClient()
+        self.cache_prefix = "studies_db_cache"
 
-    @lru_cache(maxsize=1)
-    def get_search_terms(self) -> List[SearchTerm]:
+    @redis_cache(model_class=SearchTerms)
+    def get_search_terms(self) -> SearchTerms:
         """
         Retrieve trait and gene names for search from DuckDB with caching.
         Returns:
@@ -96,9 +104,9 @@ class DBCacheService(metaclass=Singleton):
             if term[1] is not None
         ]
 
-        return gene_search_terms + trait_search_terms
+        return SearchTerms(search_terms=gene_search_terms + trait_search_terms)
 
-    @lru_cache(maxsize=1)
+    # @redis_cache()
     def get_genes(self) -> List[Gene]:
         """
         Retrieve genes from DuckDB with caching.
@@ -108,7 +116,7 @@ class DBCacheService(metaclass=Singleton):
         genes = self.db.get_genes()
         return convert_duckdb_to_pydantic_model(Gene, genes)
 
-    @lru_cache(maxsize=1)
+    @redis_cache(model_class=SearchTerm)
     def get_gene_names(self) -> List[SearchTerm]:
         """
         Retrieve genes from DuckDB with caching.
@@ -118,7 +126,7 @@ class DBCacheService(metaclass=Singleton):
         genes = self.db.get_gene_names()
         return [SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes]
 
-    @lru_cache(maxsize=1)
+    @redis_cache()
     def get_tissues(
         self,
     ) -> List[str]:
@@ -131,7 +139,7 @@ class DBCacheService(metaclass=Singleton):
         tissues = [tissue[0] for tissue in tissues]
         return sorted(tissues)
 
-    @lru_cache(maxsize=1)
+    @redis_cache(model_class=GPMapMetadata)
     def get_gpmap_metadata(self) -> GPMapMetadata:
         """
         Retrieve study metadata from DuckDB with caching, grouped by data_type and variant_type.
@@ -153,19 +161,23 @@ class DBCacheService(metaclass=Singleton):
             elif study[0] != StudyDataType.phenotype.name:
                 num_molecular_studies += study[2]
 
-        gpmap_metadata = GPMapMetadata(
+        return GPMapMetadata(
             num_common_studies=num_common_studies,
             num_rare_studies=num_rare_studies,
             num_molecular_studies=num_molecular_studies,
             num_coloc_groups=coloc_groups,
             num_causal_variants=unique_snps,
         )
-        return gpmap_metadata
 
     def clear_cache(self):
-        """Clear the LRU cache for gene ranges"""
-        self.get_gpmap_metadata.cache_clear()
-        self.get_gene_info.cache_clear()
-        self.get_gene_names.cache_clear()
-        self.get_tissues.cache_clear()
-        self.get_search_terms.cache_clear()
+        """Clear studies Redis cache entries (use with caution)"""
+        try:
+            keys = self.redis_client.redis.keys(f"{self.cache_prefix}:*")
+            if keys:
+                self.redis_client.redis.delete(*keys)
+                logger.info(f"Cleared {len(keys)} cache keys")
+            else:
+                logger.info("No cache keys found to clear")
+        except Exception as e:
+            logger.error(f"Failed to clear studies Redis cache: {e}")
+    
