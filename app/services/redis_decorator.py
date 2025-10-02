@@ -24,7 +24,11 @@ def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseMode
         def wrapper(self, *args, **kwargs):
             redis_client = RedisClient()
             cache_key = f"{prefix}:{func.__name__}"
-            if args or kwargs:
+            cache_id = kwargs.pop("cache_id", None)
+
+            if cache_id:
+                cache_key = f"{cache_key}:{cache_id}"
+            elif args or kwargs:
                 args_str = json.dumps([str(arg) for arg in args], sort_keys=True)
                 kwargs_str = json.dumps(kwargs, sort_keys=True)
                 key_hash = hashlib.md5(f"{args_str}:{kwargs_str}".encode()).hexdigest()[:8]
