@@ -2,7 +2,7 @@ import traceback
 from fastapi import APIRouter, HTTPException, Query
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
-from app.models.schemas import Ld, Variant, convert_duckdb_to_pydantic_model
+from app.models.schemas import Ld, Lds, Variant, convert_duckdb_to_pydantic_model
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 
@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/matrix", response_model=List[Ld])
+@router.get("/matrix", response_model=Lds)
 @time_endpoint
 async def get_matrix(
     variants: List[str] = Query(None, description="List of variants to filter results"),
@@ -33,6 +33,7 @@ async def get_matrix(
             raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
 
         response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
+        response = Lds(lds=response)
         return response
 
     except HTTPException as e:
@@ -42,7 +43,7 @@ async def get_matrix(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/proxies", response_model=List[Ld])
+@router.get("/proxies", response_model=Lds)
 @time_endpoint
 async def get_proxies(
     variants: List[str] = Query(None, description="List of variants to filter results"),
@@ -61,6 +62,7 @@ async def get_proxies(
             raise HTTPException(status_code=404, detail=f"LD proxies for snp_ids {snp_ids} not found")
 
         response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
+        response = Lds(lds=response)
         return response
 
     except HTTPException as e:

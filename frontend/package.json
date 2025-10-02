@@ -11,10 +11,8 @@
         "build": "vite build --mode production",
         "build:dev": "vite build --mode development",
         "preview": "vite preview",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "lint": "eslint . && prettier --check .",
+        "format": "eslint . --fix && prettier --write ."
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.6.1"

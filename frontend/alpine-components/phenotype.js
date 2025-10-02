@@ -227,6 +227,26 @@ export default function pheontype() {
             return text + this.data.trait.status;
         },
 
+        get getSampleSizes() {
+            if (this.data === null) return "...";
+            let sampleSizes = {
+                common: this.data.trait.common_study.sample_size.toLocaleString(),
+                rare: this.data.trait.rare_study ? this.data.trait.rare_study.sample_size.toLocaleString() : null,
+            };
+            console.log(sampleSizes);
+            return sampleSizes;
+        },
+
+        get getStudySourceLink() {
+            if (this.data === null) return null;
+            const traitForUrl = this.data.trait.trait.replace(/-/g, (match, offset) => {
+                // Count dashes before current position
+                const dashesBefore = (this.data.trait.trait.substring(0, offset).match(/-/g) || []).length;
+                return dashesBefore >= 2 ? "_" : match;
+            });
+            return "https://opengwas.io/datasets/" + traitForUrl;
+        },
+
         getTraitsToFilterBy() {
             if (this.traitSearch.orderedTraits === null) return [];
             return this.traitSearch.orderedTraits.filter(

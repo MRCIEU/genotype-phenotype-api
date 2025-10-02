@@ -4,7 +4,7 @@
         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-        <title>GPM Phenotype</title>
+        <title>GP Map Phenotype</title>
         <script type="module" src="/main.js"></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
         <script>
@@ -43,6 +43,14 @@
                         </div>
 
                         <div x-show="showResults" class="mb-0">
+                            <p class="is-size-8 has-text-centered">
+                                <a x-bind:href="getStudySourceLink" target="_blank">Study source</a>
+                                <br />
+                                Sample size (common variant study): <b x-text="getSampleSizes.common"></b>
+                                <span x-show="getSampleSizes.rare"
+                                    >Sample size (rare variant study): <b x-text="getSampleSizes.rare"></b
+                                ></span>
+                            </p>
                             <p class="is-size-7 has-text-centered">
                                 Displays colocalised results of the study in question, and shows all studies which
                                 colocalise with it

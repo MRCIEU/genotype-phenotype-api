@@ -14,7 +14,7 @@ from app.models.schemas import (
 )
 import traceback
 
-from app.services.cache_service import DBCacheService
+from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
 from app.models.schemas import CisTrans
@@ -27,8 +27,8 @@ router = APIRouter()
 @time_endpoint
 async def get_genes() -> GetGenesResponse:
     try:
-        cache_service = DBCacheService()
-        genes = cache_service.get_genes()
+        studies_service = StudiesService()
+        genes = studies_service.get_genes()
         return GetGenesResponse(genes=genes)
     except HTTPException as e:
         raise e
@@ -47,8 +47,8 @@ async def get_gene(
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> GeneResponse:
     try:
-        cache_service = DBCacheService()
-        tissues = cache_service.get_tissues()
+        studies_service = StudiesService()
+        tissues = studies_service.get_tissues()
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
         associations_service = AssociationsService()
@@ -64,7 +64,7 @@ async def get_gene(
             raise HTTPException(status_code=404, detail=f"Gene {gene_identifier} not found")
         gene = convert_duckdb_to_pydantic_model(Gene, gene)
 
-        genes = cache_service.get_genes()
+        genes = studies_service.get_genes()
 
         genes_in_region = [
             g

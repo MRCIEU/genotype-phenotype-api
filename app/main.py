@@ -48,8 +48,7 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check(request: Request):
         redis_client = RedisClient()
-        db_client = StudiesDBClient()
-        db_client.get_studies(1)
+        StudiesDBClient()
 
         peeked_queue = redis_client.peek_queue(redis_client.process_gwas_queue)
         dead_letter_queue = redis_client.peek_queue(redis_client.process_gwas_dlq)
@@ -57,7 +56,7 @@ def create_app() -> FastAPI:
         return {
             "status": "healthy",
             "queue_size": len(peeked_queue),
-            "peeked_queue": peeked_queue,
+            "queue": peeked_queue,
             "dead_letter_queue": len(dead_letter_queue),
         }
 

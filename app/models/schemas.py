@@ -104,6 +104,10 @@ class Ld(BaseModel):
     r: float
 
 
+class Lds(BaseModel):
+    lds: List[Ld]
+
+
 class Gene(BaseModel):
     id: int
     ensembl_id: str
@@ -240,6 +244,10 @@ class SearchTerm(BaseModel):
     num_coloc_groups: Optional[int] = None
     num_coloc_studies: Optional[int] = None
     num_rare_results: Optional[int] = None
+
+
+class SearchTerms(BaseModel):
+    search_terms: List[SearchTerm]
 
 
 class RareResult(BaseModel):

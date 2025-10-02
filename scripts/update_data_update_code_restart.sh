@@ -40,6 +40,8 @@ sudo docker compose up -d --remove-orphans
 
 # immediately populate cache
 sleep 5
+
+./refresh_cache.sh
 curl http://localhost:8000/v1/info/gpmap_metadata
 curl http://localhost:8000/v1/search/options
 

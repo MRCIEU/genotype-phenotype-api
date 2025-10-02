@@ -10,7 +10,7 @@ from app.models.schemas import (
     convert_duckdb_to_pydantic_model,
 )
 from app.logging_config import get_logger, time_endpoint
-from app.services.cache_service import DBCacheService
+from app.services.studies_service import StudiesService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -22,8 +22,8 @@ async def get_region(
     ld_block_id: int = Path(..., description="LD Block ID"),
 ) -> RegionResponse:
     try:
-        cache_service = DBCacheService()
-        tissues = cache_service.get_tissues()
+        studies_service = StudiesService()
+        tissues = studies_service.get_tissues()
 
         db = StudiesDBClient()
         ld_block = db.get_ld_block(ld_block_id)
@@ -31,7 +31,7 @@ async def get_region(
             raise HTTPException(status_code=404, detail=f"LD Block {ld_block_id} not found")
         ld_block = convert_duckdb_to_pydantic_model(LdBlock, ld_block)
 
-        genes = cache_service.get_genes()
+        genes = studies_service.get_genes()
         genes_in_region = [
             g for g in genes if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
         ]

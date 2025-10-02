@@ -58,6 +58,7 @@ export default function homepage() {
                 }
 
                 this.searchOptionData = await response.json();
+                this.searchOptionData = this.searchOptionData.search_terms;
             } catch (error) {
                 console.error("Error loading data:", error);
             }
