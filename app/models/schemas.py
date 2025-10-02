@@ -365,7 +365,6 @@ class VariantSearchResponse(BaseModel):
 class TraitResponse(BaseModel):
     trait: Trait | GwasUpload
     coloc_groups: Optional[List[ColocGroup]] | Optional[List[ExtendedUploadColocGroup]] = None
-    coloc_pairs: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None

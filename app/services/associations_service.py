@@ -15,7 +15,7 @@ from app.models.schemas import (
 logger = get_logger(__name__)
 
 
-def conditional_redis_cache(min_size: int = 100, expire: int = 0, prefix: str = "associations_cache"):
+def associations_redis_cache(min_size: int = 100, expire: int = 0, prefix: str = "associations_cache"):
     """
     Conditional wrapper that applies redis_cache only when colocs size >= min_size.
 
@@ -26,15 +26,17 @@ def conditional_redis_cache(min_size: int = 100, expire: int = 0, prefix: str = 
     """
 
     def decorator(func):
-        cached_func = redis_cache(expire=expire, prefix=prefix)(func)
-
         @wraps(func)
         def wrapper(self, colocs=None, *args, **kwargs):
             should_cache = colocs is not None and len(colocs) >= min_size
+            kwargs_with_cache = kwargs.copy()
+            if len(args) > 1:
+                study_id = args[1]
+                kwargs_with_cache["cache_id"] = f"{study_id}"
 
             if should_cache:
                 logger.debug(f"Using cache for {func.__name__} - colocs size {len(colocs)} >= {min_size}")
-                return cached_func(self, colocs, *args, **kwargs)
+                return redis_cache(expire=expire, prefix=prefix)(func)(self, colocs, *args, **kwargs_with_cache)
             else:
                 logger.debug(
                     f"Skipping cache for {func.__name__} - colocs size {len(colocs) if colocs else 0} < {min_size}"
@@ -68,11 +70,12 @@ class AssociationsService:
                     metadata_to_pairs[metadata.associations_table_name].append(pair)
         return metadata_to_pairs
 
-    @conditional_redis_cache(min_size=1)
+    @associations_redis_cache(min_size=10000)
     def get_associations(
         self,
         colocs: List[ColocGroup] = [],
         rare_results: List[RareResult] = [],
+        study_id: int = None,
     ):
         colocs = colocs or []
         rare_results = rare_results or []

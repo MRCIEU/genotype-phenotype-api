@@ -60,3 +60,19 @@ def test_get_trait_by_id_with_associations():
         assert association["study_id"] is not None
         assert association["beta"] is not None
         assert association["se"] is not None
+
+
+def test_get_trait_coloc_pairs():
+    response = client.get("/v1/traits/5020/coloc-pairs")
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json is not None
+    coloc_pairs = response_json["coloc_pairs"]
+    assert len(coloc_pairs) > 0
+    for coloc_pair in coloc_pairs:
+        assert coloc_pair["snp_id"] is not None and isinstance(coloc_pair["snp_id"], int)
+        assert coloc_pair["h3"] is not None and isinstance(coloc_pair["h3"], float)
+        assert coloc_pair["h4"] is not None and isinstance(coloc_pair["h4"], float)
+        assert coloc_pair["study_extraction_a_id"] is not None and isinstance(coloc_pair["study_extraction_a_id"], int)
+        assert coloc_pair["study_extraction_b_id"] is not None and isinstance(coloc_pair["study_extraction_b_id"], int)
+        assert coloc_pair["spurious"] is not None and isinstance(coloc_pair["spurious"], bool)
