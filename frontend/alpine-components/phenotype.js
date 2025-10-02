@@ -242,7 +242,7 @@ export default function pheontype() {
             const traitForUrl = this.data.trait.trait.replace(/-/g, (match, offset) => {
                 // Count dashes before current position
                 const dashesBefore = (this.data.trait.trait.substring(0, offset).match(/-/g) || []).length;
-                return dashesBefore >= 2 ? '_' : match;
+                return dashesBefore >= 2 ? "_" : match;
             });
             return "https://opengwas.io/datasets/" + traitForUrl;
         },
