@@ -27,7 +27,7 @@ export default function snp() {
             let variantId = new URLSearchParams(location.search).get("id");
 
             try {
-                const response = await fetch(constants.apiUrl + "/variants/" + variantId);
+                const response = await fetch(constants.apiUrl + "/variants/" + variantId + "?include_coloc_pairs=true&h4_threshold=0.5");
                 if (!response.ok) {
                     this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + "/variants/" + variantId}`;
                     return;
@@ -188,6 +188,12 @@ export default function snp() {
             graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getForestPlot());
         },
 
+        initGraphClusterDiagram() {
+            this.filterDataForGraphs();
+            const chartContainer = document.getElementById("graph-cluster-diagram");
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getGraphClusterDiagram());
+        },
+
         initChordDiagram() {
             this.filterDataForGraphs();
             const chartContainer = document.getElementById("snp-chord-diagram");
@@ -202,190 +208,240 @@ export default function snp() {
             );
         },
 
+        getGraphClusterDiagram() {
+        },
+
         getChordDiagram() {
-            if (!this.data) return;
+            if (!this.data || !this.data.coloc_pairs) return;
+            
             const self = this;
             const chartElement = document.getElementById("snp-chord-diagram");
             chartElement.innerHTML = "";
 
             const chartContainer = d3.select("#snp-chord-diagram");
-            chartContainer.select("svg").remove();
-            let graphWidth = chartContainer.node().getBoundingClientRect().width - 50;
-            let graphHeight = 500;
+            const width = chartContainer.node().getBoundingClientRect().width - 50;
+            const height = 500;
 
-            const graphConstants = {
-                width: graphWidth,
-                height: graphHeight,
-                innerRadius: Math.min(graphWidth, graphHeight) * 0.45,
-                outerRadius: Math.min(graphWidth, graphHeight) * 0.45 * 1.01,
-            };
-
-            // Set dimensions
-            const innerRadius = Math.min(graphConstants.width, graphConstants.height) * 0.45;
-            const outerRadius = innerRadius * 1.01;
-
-            // Append SVG
-            const svg = d3
-                .select("#snp-chord-diagram")
+            // Create SVG
+            const svg = chartContainer
                 .append("svg")
-                .attr("width", graphConstants.width)
-                .attr("height", graphConstants.height)
-                .append("g")
-                .attr("transform", `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
+                .attr("width", width)
+                .attr("height", height);
 
-            const display_snp = this.data.variant.RSID;
-            const colocs = this.filteredData.colocs;
+            // Prepare data for force-directed graph
+            const colocPairs = this.data.coloc_pairs;
+            
+            // Get unique study extraction IDs from coloc pairs
+            const studyExtractionIds = new Set();
+            colocPairs.forEach(pair => {
+                studyExtractionIds.add(pair.study_extraction_a_id);
+                studyExtractionIds.add(pair.study_extraction_b_id);
+            });
 
+            // Create nodes (study extractions)
+            const nodes = Array.from(studyExtractionIds).map(id => {
+                const coloc = this.data.coloc_groups.find(c => c.study_extraction_id === id);
+                return {
+                    id: id,
+                    name: coloc ? coloc.trait_name : `Study ${id}`,
+                    data_type: coloc ? coloc.data_type : "Unknown",
+                    min_p: coloc ? coloc.min_p : 1,
+                    association: coloc ? coloc.association : null
+                };
+            });
+
+            // Create links (coloc pairs)
+            const links = colocPairs.map(pair => ({
+                source: pair.study_extraction_a_id,
+                target: pair.study_extraction_b_id,
+                h4: pair.h4,
+                h3: pair.h3
+            }));
+
+            // Color scale for data types
             const fixedColorMap = constants.orderedDataTypes
                 .map((dataType, index) => ({
                     [dataType]: constants.colors.palette[index],
                 }))
                 .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
-            const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
-            const traits = colocs.map(d => d.trait_name);
+            const color = d3.scaleOrdinal()
+                .domain(Object.keys(fixedColorMap))
+                .range(Object.values(fixedColorMap));
 
-            const nodes = [display_snp, ...traits];
+            // Create force simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(50))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(20));
 
-            const dataTypeMap = {};
-            colocs.forEach(coloc => {
-                dataTypeMap[coloc.trait_name] = coloc.data_type;
-            });
+            // Create links
+            const link = svg.append("g")
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", 0.3)
+                .selectAll("line")
+                .data(links)
+                .join("line")
+                .attr("stroke-width", d => Math.sqrt(d.h4 * 5)) // Thickness based on H4 value
+                .attr("stroke", "#999") // Default gray color
+                .attr("data-h4", d => d.h4); // Store H4 value for hover effects
 
-            const color = d3.scaleOrdinal().domain(Object.keys(fixedColorMap)).range(Object.values(fixedColorMap));
+            // Create nodes
+            const node = svg.append("g")
+                .selectAll("circle")
+                .data(nodes)
+                .join("circle")
+                .attr("r", d => Math.max(5, Math.min(15, -Math.log10(d.min_p) * 2))) // Size based on p-value
+                .attr("fill", d => color(d.data_type))
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
 
-            const indexMap = {};
-            nodes.forEach((node, i) => {
-                indexMap[node] = i;
-            });
 
-            const matrix = Array(nodes.length)
-                .fill(null)
-                .map(() => Array(nodes.length).fill(0));
 
-            colocs.forEach(coloc => {
-                const source = indexMap[display_snp];
-                const target = indexMap[coloc.trait_name];
-                matrix[source][target] = 1;
-            });
-
-            const chordGenerator = d3.chord().padAngle(0.005).sortSubgroups(d3.descending);
-            const chords = chordGenerator(matrix);
-            const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
-            const ribbon = d3.ribbon().radius(innerRadius);
-            const group = svg.selectAll(".group").data(chords.groups).enter().append("g").attr("class", "group");
-
-            group
-                .append("path")
-                .style("fill", d => {
-                    const name = nodes[d.index];
-                    if (name === display_snp) {
-                        return "#808080";
-                    }
-                    return color(dataTypeMap[name]);
+            // Add hover effects
+            node
+                .on("mouseover", function(event, d) {
+                    d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+                    
+                    // Highlight connected links
+                    link
+                        .attr("stroke-opacity", l => {
+                            const isConnected = l.source.id === d.id || l.target.id === d.id;
+                            return isConnected ? 0.8 : 0.1;
+                        })
+                        .attr("stroke", l => {
+                            const isConnected = l.source.id === d.id || l.target.id === d.id;
+                            if (!isConnected) return "#999";
+                            
+                            const h4 = l.h4;
+                            return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
+                        });
+                    
+                    const tooltipContent = `
+                        <strong>${d.name}</strong><br/>
+                        Data Type: ${d.data_type}<br/>
+                        P-value: ${d.min_p.toExponential(2)}<br/>
+                        ${d.association ? `Beta: ${d.association.beta.toExponential(2)}` : ''}
+                    `;
+                    graphTransformations.getTooltip(tooltipContent, event);
+                    // Stop the simulation from moving when clicking
+                    // simulation.alphaTarget(0);
+                    
+                    // Highlight the selected study
+                    // self.highlightedStudy = d.id;
+                    // self.loadSpecificSvg(d.coloc_group_id, d.id);
+                    
+                    // // Update other visualizations
+                    // self.initManhattanPlotOverlay();
                 })
-                .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.index]])).darker())
-                .attr("d", arc)
-                .on("mouseover", function (_, d) {
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .style("fill", d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
-                })
-                .on("mouseout", function (_, d) {
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .style("fill", nodes[d.index] === display_snp ? "#808080" : color(dataTypeMap[nodes[d.index]]));
-                });
-
-            svg.selectAll(".chord")
-                .data(chords)
-                .enter()
-                .append("path")
-                .attr("class", "chord")
-                .attr("d", ribbon)
-                .style("fill", d => {
-                    const trait = nodes[d.target.index];
-                    return color(dataTypeMap[trait]);
-                })
-                .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.target.index]])).darker())
-                .attr("opacity", 0.7)
-                .on("mouseover", function (event, d) {
-                    if (this.hoverTimeout) {
-                        clearTimeout(this.hoverTimeout);
-                    }
-
-                    this.hoverTimeout = setTimeout(() => {
-                        d3.select(this).transition().duration(200).attr("opacity", 1);
-                        const coloc = self.filteredData.colocs.find(
-                            coloc => coloc.trait_name === nodes[d.target.index]
-                        );
-                        self.highlightedStudy = coloc.study_extraction_id;
-                        self.loadSpecificSvg(coloc.coloc_group_id, coloc.study_extraction_id);
-                        self.svgs = self.svgs.sort((a, b) =>
-                            a.studyExtractionId === coloc.study_extraction_id
-                                ? 1
-                                : b.studyExtractionId === coloc.study_extraction_id
-                                  ? -1
-                                  : 0
-                        );
-                        let tooltipColor = "white";
-                        if (coloc.association) {
-                            tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
-                        }
-                        d3
-                            .select("#snp-chord-diagram")
-                            .append("div")
-                            .attr("class", "tooltip")
-                            .style("position", "absolute")
-                            .style("background-color", tooltipColor)
-                            .style("padding", "5px")
-                            .style("border", "1px solid black")
-                            .style("border-radius", "5px")
-                            .style("left", `${event.pageX + 10}px`)
-                            .style("top", `${event.pageY - 10}px`).html(`Trait: ${coloc.trait_name}<br>
-                                            P-value: ${coloc.min_p.toExponential(2)}<br>
-                                            Cis/Trans: ${coloc.cis_trans}<br>
-                                            BETA: ${coloc.association ? coloc.association.beta : "N/A"}
-                                            `);
-                    }, 200);
-                })
-                .on("mouseout", function () {
-                    if (this.hoverTimeout) {
-                        clearTimeout(this.hoverTimeout);
-                        this.hoverTimeout = null;
-                    }
-                    d3.select(this).transition().duration(200).attr("opacity", 0.7);
+                .on("mouseout", function() {
+                    d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
+                    
+                    // Reset all links to default gray
+                    link
+                        .attr("stroke-opacity", 0.3)
+                        .attr("stroke", "#999");
+                    
                     d3.selectAll(".tooltip").remove();
-                });
+                })
+                // .on("click", function(event, d) {
+                //     // Stop the simulation from moving when clicking
+                //     simulation.alphaTarget(0);
+                    
+                //     // Highlight the selected study
+                //     self.highlightedStudy = d.id;
+                //     self.loadSpecificSvg(d.coloc_group_id, d.id);
+                    
+                //     // Update other visualizations
+                //     self.initManhattanPlotOverlay();
+                // });
 
-            // Add legend - only show data types that are actually present
-            const legend = svg
-                .append("g")
+            // Update positions on simulation tick
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+            });
+
+            // Drag functions
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            // Add legend
+            const legend = svg.append("g")
                 .attr("class", "legend")
-                .attr("transform", `translate(${-graphConstants.width / 2 + 20}, ${-graphConstants.height / 2 + 20})`);
+                .attr("transform", `translate(20, 20)`);
 
+            const dataTypes = Array.from(new Set(nodes.map(d => d.data_type)));
             dataTypes.forEach((type, i) => {
                 const legendItem = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
 
-                legendItem.append("rect").attr("width", 18).attr("height", 18).attr("fill", color(type));
+                legendItem.append("circle")
+                    .attr("r", 6)
+                    .attr("fill", color(type));
 
-                legendItem
-                    .append("text")
-                    .attr("x", 24)
-                    .attr("y", 9)
-                    .attr("dy", "0.35em")
-                    .text(type)
-                    .style("font-size", "12px");
+                legendItem.append("text")
+                    .attr("x", 15)
+                    .attr("y", 4)
+                    .attr("font-size", "12px")
+                    .text(type);
             });
 
-            // Add SNP to legend
-            const snpLegend = legend.append("g").attr("transform", `translate(0, ${dataTypes.length * 20})`);
+            // Add link legend
+            const linkLegend = legend.append("g").attr("transform", `translate(0, ${dataTypes.length * 20 + 10})`);
+            
+            linkLegend.append("text")
+                .attr("font-size", "12px")
+                .attr("font-weight", "bold")
+                .text("Link Strength (H4):");
 
-            snpLegend.append("rect").attr("width", 18).attr("height", 18).attr("fill", "#808080");
+            const linkTypes = [
+                { h4: 0.8, color: "#2E8B57", label: "Strong (H4 > 0.8)" },
+                { h4: 0.5, color: "#FF6B6B", label: "Moderate (H4 > 0.5)" }
+            ];
 
-            snpLegend.attr("x", 24).attr("y", 9).attr("dy", "0.35em").text("Candidate SNP").style("font-size", "12px");
+            linkTypes.forEach((linkType, i) => {
+                const linkLegendItem = linkLegend.append("g").attr("transform", `translate(0, ${(i + 1) * 15})`);
+
+                linkLegendItem.append("line")
+                    .attr("x1", 0)
+                    .attr("x2", 20)
+                    .attr("y1", 0)
+                    .attr("y2", 0)
+                    .attr("stroke", linkType.color)
+                    .attr("stroke-width", 3);
+
+                linkLegendItem.append("text")
+                    .attr("x", 25)
+                    .attr("y", 4)
+                    .attr("font-size", "10px")
+                    .text(linkType.label);
+            });
         },
 
         getForestPlot() {
