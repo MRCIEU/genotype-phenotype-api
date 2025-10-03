@@ -12,17 +12,23 @@ from app.models.schemas import (
 from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.email_service import EmailService
+from app.config import get_settings
 
+settings = get_settings()
 logger = get_logger(__name__)
 router = APIRouter()
 
+@router.get("/version", response_model=str)
+@time_endpoint
+async def get_version():
+    return settings.VERSION
 
 @router.get("/study_sources", response_model=GetStudySourcesResponse)
 @time_endpoint
 async def get_study_sources() -> GetStudySourcesResponse:
     try:
-        db = StudiesDBClient()
-        sources = db.get_study_sources()
+        studies_db = StudiesDBClient()
+        sources = studies_db.get_study_sources()
         sources = convert_duckdb_to_pydantic_model(StudySource, sources)
         return GetStudySourcesResponse(sources=sources)
     except HTTPException as e:

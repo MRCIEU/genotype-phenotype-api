@@ -19,7 +19,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Genotype Phenotype API",
         description="API for accessing genotype-phenotype data",
-        version="0.0.1",
+        version=settings.VERSION,
         debug=settings.DEBUG,
         docs_url="/docs",
         redoc_url="/redoc",

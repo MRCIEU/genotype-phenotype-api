@@ -2,7 +2,16 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import GPMapMetadata, StudySource
 
+from app.config import get_settings
+
 client = TestClient(app)
+
+def test_get_version():
+    response = client.get("/v1/info/version")
+    assert response.status_code == 200
+    version = response.json()
+    assert version is not None
+    assert version == get_settings().VERSION
 
 
 def test_get_gpmap_metadata():

@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.post("/clear-cache", response_model=dict)
+@router.post("/clear-cache", response_model=dict, include_in_schema=False)
 @time_endpoint
 async def clear_cache():
     try:

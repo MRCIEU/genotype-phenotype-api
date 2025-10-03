@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     EMAIL_USERNAME: str
     EMAIL_PASSWORD: str
     WEBSITE_URL: str = "https://gpmap.opengwas.io"
+    VERSION: str = "1.0.0"
 
     model_config = {"env_file": ".env"}
 
