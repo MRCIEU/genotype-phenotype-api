@@ -11,7 +11,7 @@ def test_get_version():
     assert response.status_code == 200
     version = response.json()
     assert version is not None
-    assert version == get_settings().VERSION
+    assert version["version"] == get_settings().VERSION
 
 
 def test_get_gpmap_metadata():
