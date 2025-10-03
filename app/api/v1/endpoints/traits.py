@@ -42,7 +42,7 @@ async def get_traits() -> GetTraitsResponse:
 @router.get("/{trait_id}", response_model=TraitResponse)
 @time_endpoint
 async def get_trait(
-    trait_id: str = Path(..., description="Trait ID"),
+    trait_id: int = Path(..., description="Trait ID"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
     try:
@@ -93,7 +93,7 @@ async def get_trait(
 @router.get("/{trait_id}/coloc-pairs")
 @time_endpoint
 async def get_trait_coloc_pairs(
-    trait_id: str = Path(..., description="Trait ID"),
+    trait_id: int = Path(..., description="Trait ID"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> StreamingResponse:
