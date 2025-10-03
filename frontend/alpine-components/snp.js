@@ -269,13 +269,29 @@ export default function snp() {
                 .domain(Object.keys(fixedColorMap))
                 .range(Object.values(fixedColorMap));
 
-            // Create force simulation
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id).distance(50))
-                .force("charge", d3.forceManyBody().strength(-300))
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(20));
+            // Calculate appropriate parameters based on number of nodes
+            const nodeCount = nodes.length;
+            const isLargeGraph = nodeCount > 100;
+            
+            // Adjust node size and spacing based on graph size
+            const baseNodeRadius = isLargeGraph ? 3 : 8;
+            const maxNodeRadius = isLargeGraph ? 8 : 15;
+            const linkDistance = isLargeGraph ? 30 : 50;
+            const chargeStrength = isLargeGraph ? -100 : -300;
+            
+            // Update node sizes
+            nodes.forEach(node => {
+                const pValueRadius = Math.max(baseNodeRadius, Math.min(maxNodeRadius, -Math.log10(node.min_p) * 1.5));
+                node.radius = pValueRadius;
+            });
 
+            // Create force simulation with adaptive parameters
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(linkDistance))
+                .force("charge", d3.forceManyBody().strength(chargeStrength))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(d => d.radius + 2));
+            
             // Create links
             const link = svg.append("g")
                 .attr("stroke", "#999")
@@ -292,10 +308,10 @@ export default function snp() {
                 .selectAll("circle")
                 .data(nodes)
                 .join("circle")
-                .attr("r", d => Math.max(5, Math.min(15, -Math.log10(d.min_p) * 2))) // Size based on p-value
+                .attr("r", d => d.radius) // Use calculated radius
                 .attr("fill", d => color(d.data_type))
                 .attr("stroke", "#fff")
-                .attr("stroke-width", 2)
+                .attr("stroke-width", isLargeGraph ? 1 : 2)
                 .call(d3.drag()
                     .on("start", dragstarted)
                     .on("drag", dragged)
@@ -306,13 +322,13 @@ export default function snp() {
             // Add hover effects
             node
                 .on("mouseover", function(event, d) {
-                    d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+                    d3.select(this).attr("stroke", "#000").attr("stroke-width", isLargeGraph ? 2 : 3);
                     
-                    // Highlight connected links
+                    // Highlight connected links and bring them to front
                     link
                         .attr("stroke-opacity", l => {
                             const isConnected = l.source.id === d.id || l.target.id === d.id;
-                            return isConnected ? 0.8 : 0.1;
+                            return isConnected ? 1.0 : 0.01;
                         })
                         .attr("stroke", l => {
                             const isConnected = l.source.id === d.id || l.target.id === d.id;
@@ -329,9 +345,9 @@ export default function snp() {
                         ${d.association ? `Beta: ${d.association.beta.toExponential(2)}` : ''}
                     `;
                     graphTransformations.getTooltip(tooltipContent, event);
-                    // Stop the simulation from moving when clicking
-                    // simulation.alphaTarget(0);
                     
+                    //TODO: if we want to update another part of this alpine component,
+                    // we DON'T want to rerender this.  Figure out how to do this.
                     // Highlight the selected study
                     // self.highlightedStudy = d.id;
                     // self.loadSpecificSvg(d.coloc_group_id, d.id);
@@ -340,12 +356,13 @@ export default function snp() {
                     // self.initManhattanPlotOverlay();
                 })
                 .on("mouseout", function() {
-                    d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
+                    d3.select(this).attr("stroke", "#fff").attr("stroke-width", isLargeGraph ? 1 : 2);
                     
                     // Reset all links to default gray
                     link
                         .attr("stroke-opacity", 0.3)
-                        .attr("stroke", "#999");
+                        .attr("stroke", "#999")
+                        .style("stroke-width", d => Math.sqrt(d.h4 * 5)); // Reset to original thickness
                     
                     d3.selectAll(".tooltip").remove();
                 })
@@ -361,6 +378,9 @@ export default function snp() {
                 //     self.initManhattanPlotOverlay();
                 // });
 
+            // Track tick count and stop after 100 ticks
+            let tickCount = 0;
+            
             // Update positions on simulation tick
             simulation.on("tick", () => {
                 link
@@ -372,6 +392,12 @@ export default function snp() {
                 node
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y);
+                    
+                // Stop simulation after 100 ticks
+                tickCount++;
+                if (tickCount >= 1 && isLargeGraph) {
+                    simulation.stop();
+                }
             });
 
             // Drag functions
@@ -402,7 +428,7 @@ export default function snp() {
                 const legendItem = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
 
                 legendItem.append("circle")
-                    .attr("r", 6)
+                    .attr("r", isLargeGraph ? 4 : 6)
                     .attr("fill", color(type));
 
                 legendItem.append("text")
@@ -422,7 +448,7 @@ export default function snp() {
 
             const linkTypes = [
                 { h4: 0.8, color: "#2E8B57", label: "Strong (H4 > 0.8)" },
-                { h4: 0.5, color: "#FF6B6B", label: "Moderate (H4 > 0.5)" }
+                { h4: 0.5, color: "#FF6B6B", label: "Weak (H4 > 0.5)" }
             ];
 
             linkTypes.forEach((linkType, i) => {
