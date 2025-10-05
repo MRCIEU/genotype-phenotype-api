@@ -15,6 +15,16 @@ export default function snp() {
             studies: null,
         },
         errorMessage: null,
+        selectedRowId: null,
+        init() {
+            this.$watch('$store.snpGraphStore.highlightedStudy', (newValue) => {
+                if (newValue) {
+                    this.updateGraphHighlightFromStore(newValue);
+                } else {
+                    this.clearGraphHighlightFromStore();
+                }
+            });
+        },
 
         async loadData() {
             let variantId = new URLSearchParams(location.search).get("id");
@@ -38,8 +48,6 @@ export default function snp() {
                 }));
                 this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
-                // let colocGroupIds = this.data.coloc_groups.map(coloc => coloc.coloc_group_id);
-                // colocGroupIds = [...new Set(colocGroupIds)];
                 const snpGraphStore = Alpine.store("snpGraphStore");
                 snpGraphStore.colocs = this.data.coloc_groups;
                 snpGraphStore.variant = this.data.variant;
@@ -63,6 +71,32 @@ export default function snp() {
 
         getDataForTable() {
             return this.data ? this.filteredData.colocs : [];
+        },
+
+        setHighlightedStudy(item) {
+            console.log("setHighlightedStudy", item);
+            const snpGraphStore = Alpine.store("snpGraphStore");
+            const newHighlightedStudy = {
+                colocGroupId: item.coloc_group_id,
+                studyExtractionId: item.study_extraction_id
+            };
+            if (!snpGraphStore.highlightedStudy || 
+                snpGraphStore.highlightedStudy.studyExtractionId !== newHighlightedStudy.studyExtractionId) {
+                snpGraphStore.highlightedStudy = newHighlightedStudy;
+            }
+            this.selectedRowId = item.study_extraction_id;
+        },
+
+        updateGraphHighlightFromStore(highlightedStudy) {
+            if (this.updateGraphHighlight) {
+                this.updateGraphHighlight(highlightedStudy);
+            }
+        },
+
+        clearGraphHighlightFromStore() {
+            if (this.clearGraphHighlight) {
+                this.clearGraphHighlight();
+            }
         },
 
         downloadDataOnly() {
@@ -144,7 +178,7 @@ export default function snp() {
             const width = chartContainer.node().getBoundingClientRect().width - 50;
             const height = 500;
 
-            // Create SVG
+            const self = this;
             const svg = chartContainer.append("svg").attr("width", width).attr("height", height);
 
             // Prepare data for force-directed graph
@@ -203,7 +237,8 @@ export default function snp() {
                 node.radius = pValueRadius;
             });
 
-            // Create force simulation with adaptive parameters
+            const centerStrength = isLargeGraph ? 0.5 : 0.2;
+            // Create force simulation with adaptive parameters for multiple clusters
             const simulation = d3
                 .forceSimulation(nodes)
                 .force(
@@ -215,22 +250,21 @@ export default function snp() {
                 )
                 .force("charge", d3.forceManyBody().strength(chargeStrength))
                 .force("center", d3.forceCenter(width / 2, height / 2))
-                .force(
-                    "collision",
-                    d3.forceCollide().radius(d => d.radius + 2)
-                );
+                .force("collision", d3.forceCollide().radius(d => d.radius + 5))
+                .force("x", d3.forceX(width / 2).strength(centerStrength)) // Stronger centering force
+                .force("y", d3.forceY(height / 2).strength(centerStrength)); // Stronger centering force
 
             // Create links
             const link = svg
                 .append("g")
                 .attr("stroke", "#999")
-                .attr("stroke-opacity", 0.3)
                 .selectAll("line")
                 .data(links)
                 .join("line")
-                .attr("stroke-width", 1) // Thickness based on H4 value
-                .attr("stroke", "#999") // Default gray color
-                .attr("data-h4", d => d.h4); // Store H4 value for hover effects
+                .attr("stroke-width", 2)
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", d => d.h4 >= 0.8 ? 0.3 : 0)
+                .attr("data-h4", d => d.h4);
 
             // Create nodes
             const node = svg
@@ -238,17 +272,17 @@ export default function snp() {
                 .selectAll("circle")
                 .data(nodes)
                 .join("circle")
-                .attr("r", d => d.radius) // Use calculated radius
+                .attr("r", d => d.radius)
                 .attr("fill", d => color(d.data_type))
                 .attr("stroke", "#fff")
                 .attr("stroke-width", isLargeGraph ? 1 : 2)
+                .attr("data-id", d => d.id)
                 .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
                 .on("mouseover", function (event, d) {
                     d3.select(this)
                         .attr("stroke", "#000")
                         .attr("stroke-width", isLargeGraph ? 2 : 3);
 
-                    // Highlight connected links and bring them to front
                     link.attr("stroke-opacity", l => {
                         const isConnected = l.source.id === d.id || l.target.id === d.id;
                         return isConnected ? 0.8 : isLargeGraph ? 0.01 : 0.05;
@@ -267,30 +301,29 @@ export default function snp() {
                         ${d.association ? `Beta: ${d.association.beta.toExponential(2)}` : ""}
                     `;
                     graphTransformations.getTooltip(tooltipContent, event);
-                    const snpGraphStore = Alpine.store("snpGraphStore");
-                    snpGraphStore.highlightedStudy = {
-                        colocGroupId: d.coloc_group_id,
-                        studyExtractionId: d.id,
-                    };
+                    
+                    self.setHighlightedStudy({
+                        coloc_group_id: d.coloc_group_id,
+                        study_extraction_id: d.id
+                    });
                 })
                 .on("mouseout", function () {
                     d3.select(this)
                         .attr("stroke", "#fff")
                         .attr("stroke-width", isLargeGraph ? 1 : 2);
 
-                    // Reset all links to default gray
-                    link.attr("stroke-opacity", 0.3)
+                    link.attr("stroke-opacity", l => l.h4 >= 0.8 ? 0.3 : 0)
                         .attr("stroke", "#999")
-                        .style("stroke-width", d => Math.sqrt(d.h4 * 5)); // Reset to original thickness
+                        .style("stroke-width", 2);
 
                     d3.selectAll(".tooltip").remove();
 
-                    // Clear the highlighted study from the store
                     const snpGraphStore = Alpine.store("snpGraphStore");
                     snpGraphStore.highlightedStudy = null;
                 });
 
             let tickCount = 0;
+            let lastAlpha = 1;
             simulation.on("tick", () => {
                 link.attr("x1", d => d.source.x)
                     .attr("y1", d => d.source.y)
@@ -298,11 +331,99 @@ export default function snp() {
                     .attr("y2", d => d.target.y);
                 node.attr("cx", d => d.x).attr("cy", d => d.y);
 
-                // Stop simulation after 100 ticks, or immediately if large graph
                 tickCount++;
-                if (tickCount >= 1 && isLargeGraph) {
+                const currentAlpha = simulation.alpha();
+                
+                // For large graphs, stop early to avoid computational overhead
+                if (isLargeGraph && tickCount >= 50) {
                     simulation.stop();
                 }
+                // For smaller graphs, let the simulation run until it naturally cools down
+                // but stop if it's been running too long
+                else if (!isLargeGraph && (currentAlpha < 0.01 || tickCount >= 300)) {
+                    simulation.stop();
+                }
+                
+                lastAlpha = currentAlpha;
+            });
+
+            // Post-process to ensure clusters fit within bounds and are compact
+            simulation.on("end", () => {
+                // Find connected components (clusters)
+                const visited = new Set();
+                const components = [];
+                
+                const findComponent = (startNode) => {
+                    const component = [];
+                    const queue = [startNode];
+                    visited.add(startNode.id);
+                    
+                    while (queue.length > 0) {
+                        const node = queue.shift();
+                        component.push(node);
+                        
+                        // Find connected nodes through links
+                        links.forEach(link => {
+                            if (link.source.id === node.id && !visited.has(link.target.id)) {
+                                visited.add(link.target.id);
+                                queue.push(nodes.find(n => n.id === link.target.id));
+                            } else if (link.target.id === node.id && !visited.has(link.source.id)) {
+                                visited.add(link.source.id);
+                                queue.push(nodes.find(n => n.id === link.source.id));
+                            }
+                        });
+                    }
+                    return component;
+                };
+                
+                // Find all components
+                nodes.forEach(node => {
+                    if (!visited.has(node.id)) {
+                        components.push(findComponent(node));
+                    }
+                });
+                
+                // Position components in a grid-like layout
+                const margin = 80;
+                const maxComponentsPerRow = Math.ceil(Math.sqrt(components.length));
+                const componentWidth = (width - 2 * margin) / maxComponentsPerRow;
+                const componentHeight = (height - 2 * margin) / Math.ceil(components.length / maxComponentsPerRow);
+                
+                components.forEach((component, componentIndex) => {
+                    const row = Math.floor(componentIndex / maxComponentsPerRow);
+                    const col = componentIndex % maxComponentsPerRow;
+                    
+                    // Calculate target center for this component
+                    const targetCenterX = margin + col * componentWidth + componentWidth / 2;
+                    const targetCenterY = margin + row * componentHeight + componentHeight / 2;
+                    
+                    // Get current component bounds
+                    const xBounds = d3.extent(component, d => d.x);
+                    const yBounds = d3.extent(component, d => d.y);
+                    const currentCenterX = (xBounds[0] + xBounds[1]) / 2;
+                    const currentCenterY = (yBounds[0] + yBounds[1]) / 2;
+                    
+                    // Calculate scale to fit component in its allocated space
+                    const xRange = xBounds[1] - xBounds[0];
+                    const yRange = yBounds[1] - yBounds[0];
+                    const maxRange = Math.max(xRange, yRange, 1);
+                    const scale = Math.min(componentWidth * 0.8 / maxRange, componentHeight * 0.8 / maxRange, 1);
+                    
+                    // Reposition all nodes in this component
+                    component.forEach(node => {
+                        const offsetX = (node.x - currentCenterX) * scale;
+                        const offsetY = (node.y - currentCenterY) * scale;
+                        node.x = targetCenterX + offsetX;
+                        node.y = targetCenterY + offsetY;
+                    });
+                });
+                
+                // Update the visual elements
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                node.attr("cx", d => d.x).attr("cy", d => d.y);
             });
 
             // Drag functions
@@ -358,10 +479,38 @@ export default function snp() {
                     .attr("y1", 0)
                     .attr("y2", 0)
                     .attr("stroke", linkType.color)
-                    .attr("stroke-width", 3);
+                    .attr("stroke-width", 2);
 
                 linkLegendItem.append("text").attr("x", 25).attr("y", 4).attr("font-size", "10px").text(linkType.label);
             });
+
+            this.updateGraphHighlight = (highlightedStudy) => {
+                const nodeElement = d3.select(`#graph-cluster-diagram circle[data-id="${highlightedStudy.studyExtractionId}"]`);
+                if (nodeElement.empty()) return;
+
+                nodeElement
+                    .attr("stroke", "#000")
+                    .attr("stroke-width", 3);
+
+                link.attr("stroke-opacity", l => {
+                    const isConnected = l.source.id === highlightedStudy.studyExtractionId || l.target.id === highlightedStudy.studyExtractionId;
+                    return isConnected ? 0.8 : 0.01;
+                }).attr("stroke", l => {
+                    const isConnected = l.source.id === highlightedStudy.studyExtractionId || l.target.id === highlightedStudy.studyExtractionId;
+                    if (!isConnected) return "#999";
+                    
+                    const h4 = l.h4;
+                    return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
+                });
+            };
+
+            this.clearGraphHighlight = () => {
+                node.attr("stroke", "#fff").attr("stroke-width", 2);
+
+                link.attr("stroke-opacity", l => l.h4 >= 0.8 ? 0.3 : 0)
+                    .attr("stroke", "#999")
+                    .style("stroke-width", 2);
+            };
         },
 
         getForestPlot() {
@@ -420,7 +569,7 @@ export default function snp() {
                 .attr("x2", x(0))
                 .attr("y2", height)
                 .attr("stroke", "#000")
-                .attr("stroke-width", 1);
+                .attr("stroke-width", 2);
 
             allData.forEach(d => {
                 const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
