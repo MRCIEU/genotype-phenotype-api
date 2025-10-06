@@ -118,7 +118,11 @@ async def get_trait_coloc_pairs(
 
         snp_ids = sorted([coloc.snp_id for coloc in colocs])
         coloc_pairs = coloc_pairs_db.get_coloc_pairs_by_snp_ids_stream(snp_ids, h3_threshold, h4_threshold)
-        return StreamingResponse(coloc_pairs, media_type="application/json")
+        return StreamingResponse(
+            coloc_pairs,
+            media_type="application/json; charset=utf-8",
+            headers={"Connection": "close", "Cache-Control": "no-store"},
+        )
     except HTTPException as e:
         raise e
     except Exception as e:
