@@ -2,12 +2,11 @@ from app.config import get_settings
 from functools import lru_cache
 from typing import List
 import duckdb
+import json
 from app.logging_config import get_logger
 from app.db.utils import log_performance
 
 logger = get_logger(__name__)
-
-
 settings = get_settings()
 
 
@@ -101,7 +100,7 @@ class ColocPairsDBClient:
 
     @log_performance
     def get_coloc_pairs_by_snp_ids_stream(
-        self, snp_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 100000
+        self, snp_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 10000000
     ):
         """
         Stream coloc pairs in batches to avoid memory issues with large datasets.
@@ -113,6 +112,8 @@ class ColocPairsDBClient:
         Yields:
             JSON strings of coloc pair records
         """
+        specific_conn = duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
+        specific_conn.execute("PRAGMA memory_limit='4GB'")
         if not snp_ids:
             return
 
@@ -126,29 +127,28 @@ class ColocPairsDBClient:
             ORDER BY snp_id
         """
 
-        cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
+        cursor = specific_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         columns = [d[0] for d in cursor.description] if cursor.description else []
 
-        # Yield header
-        yield '{"coloc_pairs": ['
+        try:
+            yield '{"coloc_pairs": ['
 
-        first_batch = True
-        while True:
-            batch = cursor.fetchmany(batch_size)
-            if not batch:
-                break
+            first_batch = True
+            while True:
+                batch = cursor.fetchmany(batch_size)
+                if not batch:
+                    break
 
-            for row in batch:
-                if not first_batch:
-                    yield ","
-                else:
-                    first_batch = False
+                for row in batch:
+                    if not first_batch:
+                        yield ","
+                    else:
+                        first_batch = False
 
-                # Convert row to dict and then to JSON
-                row_dict = dict(zip(columns, row))
-                import json
+                    row_dict = dict(zip(columns, row))
+                    yield json.dumps(row_dict)
 
-                yield json.dumps(row_dict)
-
-        # Yield footer
-        yield "]}"
+            yield "]}"
+        finally:
+            cursor.close()
+            specific_conn.close()

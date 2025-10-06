@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /workspace
-    command: uvicorn app.main:app --host 0.0.0.0 --reload --reload-delay 2 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --reload --reload-delay 2 --port 8000 --http httptools --loop uvloop
     ports:
       - "8000:8000"
     environment:

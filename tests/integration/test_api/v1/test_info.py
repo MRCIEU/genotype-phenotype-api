@@ -6,6 +6,7 @@ from app.config import get_settings
 
 client = TestClient(app)
 
+
 def test_get_version():
     response = client.get("/v1/info/version")
     assert response.status_code == 200
