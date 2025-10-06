@@ -1,6 +1,5 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
-from fastapi.responses import StreamingResponse
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -119,12 +118,8 @@ async def get_trait_coloc_pairs(
             colocs = []
 
         snp_ids = sorted([coloc.snp_id for coloc in colocs])
-        coloc_pairs = coloc_pairs_db.get_coloc_pairs_by_snp_ids_stream(snp_ids, h3_threshold, h4_threshold)
         pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold, h4_threshold)
-        return {
-            "coloc_pair_column_names": pair_columns,
-            "coloc_pair_rows": pair_rows
-        }
+        return {"coloc_pair_column_names": pair_columns, "coloc_pair_rows": pair_rows}
     except HTTPException as e:
         raise e
     except Exception as e:
