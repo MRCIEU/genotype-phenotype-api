@@ -2,6 +2,7 @@ from app.config import get_settings
 from functools import lru_cache
 from typing import List
 import duckdb
+import json
 from app.logging_config import get_logger
 from app.db.utils import log_performance
 
@@ -129,26 +130,24 @@ class ColocPairsDBClient:
         cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         columns = [d[0] for d in cursor.description] if cursor.description else []
 
-        # Yield header
-        yield '{"coloc_pairs": ['
+        try:
+            yield '{"coloc_pairs": ['
 
-        first_batch = True
-        while True:
-            batch = cursor.fetchmany(batch_size)
-            if not batch:
-                break
+            first_batch = True
+            while True:
+                batch = cursor.fetchmany(batch_size)
+                if not batch:
+                    break
 
-            for row in batch:
-                if not first_batch:
-                    yield ","
-                else:
-                    first_batch = False
+                for row in batch:
+                    if not first_batch:
+                        yield ","
+                    else:
+                        first_batch = False
 
-                # Convert row to dict and then to JSON
-                row_dict = dict(zip(columns, row))
-                import json
+                    row_dict = dict(zip(columns, row))
+                    yield json.dumps(row_dict)
 
-                yield json.dumps(row_dict)
-
-        # Yield footer
-        yield "]}"
+            yield "]}"
+        finally:
+            cursor.close()
