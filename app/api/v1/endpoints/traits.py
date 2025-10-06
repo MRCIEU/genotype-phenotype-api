@@ -18,10 +18,12 @@ from app.models.schemas import (
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
+from app.config import get_settings
 
 router = APIRouter()
 
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 @router.get("", response_model=GetTraitsResponse)

@@ -7,8 +7,6 @@ from app.logging_config import get_logger
 from app.db.utils import log_performance
 
 logger = get_logger(__name__)
-
-
 settings = get_settings()
 
 
@@ -114,6 +112,8 @@ class ColocPairsDBClient:
         Yields:
             JSON strings of coloc pair records
         """
+        specific_conn = duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
+        specific_conn.execute("PRAGMA memory_limit='4GB'")
         if not snp_ids:
             return
 
@@ -127,7 +127,7 @@ class ColocPairsDBClient:
             ORDER BY snp_id
         """
 
-        cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
+        cursor = specific_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         columns = [d[0] for d in cursor.description] if cursor.description else []
 
         try:
@@ -151,3 +151,4 @@ class ColocPairsDBClient:
             yield "]}"
         finally:
             cursor.close()
+            specific_conn.close()
