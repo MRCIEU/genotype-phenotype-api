@@ -120,6 +120,7 @@ async def get_trait_coloc_pairs(
         snp_ids = sorted([coloc.snp_id for coloc in colocs])
         pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold, h4_threshold)
         return {"coloc_pair_column_names": pair_columns, "coloc_pair_rows": pair_rows}
+
     except HTTPException as e:
         raise e
     except Exception as e:
