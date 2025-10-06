@@ -1,6 +1,5 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
-from fastapi.responses import StreamingResponse
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -18,10 +17,12 @@ from app.models.schemas import (
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
+from app.config import get_settings
 
 router = APIRouter()
 
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 @router.get("", response_model=GetTraitsResponse)
@@ -96,7 +97,7 @@ async def get_trait_coloc_pairs(
     trait_id: int = Path(..., description="Trait ID"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
-) -> StreamingResponse:
+) -> dict:
     try:
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
@@ -117,12 +118,9 @@ async def get_trait_coloc_pairs(
             colocs = []
 
         snp_ids = sorted([coloc.snp_id for coloc in colocs])
-        coloc_pairs = coloc_pairs_db.get_coloc_pairs_by_snp_ids_stream(snp_ids, h3_threshold, h4_threshold)
-        return StreamingResponse(
-            coloc_pairs,
-            media_type="application/json; charset=utf-8",
-            headers={"Connection": "close", "Cache-Control": "no-store"},
-        )
+        pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold, h4_threshold)
+        return {"coloc_pair_column_names": pair_columns, "coloc_pair_rows": pair_rows}
+
     except HTTPException as e:
         raise e
     except Exception as e:
