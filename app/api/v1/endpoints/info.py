@@ -18,10 +18,12 @@ settings = get_settings()
 logger = get_logger(__name__)
 router = APIRouter()
 
+
 @router.get("/version")
 @time_endpoint
 async def get_version():
     return {"version": settings.VERSION}
+
 
 @router.get("/study_sources", response_model=GetStudySourcesResponse)
 @time_endpoint

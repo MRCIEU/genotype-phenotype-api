@@ -98,7 +98,7 @@ async def get_trait_coloc_pairs(
     trait_id: int = Path(..., description="Trait ID"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
-) -> StreamingResponse:
+) -> dict:
     try:
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
@@ -120,11 +120,11 @@ async def get_trait_coloc_pairs(
 
         snp_ids = sorted([coloc.snp_id for coloc in colocs])
         coloc_pairs = coloc_pairs_db.get_coloc_pairs_by_snp_ids_stream(snp_ids, h3_threshold, h4_threshold)
-        return StreamingResponse(
-            coloc_pairs,
-            media_type="application/json; charset=utf-8",
-            headers={"Connection": "close", "Cache-Control": "no-store"},
-        )
+        pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold, h4_threshold)
+        return {
+            "coloc_pair_column_names": pair_columns,
+            "coloc_pair_rows": pair_rows
+        }
     except HTTPException as e:
         raise e
     except Exception as e:

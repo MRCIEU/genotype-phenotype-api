@@ -100,7 +100,7 @@ class ColocPairsDBClient:
 
     @log_performance
     def get_coloc_pairs_by_snp_ids_stream(
-        self, snp_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 100000
+        self, snp_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 10000000
     ):
         """
         Stream coloc pairs in batches to avoid memory issues with large datasets.
