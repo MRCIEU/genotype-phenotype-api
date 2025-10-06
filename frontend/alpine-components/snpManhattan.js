@@ -226,36 +226,6 @@ export default function snp() {
                 .attr("stroke", "red")
                 .attr("stroke-width", 0.8)
                 .attr("opacity", 0.8);
-
-            const markerTextElement = svg
-                .append("text")
-                .attr("id", "highlighted-marker")
-                .attr("x", margin.left)
-                .attr("y", margin.top)
-                .attr("text-anchor", "start")
-                .attr("font-size", "18px")
-                .attr("font-weight", "bold")
-                .attr("fill", "#000")
-                .text("");
-
-            if (this.data.highlightedStudy) {
-                const study = this.data.colocs.find(
-                    d => d.study_extraction_id === this.data.highlightedStudy.studyExtractionId
-                );
-                if (study) {
-                    let traitName = study.trait_name;
-                    const pValueText = `: p = ${study.min_p.toExponential(2)}`;
-                    markerTextElement.text(`${traitName}${pValueText}`);
-
-                    const plotWidth = width - margin.left - margin.right;
-
-                    // Truncate text if it overflows the plot width
-                    while (markerTextElement.node().getBBox().width > plotWidth && traitName.length > 3) {
-                        traitName = traitName.slice(0, -1);
-                        markerTextElement.text(`${traitName}...${pValueText}`);
-                    }
-                }
-            }
-        },
+        }
     };
 }

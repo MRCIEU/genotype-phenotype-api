@@ -19,10 +19,20 @@ export default function snp() {
         highlightLock: false,
         init() {
             this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
+                // Update footer text based on store highlight
+                const chartContainer = d3.select("#graph-cluster-diagram svg");
+                const footerText = chartContainer.select("#graph-footer-text");
                 if (newValue) {
                     this.updateGraphHighlightFromStore(newValue);
+                    const nodeData = this.filteredData.coloc_groups?.find(
+                        d => d.study_extraction_id === newValue.studyExtractionId
+                    ) || this.data.coloc_groups?.find(d => d.study_extraction_id === newValue.studyExtractionId);
+                    if (nodeData) {
+                        footerText.text(`${nodeData.trait_name} | ${nodeData.data_type} | p=${nodeData.min_p.toExponential(2)}`);
+                    }
                 } else {
                     this.clearGraphHighlightFromStore();
+                    footerText.text("");
                 }
             });
 
@@ -191,6 +201,15 @@ export default function snp() {
             const self = this;
             const svg = chartContainer.append("svg").attr("width", width).attr("height", height);
 
+            const footerText = svg
+                .append("text")
+                .attr("id", "graph-footer-text")
+                .attr("x", width / 2)
+                .attr("y", height - 10)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "18px")
+                .text("");
+
             // Prepare data for force-directed graph
             const colocPairs = this.filteredData.colocPairs;
 
@@ -289,12 +308,17 @@ export default function snp() {
                 .attr("stroke-width", isLargeGraph ? 1 : 2)
                 .attr("data-id", d => d.id)
                 .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
-                .on("mouseover", function (event, d) {
+                .on("mouseover", function (_, d) {
                     if (self.highlightLock) return;
+                    node
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", isLargeGraph ? 1 : 2)
+                        .attr("cursor", "default");
                     d3.select(this)
                         .attr("cursor", "pointer")
                         .attr("stroke", "#000")
                         .attr("stroke-width", isLargeGraph ? 2 : 3);
+                    
 
                     link.attr("stroke-opacity", l => {
                         const isConnected = l.source.id === d.id || l.target.id === d.id;
@@ -306,14 +330,9 @@ export default function snp() {
                         const h4 = l.h4;
                         return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
                     });
-
-                    const tooltipContent = `
-                        <strong>${d.name}</strong><br/>
-                        Data Type: ${d.data_type}<br/>
-                        P-value: ${d.min_p.toExponential(2)}<br/>
-                        ${d.association ? `Beta: ${d.association.beta.toExponential(2)}` : ""}
-                    `;
-                    graphTransformations.getTooltip(tooltipContent, event);
+                    // Update footer text instead of tooltip
+                    const footer = `${d.name} | ${d.data_type} | p=${d.min_p.toExponential(2)}`;
+                    footerText.text(footer);
 
                     self.setHighlightedStudy({
                         coloc_group_id: d.coloc_group_id,
@@ -332,6 +351,8 @@ export default function snp() {
                         .style("stroke-width", 2);
 
                     d3.selectAll(".tooltip").remove();
+                    // Clear footer text when not locked
+                    footerText.text("");
 
                     const snpGraphStore = Alpine.store("snpGraphStore");
                     snpGraphStore.highlightedStudy = null;
@@ -356,6 +377,9 @@ export default function snp() {
                     ) {
                         snpGraphStore.highlightedStudy = newHighlightedStudy;
                     }
+                    // Ensure footer reflects clicked node
+                    const footer = `${d.name} | ${d.data_type} | p=${d.min_p.toExponential(2)}`;
+                    footerText.text(footer);
                 });
 
             let tickCount = 0;
