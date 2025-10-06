@@ -182,7 +182,11 @@
                             </thead>
                             <tbody>
                                 <template x-for="item in getDataForTable">
-                                    <tr @click="setHighlightedStudy(item); selectedRowId = item.study_extraction_id" :class="{ 'has-background-success-light': selectedRowId === item.study_extraction_id }" style="cursor: pointer;">
+                                    <tr
+                                        @click.stop="setHighlightedStudy(item); highlightLock = true; selectedRowId = item.study_extraction_id"
+                                        :class="{ 'has-background-success-light': selectedRowId === item.study_extraction_id }"
+                                        style="cursor: pointer"
+                                    >
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 200px; white-space: nowrap; overflow: hidden"
