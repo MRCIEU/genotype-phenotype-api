@@ -9,14 +9,15 @@ export default function snp() {
     return {
         data: null,
         filteredData: {
-            colocs: null,
-            colocPairs: null,
-            rare: null,
-            studies: null,
+            colocs: [],
+            colocPairs: [],
+            rare: [],
+            studies: [],
         },
         errorMessage: null,
         selectedRowId: null,
         highlightLock: false,
+
         init() {
             this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
                 // Update footer text based on store highlight
@@ -24,11 +25,12 @@ export default function snp() {
                 const footerText = chartContainer.select("#graph-footer-text");
                 if (newValue) {
                     this.updateGraphHighlightFromStore(newValue);
-                    const nodeData = this.filteredData.coloc_groups?.find(
-                        d => d.study_extraction_id === newValue.studyExtractionId
-                    ) || this.data.coloc_groups?.find(d => d.study_extraction_id === newValue.studyExtractionId);
+                    const nodeData =
+                        this.filteredData.coloc_groups?.find(
+                            d => d.study_extraction_id === newValue.studyExtractionId
+                        ) || this.data.coloc_groups?.find(d => d.study_extraction_id === newValue.studyExtractionId);
                     if (nodeData) {
-                        footerText.text(`${nodeData.trait_name} | ${nodeData.data_type} | p=${nodeData.min_p.toExponential(2)}`);
+                        footerText.text(`${nodeData.trait_name} | p=${nodeData.min_p.toExponential(2)}`);
                     }
                 } else {
                     this.clearGraphHighlightFromStore();
@@ -89,10 +91,11 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.filteredData.colocs : [];
+            return this.data ? this.filteredData.colocs || [] : [];
         },
 
         setHighlightedStudy(item) {
+            this.clearGraphHighlightFromStore();
             const snpGraphStore = Alpine.store("snpGraphStore");
             const newHighlightedStudy = {
                 colocGroupId: item.coloc_group_id,
@@ -189,7 +192,7 @@ export default function snp() {
         },
 
         getGraphClusterDiagram() {
-            if (!this.data || !this.filteredData.colocPairs) return;
+            if (!this.data) return;
 
             const chartElement = document.getElementById("graph-cluster-diagram");
             chartElement.innerHTML = "";
@@ -201,12 +204,29 @@ export default function snp() {
             const self = this;
             const svg = chartContainer.append("svg").attr("width", width).attr("height", height);
 
+            // If too many studies, show message and exit early
+            const numStudies = (this.filteredData.colocs || []).length;
+            if (numStudies > 350) {
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height / 2)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "16px")
+                    .text(
+                        "The cluster is too big to render in a web browser. Please refine filters to reduce the number of results."
+                    );
+                return;
+            }
+
+            if (!this.filteredData.colocPairs || this.filteredData.colocPairs.length === 0) return;
+
             const footerText = svg
                 .append("text")
                 .attr("id", "graph-footer-text")
                 .attr("x", width / 2)
                 .attr("y", height - 10)
                 .attr("text-anchor", "middle")
+                .attr("font-weight", "bold")
                 .attr("font-size", "18px")
                 .text("");
 
@@ -291,7 +311,7 @@ export default function snp() {
                 .selectAll("line")
                 .data(links)
                 .join("line")
-                .attr("stroke-width", 2)
+                .attr("stroke-width", isLargeGraph ? 1 : 2)
                 .attr("stroke", "#999")
                 .attr("stroke-opacity", d => (d.h4 >= 0.8 ? 0.3 : 0))
                 .attr("data-h4", d => d.h4);
@@ -310,15 +330,13 @@ export default function snp() {
                 .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
                 .on("mouseover", function (_, d) {
                     if (self.highlightLock) return;
-                    node
-                        .attr("stroke", "#fff")
+                    node.attr("stroke", "#fff")
                         .attr("stroke-width", isLargeGraph ? 1 : 2)
                         .attr("cursor", "default");
                     d3.select(this)
                         .attr("cursor", "pointer")
                         .attr("stroke", "#000")
-                        .attr("stroke-width", isLargeGraph ? 2 : 3);
-                    
+                        .attr("stroke-width", isLargeGraph ? 1 : 2);
 
                     link.attr("stroke-opacity", l => {
                         const isConnected = l.source.id === d.id || l.target.id === d.id;
@@ -331,7 +349,7 @@ export default function snp() {
                         return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
                     });
                     // Update footer text instead of tooltip
-                    const footer = `${d.name} | ${d.data_type} | p=${d.min_p.toExponential(2)}`;
+                    const footer = `${d.name} | p=${d.min_p.toExponential(2)}`;
                     footerText.text(footer);
 
                     self.setHighlightedStudy({
@@ -348,10 +366,9 @@ export default function snp() {
 
                     link.attr("stroke-opacity", l => (l.h4 >= 0.8 ? 0.3 : 0))
                         .attr("stroke", "#999")
-                        .style("stroke-width", 2);
+                        .style("stroke-width", isLargeGraph ? 1 : 2);
 
                     d3.selectAll(".tooltip").remove();
-                    // Clear footer text when not locked
                     footerText.text("");
 
                     const snpGraphStore = Alpine.store("snpGraphStore");

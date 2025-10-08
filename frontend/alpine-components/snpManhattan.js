@@ -226,6 +226,6 @@ export default function snp() {
                 .attr("stroke", "red")
                 .attr("stroke-width", 0.8)
                 .attr("opacity", 0.8);
-        }
+        },
     };
 }
