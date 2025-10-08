@@ -1,33 +1,59 @@
 import Alpine from "alpinejs";
 import * as d3 from "d3";
-import JSZip from "jszip";
 
 import constants from "./constants.js";
 import downloads from "./downloads.js";
 import graphTransformations from "./graphTransformations.js";
 
-//TODO: look at thissss: https://observablehq.com/@d3/force-directed-graph-component
-
 export default function snp() {
     return {
         data: null,
-        svgZips: {},
-        svgs: [],
-        loadingSvgs: new Set(),
         filteredData: {
-            colocs: null,
-            rare: null,
-            svgs: null,
-            studies: null,
+            colocs: [],
+            colocPairs: [],
+            rare: [],
+            studies: [],
         },
         errorMessage: null,
-        highlightedStudy: null,
+        selectedRowId: null,
+        highlightLock: false,
+
+        init() {
+            this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
+                // Update footer text based on store highlight
+                const chartContainer = d3.select("#graph-cluster-diagram svg");
+                const footerText = chartContainer.select("#graph-footer-text");
+                if (newValue) {
+                    this.updateGraphHighlightFromStore(newValue);
+                    const nodeData =
+                        this.filteredData.coloc_groups?.find(
+                            d => d.study_extraction_id === newValue.studyExtractionId
+                        ) || this.data.coloc_groups?.find(d => d.study_extraction_id === newValue.studyExtractionId);
+                    if (nodeData) {
+                        footerText.text(`${nodeData.trait_name} | p=${nodeData.min_p.toExponential(2)}`);
+                    }
+                } else {
+                    this.clearGraphHighlightFromStore();
+                    footerText.text("");
+                }
+            });
+
+            // Clear highlight lock and selection when clicking anywhere outside nodes
+            document.addEventListener("click", () => {
+                const snpGraphStore = Alpine.store("snpGraphStore");
+                this.highlightLock = false;
+                snpGraphStore.highlightedStudy = null;
+                d3.selectAll(".tooltip").remove();
+            });
+        },
 
         async loadData() {
             let variantId = new URLSearchParams(location.search).get("id");
 
             try {
-                const response = await fetch(constants.apiUrl + "/variants/" + variantId);
+                const response = await fetch(
+                    constants.apiUrl + "/variants/" + variantId + "?include_coloc_pairs=true&h4_threshold=0.5"
+                );
                 if (!response.ok) {
                     this.errorMessage = `Failed to load variant: ${response.status} ${constants.apiUrl + "/variants/" + variantId}`;
                     return;
@@ -43,9 +69,9 @@ export default function snp() {
                 }));
                 this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
 
-                let colocGroupIds = this.data.coloc_groups.map(coloc => coloc.coloc_group_id);
-                colocGroupIds = [...new Set(colocGroupIds)];
-                await this.getSvgData(colocGroupIds);
+                const snpGraphStore = Alpine.store("snpGraphStore");
+                snpGraphStore.colocs = this.data.coloc_groups;
+                snpGraphStore.variant = this.data.variant;
 
                 const ld_block = this.data.coloc_groups[0].ld_block;
                 const ld_info = ld_block.split(/[/-]/);
@@ -53,68 +79,6 @@ export default function snp() {
                 this.data.variant.max_bp = ld_info[3];
             } catch (error) {
                 console.error("Error loading data:", error);
-            }
-        },
-
-        async getSvgData(colocGroupIds) {
-            const initialSvgLoadNumber = 20;
-            if (constants.isLocal) {
-                colocGroupIds = ["test"];
-            }
-            for (const colocGroupId of colocGroupIds) {
-                const svgsUrl = `${constants.assetBaseUrl}/groups/coloc_group_${colocGroupId}_svgs.zip`;
-                const zipResponse = await fetch(svgsUrl);
-                const zipBlob = await zipResponse.blob();
-                this.svgZips[colocGroupId] = await JSZip.loadAsync(zipBlob);
-
-                const entries = Object.entries(this.svgZips[colocGroupId].files);
-                for (let i = 0; i < Math.min(entries.length, initialSvgLoadNumber); i++) {
-                    const [filename, _] = entries[i];
-                    let studyExtractionId = parseInt(filename.split(".svg")[0]);
-                    await this.loadSpecificSvg(colocGroupId, studyExtractionId);
-                }
-            }
-        },
-
-        async loadSpecificSvg(colocGroupId, studyExtractionId) {
-            if (constants.isLocal) {
-                colocGroupId = "test";
-            }
-            if (
-                this.loadingSvgs.has(studyExtractionId) ||
-                this.svgs.some(s => s.studyExtractionId === studyExtractionId)
-            ) {
-                return;
-            }
-            this.loadingSvgs.add(studyExtractionId);
-
-            try {
-                const entries = Object.entries(this.svgZips[colocGroupId].files);
-
-                let file = null;
-                if (constants.isLocal) {
-                    const fileIndex = studyExtractionId % entries.length;
-                    const foundEntry = entries.find(entry => entry[0].includes(fileIndex.toString()));
-                    if (foundEntry) {
-                        file = foundEntry[1];
-                    }
-                } else {
-                    const foundEntry = entries.find(entry => entry[0].includes(studyExtractionId.toString()));
-                    if (foundEntry) {
-                        file = foundEntry[1];
-                    }
-                }
-
-                if (!file) {
-                    console.warn(`No SVG file found for study extraction ID: ${studyExtractionId}`);
-                    return;
-                }
-
-                const originalStudyExtractionId = studyExtractionId;
-                const svgContent = await file.async("text");
-                this.svgs.push({ studyExtractionId: originalStudyExtractionId, svgContent });
-            } finally {
-                this.loadingSvgs.delete(studyExtractionId);
             }
         },
 
@@ -127,7 +91,35 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.filteredData.colocs : [];
+            return this.data ? this.filteredData.colocs || [] : [];
+        },
+
+        setHighlightedStudy(item) {
+            this.clearGraphHighlightFromStore();
+            const snpGraphStore = Alpine.store("snpGraphStore");
+            const newHighlightedStudy = {
+                colocGroupId: item.coloc_group_id,
+                studyExtractionId: item.study_extraction_id,
+            };
+            if (
+                !snpGraphStore.highlightedStudy ||
+                snpGraphStore.highlightedStudy.studyExtractionId !== newHighlightedStudy.studyExtractionId
+            ) {
+                snpGraphStore.highlightedStudy = newHighlightedStudy;
+            }
+            this.selectedRowId = item.study_extraction_id;
+        },
+
+        updateGraphHighlightFromStore(highlightedStudy) {
+            if (this.updateGraphHighlight) {
+                this.updateGraphHighlight(highlightedStudy);
+            }
+        },
+
+        clearGraphHighlightFromStore() {
+            if (this.clearGraphHighlight) {
+                this.clearGraphHighlight();
+            }
         },
 
         downloadDataOnly() {
@@ -173,13 +165,16 @@ export default function snp() {
 
                 return graphOptionFilters && categoryFilters;
             });
-            this.filteredData.svgs = this.svgs.filter(svg => {
-                const hasMatch = this.filteredData.colocs.some(
-                    coloc => coloc.study_extraction_id === svg.studyExtractionId
+
+            const allRelevantStudyExtractionIds = new Set(
+                this.filteredData.colocs.map(coloc => coloc.study_extraction_id)
+            );
+            this.filteredData.colocPairs = this.data.coloc_pairs.filter(colocPair => {
+                return (
+                    allRelevantStudyExtractionIds.has(colocPair.study_extraction_a_id) &&
+                    allRelevantStudyExtractionIds.has(colocPair.study_extraction_b_id)
                 );
-                return hasMatch;
             });
-            // this.data.coloc_groups.sort((a, b) => a.association.beta - b.association.beta);
         },
 
         initForestPlot() {
@@ -188,204 +183,395 @@ export default function snp() {
             graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getForestPlot());
         },
 
-        initChordDiagram() {
+        initGraphClusterDiagram() {
             this.filterDataForGraphs();
-            const chartContainer = document.getElementById("snp-chord-diagram");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getChordDiagram());
-        },
-
-        initManhattanPlotOverlay() {
-            this.filterDataForGraphs();
-            const chartContainer = document.getElementById("manhattan-plot");
+            const chartContainer = document.getElementById("graph-cluster-diagram");
             graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
-                this.getManhattanPlotOverlay()
+                this.getGraphClusterDiagram()
             );
         },
 
-        getChordDiagram() {
+        getGraphClusterDiagram() {
             if (!this.data) return;
-            const self = this;
-            const chartElement = document.getElementById("snp-chord-diagram");
+
+            const chartElement = document.getElementById("graph-cluster-diagram");
             chartElement.innerHTML = "";
 
-            const chartContainer = d3.select("#snp-chord-diagram");
-            chartContainer.select("svg").remove();
-            let graphWidth = chartContainer.node().getBoundingClientRect().width - 50;
-            let graphHeight = 500;
+            const chartContainer = d3.select("#graph-cluster-diagram");
+            const width = chartContainer.node().getBoundingClientRect().width - 50;
+            const height = 500;
 
-            const graphConstants = {
-                width: graphWidth,
-                height: graphHeight,
-                innerRadius: Math.min(graphWidth, graphHeight) * 0.45,
-                outerRadius: Math.min(graphWidth, graphHeight) * 0.45 * 1.01,
-            };
+            const self = this;
+            const svg = chartContainer.append("svg").attr("width", width).attr("height", height);
 
-            // Set dimensions
-            const innerRadius = Math.min(graphConstants.width, graphConstants.height) * 0.45;
-            const outerRadius = innerRadius * 1.01;
+            // If too many studies, show message and exit early
+            const numStudies = (this.filteredData.colocs || []).length;
+            if (numStudies > 350) {
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height / 2)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "16px")
+                    .text(
+                        "The cluster is too big to render in a web browser. Please refine filters to reduce the number of results."
+                    );
+                return;
+            }
 
-            // Append SVG
-            const svg = d3
-                .select("#snp-chord-diagram")
-                .append("svg")
-                .attr("width", graphConstants.width)
-                .attr("height", graphConstants.height)
-                .append("g")
-                .attr("transform", `translate(${graphConstants.width / 2},${graphConstants.height / 2})`);
+            if (!this.filteredData.colocPairs || this.filteredData.colocPairs.length === 0) return;
 
-            const display_snp = this.data.variant.RSID;
-            const colocs = this.filteredData.colocs;
+            const footerText = svg
+                .append("text")
+                .attr("id", "graph-footer-text")
+                .attr("x", width / 2)
+                .attr("y", height - 10)
+                .attr("text-anchor", "middle")
+                .attr("font-weight", "bold")
+                .attr("font-size", "18px")
+                .text("");
 
+            // Prepare data for force-directed graph
+            const colocPairs = this.filteredData.colocPairs;
+
+            // Get unique study extraction IDs from coloc pairs
+            const studyExtractionIds = new Set();
+            colocPairs.forEach(pair => {
+                studyExtractionIds.add(pair.study_extraction_a_id);
+                studyExtractionIds.add(pair.study_extraction_b_id);
+            });
+
+            // Create nodes (study extractions)
+            const nodes = Array.from(studyExtractionIds).map(id => {
+                const coloc = this.data.coloc_groups.find(c => c.study_extraction_id === id);
+                return {
+                    id: id,
+                    name: coloc ? coloc.trait_name : `Study ${id}`,
+                    data_type: coloc ? coloc.data_type : "Unknown",
+                    min_p: coloc ? coloc.min_p : 1,
+                    association: coloc ? coloc.association : null,
+                    coloc_group_id: coloc ? coloc.coloc_group_id : null,
+                };
+            });
+
+            // Create links (coloc pairs)
+            const links = colocPairs.map(pair => ({
+                source: pair.study_extraction_a_id,
+                target: pair.study_extraction_b_id,
+                h4: pair.h4,
+                h3: pair.h3,
+            }));
+
+            // Color scale for data types
             const fixedColorMap = constants.orderedDataTypes
                 .map((dataType, index) => ({
                     [dataType]: constants.colors.palette[index],
                 }))
                 .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
-            const dataTypes = Array.from(new Set(colocs.map(d => d.data_type)));
-            const traits = colocs.map(d => d.trait_name);
-
-            const nodes = [display_snp, ...traits];
-
-            const dataTypeMap = {};
-            colocs.forEach(coloc => {
-                dataTypeMap[coloc.trait_name] = coloc.data_type;
-            });
-
             const color = d3.scaleOrdinal().domain(Object.keys(fixedColorMap)).range(Object.values(fixedColorMap));
 
-            const indexMap = {};
-            nodes.forEach((node, i) => {
-                indexMap[node] = i;
+            // Calculate appropriate parameters based on number of nodes
+            const nodeCount = nodes.length;
+            const isLargeGraph = nodeCount > 100;
+
+            // Adjust node size and spacing based on graph size
+            const baseNodeRadius = isLargeGraph ? 3 : 8;
+            const maxNodeRadius = isLargeGraph ? 6 : 15;
+            const linkDistance = isLargeGraph ? 30 : 50;
+            const chargeStrength = isLargeGraph ? -100 : -300;
+
+            nodes.forEach(node => {
+                const pValueRadius = Math.max(baseNodeRadius, Math.min(maxNodeRadius, -Math.log10(node.min_p) * 1.5));
+                node.radius = pValueRadius;
             });
 
-            const matrix = Array(nodes.length)
-                .fill(null)
-                .map(() => Array(nodes.length).fill(0));
+            const centerStrength = isLargeGraph ? 0.5 : 0.2;
+            const simulation = d3
+                .forceSimulation(nodes)
+                .force(
+                    "link",
+                    d3
+                        .forceLink(links)
+                        .id(d => d.id)
+                        .distance(linkDistance)
+                )
+                .force("charge", d3.forceManyBody().strength(chargeStrength))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force(
+                    "collision",
+                    d3.forceCollide().radius(d => d.radius + 5)
+                )
+                .force("x", d3.forceX(width / 2).strength(centerStrength)) // Stronger centering force
+                .force("y", d3.forceY(height / 2).strength(centerStrength)); // Stronger centering force
 
-            colocs.forEach(coloc => {
-                const source = indexMap[display_snp];
-                const target = indexMap[coloc.trait_name];
-                matrix[source][target] = 1;
-            });
+            // Create links
+            const link = svg
+                .append("g")
+                .attr("stroke", "#999")
+                .selectAll("line")
+                .data(links)
+                .join("line")
+                .attr("stroke-width", isLargeGraph ? 1 : 2)
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", d => (d.h4 >= 0.8 ? 0.3 : 0))
+                .attr("data-h4", d => d.h4);
 
-            const chordGenerator = d3.chord().padAngle(0.005).sortSubgroups(d3.descending);
-            const chords = chordGenerator(matrix);
-            const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
-            const ribbon = d3.ribbon().radius(innerRadius);
-            const group = svg.selectAll(".group").data(chords.groups).enter().append("g").attr("class", "group");
-
-            group
-                .append("path")
-                .style("fill", d => {
-                    const name = nodes[d.index];
-                    if (name === display_snp) {
-                        return "#808080";
-                    }
-                    return color(dataTypeMap[name]);
-                })
-                .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.index]])).darker())
-                .attr("d", arc)
+            // Create nodes
+            const node = svg
+                .append("g")
+                .selectAll("circle")
+                .data(nodes)
+                .join("circle")
+                .attr("r", d => d.radius)
+                .attr("fill", d => color(d.data_type))
+                .attr("stroke", "#fff")
+                .attr("stroke-width", isLargeGraph ? 1 : 2)
+                .attr("data-id", d => d.id)
+                .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
                 .on("mouseover", function (_, d) {
+                    if (self.highlightLock) return;
+                    node.attr("stroke", "#fff")
+                        .attr("stroke-width", isLargeGraph ? 1 : 2)
+                        .attr("cursor", "default");
                     d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .style("fill", d3.rgb(color(dataTypeMap[nodes[d.index]])).brighter());
-                })
-                .on("mouseout", function (_, d) {
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .style("fill", nodes[d.index] === display_snp ? "#808080" : color(dataTypeMap[nodes[d.index]]));
-                });
+                        .attr("cursor", "pointer")
+                        .attr("stroke", "#000")
+                        .attr("stroke-width", isLargeGraph ? 1 : 2);
 
-            svg.selectAll(".chord")
-                .data(chords)
-                .enter()
-                .append("path")
-                .attr("class", "chord")
-                .attr("d", ribbon)
-                .style("fill", d => {
-                    const trait = nodes[d.target.index];
-                    return color(dataTypeMap[trait]);
-                })
-                .style("stroke", d => d3.rgb(color(dataTypeMap[nodes[d.target.index]])).darker())
-                .attr("opacity", 0.7)
-                .on("mouseover", function (event, d) {
-                    if (this.hoverTimeout) {
-                        clearTimeout(this.hoverTimeout);
-                    }
+                    link.attr("stroke-opacity", l => {
+                        const isConnected = l.source.id === d.id || l.target.id === d.id;
+                        return isConnected ? 0.8 : isLargeGraph ? 0.01 : 0.05;
+                    }).attr("stroke", l => {
+                        const isConnected = l.source.id === d.id || l.target.id === d.id;
+                        if (!isConnected) return "#999";
 
-                    this.hoverTimeout = setTimeout(() => {
-                        d3.select(this).transition().duration(200).attr("opacity", 1);
-                        const coloc = self.filteredData.colocs.find(
-                            coloc => coloc.trait_name === nodes[d.target.index]
-                        );
-                        self.highlightedStudy = coloc.study_extraction_id;
-                        self.loadSpecificSvg(coloc.coloc_group_id, coloc.study_extraction_id);
-                        self.svgs = self.svgs.sort((a, b) =>
-                            a.studyExtractionId === coloc.study_extraction_id
-                                ? 1
-                                : b.studyExtractionId === coloc.study_extraction_id
-                                  ? -1
-                                  : 0
-                        );
-                        let tooltipColor = "white";
-                        if (coloc.association) {
-                            tooltipColor = coloc.association.beta > 0 ? "#afe1af" : "#ee4b2b";
-                        }
-                        d3
-                            .select("#snp-chord-diagram")
-                            .append("div")
-                            .attr("class", "tooltip")
-                            .style("position", "absolute")
-                            .style("background-color", tooltipColor)
-                            .style("padding", "5px")
-                            .style("border", "1px solid black")
-                            .style("border-radius", "5px")
-                            .style("left", `${event.pageX + 10}px`)
-                            .style("top", `${event.pageY - 10}px`).html(`Trait: ${coloc.trait_name}<br>
-                                            P-value: ${coloc.min_p.toExponential(2)}<br>
-                                            Cis/Trans: ${coloc.cis_trans}<br>
-                                            BETA: ${coloc.association ? coloc.association.beta : "N/A"}
-                                            `);
-                    }, 200);
+                        const h4 = l.h4;
+                        return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
+                    });
+                    // Update footer text instead of tooltip
+                    const footer = `${d.name} | p=${d.min_p.toExponential(2)}`;
+                    footerText.text(footer);
+
+                    self.setHighlightedStudy({
+                        coloc_group_id: d.coloc_group_id,
+                        study_extraction_id: d.id,
+                    });
                 })
                 .on("mouseout", function () {
-                    if (this.hoverTimeout) {
-                        clearTimeout(this.hoverTimeout);
-                        this.hoverTimeout = null;
-                    }
-                    d3.select(this).transition().duration(200).attr("opacity", 0.7);
+                    if (self.highlightLock) return;
+                    d3.select(this)
+                        .attr("cursor", "default")
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", isLargeGraph ? 1 : 2);
+
+                    link.attr("stroke-opacity", l => (l.h4 >= 0.8 ? 0.3 : 0))
+                        .attr("stroke", "#999")
+                        .style("stroke-width", isLargeGraph ? 1 : 2);
+
                     d3.selectAll(".tooltip").remove();
+                    footerText.text("");
+
+                    const snpGraphStore = Alpine.store("snpGraphStore");
+                    snpGraphStore.highlightedStudy = null;
+                })
+                .on("click", function (event, d) {
+                    event.stopPropagation();
+                    const snpGraphStore = Alpine.store("snpGraphStore");
+                    if (d.id !== self.selectedRowId && self.highlightLock) {
+                        self.highlightLock = false;
+                        snpGraphStore.highlightedStudy = null;
+                        self.selectedRowId = null;
+                        return;
+                    }
+                    self.highlightLock = true;
+                    const newHighlightedStudy = {
+                        colocGroupId: d.coloc_group_id,
+                        studyExtractionId: d.id,
+                    };
+                    if (
+                        !snpGraphStore.highlightedStudy ||
+                        snpGraphStore.highlightedStudy.studyExtractionId !== newHighlightedStudy.studyExtractionId
+                    ) {
+                        snpGraphStore.highlightedStudy = newHighlightedStudy;
+                    }
+                    // Ensure footer reflects clicked node
+                    const footer = `${d.name} | ${d.data_type} | p=${d.min_p.toExponential(2)}`;
+                    footerText.text(footer);
                 });
 
-            // Add legend - only show data types that are actually present
-            const legend = svg
-                .append("g")
-                .attr("class", "legend")
-                .attr("transform", `translate(${-graphConstants.width / 2 + 20}, ${-graphConstants.height / 2 + 20})`);
+            let tickCount = 0;
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                node.attr("cx", d => d.x).attr("cy", d => d.y);
 
-            dataTypes.forEach((type, i) => {
-                const legendItem = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
+                tickCount++;
+                const currentAlpha = simulation.alpha();
 
-                legendItem.append("rect").attr("width", 18).attr("height", 18).attr("fill", color(type));
-
-                legendItem
-                    .append("text")
-                    .attr("x", 24)
-                    .attr("y", 9)
-                    .attr("dy", "0.35em")
-                    .text(type)
-                    .style("font-size", "12px");
+                if (isLargeGraph && tickCount >= 10) {
+                    simulation.stop();
+                } else if (!isLargeGraph && (currentAlpha < 0.01 || tickCount >= 300)) {
+                    simulation.stop();
+                }
             });
 
-            // Add SNP to legend
-            const snpLegend = legend.append("g").attr("transform", `translate(0, ${dataTypes.length * 20})`);
+            simulation.on("end", () => {
+                const visited = new Set();
+                const components = [];
 
-            snpLegend.append("rect").attr("width", 18).attr("height", 18).attr("fill", "#808080");
+                const findComponent = startNode => {
+                    const component = [];
+                    const queue = [startNode];
+                    visited.add(startNode.id);
 
-            snpLegend.attr("x", 24).attr("y", 9).attr("dy", "0.35em").text("Candidate SNP").style("font-size", "12px");
+                    while (queue.length > 0) {
+                        const node = queue.shift();
+                        component.push(node);
+
+                        links.forEach(link => {
+                            if (link.source.id === node.id && !visited.has(link.target.id)) {
+                                visited.add(link.target.id);
+                                queue.push(nodes.find(n => n.id === link.target.id));
+                            } else if (link.target.id === node.id && !visited.has(link.source.id)) {
+                                visited.add(link.source.id);
+                                queue.push(nodes.find(n => n.id === link.source.id));
+                            }
+                        });
+                    }
+                    return component;
+                };
+
+                nodes.forEach(node => {
+                    if (!visited.has(node.id)) {
+                        components.push(findComponent(node));
+                    }
+                });
+
+                const margin = 80;
+                const maxComponentsPerRow = Math.ceil(Math.sqrt(components.length));
+                const componentWidth = (width - 2 * margin) / maxComponentsPerRow;
+                const componentHeight = (height - 2 * margin) / Math.ceil(components.length / maxComponentsPerRow);
+
+                components.forEach((component, componentIndex) => {
+                    const row = Math.floor(componentIndex / maxComponentsPerRow);
+                    const col = componentIndex % maxComponentsPerRow;
+
+                    const targetCenterX = margin + col * componentWidth + componentWidth / 2;
+                    const targetCenterY = margin + row * componentHeight + componentHeight / 2;
+
+                    const xBounds = d3.extent(component, d => d.x);
+                    const yBounds = d3.extent(component, d => d.y);
+                    const currentCenterX = (xBounds[0] + xBounds[1]) / 2;
+                    const currentCenterY = (yBounds[0] + yBounds[1]) / 2;
+
+                    // Calculate scale to fit component in its allocated space
+                    const xRange = xBounds[1] - xBounds[0];
+                    const yRange = yBounds[1] - yBounds[0];
+                    const maxRange = Math.max(xRange, yRange, 1);
+                    const scale = Math.min((componentWidth * 0.8) / maxRange, (componentHeight * 0.8) / maxRange, 1);
+
+                    component.forEach(node => {
+                        const offsetX = (node.x - currentCenterX) * scale;
+                        const offsetY = (node.y - currentCenterY) * scale;
+                        node.x = targetCenterX + offsetX;
+                        node.y = targetCenterY + offsetY;
+                    });
+                });
+
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                node.attr("cx", d => d.x).attr("cy", d => d.y);
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(20, 20)`);
+
+            const dataTypes = Array.from(new Set(nodes.map(d => d.data_type)));
+            dataTypes.forEach((type, i) => {
+                const legendItem = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
+                legendItem
+                    .append("circle")
+                    .attr("r", isLargeGraph ? 4 : 6)
+                    .attr("fill", color(type));
+
+                legendItem.append("text").attr("x", 15).attr("y", 4).attr("font-size", "12px").text(type);
+            });
+
+            const linkLegend = legend.append("g").attr("transform", `translate(0, ${dataTypes.length * 20 + 10})`);
+
+            linkLegend.append("text").attr("font-size", "12px").attr("font-weight", "bold").text("Link Strength (H4):");
+
+            const linkTypes = [
+                { h4: 0.8, color: "#2E8B57", label: "Strong (H4 > 0.8)" },
+                { h4: 0.5, color: "#FF6B6B", label: "Weak (0.5 < H4 < 0.8)" },
+            ];
+
+            linkTypes.forEach((linkType, i) => {
+                const linkLegendItem = linkLegend.append("g").attr("transform", `translate(0, ${(i + 1) * 15})`);
+
+                linkLegendItem
+                    .append("line")
+                    .attr("x1", 0)
+                    .attr("x2", 20)
+                    .attr("y1", 0)
+                    .attr("y2", 0)
+                    .attr("stroke", linkType.color)
+                    .attr("stroke-width", 2);
+
+                linkLegendItem.append("text").attr("x", 25).attr("y", 4).attr("font-size", "10px").text(linkType.label);
+            });
+
+            this.updateGraphHighlight = highlightedStudy => {
+                const nodeElement = d3.select(
+                    `#graph-cluster-diagram circle[data-id="${highlightedStudy.studyExtractionId}"]`
+                );
+                if (nodeElement.empty()) return;
+
+                nodeElement.attr("stroke", "#000").attr("stroke-width", 3);
+
+                link.attr("stroke-opacity", l => {
+                    const isConnected =
+                        l.source.id === highlightedStudy.studyExtractionId ||
+                        l.target.id === highlightedStudy.studyExtractionId;
+                    return isConnected ? 0.8 : 0.01;
+                }).attr("stroke", l => {
+                    const isConnected =
+                        l.source.id === highlightedStudy.studyExtractionId ||
+                        l.target.id === highlightedStudy.studyExtractionId;
+                    if (!isConnected) return "#999";
+
+                    const h4 = l.h4;
+                    return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
+                });
+            };
+
+            this.clearGraphHighlight = () => {
+                node.attr("stroke", "#fff").attr("stroke-width", 2);
+
+                link.attr("stroke-opacity", l => (l.h4 >= 0.8 ? 0.3 : 0))
+                    .attr("stroke", "#999")
+                    .style("stroke-width", 2);
+            };
         },
 
         getForestPlot() {
@@ -405,7 +591,6 @@ export default function snp() {
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            // Use all data points for y-axis scale, but filter for valid data when drawing
             const allData = this.filteredData.colocs;
             const validData = allData.filter(
                 d =>
@@ -416,13 +601,11 @@ export default function snp() {
                     d.association.se !== 0
             );
 
-            // Calculate max beta from valid data only
             const maxAbsBeta = validData.length > 0 ? d3.max(validData, d => Math.abs(d.association.beta)) : 1;
             const xRange = [-maxAbsBeta * 1.5, maxAbsBeta * 1.5];
 
             const x = d3.scaleLinear().domain(xRange).range([0, width]);
 
-            // Use all data points for y-axis scale to maintain spacing
             const y = d3
                 .scaleBand()
                 .domain(allData.map(d => d.study_extraction_id))
@@ -444,7 +627,7 @@ export default function snp() {
                 .attr("x2", x(0))
                 .attr("y2", height)
                 .attr("stroke", "#000")
-                .attr("stroke-width", 1);
+                .attr("stroke-width", 2);
 
             allData.forEach(d => {
                 const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
@@ -489,121 +672,6 @@ export default function snp() {
                 .style("text-anchor", "middle")
                 .style("font-size", "12px")
                 .text("Effect Size (Beta)");
-        },
-
-        getManhattanPlotOverlay() {
-            d3.select("#manhattan-plot").selectAll("*").remove();
-
-            const width = document.getElementById("manhattan-plot").clientWidth;
-            const originalSvgWidth = 1000;
-            const height = 200;
-            const margin = { top: 30, right: 30, bottom: 50, left: 20 };
-
-            const minBP = this.data.variant.min_bp / 1e6;
-            const maxBP = this.data.variant.max_bp / 1e6;
-
-            const x = d3
-                .scaleLinear()
-                .domain([minBP, maxBP])
-                .range([margin.left, width - margin.right]);
-
-            const svg = d3.select("#manhattan-plot").append("svg").attr("width", width).attr("height", height);
-
-            svg.append("g")
-                .attr("transform", `translate(0,${height - margin.bottom})`)
-                .call(
-                    d3
-                        .axisBottom(x)
-                        .ticks((maxBP - minBP) / 0.1)
-                        .tickFormat(d3.format(".1f"))
-                );
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", height - 10)
-                .attr("text-anchor", "middle")
-                .text(`CHR ${this.data.variant.chr}`);
-
-            this.filteredData.svgs.forEach(({ studyExtractionId, svgContent }) => {
-                let parser = new DOMParser();
-                let doc = parser.parseFromString(svgContent, "image/svg+xml");
-                let importedSvg = doc.documentElement;
-
-                // Remove width/height to allow scaling
-                importedSvg.removeAttribute("width");
-                importedSvg.removeAttribute("height");
-                importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-                importedSvg.setAttribute("viewBox", `0 0 ${originalSvgWidth} ${height}`);
-
-                if (this.highlightedStudy === studyExtractionId) {
-                    importedSvg.querySelectorAll("g, path").forEach(element => {
-                        element.removeAttribute("class");
-                        element.removeAttribute("style");
-                        element.setAttribute("fill", "#1976d2");
-                        element.setAttribute("stroke", "#1976d2");
-                        element.setAttribute("opacity", "0.9");
-                    });
-                } else {
-                    importedSvg.querySelectorAll("g, path").forEach(element => {
-                        element.removeAttribute("class");
-                        element.removeAttribute("style");
-                        element.setAttribute("opacity", "0.4");
-                    });
-                }
-
-                let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-
-                while (importedSvg.childNodes.length > 0) {
-                    g.appendChild(importedSvg.childNodes[0]);
-                }
-
-                const plotWidth = width - margin.left - margin.right;
-                const plotHeight = height - margin.top - margin.bottom;
-                const scaleX = plotWidth / originalSvgWidth;
-                const scaleY = plotHeight / height;
-                g.setAttribute("transform", `translate(${margin.left},${margin.top}) scale(${scaleX},${scaleY})`);
-
-                svg.node().appendChild(g);
-            });
-
-            // Draw a thin red vertical line at the variant position (after SVGs so it appears on top)
-            const variantMb = this.data.variant.bp / 1e6;
-            const variantX = x(variantMb);
-            svg.append("line")
-                .attr("x1", variantX)
-                .attr("x2", variantX)
-                .attr("y1", margin.top)
-                .attr("y2", height - margin.bottom)
-                .attr("stroke", "red")
-                .attr("stroke-width", 0.8)
-                .attr("opacity", 0.8);
-
-            const markerTextElement = svg
-                .append("text")
-                .attr("id", "highlighted-marker")
-                .attr("x", margin.left)
-                .attr("y", margin.top)
-                .attr("text-anchor", "start")
-                .attr("font-size", "18px")
-                .attr("font-weight", "bold")
-                .attr("fill", "#000")
-                .text("");
-
-            if (this.highlightedStudy) {
-                const study = this.filteredData.colocs.find(d => d.study_extraction_id === this.highlightedStudy);
-                if (study) {
-                    let traitName = study.trait_name;
-                    const pValueText = `: p = ${study.min_p.toExponential(2)}`;
-                    markerTextElement.text(`${traitName}${pValueText}`);
-
-                    const plotWidth = width - margin.left - margin.right;
-
-                    // Truncate text if it overflows the plot width
-                    while (markerTextElement.node().getBBox().width > plotWidth && traitName.length > 3) {
-                        traitName = traitName.slice(0, -1);
-                        markerTextElement.text(`${traitName}...${pValueText}`);
-                    }
-                }
-            }
         },
     };
 }

@@ -233,7 +233,6 @@ export default function pheontype() {
                 common: this.data.trait.common_study.sample_size.toLocaleString(),
                 rare: this.data.trait.rare_study ? this.data.trait.rare_study.sample_size.toLocaleString() : null,
             };
-            console.log(sampleSizes);
             return sampleSizes;
         },
 

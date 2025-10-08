@@ -114,13 +114,15 @@
                         <h4 x-show="data && data.coloc_groups.length === 0" class="title is-3 has-text-centered">
                             No colocalization information to display for this variant.
                         </h4>
-                        <div x-model="initChordDiagram" id="snp-chord-diagram"></div>
-                        <div
-                            x-model="initManhattanPlotOverlay"
-                            id="manhattan-plot"
-                            class="is-relative"
-                            style="height: 200px; width: 100%; overflow: hidden"
-                        ></div>
+                        <div x-model="initGraphClusterDiagram" id="graph-cluster-diagram"></div>
+                        <div id="snp-manhattan" x-data="snpManhattan" x-init="loadData">
+                            <div
+                                x-model="initManhattanPlotOverlay"
+                                id="manhattan-plot"
+                                class="is-relative"
+                                style="height: 200px; width: 100%; overflow: hidden"
+                            ></div>
+                        </div>
                     </div>
 
                     <div class="column is-2">
@@ -180,7 +182,11 @@
                             </thead>
                             <tbody>
                                 <template x-for="item in getDataForTable">
-                                    <tr>
+                                    <tr
+                                        @click.stop="setHighlightedStudy(item); highlightLock = true; selectedRowId = item.study_extraction_id"
+                                        :class="{ 'has-background-success-light': selectedRowId === item.study_extraction_id }"
+                                        style="cursor: pointer"
+                                    >
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 200px; white-space: nowrap; overflow: hidden"
