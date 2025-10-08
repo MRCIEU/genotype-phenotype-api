@@ -273,6 +273,7 @@ export default function snp() {
             // Calculate appropriate parameters based on number of nodes
             const nodeCount = nodes.length;
             const isLargeGraph = nodeCount > 100;
+            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
 
             // Adjust node size and spacing based on graph size
             const baseNodeRadius = isLargeGraph ? 3 : 8;
@@ -410,7 +411,9 @@ export default function snp() {
                 tickCount++;
                 const currentAlpha = simulation.alpha();
 
-                if (isLargeGraph && tickCount >= 10) {
+                if (isLargeGraph && numColocGroups > 1 && tickCount >= 30) {
+                    simulation.stop();
+                } else if (isLargeGraph && numColocGroups === 1 && tickCount >= 1) {
                     simulation.stop();
                 } else if (!isLargeGraph && (currentAlpha < 0.01 || tickCount >= 300)) {
                     simulation.stop();
