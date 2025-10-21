@@ -63,7 +63,7 @@ export class ResultsTable extends HTMLElement {
                                     .map(col => {
                                         if (col.key === "display_snp" && i === 0) {
                                             return `<td rowspan="${rows.length}">
-                                            ${row.display_snp ? `Causal Variant: <a href="snp.html?id=${row.snp_id}">${row.display_snp}</a><br>` : ""}
+                                            ${row.display_snp ? `Candidate Variant: <a href="snp.html?id=${row.snp_id}">${row.display_snp}</a><br>` : ""}
                                             ${row.ld_block_id ? `LD Region: <a href="region.html?id=${row.ld_block_id}">${row.ld_block || ""}</a><br>` : ""}
                                             ${
                                                 row.posterior_prob !== undefined && row.posterior_prob !== null

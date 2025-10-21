@@ -25,6 +25,30 @@ def variants_in_grange():
     return "7:37945678-37964907"
 
 
+@pytest.fixture(scope="session")
+def snp_study_pairs_in_associations_db():
+    return {
+        "studies": [4870, 5020],
+        "snps": [
+            80750,
+            156076,
+            449749,
+            598663,
+            601653,
+            782722,
+            912733,
+            1188361,
+            1207496,
+            1208704,
+            2124941,
+            2174388,
+            2285209,
+            2549800,
+            2608076,
+            2608105,
+        ],
+    }
+
 @pytest.fixture(autouse=True)
 def mock_redis_cache():
     """Mock Redis cache calls for all tests - always cache miss, stub set operations"""
