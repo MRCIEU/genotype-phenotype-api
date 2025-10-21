@@ -103,6 +103,21 @@ class AssociationsService:
         logger.info(f"Returning {len(filtered_associations)} associations for {len(snp_study_pairs)}")
         return filtered_associations
 
+    def get_associations_by_study_ids(self, snp_ids: List[int], study_ids: List[int]):
+        snp_study_pairs = [(snp_id, study_id) for snp_id in snp_ids for study_id in study_ids]
+        snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
+        all_associations = []
+        for table_name, pairs in list(snp_study_pairs_by_table.items()):
+            if len(pairs) > 0:
+                associations, columns = self.associations_db.get_associations_by_table_name(table_name, pairs)
+                associations = convert_duckdb_tuples_to_dicts(associations, columns)
+                all_associations.extend(associations)
+
+        logger.info(
+            f"Returning {len(all_associations)} associations for {len(snp_ids)} SNPs and {len(study_ids)} studies"
+        )
+        return all_associations
+
     def clear_cache(self):
         """Clear associations Redis cache entries (use with caution)"""
         try:
