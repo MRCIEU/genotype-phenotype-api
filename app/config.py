@@ -1,10 +1,5 @@
-import json
-from hashlib import sha1
-
 from pydantic_settings import BaseSettings
 from functools import lru_cache
-
-from starlette.requests import Request
 
 
 class Settings(BaseSettings):

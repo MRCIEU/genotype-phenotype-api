@@ -8,7 +8,7 @@ from app.models.schemas import (
     StudySource,
     convert_duckdb_to_pydantic_model,
 )
-from app.rate_limiting import limiter
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 
 from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
@@ -22,14 +22,14 @@ router = APIRouter()
 
 @router.get("/version")
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_version():
     return {"version": settings.VERSION}
 
 
 @router.get("/study_sources", response_model=GetStudySourcesResponse)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_study_sources() -> GetStudySourcesResponse:
     try:
         studies_db = StudiesDBClient()
@@ -45,7 +45,7 @@ async def get_study_sources() -> GetStudySourcesResponse:
 
 @router.get("/gpmap_metadata", response_model=GPMapMetadata)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gpmap_metadata():
     try:
         studies_service = StudiesService()
@@ -60,7 +60,7 @@ async def get_gpmap_metadata():
 
 @router.post("/contact")
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def contact(request: ContactRequest):
     try:
         email_service = EmailService()

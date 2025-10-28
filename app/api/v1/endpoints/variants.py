@@ -16,7 +16,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
-from app.rate_limiting import limiter
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.associations_service import AssociationsService
 from app.services.summary_stat_service import SummaryStatService
 
@@ -26,7 +26,7 @@ router = APIRouter()
 
 @router.get("", response_model=List[Variant])
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variants(
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
     variants: List[str] = Query(None, description="List of variants to filter results"),
@@ -61,7 +61,7 @@ async def get_variants(
 
 @router.get("/{snp_id}", response_model=VariantResponse)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variant(
     snp_id: int = Path(..., description="Variant ID to filter results"),
     include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
@@ -140,7 +140,7 @@ async def get_variant(
 
 @router.get("/{snp_id}/summary-stats")
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variant_with_summary_stats(
     snp_id: int = Path(..., description="Variant ID to filter results"),
 ):

@@ -14,7 +14,7 @@ from app.models.schemas import (
 )
 import traceback
 
-from app.rate_limiting import limiter
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
@@ -26,7 +26,7 @@ router = APIRouter()
 
 @router.get("", response_model=GetGenesResponse)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_genes() -> GetGenesResponse:
     try:
         studies_service = StudiesService()
@@ -41,7 +41,7 @@ async def get_genes() -> GetGenesResponse:
 
 @router.get("/{gene_identifier}", response_model=GeneResponse)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gene(
     gene_identifier: str = Path(..., description="Gene Symbol or ID"),
     include_trans: bool = Query(False, description="Whether to include trans-coloc results"),

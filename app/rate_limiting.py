@@ -9,6 +9,9 @@ from app.logging_config import get_logger
 logger = get_logger("app.rate_limiting")
 
 
+DEFAULT_RATE_LIMIT = "60/minute"
+
+
 def rate_limit_identifier(request: Request) -> str:
     """
     Returns a hash of the request headers, which will generally remain the same for a session

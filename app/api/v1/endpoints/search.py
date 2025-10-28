@@ -13,7 +13,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
-from app.rate_limiting import limiter
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ router = APIRouter()
 
 @router.get("/options", response_model=SearchTerms)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_search_options(request: Request, response: Response):
     try:
         # Add cache control headers
@@ -42,7 +42,7 @@ async def get_search_options(request: Request, response: Response):
 
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 @time_endpoint
-@limiter.limit("60/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def variant_search(search_term: str):
     try:
         studies_db = StudiesDBClient()
