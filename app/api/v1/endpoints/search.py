@@ -1,5 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Request
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -13,6 +13,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
+from app.rate_limiting import limiter
 from app.services.studies_service import StudiesService
 
 logger = get_logger(__name__)
@@ -21,7 +22,8 @@ router = APIRouter()
 
 @router.get("/options", response_model=SearchTerms)
 @time_endpoint
-async def get_search_options(response: Response):
+@limiter.limit("60/minute")
+async def get_search_options(request: Request, response: Response):
     try:
         # Add cache control headers
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
@@ -40,6 +42,7 @@ async def get_search_options(response: Response):
 
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 @time_endpoint
+@limiter.limit("60/minute")
 async def variant_search(search_term: str):
     try:
         studies_db = StudiesDBClient()

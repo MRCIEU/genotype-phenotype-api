@@ -23,6 +23,7 @@ from app.models.schemas import (
     UploadStudyExtraction,
     convert_duckdb_to_pydantic_model,
 )
+from app.rate_limiting import limiter
 
 settings = get_settings()
 router = APIRouter()
@@ -32,6 +33,7 @@ logger = get_logger(__name__)
 
 @router.post("", response_model=GwasUpload)
 @time_endpoint
+@limiter.limit("60/minute")
 async def upload_gwas(request: ProcessGwasRequest, file: UploadFile):
     try:
         # redis = RedisClient()
@@ -96,6 +98,7 @@ async def upload_gwas(request: ProcessGwasRequest, file: UploadFile):
 
 
 @router.put("/{guid}")
+@limiter.limit("60/minute")
 async def update_gwas(
     guid: str,
     update_gwas_request: UpdateGwasRequest,
@@ -195,6 +198,7 @@ async def update_gwas(
 
 @router.get("/{guid}", response_model=TraitResponse)
 @time_endpoint
+@limiter.limit("60/minute")
 async def get_gwas(guid: str):
     try:
         studies_db = StudiesDBClient()
