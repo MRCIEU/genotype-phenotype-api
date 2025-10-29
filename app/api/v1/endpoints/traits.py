@@ -1,6 +1,5 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query, Request
-
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -52,6 +51,7 @@ async def get_trait(
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
     try:
+        logger.info(request.headers)
         studies_db = StudiesDBClient()
         associations_service = AssociationsService()
 
@@ -70,6 +70,7 @@ async def get_trait(
         if trait.rare_study is not None:
             rare_results_data = studies_db.get_rare_results_for_study_id(trait.rare_study.id)
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results_data) if rare_results_data else []
+            logger.info(f"rare_results length: {len(rare_results)}")
 
         study_ids = [study.id for study in [trait.common_study, trait.rare_study] if study is not None]
         if study_ids:
@@ -113,6 +114,7 @@ async def get_trait_coloc_pairs(
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> dict:
     try:
+        logger.info(request.headers)
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
 

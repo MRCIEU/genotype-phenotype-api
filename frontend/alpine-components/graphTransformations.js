@@ -11,12 +11,21 @@ export default {
         } else if (type === "gene") {
             attribute = "gene_id";
         }
+        console.log("data", data);
         let groupedData = Object.groupBy(data, ({ display_snp }) => display_snp);
+        console.log("groupedData", groupedData);
 
         groupedData = Object.entries(groupedData).filter(([_, group]) => {
+            // Check if this is a rare variant group (no coloc_group_id)
+            const isRareVariantGroup = group.some(entry => !entry.coloc_group_id);
+            
             let hasId = attribute ? group.some(entry => parseInt(entry[attribute]) === id) : true;
             if (type === "gene") {
                 hasId = group.some(entry => parseInt(entry.gene_id) === id || parseInt(entry.situated_gene_id) === id);
+            }
+            // For rare variants, be more lenient - they might not have a trait_id set
+            if (isRareVariantGroup && !hasId) {
+                hasId = true; // Allow rare variants even without matching trait_id
             }
             const hasTrait = displayFilters.traitName
                 ? group.some(entry => entry.trait_name === displayFilters.traitName)
@@ -24,7 +33,8 @@ export default {
             const hasGene = displayFilters.gene
                 ? group.some(entry => entry.gene === displayFilters.gene || entry.situated_gene === displayFilters.gene)
                 : true;
-            const moreThanOneTrait = group.length > 1;
+            // For rare variants, allow single-entry groups
+            const moreThanOneTrait = isRareVariantGroup ? true : group.length > 1;
             return hasId && hasTrait && hasGene && moreThanOneTrait;
         });
 
@@ -170,6 +180,7 @@ export default {
             .style("border", "1px solid black")
             .style("border-radius", "5px")
             .style("visibility", "hidden")
+            .style("z-index", "10")
             .html(content);
 
         setTimeout(() => {

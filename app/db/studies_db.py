@@ -5,8 +5,10 @@ import duckdb
 
 from app.models.schemas import CisTrans, StudyDataType, VariantType
 from app.db.utils import log_performance
+from app.logging_config import get_logger
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 @lru_cache()
 def get_gpm_db_connection():
@@ -178,6 +180,8 @@ class StudiesDBClient:
                 WHERE {condition}
             )
         """
+        logger.info(f"query: {query}")
+        logger.info(f"params: {params}")
         if params:
             return self.studies_conn.execute(query, params).fetchall()
         return self.studies_conn.execute(query).fetchall()

@@ -36,6 +36,11 @@ export default {
         21: 48129895,
         22: 51304566,
     },
+    clusterConnectednessThresholds: {
+        90: "Strong",
+        70: "Moderate",
+        0: "Weak",
+    },
     colors: {
         palette: ["#d5a7d6", "#7eb0d5", "#fd7f6f", "#b2e061", "#ffb55a", "#beb9db", "#fdcce5", "#8bd3c7"],
         dataTypes: {

@@ -28,10 +28,12 @@
 
                 <div class="columns mt-4 mb-0">
                     <div class="column">
-                        <h3 class="title is-2 has-text-centered mb-0" x-text="'RSID: ' + getSNPName()"></h3>
+                        <h3 class="title is-2 has-text-centered mb-0">
+                            <span x-text="'RSID: ' + getSNPName()"></span> 
+                            <a href="faq.html#variant-view" target="_blank" class="is-size-4">ⓘ</a>
                         <p
                             class="is-size-7 has-text-centered"
-                            x-text="'Displays all colocalising results of which the causal variant is ' + getSNPName()"
+                            x-text="'Displays all colocalising results of which the candidate variant is ' + getSNPName()"
                         ></p>
                     </div>
                 </div>
@@ -49,7 +51,9 @@
                                     <div class="is-divider" style="margin: 0"></div>
                                     <p>
                                         <strong>Alleles:</strong>
-                                        <span x-text="`EA: ${getVariantData().ea} / OA:${getVariantData().oa}`"></span>
+                                        <span
+                                            x-text="`REF: ${getVariantData().ea} / ALT:${getVariantData().oa}`"
+                                        ></span>
                                     </p>
                                     <div class="is-divider" style="margin: 0"></div>
                                     <p><strong>Gene:</strong> <span x-text="getVariantData().symbol"></span></p>
@@ -86,23 +90,23 @@
                                     </p>
                                     <div class="is-divider" style="margin: 0"></div>
                                     <p>
-                                        <strong>EUR EAF:</strong>
+                                        <strong>EUR AF:</strong>
                                         <span x-text="getVariantData().eur_af?.toFixed(2)"></span>
                                     </p>
                                     <p>
-                                        <strong>AFR EAF:</strong>
+                                        <strong>AFR AF:</strong>
                                         <span x-text="getVariantData().afr_af?.toFixed(2)"></span>
                                     </p>
                                     <p>
-                                        <strong>EAS EAF:</strong>
+                                        <strong>EAS AF:</strong>
                                         <span x-text="getVariantData().eas_af?.toFixed(2)"></span>
                                     </p>
                                     <p>
-                                        <strong>SAS EAF:</strong>
+                                        <strong>SAS AF:</strong>
                                         <span x-text="getVariantData().sas_af?.toFixed(2)"></span>
                                     </p>
                                     <p>
-                                        <strong>AMR EAF:</strong>
+                                        <strong>AMR AF:</strong>
                                         <span x-text="getVariantData().amr_af?.toFixed(2)"></span>
                                     </p>
                                 </div>

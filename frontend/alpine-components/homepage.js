@@ -12,6 +12,7 @@ export default function homepage() {
         variantSearchInProgress: false,
         variantSearchResponse: null,
         gpmapMetadata: null,
+        rPackageModalOpen: false,
         uploadMetadata: {
             currentlyUploading: false,
             modalOpen: false,
@@ -302,6 +303,14 @@ export default function homepage() {
             this.uploadMetadata.postUploadModalOpen = false;
             this.uploadMetadata.message = "";
             this.uploadMetadata.uploadSuccess = null;
+        },
+
+        openRPackageModal() {
+            this.rPackageModalOpen = true;
+        },
+
+        closeRPackageModal() {
+            this.rPackageModalOpen = false;
         },
     };
 }
