@@ -1,5 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Request
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -21,8 +21,9 @@ router = APIRouter()
 
 @router.get("/options", response_model=SearchTerms)
 @time_endpoint
-async def get_search_options(response: Response):
+async def get_search_options(response: Response, request: Request):
     try:
+        logger.info(request.headers)
         # Add cache control headers
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
         response.headers["Pragma"] = "no-cache"

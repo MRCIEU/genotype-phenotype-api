@@ -1,5 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Request
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -43,10 +43,12 @@ async def get_traits() -> GetTraitsResponse:
 @router.get("/{trait_id}", response_model=TraitResponse)
 @time_endpoint
 async def get_trait(
+    request: Request,
     trait_id: int = Path(..., description="Trait ID"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
     try:
+        logger.info(request.headers)
         studies_db = StudiesDBClient()
         associations_service = AssociationsService()
 
@@ -99,6 +101,7 @@ async def get_trait_coloc_pairs(
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> dict:
     try:
+        logger.info(request.headers)
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
 

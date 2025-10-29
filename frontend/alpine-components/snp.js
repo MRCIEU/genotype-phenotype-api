@@ -21,8 +21,7 @@ export default function snp() {
         init() {
             this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
                 // Update footer text based on store highlight
-                const chartContainer = d3.select("#graph-cluster-diagram svg");
-                const footerText = chartContainer.select("#graph-footer-text");
+                const footerText = d3.select("#graph-footer-text");
                 if (newValue) {
                     this.updateGraphHighlightFromStore(newValue);
                     const nodeData =
@@ -175,6 +174,30 @@ export default function snp() {
                     allRelevantStudyExtractionIds.has(colocPair.study_extraction_b_id)
                 );
             });
+
+            // Additional filtering: Remove colocs that don't have strong coloc pairs (h4 > 0.8) with other studies
+            const strongColocPairs = this.filteredData.colocPairs.filter(pair => pair.h4 > 0.8);
+            const studyIdsWithStrongColoc = new Set();
+
+            // Collect all study extraction IDs that have strong coloc pairs
+            strongColocPairs.forEach(pair => {
+                studyIdsWithStrongColoc.add(pair.study_extraction_a_id);
+                studyIdsWithStrongColoc.add(pair.study_extraction_b_id);
+            });
+
+            // Filter out colocs that don't have strong coloc pairs with other studies
+            this.filteredData.colocs = this.filteredData.colocs.filter(coloc =>
+                studyIdsWithStrongColoc.has(coloc.study_extraction_id)
+            );
+
+            // Re-filter coloc pairs to only include those between remaining colocs
+            const remainingStudyIds = new Set(this.filteredData.colocs.map(coloc => coloc.study_extraction_id));
+            this.filteredData.colocPairs = this.filteredData.colocPairs.filter(colocPair => {
+                return (
+                    remainingStudyIds.has(colocPair.study_extraction_a_id) &&
+                    remainingStudyIds.has(colocPair.study_extraction_b_id)
+                );
+            });
         },
 
         initForestPlot() {
@@ -202,33 +225,52 @@ export default function snp() {
             const height = 500;
 
             const self = this;
-            const svg = chartContainer.append("svg").attr("width", width).attr("height", height);
+
+            // Create canvas element with high-DPI support
+            const canvas = chartContainer.append("canvas").style("display", "block").node();
+
+            // Get device pixel ratio for crisp rendering on high-DPI displays
+            const dpr = window.devicePixelRatio || 1;
+
+            // Set the actual canvas size in memory (scaled up for high-DPI)
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+
+            // Scale the canvas back down using CSS
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+
+            const ctx = canvas.getContext("2d");
+
+            // Scale the drawing context so everything draws at the correct size
+            ctx.scale(dpr, dpr);
+
+            // Create footer text element separately
+            const footerText = chartContainer
+                .append("div")
+                .attr("id", "graph-footer-text")
+                .style("text-align", "center")
+                .style("font-weight", "bold")
+                .style("font-size", "18px")
+                .style("margin-top", "10px")
+                .text("");
 
             // If too many studies, show message and exit early
             const numStudies = (this.filteredData.colocs || []).length;
-            if (numStudies > 350) {
-                svg.append("text")
-                    .attr("x", width / 2)
-                    .attr("y", height / 2)
-                    .attr("text-anchor", "middle")
-                    .attr("font-size", "16px")
-                    .text(
-                        "The cluster is too big to render in a web browser. Please refine filters to reduce the number of results."
-                    );
+            if (numStudies > 1000) {
+                // Increased limit since Canvas is more performant
+                ctx.fillStyle = "#333";
+                ctx.font = "16px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    "The cluster is too big to render in a web browser. Please refine filters to reduce the number of results.",
+                    width / 2,
+                    height / 2
+                );
                 return;
             }
 
             if (!this.filteredData.colocPairs || this.filteredData.colocPairs.length === 0) return;
-
-            const footerText = svg
-                .append("text")
-                .attr("id", "graph-footer-text")
-                .attr("x", width / 2)
-                .attr("y", height - 10)
-                .attr("text-anchor", "middle")
-                .attr("font-weight", "bold")
-                .attr("font-size", "18px")
-                .text("");
 
             // Prepare data for force-directed graph
             const colocPairs = this.filteredData.colocPairs;
@@ -305,89 +347,164 @@ export default function snp() {
                 .force("x", d3.forceX(width / 2).strength(centerStrength)) // Stronger centering force
                 .force("y", d3.forceY(height / 2).strength(centerStrength)); // Stronger centering force
 
-            // Create links
-            const link = svg
-                .append("g")
-                .attr("stroke", "#999")
-                .selectAll("line")
-                .data(links)
-                .join("line")
-                .attr("stroke-width", isLargeGraph ? 1 : 2)
-                .attr("stroke", "#999")
-                .attr("stroke-opacity", d => (d.h4 >= 0.8 ? 0.3 : 0))
-                .attr("data-h4", d => d.h4);
+            // Store references for Canvas rendering
+            let highlightedNode = null;
+            let isDragging = false;
+            let dragNode = null;
+            let mousePos = { x: 0, y: 0 };
 
-            // Create nodes
-            const node = svg
-                .append("g")
-                .selectAll("circle")
-                .data(nodes)
-                .join("circle")
-                .attr("r", d => d.radius)
-                .attr("fill", d => color(d.data_type))
-                .attr("stroke", "#fff")
-                .attr("stroke-width", isLargeGraph ? 1 : 2)
-                .attr("data-id", d => d.id)
-                .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended))
-                .on("mouseover", function (_, d) {
-                    if (self.highlightLock) return;
-                    node.attr("stroke", "#fff")
-                        .attr("stroke-width", isLargeGraph ? 1 : 2)
-                        .attr("cursor", "default");
-                    d3.select(this)
-                        .attr("cursor", "pointer")
-                        .attr("stroke", "#000")
-                        .attr("stroke-width", isLargeGraph ? 1 : 2);
+            // Function to render the graph on canvas
+            const renderGraph = () => {
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
 
-                    link.attr("stroke-opacity", l => {
-                        const isConnected = l.source.id === d.id || l.target.id === d.id;
-                        return isConnected ? 0.8 : isLargeGraph ? 0.01 : 0.05;
-                    }).attr("stroke", l => {
-                        const isConnected = l.source.id === d.id || l.target.id === d.id;
-                        if (!isConnected) return "#999";
+                // Draw links
+                links.forEach(link => {
+                    const sourceNode = nodes.find(n => n.id === link.source.id);
+                    const targetNode = nodes.find(n => n.id === link.target.id);
 
-                        const h4 = l.h4;
-                        return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
-                    });
-                    // Update footer text instead of tooltip
-                    const footer = `${d.name} | p=${d.min_p.toExponential(2)}`;
-                    footerText.text(footer);
+                    if (!sourceNode || !targetNode) return;
 
-                    self.setHighlightedStudy({
-                        coloc_group_id: d.coloc_group_id,
-                        study_extraction_id: d.id,
-                    });
-                })
-                .on("mouseout", function () {
-                    if (self.highlightLock) return;
-                    d3.select(this)
-                        .attr("cursor", "default")
-                        .attr("stroke", "#fff")
-                        .attr("stroke-width", isLargeGraph ? 1 : 2);
+                    const isConnected =
+                        highlightedNode &&
+                        (link.source.id === highlightedNode.id || link.target.id === highlightedNode.id);
 
-                    link.attr("stroke-opacity", l => (l.h4 >= 0.8 ? 0.3 : 0))
-                        .attr("stroke", "#999")
-                        .style("stroke-width", isLargeGraph ? 1 : 2);
+                    let strokeOpacity = 0;
+                    let strokeColor = "#999";
 
-                    d3.selectAll(".tooltip").remove();
-                    footerText.text("");
+                    if (isConnected) {
+                        strokeOpacity = 0.8;
+                        strokeColor = link.h4 > 0.8 ? "#2563EB" : "#EA580C";
+                    } else if (link.h4 >= 0.8) {
+                        strokeOpacity = 0.3;
+                    }
 
+                    if (strokeOpacity > 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(sourceNode.x, sourceNode.y);
+                        ctx.lineTo(targetNode.x, targetNode.y);
+                        ctx.strokeStyle = strokeColor;
+                        ctx.lineWidth = isLargeGraph ? 1 : 2;
+                        ctx.globalAlpha = strokeOpacity;
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    }
+                });
+                nodes.forEach(node => {
+                    const isHighlighted = highlightedNode && node.id === highlightedNode.id;
+
+                    // Draw node circle
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
+                    ctx.fillStyle = color(node.data_type);
+                    ctx.fill();
+
+                    // Draw node border
+                    ctx.strokeStyle = isHighlighted ? "#000" : "#fff";
+                    ctx.lineWidth = isHighlighted ? 3 : isLargeGraph ? 1 : 2;
+                    ctx.stroke();
+                });
+
+                // Draw legend after main graph elements
+                drawLegend();
+            };
+
+            // Mouse interaction handling
+            const getMousePos = e => {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                };
+            };
+
+            const getNodeAt = (x, y) => {
+                for (let i = nodes.length - 1; i >= 0; i--) {
+                    const node = nodes[i];
+                    const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+                    if (distance <= node.radius + 5) {
+                        // Add some padding for easier clicking
+                        return node;
+                    }
+                }
+                return null;
+            };
+
+            // Mouse event handlers
+            canvas.addEventListener("mousemove", e => {
+                mousePos = getMousePos(e);
+                const node = getNodeAt(mousePos.x, mousePos.y);
+
+                if (isDragging && dragNode) {
+                    dragNode.fx = mousePos.x;
+                    dragNode.fy = mousePos.y;
+                    simulation.alphaTarget(0.3).restart();
+                } else if (node && !self.highlightLock) {
+                    canvas.style.cursor = "pointer";
+                    if (highlightedNode !== node) {
+                        highlightedNode = node;
+                        renderGraph();
+
+                        // Update footer text
+                        const footer = `${node.name} | p=${node.min_p.toExponential(2)}`;
+                        footerText.text(footer);
+
+                        self.setHighlightedStudy({
+                            coloc_group_id: node.coloc_group_id,
+                            study_extraction_id: node.id,
+                        });
+                    }
+                } else if (!node && !self.highlightLock) {
+                    canvas.style.cursor = "default";
+                    if (highlightedNode) {
+                        highlightedNode = null;
+                        renderGraph();
+                        footerText.text("");
+
+                        const snpGraphStore = Alpine.store("snpGraphStore");
+                        snpGraphStore.highlightedStudy = null;
+                    }
+                }
+            });
+
+            canvas.addEventListener("mousedown", _ => {
+                const node = getNodeAt(mousePos.x, mousePos.y);
+                if (node) {
+                    isDragging = true;
+                    dragNode = node;
+                    node.fx = node.x;
+                    node.fy = node.y;
+                    simulation.alphaTarget(0.3).restart();
+                }
+            });
+
+            canvas.addEventListener("mouseup", _ => {
+                if (isDragging && dragNode) {
+                    isDragging = false;
+                    dragNode.fx = null;
+                    dragNode.fy = null;
+                    dragNode = null;
+                    simulation.alphaTarget(0);
+                }
+            });
+
+            canvas.addEventListener("click", e => {
+                e.stopPropagation();
+                const node = getNodeAt(mousePos.x, mousePos.y);
+                if (node) {
                     const snpGraphStore = Alpine.store("snpGraphStore");
-                    snpGraphStore.highlightedStudy = null;
-                })
-                .on("click", function (event, d) {
-                    event.stopPropagation();
-                    const snpGraphStore = Alpine.store("snpGraphStore");
-                    if (d.id !== self.selectedRowId && self.highlightLock) {
+                    if (node.id !== self.selectedRowId && self.highlightLock) {
                         self.highlightLock = false;
                         snpGraphStore.highlightedStudy = null;
                         self.selectedRowId = null;
+                        highlightedNode = null;
+                        renderGraph();
                         return;
                     }
                     self.highlightLock = true;
                     const newHighlightedStudy = {
-                        colocGroupId: d.coloc_group_id,
-                        studyExtractionId: d.id,
+                        colocGroupId: node.coloc_group_id,
+                        studyExtractionId: node.id,
                     };
                     if (
                         !snpGraphStore.highlightedStudy ||
@@ -396,17 +513,24 @@ export default function snp() {
                         snpGraphStore.highlightedStudy = newHighlightedStudy;
                     }
                     // Ensure footer reflects clicked node
-                    const footer = `${d.name} | ${d.data_type} | p=${d.min_p.toExponential(2)}`;
+                    const footer = `${node.name} | ${node.data_type} | p=${node.min_p.toExponential(2)}`;
                     footerText.text(footer);
-                });
+                } else {
+                    // Clicked on empty space - de-highlight
+                    const snpGraphStore = Alpine.store("snpGraphStore");
+                    self.highlightLock = false;
+                    snpGraphStore.highlightedStudy = null;
+                    self.selectedRowId = null;
+                    highlightedNode = null;
+                    renderGraph();
+                    footerText.text("");
+                }
+            });
 
             let tickCount = 0;
             simulation.on("tick", () => {
-                link.attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-                node.attr("cx", d => d.x).attr("cy", d => d.y);
+                // Re-render the entire graph on each tick
+                renderGraph();
 
                 tickCount++;
                 const currentAlpha = simulation.alpha();
@@ -483,97 +607,117 @@ export default function snp() {
                     });
                 });
 
-                link.attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-                node.attr("cx", d => d.x).attr("cy", d => d.y);
+                // Final render after component layout
+                renderGraph();
             });
 
-            function dragstarted(event, d) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
+            // Draw legend on canvas
+            const drawLegend = () => {
+                const legendX = 20;
+                const legendY = 20;
+                const dataTypes = Array.from(new Set(nodes.map(d => d.data_type)));
 
-            function dragged(event, d) {
-                d.fx = event.x;
-                d.fy = event.y;
-            }
+                // Draw "Trait Type" header
+                ctx.fillStyle = "#333";
+                ctx.font = "bold 12px Arial";
+                ctx.fillText("Trait Type:", legendX, legendY);
 
-            function dragended(event, d) {
-                if (!event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
+                // Draw node type legend
+                dataTypes.forEach((type, i) => {
+                    const y = legendY + (i + 1) * 20;
 
-            const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(20, 20)`);
+                    // Draw circle
+                    ctx.beginPath();
+                    ctx.arc(legendX + (isLargeGraph ? 4 : 6), y, isLargeGraph ? 4 : 6, 0, 2 * Math.PI);
+                    ctx.fillStyle = color(type);
+                    ctx.fill();
+                    ctx.strokeStyle = "#fff";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
 
-            const dataTypes = Array.from(new Set(nodes.map(d => d.data_type)));
-            dataTypes.forEach((type, i) => {
-                const legendItem = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
-                legendItem
-                    .append("circle")
-                    .attr("r", isLargeGraph ? 4 : 6)
-                    .attr("fill", color(type));
+                    // Draw text
+                    ctx.fillStyle = "#333";
+                    ctx.font = "12px Arial";
+                    ctx.textAlign = "left";
+                    ctx.fillText(type, legendX + 15, y + 4);
+                });
 
-                legendItem.append("text").attr("x", 15).attr("y", 4).attr("font-size", "12px").text(type);
-            });
+                // Draw link legend
+                const linkLegendY = legendY + (dataTypes.length + 1) * 20 + 10;
+                ctx.fillStyle = "#333";
+                ctx.font = "bold 12px Arial";
+                ctx.fillText("Link Strength (H4):", legendX, linkLegendY);
 
-            const linkLegend = legend.append("g").attr("transform", `translate(0, ${dataTypes.length * 20 + 10})`);
+                const linkTypes = [
+                    { h4: 0.8, color: "#2563EB", label: "Strong (H4 > 0.8)" },
+                    { h4: 0.5, color: "#EA580C", label: "Weak (0.5 < H4 < 0.8)" },
+                ];
 
-            linkLegend.append("text").attr("font-size", "12px").attr("font-weight", "bold").text("Link Strength (H4):");
+                linkTypes.forEach((linkType, i) => {
+                    const y = linkLegendY + (i + 1) * 15;
 
-            const linkTypes = [
-                { h4: 0.8, color: "#2E8B57", label: "Strong (H4 > 0.8)" },
-                { h4: 0.5, color: "#FF6B6B", label: "Weak (0.5 < H4 < 0.8)" },
-            ];
+                    // Draw line
+                    ctx.beginPath();
+                    ctx.moveTo(legendX, y);
+                    ctx.lineTo(legendX + 20, y);
+                    ctx.strokeStyle = linkType.color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
 
-            linkTypes.forEach((linkType, i) => {
-                const linkLegendItem = linkLegend.append("g").attr("transform", `translate(0, ${(i + 1) * 15})`);
+                    // Draw text
+                    ctx.fillStyle = "#333";
+                    ctx.font = "10px Arial";
+                    ctx.fillText(linkType.label, legendX + 25, y + 4);
+                });
 
-                linkLegendItem
-                    .append("line")
-                    .attr("x1", 0)
-                    .attr("x2", 20)
-                    .attr("y1", 0)
-                    .attr("y2", 0)
-                    .attr("stroke", linkType.color)
-                    .attr("stroke-width", 2);
+                // Display connectedness for each coloc group using existing data
+                const colocGroups = [...new Set(nodes.map(n => n.coloc_group_id).filter(id => id !== null))];
+                if (colocGroups.length > 0) {
+                    const connectednessY = linkLegendY + linkTypes.length * 15 + 30; // Added extra spacing for line break
 
-                linkLegendItem.append("text").attr("x", 25).attr("y", 4).attr("font-size", "10px").text(linkType.label);
-            });
+                    ctx.fillStyle = "#333";
+                    ctx.font = "bold 12px Arial";
+                    ctx.fillText("Group Connectedness:", legendX, connectednessY);
+                    const onlyOneColocGroup = colocGroups.length === 1;
+
+                    colocGroups.forEach((groupId, i) => {
+                        // Find the first node in this group to get the connectedness value
+                        const groupNode = nodes.find(n => n.coloc_group_id === groupId);
+                        const connectednessValue = groupNode
+                            ? self.data.coloc_groups.find(cg => cg.coloc_group_id === groupId)?.connectedness || 0
+                            : 0;
+                        const connectednessPercentage = Math.round(connectednessValue * 100);
+
+                        let strengthText = "Weak";
+                        for (const threshold in constants.clusterConnectednessThresholds) {
+                            if (connectednessPercentage >= threshold)
+                                strengthText = constants.clusterConnectednessThresholds[threshold];
+                        }
+
+                        const y = connectednessY + (i + 1) * 15;
+
+                        // Draw group indicator
+                        ctx.fillStyle = "#333";
+                        ctx.font = "11px Arial";
+                        const connectednessText = onlyOneColocGroup
+                            ? `Connectedness: ${connectednessPercentage}% (${strengthText})`
+                            : `Group ${groupId}: ${connectednessPercentage}% connected (${strengthText})`;
+                        ctx.fillText(connectednessText, legendX, y);
+                    });
+                }
+            };
 
             this.updateGraphHighlight = highlightedStudy => {
-                const nodeElement = d3.select(
-                    `#graph-cluster-diagram circle[data-id="${highlightedStudy.studyExtractionId}"]`
-                );
-                if (nodeElement.empty()) return;
-
-                nodeElement.attr("stroke", "#000").attr("stroke-width", 3);
-
-                link.attr("stroke-opacity", l => {
-                    const isConnected =
-                        l.source.id === highlightedStudy.studyExtractionId ||
-                        l.target.id === highlightedStudy.studyExtractionId;
-                    return isConnected ? 0.8 : 0.01;
-                }).attr("stroke", l => {
-                    const isConnected =
-                        l.source.id === highlightedStudy.studyExtractionId ||
-                        l.target.id === highlightedStudy.studyExtractionId;
-                    if (!isConnected) return "#999";
-
-                    const h4 = l.h4;
-                    return h4 > 0.8 ? "#2E8B57" : "#FF6B6B";
-                });
+                const node = nodes.find(n => n.id === highlightedStudy.studyExtractionId);
+                if (node) {
+                    highlightedNode = node;
+                    renderGraph();
+                }
             };
 
             this.clearGraphHighlight = () => {
-                node.attr("stroke", "#fff").attr("stroke-width", 2);
-
-                link.attr("stroke-opacity", l => (l.h4 >= 0.8 ? 0.3 : 0))
-                    .attr("stroke", "#999")
-                    .style("stroke-width", 2);
+                highlightedNode = null;
+                renderGraph();
             };
         },
 
