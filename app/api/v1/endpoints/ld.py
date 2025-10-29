@@ -1,5 +1,7 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Query
+from starlette.requests import Request
+
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import Ld, Lds, Variant, convert_duckdb_to_pydantic_model
@@ -15,6 +17,7 @@ router = APIRouter()
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_matrix(
+    request: Request,
     variants: List[str] = Query(None, description="List of variants to filter results"),
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
 ):
@@ -49,6 +52,7 @@ async def get_matrix(
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_proxies(
+    request: Request,
     variants: List[str] = Query(None, description="List of variants to filter results"),
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
 ):

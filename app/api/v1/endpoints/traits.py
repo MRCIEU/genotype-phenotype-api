@@ -1,5 +1,7 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query
+from starlette.requests import Request
+
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -29,7 +31,7 @@ settings = get_settings()
 @router.get("", response_model=GetTraitsResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_traits() -> GetTraitsResponse:
+async def get_traits(request: Request) -> GetTraitsResponse:
     try:
         db = StudiesDBClient()
         traits = db.get_traits()
@@ -46,6 +48,7 @@ async def get_traits() -> GetTraitsResponse:
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait(
+    request: Request,
     trait_id: int = Path(..., description="Trait ID"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
@@ -98,6 +101,7 @@ async def get_trait(
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait_coloc_pairs(
+    request: Request,
     trait_id: int = Path(..., description="Trait ID"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),

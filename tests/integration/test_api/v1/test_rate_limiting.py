@@ -35,15 +35,15 @@ def test_rate_limit_catches_overuse():
 def test_rate_limit_does_not_block_different_users():
     response_user_1 = client.get(
         "v1/internal/rate-limiter",
-        headers={"my_header": "hello"}
+        headers={"first_user": "headers"}
     )
     response_user_2 = client.get(
         "v1/internal/rate-limiter",
-        headers={"my_header": "hello"}
+        headers={"second_user": "different headers"}
     )
     response_user_3 = client.get(
         "v1/internal/rate-limiter",
-        headers={"my_header": "hello"}
+        headers={"third user": "hello"}
     )
     assert response_user_1.status_code == 200
     assert response_user_2.status_code == 200

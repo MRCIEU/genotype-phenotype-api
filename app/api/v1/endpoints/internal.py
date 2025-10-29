@@ -1,5 +1,7 @@
 import traceback
 from fastapi import APIRouter, HTTPException
+from starlette.requests import Request
+
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
@@ -12,7 +14,7 @@ router = APIRouter()
 @router.post("/clear-cache", response_model=dict, include_in_schema=False)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def clear_cache():
+async def clear_cache(request: Request):
     try:
         studies_service = StudiesService()
         studies_service.clear_cache()
@@ -28,6 +30,6 @@ async def clear_cache():
 
 @router.get("/rate-limiter", response_model=dict, include_in_schema=False)
 @limiter.limit("2/minute")
-async def rate_limiter():
+async def rate_limiter(request: Request):
     """ For testing rate limiting. Should block more than 2 calls per minute."""
     return {"success": True}

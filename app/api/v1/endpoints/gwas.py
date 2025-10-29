@@ -4,6 +4,7 @@ import uuid
 import os
 import hashlib
 import sentry_sdk
+from starlette.requests import Request
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
@@ -34,7 +35,7 @@ logger = get_logger(__name__)
 @router.post("", response_model=GwasUpload)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def upload_gwas(request: ProcessGwasRequest, file: UploadFile):
+async def upload_gwas(request: Request, request_body: ProcessGwasRequest, file: UploadFile):
     try:
         # redis = RedisClient()
         # is_allowed, recent_uploads = redis.update_user_upload(request.email)
@@ -71,16 +72,16 @@ async def upload_gwas(request: ProcessGwasRequest, file: UploadFile):
             else:
                 db.delete_gwas_upload(file_guid)
 
-        request.guid = file_guid
-        request.status = GwasStatus.PROCESSING
+        request_body.guid = file_guid
+        request_body.status = GwasStatus.PROCESSING
 
         db = GwasDBClient()
-        gwas = db.create_gwas_upload(request)
+        gwas = db.create_gwas_upload(request_body)
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         redis_json = {
             "file_location": file_location,
-            "metadata": request.model_dump(mode="json"),
+            "metadata": request_body.model_dump(mode="json"),
         }
 
         redis = RedisClient()
@@ -100,6 +101,7 @@ async def upload_gwas(request: ProcessGwasRequest, file: UploadFile):
 @router.put("/{guid}")
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def update_gwas(
+    request: Request,
     guid: str,
     update_gwas_request: UpdateGwasRequest,
 ):
@@ -199,7 +201,7 @@ async def update_gwas(
 @router.get("/{guid}", response_model=TraitResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_gwas(guid: str):
+async def get_gwas(request: Request, guid: str):
     try:
         studies_db = StudiesDBClient()
         gwas_upload_db = GwasDBClient()

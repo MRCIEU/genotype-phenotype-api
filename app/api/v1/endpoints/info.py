@@ -1,5 +1,7 @@
 import traceback
 from fastapi import APIRouter, HTTPException
+from starlette.requests import Request
+
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     ContactRequest,
@@ -23,14 +25,14 @@ router = APIRouter()
 @router.get("/version")
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_version():
+async def get_version(request: Request):
     return {"version": settings.VERSION}
 
 
 @router.get("/study_sources", response_model=GetStudySourcesResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_study_sources() -> GetStudySourcesResponse:
+async def get_study_sources(request: Request) -> GetStudySourcesResponse:
     try:
         studies_db = StudiesDBClient()
         sources = studies_db.get_study_sources()
@@ -46,7 +48,7 @@ async def get_study_sources() -> GetStudySourcesResponse:
 @router.get("/gpmap_metadata", response_model=GPMapMetadata)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_gpmap_metadata():
+async def get_gpmap_metadata(request: Request):
     try:
         studies_service = StudiesService()
         metadata = studies_service.get_gpmap_metadata()
@@ -61,10 +63,14 @@ async def get_gpmap_metadata():
 @router.post("/contact")
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def contact(request: ContactRequest):
+async def contact(request: Request, request_body: ContactRequest):
     try:
         email_service = EmailService()
-        await email_service.send_contact_email(request.email, request.reason, request.message)
+        await email_service.send_contact_email(
+            request_body.email,
+            request_body.reason,
+            request_body.message
+        )
     except HTTPException as e:
         logger.error(f"Error in contact: {e}\n{traceback.format_exc()}")
         raise e

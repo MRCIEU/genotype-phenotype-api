@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Path, Query
+from starlette.requests import Request
+
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -27,7 +29,7 @@ router = APIRouter()
 @router.get("", response_model=GetGenesResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_genes() -> GetGenesResponse:
+async def get_genes(request: Request) -> GetGenesResponse:
     try:
         studies_service = StudiesService()
         genes = studies_service.get_genes()
@@ -43,6 +45,7 @@ async def get_genes() -> GetGenesResponse:
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gene(
+    request: Request,
     gene_identifier: str = Path(..., description="Gene Symbol or ID"),
     include_trans: bool = Query(False, description="Whether to include trans-coloc results"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),

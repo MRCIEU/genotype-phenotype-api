@@ -43,7 +43,7 @@ async def get_search_options(request: Request, response: Response):
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def variant_search(search_term: str):
+async def variant_search(request: Request, search_term: str):
     try:
         studies_db = StudiesDBClient()
         ld_db = LdDBClient()

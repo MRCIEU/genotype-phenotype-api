@@ -1,5 +1,7 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path
+from starlette.requests import Request
+
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     LdBlock,
@@ -21,6 +23,7 @@ router = APIRouter()
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_region(
+    request: Request,
     ld_block_id: int = Path(..., description="LD Block ID"),
 ) -> RegionResponse:
     try:
