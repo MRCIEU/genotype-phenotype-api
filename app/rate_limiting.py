@@ -1,4 +1,3 @@
-import json
 from hashlib import sha1
 
 from slowapi import Limiter
