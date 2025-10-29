@@ -1,6 +1,7 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Request
 from fastapi.responses import StreamingResponse
+
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -16,6 +17,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.associations_service import AssociationsService
 from app.services.summary_stat_service import SummaryStatService
 
@@ -25,7 +27,9 @@ router = APIRouter()
 
 @router.get("", response_model=List[Variant])
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variants(
+    request: Request,
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
     variants: List[str] = Query(None, description="List of variants to filter results"),
     rsids: List[str] = Query(None, description="List of rsids to filter results"),
@@ -59,7 +63,9 @@ async def get_variants(
 
 @router.get("/{snp_id}", response_model=VariantResponse)
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variant(
+    request: Request,
     snp_id: int = Path(..., description="Variant ID to filter results"),
     include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
@@ -137,7 +143,9 @@ async def get_variant(
 
 @router.get("/{snp_id}/summary-stats")
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variant_with_summary_stats(
+    request: Request,
     snp_id: int = Path(..., description="Variant ID to filter results"),
 ):
     try:

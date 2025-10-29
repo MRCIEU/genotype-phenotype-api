@@ -1,5 +1,6 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Request
+
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -16,6 +17,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.associations_service import AssociationsService
 from app.config import get_settings
 
@@ -27,7 +29,8 @@ settings = get_settings()
 
 @router.get("", response_model=GetTraitsResponse)
 @time_endpoint
-async def get_traits() -> GetTraitsResponse:
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def get_traits(request: Request) -> GetTraitsResponse:
     try:
         db = StudiesDBClient()
         traits = db.get_traits()
@@ -42,7 +45,9 @@ async def get_traits() -> GetTraitsResponse:
 
 @router.get("/{trait_id}", response_model=TraitResponse)
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait(
+    request: Request,
     trait_id: int = Path(..., description="Trait ID"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
@@ -93,7 +98,9 @@ async def get_trait(
 
 @router.get("/{trait_id}/coloc-pairs")
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait_coloc_pairs(
+    request: Request,
     trait_id: int = Path(..., description="Trait ID"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),

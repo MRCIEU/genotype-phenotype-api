@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Request
+
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -14,6 +15,7 @@ from app.models.schemas import (
 )
 import traceback
 
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
@@ -25,7 +27,8 @@ router = APIRouter()
 
 @router.get("", response_model=GetGenesResponse)
 @time_endpoint
-async def get_genes() -> GetGenesResponse:
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def get_genes(request: Request) -> GetGenesResponse:
     try:
         studies_service = StudiesService()
         genes = studies_service.get_genes()
@@ -39,7 +42,9 @@ async def get_genes() -> GetGenesResponse:
 
 @router.get("/{gene_identifier}", response_model=GeneResponse)
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gene(
+    request: Request,
     gene_identifier: str = Path(..., description="Gene Symbol or ID"),
     include_trans: bool = Query(False, description="Whether to include trans-coloc results"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),

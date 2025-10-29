@@ -1,5 +1,6 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Request
+
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     LdBlock,
@@ -10,6 +11,7 @@ from app.models.schemas import (
     convert_duckdb_to_pydantic_model,
 )
 from app.logging_config import get_logger, time_endpoint
+from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 
 logger = get_logger(__name__)
@@ -18,7 +20,9 @@ router = APIRouter()
 
 @router.get("/{ld_block_id}", response_model=RegionResponse)
 @time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_region(
+    request: Request,
     ld_block_id: int = Path(..., description="LD Block ID"),
 ) -> RegionResponse:
     try:

@@ -1,12 +1,18 @@
 import sentry_sdk
+
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.middleware.security import SecurityMiddleware
 from app.api.v1.router import api_router
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger
+from app.rate_limiting import limiter
 
 settings = get_settings()
 logger = get_logger("app.main")
@@ -65,3 +71,7 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+# Rate limiting config
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
