@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, UploadFile, Request
 import traceback
 import uuid
 import os
 import hashlib
 import sentry_sdk
-from starlette.requests import Request
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient

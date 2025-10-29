@@ -1,6 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Query
-from starlette.requests import Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient

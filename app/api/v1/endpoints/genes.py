@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Path, Query
-from starlette.requests import Request
+from fastapi import APIRouter, HTTPException, Path, Query, Request
 
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient

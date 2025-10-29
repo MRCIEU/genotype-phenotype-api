@@ -1,6 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException
-from starlette.requests import Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT

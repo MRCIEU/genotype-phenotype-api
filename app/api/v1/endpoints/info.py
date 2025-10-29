@@ -1,6 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException
-from starlette.requests import Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
