@@ -263,6 +263,7 @@ class RareResult(BaseModel):
     bp: int
     min_p: float
     display_snp: str
+    rsid: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
