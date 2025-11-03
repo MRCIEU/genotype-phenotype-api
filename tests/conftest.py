@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import Mock, patch
 
 variant_data = {
-    "8466140": {"rsid": "rs10085558", "variant": "7:37945678"},
-    "8466253": {"rsid": "rs79590116", "variant": "7:37964907"},
+    "8466160": {"rsid": "rs16879765", "variant": "7:37949493"},
+    "8466304": {"rsid": "rs145159117", "variant": "7:37979301"},
 }
 
 
@@ -13,11 +13,9 @@ def variants_in_studies_db():
 
 
 @pytest.fixture(scope="session")
-def variants_in_ld_db():
-    return {
-        "8466140": "7:37945678",
-        "8466253": "7:37964907",
-    }
+def variants_in_ld_db(variants_in_studies_db):
+    # Reformat variant_data to the LD format { snp_id: "chr:bp" }
+    return {snp_id: data["variant"] for snp_id, data in variants_in_studies_db.items()}
 
 
 @pytest.fixture(scope="session")
