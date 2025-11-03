@@ -44,7 +44,7 @@ class ColocPairsDBClient:
             WHERE snp_id IN ({snp_placeholders})
                 AND h3 >= ?
                 AND h4 >= ?
-                AND spurious = FALSE
+                AND false_positive = FALSE
         """
         cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         rows = cursor.fetchall()
@@ -69,7 +69,7 @@ class ColocPairsDBClient:
                 AND study_extraction_b_id IN (SELECT * FROM UNNEST(?))
                 AND h4 >= ?
                 AND h3 >= ?
-                AND spurious = FALSE
+                AND false_positive = FALSE
         """
 
         params = [study_extraction_ids, study_extraction_ids, h4_threshold, h3_threshold]
@@ -91,7 +91,7 @@ class ColocPairsDBClient:
             WHERE snp_id IN ({placeholders})
                 AND h3 >= ?
                 AND h4 >= ?
-                AND spurious = FALSE
+                AND false_positive = FALSE
         """
         cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         rows = cursor.fetchall()
@@ -123,7 +123,7 @@ class ColocPairsDBClient:
             WHERE snp_id IN ({placeholders})
                 AND h3 >= ?
                 AND h4 >= ?
-                AND spurious = FALSE
+                AND false_positive = FALSE
             ORDER BY snp_id
         """
 

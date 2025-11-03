@@ -65,13 +65,15 @@ class ColocGroup(BaseModel):
     study_extraction_id: int
     snp_id: int
     ld_block_id: int
-    connectedness: float
+    h4_connectedness: float
+    h3_connectedness: float
     chr: Optional[int] = None
     bp: Optional[int] = None
     min_p: Optional[float] = None
     cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
     display_snp: str
+    rsid: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
     trait_id: Optional[int] = None
@@ -207,7 +209,8 @@ class StudyExtraction(BaseModel):
     id: int
     study_id: int
     snp_id: int
-    snp: str
+    display_snp: str
+    rsid: str
     ld_block_id: int
     unique_study_id: str
     study: str

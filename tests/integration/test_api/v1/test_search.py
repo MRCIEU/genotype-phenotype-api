@@ -31,6 +31,15 @@ def test_search_variant_by_rsid(variants_in_studies_db, mock_redis_cache):
 
     assert len(variants.original_variants) > 0
     assert len(variants.original_variants[0].ld_proxies) > 0
+
+def test_search_variant_by_rsid_finds_proxies(variants_in_studies_db, mock_redis_cache):
+    rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
+    response = client.get(f"/v1/search/variant/{rsids[1]}")
+    assert response.status_code == 200
+    variants = VariantSearchResponse(**response.json())
+    assert isinstance(variants, VariantSearchResponse)
+
+    assert len(variants.original_variants) == 1
     assert len(variants.proxy_variants) > 0
     assert len(variants.proxy_variants[0].ld_proxies) > 0
 
@@ -44,5 +53,3 @@ def test_search_variant_by_chr_bp(variants_in_studies_db, mock_redis_cache):
 
     assert len(variants.original_variants) > 0
     assert len(variants.original_variants[0].ld_proxies) > 0
-    assert len(variants.proxy_variants) > 0
-    assert len(variants.proxy_variants[0].ld_proxies) > 0

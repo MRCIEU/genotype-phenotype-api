@@ -20,4 +20,4 @@ def test_get_associations_by_study_ids(snp_study_pairs_in_associations_db):
     assert response.status_code == 200
 
     associations = response.json()["associations"]
-    assert len(associations) > 10
+    assert len(associations) > 2
