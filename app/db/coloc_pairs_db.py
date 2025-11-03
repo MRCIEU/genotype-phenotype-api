@@ -45,7 +45,6 @@ class ColocPairsDBClient:
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
-                AND false_negative = FALSE
         """
         cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         rows = cursor.fetchall()
@@ -71,7 +70,6 @@ class ColocPairsDBClient:
                 AND h4 >= ?
                 AND h3 >= ?
                 AND false_positive = FALSE
-                AND false_negative = FALSE
         """
 
         params = [study_extraction_ids, study_extraction_ids, h4_threshold, h3_threshold]
@@ -94,7 +92,6 @@ class ColocPairsDBClient:
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
-                AND false_negative = FALSE
         """
         cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
         rows = cursor.fetchall()
@@ -127,7 +124,6 @@ class ColocPairsDBClient:
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
-                AND false_negative = FALSE
             ORDER BY snp_id
         """
 
