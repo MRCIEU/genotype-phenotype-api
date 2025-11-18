@@ -2,6 +2,7 @@
 set -e
 
 sudo docker compose pull
+sudo docker compose up certbot
 sudo docker compose down
 
 echo "Swapping to new databases"

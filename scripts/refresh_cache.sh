@@ -4,8 +4,8 @@ set -e
 curl -X POST "http://localhost:8000/v1/internal/clear-cache"
 echo "Cache cleared"
 
-curl "http://localhost:8000/api/v1/info/gpmap_metadata"
-curl "http://localhost:8000/api/v1/search/options"
+curl "http://localhost:8000/v1/info/gpmap_metadata"
+curl "http://localhost:8000/v1/search/options"
 
 # Array of study IDs to set cache for
 study_ids=(
@@ -24,5 +24,5 @@ study_ids=(
 
 for study_id in "${study_ids[@]}"; do
     echo "Setting associations cache for: $study_id"
-    curl "http://localhost:8000/api/v1/traits/$study_id?include_associations=true"
+    curl "http://localhost:8000/v1/traits/$study_id?include_associations=true" > /dev/null
 done
