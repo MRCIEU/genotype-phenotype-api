@@ -13,7 +13,6 @@ client = TestClient(app)
 def test_get_variants_by_variants(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}")
-    print(response.json())
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
@@ -29,14 +28,20 @@ def test_get_variants_by_variants(variants_in_studies_db):
 def test_get_variants_by_rsids(variants_in_studies_db):
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
     response = client.get(f"/v1/variants?rsids={rsids[0]}&rsids={rsids[1]}")
-    print(response.json())
     assert response.status_code == 200
     variants = response.json()
     assert len(variants) > 0
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != "canonical" and field != "gene_id" and field != "associations":
+            optional_fields = [
+                "canonical",
+                "gene_id",
+                "associations",
+                "distinct_trait_categories",
+                "distinct_protein_coding_genes",
+            ]
+            if field not in optional_fields:
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 
@@ -48,14 +53,20 @@ def test_get_variants_by_grange(variants_in_grange):
     for row in variants:
         variant_model = Variant(**row)
         for field in variant_model.model_fields:
-            if field != "canonical" and field != "gene_id" and field != "associations":
+            optional_fields = [
+                "canonical",
+                "gene_id",
+                "associations",
+                "distinct_trait_categories",
+                "distinct_protein_coding_genes",
+            ]
+            if field not in optional_fields:
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
 
 
 def test_get_variant_by_id(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants/{snp_ids[0]}")
-    print(response.json())
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None
@@ -77,7 +88,6 @@ def test_get_variant_by_id(variants_in_studies_db):
 def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants/{snp_ids[0]}?include_coloc_pairs=true")
-    print(response.json())
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None

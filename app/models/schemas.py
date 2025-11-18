@@ -121,6 +121,8 @@ class Gene(BaseModel):
     stop: int
     strand: int
     source: Optional[str] = None
+    distinct_trait_categories: Optional[int] = None
+    distinct_protein_coding_genes: Optional[int] = None
     genes_in_region: Optional[List[Gene]] = None
 
 
@@ -173,6 +175,28 @@ class BasicTraitResponse(BaseModel):
 
 class GetTraitsResponse(BaseModel):
     traits: List[BasicTraitResponse]
+
+
+class GenePleiotropy(BaseModel):
+    gene_id: int
+    gene: str
+    distinct_trait_categories: int
+    distinct_protein_coding_genes: int
+
+
+class SnpPleiotropy(BaseModel):
+    snp_id: int
+    display_snp: str
+    distinct_trait_categories: int
+    distinct_protein_coding_genes: int
+
+
+class GenePleiotropyResponse(BaseModel):
+    genes: List[GenePleiotropy]
+
+
+class SnpPleiotropyResponse(BaseModel):
+    snps: List[SnpPleiotropy]
 
 
 class GetStudySourcesResponse(BaseModel):
@@ -313,6 +337,8 @@ class Variant(BaseModel):
     amr_af: Optional[float] = None
     afr_af: Optional[float] = None
     sas_af: Optional[float] = None
+    distinct_trait_categories: Optional[int] = None
+    distinct_protein_coding_genes: Optional[int] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 

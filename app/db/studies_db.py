@@ -230,23 +230,38 @@ class StudiesDBClient:
 
     @log_performance
     def get_gene(self, symbol: str = None, id: int = None):
+        query = """SELECT gene_annotations.*,
+            gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+            FROM gene_annotations
+            JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id"""
         if symbol:
-            query = "SELECT * FROM gene_annotations WHERE gene = ?"
-            return self.studies_conn.execute(query, [symbol]).fetchone()
+            query += " WHERE gene_annotations.gene = ?"
+            data = [symbol]
         elif id:
-            query = "SELECT * FROM gene_annotations WHERE id = ?"
-            return self.studies_conn.execute(query, [id]).fetchone()
+            query += " WHERE gene_annotations.id = ?"
+            data = [id]
         else:
             raise ValueError("Either gene or id must be provided")
 
+        return self.studies_conn.execute(query, data).fetchone()
+
     @log_performance
     def get_variant(self, snp_id: int):
-        query = "SELECT * FROM snp_annotations WHERE id = ?"
+        query = """SELECT
+            snp_annotations.*,
+            snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
+            FROM snp_annotations
+            LEFT JOIN snp_pleiotropy ON snp_annotations.id = snp_pleiotropy.snp_id
+            WHERE snp_annotations.id = ?
+        """
         return self.studies_conn.execute(query, [snp_id]).fetchone()
 
     @log_performance
     def get_genes(self):
-        query = "SELECT * FROM gene_annotations"
+        query = """SELECT
+            gene_annotations.*, gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+            FROM gene_annotations
+            LEFT JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id"""
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
@@ -269,7 +284,11 @@ class StudiesDBClient:
         if not snp_ids and not variant_prefixes and not rsids and not grange:
             return []
 
-        query = "SELECT * FROM snp_annotations WHERE "
+        query = """SELECT snp_annotations.*, snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
+            FROM snp_annotations
+            LEFT JOIN snp_pleiotropy ON snp_annotations.id = snp_pleiotropy.snp_id
+            WHERE 
+        """
         params = []
 
         if snp_ids:
@@ -537,3 +556,21 @@ class StudiesDBClient:
             params.extend([i, ld_block])
 
         return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_gene_pleiotropy_scores(self):
+        query = """SELECT
+            gene_pleiotropy.gene_id, gene_annotations.gene, gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+            FROM gene_pleiotropy
+            JOIN gene_annotations ON gene_pleiotropy.gene_id = gene_annotations.id
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
+    def get_snp_pleiotropy_scores(self):
+        query = """SELECT
+            snp_pleiotropy.snp_id, snp_annotations.display_snp, snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
+            FROM snp_pleiotropy
+            JOIN snp_annotations ON snp_pleiotropy.snp_id = snp_annotations.id
+        """
+        return self.studies_conn.execute(query).fetchall()

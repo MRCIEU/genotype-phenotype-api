@@ -65,11 +65,7 @@ async def get_gpmap_metadata(request: Request):
 async def contact(request: Request, request_body: ContactRequest):
     try:
         email_service = EmailService()
-        await email_service.send_contact_email(
-            request_body.email,
-            request_body.reason,
-            request_body.message
-        )
+        await email_service.send_contact_email(request_body.email, request_body.reason, request_body.message)
     except HTTPException as e:
         logger.error(f"Error in contact: {e}\n{traceback.format_exc()}")
         raise e

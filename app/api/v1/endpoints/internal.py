@@ -30,5 +30,5 @@ async def clear_cache(request: Request):
 @router.get("/rate-limiter", response_model=dict, include_in_schema=False)
 @limiter.limit("3/minute")
 async def rate_limiter(request: Request):
-    """ For testing rate limiting. Should block more than 2 calls per minute."""
+    """For testing rate limiting. Should block more than 2 calls per minute."""
     return {"success": True}

@@ -47,6 +47,7 @@ def snp_study_pairs_in_associations_db():
         ],
     }
 
+
 @pytest.fixture(autouse=True)
 def mock_redis_cache():
     """Mock Redis cache calls for all tests - always cache miss, stub set operations"""
