@@ -179,6 +179,7 @@ export default function homepage() {
                 "email",
                 "sampleSize",
                 "genomeBuild",
+                "pValueThreshold",
                 "chr",
                 "bp",
                 "ea",

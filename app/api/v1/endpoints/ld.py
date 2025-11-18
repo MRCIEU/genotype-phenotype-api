@@ -28,7 +28,6 @@ async def get_matrix(
             snp_annotations = convert_duckdb_to_pydantic_model(Variant, snp_annotations)
             snp_ids = [snp_annotation.id for snp_annotation in snp_annotations]
 
-        print(snp_ids)
         if not snp_ids:
             raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
 

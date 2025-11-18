@@ -16,14 +16,15 @@ from app.services.redis_decorator import redis_cache
 
 logger = get_logger(__name__)
 
+studies_db_cache_prefix = "studies_db_cache"
+
 
 class StudiesService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
         self.redis_client = RedisClient()
-        self.cache_prefix = "studies_db_cache"
 
-    @redis_cache(model_class=SearchTerms)
+    @redis_cache(prefix=studies_db_cache_prefix, model_class=SearchTerms)
     def get_search_terms(self) -> SearchTerms:
         """
         Retrieve trait and gene names for search from DuckDB with caching.
@@ -112,7 +113,7 @@ class StudiesService(metaclass=Singleton):
         genes = self.db.get_genes()
         return convert_duckdb_to_pydantic_model(Gene, genes)
 
-    @redis_cache(model_class=SearchTerm)
+    @redis_cache(prefix=studies_db_cache_prefix, model_class=SearchTerm)
     def get_gene_names(self) -> List[SearchTerm]:
         """
         Retrieve genes from DuckDB with caching.
@@ -122,7 +123,7 @@ class StudiesService(metaclass=Singleton):
         genes = self.db.get_gene_names()
         return [SearchTerm(type="gene", name=gene[0], type_id=gene[0]) for gene in genes]
 
-    @redis_cache()
+    @redis_cache(prefix=studies_db_cache_prefix)
     def get_tissues(
         self,
     ) -> List[str]:
@@ -135,7 +136,7 @@ class StudiesService(metaclass=Singleton):
         tissues = [tissue[0] for tissue in tissues]
         return sorted(tissues)
 
-    @redis_cache(model_class=GPMapMetadata)
+    @redis_cache(prefix=studies_db_cache_prefix, model_class=GPMapMetadata)
     def get_gpmap_metadata(self) -> GPMapMetadata:
         """
         Retrieve study metadata from DuckDB with caching, grouped by data_type and variant_type.
@@ -168,7 +169,7 @@ class StudiesService(metaclass=Singleton):
     def clear_cache(self):
         """Clear studies Redis cache entries (use with caution)"""
         try:
-            keys = self.redis_client.redis.keys(f"{self.cache_prefix}:*")
+            keys = self.redis_client.redis.keys(f"{studies_db_cache_prefix}:*")
             if keys:
                 self.redis_client.redis.delete(*keys)
                 logger.info(f"Cleared {len(keys)} cache keys")

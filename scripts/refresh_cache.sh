@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-curl -X POST "http://localhost:8000/api/v1/internal/clear-cache"
+curl -X POST "http://localhost:8000/v1/internal/clear-cache"
 echo "Cache cleared"
 
 curl "http://localhost:8000/api/v1/info/gpmap_metadata"
