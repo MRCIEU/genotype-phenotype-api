@@ -1,8 +1,20 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import TraitResponse
+from app.models.schemas import TraitResponse, GetTraitsResponse
 
 client = TestClient(app)
+
+
+def test_get_traits():
+    response = client.get("/v1/traits")
+    assert response.status_code == 200
+    traits = response.json()
+    traits = GetTraitsResponse(**traits)
+    assert traits is not None
+    assert len(traits.traits) > 0
+    for trait in traits.traits:
+        assert trait.id is not None
+        assert trait.trait_name is not None
 
 
 def test_get_trait_by_id():

@@ -143,7 +143,6 @@ class Trait(BaseModel):
     trait: str
     trait_name: str
     trait_category: Optional[str] = None
-    biological_category: Optional[str] = None
     common_study: Optional[Study] = None
     rare_study: Optional[Study] = None
 
@@ -158,7 +157,6 @@ class BasicTraitResponse(BaseModel):
     trait: str
     trait_name: str
     trait_category: Optional[str] = None
-    biological_category: Optional[str] = None
     variant_type: str
     sample_size: int
     category: str
