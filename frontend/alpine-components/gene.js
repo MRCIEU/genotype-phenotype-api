@@ -1,6 +1,5 @@
 import Alpine from "alpinejs";
 import { stringify } from "flatted";
-import * as d3 from "d3";
 import constants from "./constants.js";
 import downloads from "./downloads.js";
 import graphTransformations from "./graphTransformations.js";
@@ -261,6 +260,6 @@ export default function gene() {
 
         getTraitByPositionGraph() {
             graphTransformations.traitByPositionGraph.bind(this)();
-        }
+        },
     };
 }
