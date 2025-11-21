@@ -69,7 +69,7 @@ async def get_trait(
         else:
             rare_results = []
 
-        study_extractions = studies_db.get_study_extractions_for_study(trait.common_study.id)
+        study_extractions = studies_db.get_study_extractions_for_studies([trait.common_study.id, trait.rare_study.id])
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
 
         colocs = studies_db.get_all_colocs_for_study(trait.common_study.id)

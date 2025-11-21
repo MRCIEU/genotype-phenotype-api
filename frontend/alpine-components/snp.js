@@ -675,6 +675,6 @@ export default function snp() {
                 .style("text-anchor", "middle")
                 .style("font-size", "12px")
                 .text("Effect Size (Beta)");
-        },
+        }
     };
 }
