@@ -280,6 +280,7 @@ class RareResult(BaseModel):
     study_id: int
     study_extraction_id: int
     snp_id: int
+    gene_id: Optional[int] = None
     ld_block_id: int
     chr: int
     bp: int
@@ -287,13 +288,15 @@ class RareResult(BaseModel):
     display_snp: str
     rsid: str
     gene: Optional[str] = None
-    gene_id: Optional[int] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
     ld_block: Optional[str] = None
+    source_id: Optional[int] = None
+    source_name: Optional[str] = None
+    source_url: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):

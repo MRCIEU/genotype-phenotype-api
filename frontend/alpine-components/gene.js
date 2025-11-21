@@ -1,6 +1,5 @@
 import Alpine from "alpinejs";
 import { stringify } from "flatted";
-import * as d3 from "d3";
 import constants from "./constants.js";
 import downloads from "./downloads.js";
 import graphTransformations from "./graphTransformations.js";
@@ -259,122 +258,8 @@ export default function gene() {
             );
         },
 
-        initAssociatedGenesGraph() {
-            this.filterDataForGraphs();
-            const chartContainer = document.getElementById("associated-genes-plot");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
-                this.getAssociatedGenesGraph()
-            );
-        },
-
         getTraitByPositionGraph() {
             graphTransformations.traitByPositionGraph.bind(this)();
-        },
-
-        getAssociatedGenesGraph() {
-            const container = document.getElementById("associated-genes-plot");
-            if (!container || !this.filteredData.associatedGenes) return;
-            container.innerHTML = "";
-
-            const graphConstants = {
-                width: container.clientWidth,
-                height: 300,
-                outerMargin: {
-                    top: 20,
-                    right: 20,
-                    bottom: 80,
-                    left: 60,
-                },
-            };
-
-            const innerWidth =
-                graphConstants.width - graphConstants.outerMargin.left - graphConstants.outerMargin.right;
-            const innerHeight =
-                graphConstants.height - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
-
-            const svg = d3
-                .select("#associated-genes-plot")
-                .append("svg")
-                .attr("viewBox", `0 0 ${graphConstants.width} ${graphConstants.height}`)
-                .attr("preserveAspectRatio", "xMidYMid meet")
-                .style("width", "100%")
-                .style("height", "100%")
-                .append("g")
-                .attr("transform", `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
-
-            // Convert associatedGenes to array and sort by count
-            const geneData = Object.entries(this.filteredData.associatedGenes)
-                .map(([gene, entries]) => ({
-                    gene,
-                    count: entries.length,
-                }))
-                .sort((a, b) => b.count - a.count);
-
-            // Create scales
-            const x = d3
-                .scaleBand()
-                .domain(geneData.map(d => d.gene))
-                .range([0, innerWidth])
-                .padding(0.1);
-
-            const y = d3
-                .scaleLinear()
-                .domain([0, d3.max(geneData, d => d.count)])
-                .nice()
-                .range([innerHeight, 0]);
-
-            // Add bars
-            svg.selectAll("rect")
-                .data(geneData)
-                .enter()
-                .append("rect")
-                .attr("x", d => x(d.gene))
-                .attr("y", d => y(d.count))
-                .attr("width", x.bandwidth())
-                .attr("height", d => innerHeight - y(d.count))
-                .attr("fill", "#7eb0d5")
-                .on("mouseover", function (event, d) {
-                    d3.select(this)
-                        .attr("fill", "#fd7f6f")
-                        .style("cursor", "pointer")
-                        .style("stroke", "#808080")
-                        .style("stroke-width", 3);
-                    graphTransformations.getTooltip(`Gene: ${d.gene}<br>Count: ${d.count}`, event);
-                })
-                .on("click", (event, d) => {
-                    this.displayFilters.gene = d.gene;
-                })
-                .on("mouseout", function () {
-                    d3.select(this).attr("fill", "#7eb0d5").style("stroke", null).style("stroke-width", null);
-                    d3.selectAll(".tooltip").remove();
-                });
-
-            // Add x-axis
-            svg.append("g")
-                .attr("transform", `translate(0,${innerHeight})`)
-                .call(d3.axisBottom(x))
-                .selectAll("text")
-                .attr("transform", "rotate(-45)")
-                .style("text-anchor", "end")
-                .style("font-size", "10px");
-
-            // Add y-axis
-            const maxCount = d3.max(geneData, d => d.count);
-            svg.append("g").call(d3.axisLeft(y).ticks(Math.min(5, maxCount)).tickFormat(d3.format("d")));
-
-            // Add labels
-            svg.append("text")
-                .attr("x", innerWidth / 2)
-                .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
-                .style("text-anchor", "middle")
-                .text("Gene");
-
-            svg.append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("x", -innerHeight / 2)
-                .attr("y", -40)
-                .style("text-anchor", "middle")
-                .text("Number of Associations");
         },
     };
 }

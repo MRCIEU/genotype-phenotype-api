@@ -19,7 +19,6 @@ from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
-from app.models.schemas import CisTrans
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -81,16 +80,17 @@ async def get_gene(
         ]
         gene.genes_in_region = genes_in_region
 
-        study_extractions_in_region = studies_db.get_study_extractions_in_gene_region(
-            gene.chr, gene.start, gene.stop, gene.id
+        study_extractions_in_region = (
+            studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.id) or []
         )
-        cis_trans = None if include_trans else CisTrans.cis
-        study_extractions_of_gene = studies_db.get_study_extractions_for_gene(gene.id, cis_trans)
+        study_extractions_of_gene = studies_db.get_study_extractions_for_gene(gene.id, include_trans) or []
         study_extractions = study_extractions_in_region + study_extractions_of_gene
 
-        if study_extractions is not None:
+        if study_extractions:
             study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
             study_extraction_ids = [s.id for s in study_extractions]
+        else:
+            study_extraction_ids = []
 
         region_colocs = studies_db.get_all_colocs_for_study_extraction_ids(study_extraction_ids)
         gene_colocs = studies_db.get_all_colocs_for_gene(gene.id)
