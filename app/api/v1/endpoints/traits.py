@@ -63,20 +63,27 @@ async def get_trait(
         studies = studies_db.get_studies_by_trait_id(trait.id)
         studies = convert_duckdb_to_pydantic_model(Study, studies)
         trait = populate_trait_studies(trait, studies)
+        rare_results = []
+        study_extractions = []
+        colocs = []
+
         if trait.rare_study is not None:
-            rare_results = studies_db.get_rare_results_for_study_id(trait.rare_study.id)
-            rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
-        else:
-            rare_results = []
+            rare_results_data = studies_db.get_rare_results_for_study_id(trait.rare_study.id)
+            rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results_data) if rare_results_data else []
 
-        study_extractions = studies_db.get_study_extractions_for_studies([trait.common_study.id, trait.rare_study.id])
-        study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
+        study_ids = [study.id for study in [trait.common_study, trait.rare_study] if study is not None]
+        if study_ids:
+            study_extractions_data = studies_db.get_study_extractions_for_studies(study_ids)
+            study_extractions = (
+                convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions_data)
+                if study_extractions_data
+                else []
+            )
 
-        colocs = studies_db.get_all_colocs_for_study(trait.common_study.id)
-        if colocs is not None:
-            colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
-        else:
-            colocs = []
+        if trait.common_study is not None:
+            colocs_data = studies_db.get_all_colocs_for_study(trait.common_study.id)
+            if colocs_data:
+                colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs_data)
 
         associations = None
         if include_associations:
