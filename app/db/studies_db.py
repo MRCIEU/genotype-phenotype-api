@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import CisTrans, StudyDataType, VariantType
+from app.models.schemas import StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -383,25 +383,14 @@ class StudiesDBClient:
             return []
 
         placeholders = ",".join(["?" for _ in study_ids])
-        query = f"""
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
-            FROM study_extractions 
-            JOIN studies ON study_extractions.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.study_id IN ({placeholders})
-        """
-        return self.studies_conn.execute(query, study_ids).fetchall()
+        return self._fetch_study_extractions(f"study_extractions.study_id IN ({placeholders})", study_ids)
 
     @log_performance
     def get_study_extractions_for_variant(self, snp_id: int):
-        query = """
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
-            FROM study_extractions 
-            JOIN studies ON study_extractions.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.snp_id = ?
-        """
-        return self.studies_conn.execute(query, [snp_id]).fetchall()
+        if not snp_id:
+            return []
+
+        return self._fetch_study_extractions("study_extractions.snp_id = ?", [snp_id])
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):
@@ -409,14 +398,20 @@ class StudiesDBClient:
             return []
 
         placeholders = ",".join(["?" for _ in ids])
+        return self._fetch_study_extractions(f"study_extractions.id IN ({placeholders})", ids)
+
+    def _fetch_study_extractions(self, condition: str, params: List = None):
         query = f"""
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
+            SELECT study_extractions.*, gene_annotations.gene AS gene, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
             FROM study_extractions
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.id IN ({placeholders})
+            JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
+            WHERE {condition}
         """
-        return self.studies_conn.execute(query, ids).fetchall()
+        if params:
+            return self.studies_conn.execute(query, params).fetchall()
+        return self.studies_conn.execute(query).fetchall()
 
     @log_performance
     def get_study_extractions_by_unique_study_id(self, unique_study_ids: List[str]):
@@ -485,37 +480,21 @@ class StudiesDBClient:
 
     @log_performance
     def get_study_extractions_for_gene(self, gene_id: int, include_trans: bool = False):
-        regular_query = """
-            SELECT study_extractions.*,
-            traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
-                FROM study_extractions 
-                JOIN studies ON study_extractions.study_id = studies.id
-                JOIN traits ON studies.trait_id = traits.id
-                WHERE study_extractions.gene_id = ? OR studies.gene_id = ?
-            """
-        if not include_trans:
-            regular_query += " AND study_extractions.cis_trans != ?"
-            params = (gene_id, gene_id, CisTrans.trans.value)
-        else:
-            params = (
-                gene_id,
-                gene_id,
-            )
+        if not gene_id:
+            return []
 
-        return self.studies_conn.execute(regular_query, params).fetchall()
+        return self._fetch_study_extractions(
+            "study_extractions.gene_id = ? OR study_extractions.situated_gene_id = ?", [gene_id, gene_id]
+        )
 
     @log_performance
-    def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int, gene_id: int):
-        return self.studies_conn.execute(
-            """SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
-            FROM study_extractions 
-            JOIN studies ON study_extractions.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            WHERE (study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ?)
-               OR (study_extractions.gene_id = ? AND study_extractions.cis_trans = 'cis')
-            """,
-            (chr, bp_start, bp_end, gene_id),
-        ).fetchall()
+    def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int):
+        return self._fetch_study_extractions(
+            """
+            study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ? AND
+            study_extractions.cis_trans = 'cis'""",
+            [chr, bp_start, bp_end],
+        )
 
     @log_performance
     def get_study_extractions_in_ld_block(self, ld_block_id: int):

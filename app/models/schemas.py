@@ -217,6 +217,8 @@ class Study(BaseModel):
     gene_id: Optional[int] = None
     gene: Optional[str] = None
     ensg: Optional[str] = None
+    heritability: Optional[float] = None
+    heritability_se: Optional[float] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -244,12 +246,13 @@ class StudyExtraction(BaseModel):
     min_p: float
     cis_trans: Optional[str] = None
     ld_block: str
-    gene: Optional[str] = None
     gene_id: Optional[int] = None
-    trait_id: Optional[int] = None
+    situated_gene_id: Optional[int] = None
 
 
 class ExtendedStudyExtraction(StudyExtraction):
+    gene: str
+    trait_id: int
     trait_name: str
     trait_category: Optional[str] = None
     data_type: str
@@ -281,6 +284,7 @@ class RareResult(BaseModel):
     study_extraction_id: int
     snp_id: int
     gene_id: Optional[int] = None
+    situated_gene_id: Optional[int] = None
     ld_block_id: int
     chr: int
     bp: int
@@ -288,6 +292,7 @@ class RareResult(BaseModel):
     display_snp: str
     rsid: str
     gene: Optional[str] = None
+    situated_gene: Optional[str] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
