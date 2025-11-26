@@ -26,6 +26,7 @@ async def clear_cache(request: Request):
         logger.error(f"Error in clear_cache: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/clear-cache/studies", response_model=dict, include_in_schema=False)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)

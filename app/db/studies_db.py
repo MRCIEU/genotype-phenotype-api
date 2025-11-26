@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import CisTrans, StudyDataType, VariantType
+from app.models.schemas import StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -484,13 +484,13 @@ class StudiesDBClient:
             return []
 
         return self._fetch_study_extractions(
-            f"study_extractions.gene_id = ? OR study_extractions.situated_gene_id = ?", [gene_id, gene_id]
+            "study_extractions.gene_id = ? OR study_extractions.situated_gene_id = ?", [gene_id, gene_id]
         )
 
     @log_performance
     def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int):
         return self._fetch_study_extractions(
-            f"""
+            """
             study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ? AND
             study_extractions.cis_trans = 'cis'""",
             [chr, bp_start, bp_end],
