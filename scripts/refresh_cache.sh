@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-curl -X POST "http://localhost:8000/v1/internal/clear-cache"
-echo "Cache cleared"
+curl -X POST "http://localhost:8000/v1/internal/clear-cache/all"
+echo "All redis caches cleared"
 
 curl "http://localhost:8000/v1/info/gpmap_metadata"
 curl "http://localhost:8000/v1/search/options"

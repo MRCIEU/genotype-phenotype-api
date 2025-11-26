@@ -81,13 +81,17 @@ async def get_gene(
         gene.genes_in_region = genes_in_region
 
         study_extractions_in_region = (
-            studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop, gene.id) or []
+            studies_db.get_study_extractions_in_gene_region(gene.chr, gene.start, gene.stop) or []
         )
         study_extractions_of_gene = studies_db.get_study_extractions_for_gene(gene.id, include_trans) or []
         study_extractions = study_extractions_in_region + study_extractions_of_gene
 
         if study_extractions:
             study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
+            unique_study_extractions_dict = {}
+            for s in study_extractions:
+                unique_study_extractions_dict[s.id] = s
+            study_extractions = list(unique_study_extractions_dict.values())
             study_extraction_ids = [s.id for s in study_extractions]
         else:
             study_extraction_ids = []
