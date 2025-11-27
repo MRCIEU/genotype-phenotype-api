@@ -72,8 +72,10 @@ async def get_trait(
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results_data) if rare_results_data else []
 
         study_ids = [study.id for study in [trait.common_study, trait.rare_study] if study is not None]
+        logger.info(f"Study IDs: {study_ids}")
         if study_ids:
             study_extractions_data = studies_db.get_study_extractions_for_studies(study_ids)
+            logger.info(f"Study extractions data: {study_extractions_data}")
             study_extractions = (
                 convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions_data)
                 if study_extractions_data

@@ -40,7 +40,7 @@ export default function gene() {
             const geneId = new URLSearchParams(location.search).get("id");
             document.title = "GP Map: " + geneId;
             try {
-                const response = await fetch(constants.apiUrl + "/genes/" + geneId);
+                const response = await fetch(constants.apiUrl + "/genes/" + geneId + "?include_trans=false");
                 if (!response.ok) {
                     this.errorMessage = `Failed to load gene: ${geneId}. Please try again later.`;
                     console.log(this.errorMessage);

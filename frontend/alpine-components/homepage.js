@@ -1,10 +1,11 @@
-import logo from "../assets/images/logo.png";
 import mrc_logo from "../assets/images/mrc_ieu.svg";
+import logoLight from "../assets/images/logo.svg";
+import logoDark from "../assets/images/logo-dark.svg";
 import constants from "./constants";
 
 export default function homepage() {
     return {
-        logo,
+        logo: constants.darkMode ? logoDark : logoLight,
         mrc_logo,
         searchText: "",
         searchOptionData: [],

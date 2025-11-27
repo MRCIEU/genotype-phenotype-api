@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import StudyDataType, VariantType
+from app.models.schemas import CisTrans, StudyDataType, VariantType
 from app.db.utils import log_performance
 
 settings = get_settings()
@@ -145,8 +145,14 @@ class StudiesDBClient:
         return self._fetch_colocs(f"snp_id IN ({placeholders})", snp_ids)
 
     @log_performance
-    def get_all_colocs_for_gene(self, gene_id: int):
-        return self._fetch_colocs("gene_id = ? AND cis_trans = 'cis'", [gene_id])
+    def get_all_colocs_for_gene(self, gene_id: int, include_trans: bool = False):
+        query = "gene_id = ?"
+        if not include_trans:
+            query += " AND cis_trans = ?"
+            params = [gene_id, CisTrans.cis.value]
+        else:
+            params = [gene_id]
+        return self._fetch_colocs(query, params)
 
     @log_performance
     def get_all_colocs_for_ld_block(self, ld_block_id: int):
@@ -189,8 +195,15 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_rare_results_for_gene(self, gene_id: int):
-        return self._fetch_rare_results("gene_id = ?", [gene_id])
+    def get_rare_results_for_gene(self, gene_id: int, include_trans: bool = False):
+        query = "(gene_id = ? OR situated_gene_id = ?)"
+        params = [gene_id, gene_id]
+
+        if not include_trans:
+            query += " AND cis_trans = ?"
+            params.append(CisTrans.cis.value)
+
+        return self._fetch_rare_results(query, params)
 
     @log_performance
     def get_rare_results_for_study_extraction_ids(self, study_extraction_ids: List[int]):
@@ -300,11 +313,11 @@ class StudiesDBClient:
             query += f"rsid IN ({placeholders})"
             params.extend(rsids)
         elif grange:
-            chr, position = grange.split(":")
+            chromosome, position = grange.split(":")
             start_bp, end_bp = position.split("-")
             start_bp, end_bp = int(start_bp), int(end_bp)
             query += "chr = ? AND bp BETWEEN ? AND ?"
-            params.extend([chr, start_bp, end_bp])
+            params.extend([chromosome, start_bp, end_bp])
         elif variant_prefixes:
             placeholders = ",".join(["?" for _ in variant_prefixes])
             query += f"SPLIT_PART(snp, '_', 1) IN ({placeholders})"
@@ -406,7 +419,7 @@ class StudiesDBClient:
             FROM study_extractions
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
+            LEFT JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
             WHERE {condition}
         """
         if params:
@@ -469,11 +482,12 @@ class StudiesDBClient:
 
     @log_performance
     def get_num_rare_results_per_gene(self):
-        query = """
+        query = f"""
             SELECT gene_annotations.gene, COUNT(DISTINCT rare_results.rare_result_group_id) as num_rare_results
             FROM rare_results
             JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
             JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
+            WHERE study_extractions.cis_trans = '{CisTrans.cis.value}'
             GROUP BY gene_annotations.gene
         """
         return self.studies_conn.execute(query).fetchall()
@@ -482,30 +496,27 @@ class StudiesDBClient:
     def get_study_extractions_for_gene(self, gene_id: int, include_trans: bool = False):
         if not gene_id:
             return []
-
-        return self._fetch_study_extractions(
-            "study_extractions.gene_id = ? OR study_extractions.situated_gene_id = ?", [gene_id, gene_id]
-        )
+        query = "(study_extractions.gene_id = ? OR study_extractions.situated_gene_id = ?)"
+        if not include_trans:
+            query += " AND cis_trans = ?"
+            params = [gene_id, gene_id, CisTrans.cis.value]
+        else:
+            params = [gene_id, gene_id]
+        return self._fetch_study_extractions(query, params)
 
     @log_performance
-    def get_study_extractions_in_gene_region(self, chr: str, bp_start: int, bp_end: int):
+    def get_study_extractions_in_gene_region(self, chromosome: str, bp_start: int, bp_end: int):
+        cis_trans = CisTrans.cis.value
         return self._fetch_study_extractions(
             """
-            study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ? AND
-            study_extractions.cis_trans = 'cis'""",
-            [chr, bp_start, bp_end],
+            study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ? AND study_extractions.cis_trans = ?
+            """,
+            [chromosome, bp_start, bp_end, cis_trans],
         )
 
     @log_performance
     def get_study_extractions_in_ld_block(self, ld_block_id: int):
-        query = """
-            SELECT study_extractions.*, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
-            FROM study_extractions 
-            JOIN studies ON study_extractions.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            WHERE study_extractions.ld_block_id = ?
-        """
-        return self.studies_conn.execute(query, [ld_block_id]).fetchall()
+        return self._fetch_study_extractions("study_extractions.ld_block_id = ?", [ld_block_id])
 
     @log_performance
     def get_ld_block(self, ld_block_id: int):
