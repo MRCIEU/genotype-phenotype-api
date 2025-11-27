@@ -132,6 +132,11 @@ export default function homepage() {
                 this.searchMetadata.searchOpen = this.filteredItems.length > 0;
             }, this.searchMetadata.searchDelay);
 
+            this.filteredItems.sort((a, b) => {
+                const totalResultsA = a.num_rare_results + a.num_coloc_groups;
+                const totalResultsB = b.num_rare_results + b.num_coloc_groups;
+                return totalResultsB - totalResultsA;
+            });
             return this.filteredItems;
         },
 
