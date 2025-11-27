@@ -79,8 +79,15 @@ async def get_variant(
         if variant is None:
             raise HTTPException(status_code=404, detail="Variant not found")
         colocs = studies_db.get_colocs_for_variants([snp_id])
+        if colocs:
+            colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
+
         rare_results = studies_db.get_rare_results_for_variants([snp_id])
-        study_extractions = studies_db.get_study_extractions_for_variant(snp_id)
+        study_extractions_variant = studies_db.get_study_extractions_for_variant(snp_id)
+        study_extractions_from_colocs = studies_db.get_study_extractions_by_id(
+            [coloc.study_extraction_id for coloc in colocs]
+        )
+        study_extractions = study_extractions_variant + study_extractions_from_colocs
 
         if not colocs and not rare_results and not study_extractions:
             variant = convert_duckdb_to_pydantic_model(Variant, variant)
@@ -93,7 +100,6 @@ async def get_variant(
                 associations=[],
             )
 
-        colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)

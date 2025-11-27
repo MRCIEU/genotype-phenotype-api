@@ -1,5 +1,9 @@
 export default {
     isLocal: import.meta.env.MODE === "development" || !import.meta.env.PROD,
+    darkMode:
+        typeof window !== "undefined" &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches,
     apiUrl:
         import.meta.env.MODE === "development" || !import.meta.env.PROD
             ? "http://localhost:8000/v1"

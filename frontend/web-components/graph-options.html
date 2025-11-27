@@ -1,4 +1,23 @@
-<div id="graphOptions" x-data="graphOptions">
+<div
+    id="graphOptions"
+    x-data="graphOptions"
+    x-init="
+        (() => {
+            const includeTransAllowed = $el.dataset.showIncludeTrans !== 'false';
+            const phenotypeAllowed = $el.dataset.showPhenotype !== 'false';
+            $store.graphOptionStore.showIncludeTransOption = includeTransAllowed;
+            $store.graphOptionStore.showPhenotypeOption = phenotypeAllowed;
+            if (!includeTransAllowed) {
+                includeTrans = false;
+                $store.graphOptionStore.includeTrans = false;
+            }
+            if (!phenotypeAllowed && traitType === 'phenotype') {
+                traitType = 'all';
+                $store.graphOptionStore.traitType = 'all';
+            }
+        })()
+    "
+>
     <span class="is-size-7">Study P-value: <span x-text="Number(pValue).toExponential()"></span></span> <br />
     <input
         class="slider is-four-fifths mt-0 mb-0"
@@ -11,12 +30,20 @@
     />
     <hr class="divider mt-0 mb-0" />
 
-    <label class="checkbox mt-1 is-size-7">
-        <input @change="$store.graphOptionStore.includeTrans = includeTrans" x-model="includeTrans" type="checkbox" />
-        Include Trans Markers</label
-    >
-    <br />
-    <hr class="divider mt-0 mb-0" />
+    <template x-if="$store.graphOptionStore.showIncludeTransOption">
+        <div>
+            <label class="checkbox mt-1 is-size-7">
+                <input
+                    @change="$store.graphOptionStore.includeTrans = includeTrans"
+                    x-model="includeTrans"
+                    type="checkbox"
+                />
+                Include Trans Markers
+            </label>
+            <br />
+            <hr class="divider mt-0 mb-0" />
+        </div>
+    </template>
 
     <!-- Trait Type Selection -->
     <span class="is-size-7 has-text-weight-bold">Trait Types</span>
@@ -49,18 +76,20 @@
                 <span>Molecular Only</span>
             </label>
         </div>
-        <div>
-            <label class="radio is-size-7">
-                <input
-                    type="radio"
-                    name="traitType"
-                    value="phenotype"
-                    x-model="traitType"
-                    @change="$store.graphOptionStore.traitType = traitType"
-                />
-                <span>Phenotype Only</span>
-            </label>
-        </div>
+        <template x-if="$store.graphOptionStore.showPhenotypeOption">
+            <div>
+                <label class="radio is-size-7">
+                    <input
+                        type="radio"
+                        name="traitType"
+                        value="phenotype"
+                        x-model="traitType"
+                        @change="$store.graphOptionStore.traitType = traitType"
+                    />
+                    <span>Phenotype Only</span>
+                </label>
+            </div>
+        </template>
     </div>
     <hr class="divider mt-0 mb-0" />
 

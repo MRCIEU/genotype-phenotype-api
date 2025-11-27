@@ -97,13 +97,13 @@ async def get_gene(
             study_extraction_ids = []
 
         region_colocs = studies_db.get_all_colocs_for_study_extraction_ids(study_extraction_ids)
-        gene_colocs = studies_db.get_all_colocs_for_gene(gene.id)
+        gene_colocs = studies_db.get_all_colocs_for_gene(gene.id, include_trans)
         coloc_groups = (region_colocs or []) + (gene_colocs or [])
         coloc_groups = list(set(coloc_groups)) if coloc_groups else []
 
         study_rare_results = studies_db.get_rare_results_for_study_extraction_ids(study_extraction_ids)
 
-        gene_rare_results = studies_db.get_rare_results_for_gene(gene.id)
+        gene_rare_results = studies_db.get_rare_results_for_gene(gene.id, include_trans)
         rare_results = list(set(study_rare_results + gene_rare_results))
 
         if rare_results is not None:

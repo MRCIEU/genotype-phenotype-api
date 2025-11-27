@@ -39,6 +39,8 @@ const graphOptions = {
     pValue: 0.00000005,
     traitType: "all",
     includeTrans: false,
+    showIncludeTransOption: true,
+    showPhenotypeOption: true,
     categories: {
         "Cell / Protein": {
             "Cell Trait": false,

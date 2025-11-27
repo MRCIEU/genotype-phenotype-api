@@ -251,7 +251,7 @@ class StudyExtraction(BaseModel):
 
 
 class ExtendedStudyExtraction(StudyExtraction):
-    gene: str
+    gene: Optional[str] = None
     trait_id: int
     trait_name: str
     trait_category: Optional[str] = None
@@ -289,6 +289,7 @@ class RareResult(BaseModel):
     chr: int
     bp: int
     min_p: float
+    cis_trans: Optional[str] = None
     display_snp: str
     rsid: str
     gene: Optional[str] = None

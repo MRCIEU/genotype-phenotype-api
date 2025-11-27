@@ -1,10 +1,11 @@
-import logo from "../assets/images/logo.png";
 import mrc_logo from "../assets/images/mrc_ieu.svg";
+import logoLight from "../assets/images/logo.svg";
+import logoDark from "../assets/images/logo-dark.svg";
 import constants from "./constants";
 
 export default function homepage() {
     return {
-        logo,
+        logo: constants.darkMode ? logoDark : logoLight,
         mrc_logo,
         searchText: "",
         searchOptionData: [],
@@ -131,6 +132,11 @@ export default function homepage() {
                 this.searchMetadata.searchOpen = this.filteredItems.length > 0;
             }, this.searchMetadata.searchDelay);
 
+            this.filteredItems.sort((a, b) => {
+                const totalResultsA = a.num_rare_results + a.num_coloc_groups;
+                const totalResultsB = b.num_rare_results + b.num_coloc_groups;
+                return totalResultsB - totalResultsA;
+            });
             return this.filteredItems;
         },
 
