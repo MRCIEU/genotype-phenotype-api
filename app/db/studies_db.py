@@ -8,7 +8,6 @@ from app.db.utils import log_performance
 
 settings = get_settings()
 
-
 @lru_cache()
 def get_gpm_db_connection():
     connection = duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)
@@ -200,7 +199,7 @@ class StudiesDBClient:
         params = [gene_id, gene_id]
 
         if not include_trans:
-            query += " AND cis_trans = ?"
+            query += " AND (cis_trans = ? OR cis_trans IS NULL)"
             params.append(CisTrans.cis.value)
 
         return self._fetch_rare_results(query, params)
