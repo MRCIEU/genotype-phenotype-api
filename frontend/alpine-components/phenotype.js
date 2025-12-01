@@ -11,7 +11,7 @@ export default function pheontype() {
         userUpload: false,
         data: null,
         filteredData: {
-            colocs: null,
+            coloc_groups: null,
             groupedColocs: null,
             rare: null,
             groupedRare: null,
@@ -28,7 +28,7 @@ export default function pheontype() {
         displayFilters: {
             view: "full",
             chr: null,
-            snp: null,
+            candidateSnp: null,
             traitName: null,
         },
         traitSearch: {
@@ -144,7 +144,7 @@ export default function pheontype() {
             this.filteredData.rare = this.data.rare_results.filter(rare => {
                 const graphOptionFilters =
                     rare.min_p <= graphOptions.pValue &&
-                    !graphOptions.includeTrans &&
+                    (graphOptions.includeTrans ? true : rare.cis_trans !== "trans") &&
                     (graphOptions.traitType === "all" || graphOptions.traitType === "phenotype");
                 return graphOptionFilters;
             });
@@ -264,7 +264,7 @@ export default function pheontype() {
             this.displayFilters = {
                 view: "full",
                 chr: null,
-                snp: null,
+                candidateSnp: null,
                 traitName: null,
             };
             this.traitSearch.text = "";
@@ -273,16 +273,33 @@ export default function pheontype() {
         get getDataForColocTable() {
             if (!this.filteredData.coloc_groups || this.filteredData.coloc_groups.length === 0) return [];
 
+            // Keep chromosome filtering, but do not drop other SNPs when one is selected
             let tableData = this.filteredData.coloc_groups.filter(coloc => {
-                if (this.displayFilters.snp !== null) return coloc.display_snp === this.displayFilters.snp;
-                else if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr;
+                if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr;
                 else return true;
             });
 
             tableData = graphTransformations.addColorForSNPs(tableData);
-            tableData = graphTransformations.groupBySnp(tableData, "trait", this.data.trait.id, this.displayFilters);
+            let groupedData = graphTransformations.groupBySnp(
+                tableData,
+                "trait",
+                this.data.trait.id,
+                this.displayFilters
+            );
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.candidateSnp) {
+                const entries = Object.entries(groupedData);
+                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (selectedIndex > 0) {
+                    const selectedEntry = entries[selectedIndex];
+                    entries.splice(selectedIndex, 1);
+                    entries.unshift(selectedEntry);
+                    groupedData = Object.fromEntries(entries);
+                }
+            }
+
+            return stringify(Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get doRareResultsExist() {
@@ -292,16 +309,33 @@ export default function pheontype() {
         get getDataForRareTable() {
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
 
+            // Only filter by chromosome if specified, not by SNP (we'll reorder instead)
             let tableData = this.filteredData.rare.filter(rare => {
-                if (this.displayFilters.snp !== null) return rare.display_snp === this.displayFilters.snp;
-                else if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr;
+                if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr;
                 else return true;
             });
 
             tableData = graphTransformations.addColorForSNPs(tableData);
-            tableData = graphTransformations.groupBySnp(tableData, "trait", this.data.trait.id, this.displayFilters);
+            let groupedData = graphTransformations.groupBySnp(
+                tableData,
+                "trait",
+                this.data.trait.id,
+                this.displayFilters
+            );
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.candidateSnp) {
+                const entries = Object.entries(groupedData);
+                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (selectedIndex > 0) {
+                    const selectedEntry = entries[selectedIndex];
+                    entries.splice(selectedIndex, 1);
+                    entries.unshift(selectedEntry);
+                    groupedData = Object.fromEntries(entries);
+                }
+            }
+
+            return stringify(Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         initPhenotypeGraph() {
@@ -333,15 +367,18 @@ export default function pheontype() {
             // Shared variables for circle size calculations
             let circleData = [];
             let radiusInfo = {
+                minGroupSize: 0,
                 maxGroupSize: 0,
                 minRadius: 0,
                 maxRadius: 0,
             };
 
             if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
-                const allGroups = Object.values(self.filteredData.groupedColocs).concat(
-                    Object.values(self.filteredData.groupedRare)
-                );
+                const colocGroups = self.filteredData.groupedColocs
+                    ? Object.values(self.filteredData.groupedColocs)
+                    : [];
+                const rareGroups = self.filteredData.groupedRare ? Object.values(self.filteredData.groupedRare) : [];
+                const allGroups = colocGroups.concat(rareGroups);
                 circleData = allGroups
                     .map(group => {
                         const traitId = self.data.trait.id;
@@ -353,12 +390,11 @@ export default function pheontype() {
                     .filter(Boolean);
 
                 if (circleData.length > 0) {
-                    radiusInfo.maxGroupSize = Math.max(...circleData.map(d => d._group.length));
-                    radiusInfo.minRadius = Math.min(...circleData.map(d => d._group.length)) + 2;
-                    radiusInfo.maxRadius = Math.max(
-                        radiusInfo.minRadius + 5,
-                        Math.min(radiusInfo.maxGroupSize + 2, 20)
-                    );
+                    const groupSizes = circleData.map(d => d._group.length);
+                    radiusInfo.minGroupSize = Math.min(...groupSizes);
+                    radiusInfo.maxGroupSize = Math.max(...groupSizes);
+                    radiusInfo.minRadius = 3;
+                    radiusInfo.maxRadius = Math.min(radiusInfo.maxGroupSize + 2, 20);
                 }
             }
 
@@ -521,7 +557,7 @@ export default function pheontype() {
             function renderResetDisplayButton() {
                 if (
                     self.displayFilters.chr !== null ||
-                    self.displayFilters.snp !== null ||
+                    self.displayFilters.candidateSnp !== null ||
                     self.displayFilters.traitName !== null
                 ) {
                     const btnX = width / 2 + 60;
@@ -577,9 +613,20 @@ export default function pheontype() {
             }
 
             function calculateDynamicCircleRadius(groupSize) {
+                // Safety check: if radiusInfo not initialized, return default
+                if (radiusInfo.maxGroupSize === 0 || radiusInfo.minRadius === 0) {
+                    return 5;
+                }
+                if (radiusInfo.maxGroupSize === radiusInfo.minGroupSize) {
+                    // All groups are the same size, use average radius
+                    return (radiusInfo.minRadius + radiusInfo.maxRadius) / 2;
+                }
+                // Normalize groupSize between minGroupSize and maxGroupSize
                 const normalizedSize =
-                    (groupSize - radiusInfo.minRadius + 2) / (radiusInfo.maxGroupSize - radiusInfo.minRadius + 2);
-                return radiusInfo.minRadius + normalizedSize * (radiusInfo.maxRadius - radiusInfo.minRadius);
+                    (groupSize - radiusInfo.minGroupSize) / (radiusInfo.maxGroupSize - radiusInfo.minGroupSize);
+                // Map to radius range and ensure it's capped at maxRadius
+                const radius = radiusInfo.minRadius + normalizedSize * (radiusInfo.maxRadius - radiusInfo.minRadius);
+                return Math.min(Math.max(radius, radiusInfo.minRadius), radiusInfo.maxRadius);
             }
 
             function renderChromosomeView() {
@@ -629,7 +676,8 @@ export default function pheontype() {
                         return calculateDynamicCircleRadius(d._group.length);
                     })
                     .attr("fill", d => {
-                        if (d.display_snp === self.displayFilters.snp) return constants.colors.dataTypes.highlighted;
+                        if (d.display_snp === self.displayFilters.candidateSnp)
+                            return constants.colors.dataTypes.highlighted;
                         else if (d.coloc_group_id) return constants.colors.dataTypes.common;
                         else return constants.colors.dataTypes.rare;
                     })
@@ -652,7 +700,7 @@ export default function pheontype() {
                             .transition()
                             .duration("200")
                             .attr("fill", d => {
-                                if (d.display_snp === self.displayFilters.snp)
+                                if (d.display_snp === self.displayFilters.candidateSnp)
                                     return constants.colors.dataTypes.highlighted;
                                 else if (d.coloc_group_id) return constants.colors.dataTypes.common;
                                 else return constants.colors.dataTypes.rare;
@@ -663,7 +711,11 @@ export default function pheontype() {
                         d3.selectAll(".tooltip").remove();
                     })
                     .on("click", function (_, d) {
-                        self.displayFilters.snp = d.display_snp;
+                        const variantType = d.coloc_group_id
+                            ? constants.colors.dataTypes.common
+                            : constants.colors.dataTypes.rare;
+                        graphTransformations.handleColocGroupClick.bind(self)(d.display_snp, variantType);
+                        d3.selectAll(".tooltip").remove();
                     });
             }
 
@@ -712,7 +764,7 @@ export default function pheontype() {
                         .on("click", function () {
                             self.displayFilters.view = "chromosome";
                             self.displayFilters.chr = chr.CHR;
-                            self.displayFilters.snp = null;
+                            self.displayFilters.candidateSnp = null;
                         });
                 });
 
@@ -751,7 +803,7 @@ export default function pheontype() {
                             return calculateDynamicCircleRadius(d._group.length);
                         })
                         .attr("fill", d => {
-                            if (d.display_snp === self.displayFilters.snp)
+                            if (d.display_snp === self.displayFilters.candidateSnp)
                                 return constants.colors.dataTypes.highlighted;
                             else if (d.coloc_group_id) return constants.colors.dataTypes.common;
                             else return constants.colors.dataTypes.rare;
@@ -776,7 +828,7 @@ export default function pheontype() {
                                 .transition()
                                 .duration("200")
                                 .attr("fill", d => {
-                                    if (d.display_snp === self.displayFilters.snp)
+                                    if (d.display_snp === self.displayFilters.candidateSnp)
                                         return constants.colors.dataTypes.highlighted;
                                     else if (d.coloc_group_id) return constants.colors.dataTypes.common;
                                     else return constants.colors.dataTypes.rare;
@@ -787,7 +839,10 @@ export default function pheontype() {
                             d3.selectAll(".tooltip").remove();
                         })
                         .on("click", function (_, d) {
-                            self.displayFilters.snp = d.display_snp;
+                            const variantType = d.coloc_group_id
+                                ? constants.colors.dataTypes.common
+                                : constants.colors.dataTypes.rare;
+                            graphTransformations.handleColocGroupClick.bind(self)(d.display_snp, variantType);
                         });
                 }
             }

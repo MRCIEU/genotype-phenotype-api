@@ -156,30 +156,24 @@
                 <div class="columns mt-0 mb-0 is-centered">
                     <div class="column is-11">
                         <div
+                            id="coloc-table"
                             style="display: flex; align-items: center; cursor: pointer"
                             @click="showTables.coloc = !showTables.coloc"
                         >
                             <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
                             <h4 class="title is-4 mb-2" style="margin-bottom: 0">Coloc Results</h4>
                         </div>
-                        <results-table
-                            id="coloc-table"
-                            :data="getDataForColocTable"
-                            x-show="showTables.coloc"
-                        ></results-table>
+                        <results-table :data="getDataForColocTable" x-show="showTables.coloc"></results-table>
 
                         <div
+                            id="rare-table"
                             style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
                             @click="showTables.rare = !showTables.rare"
                         >
                             <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
                             <h4 class="title is-4 mb-2" style="margin-bottom: 0">Rare Results</h4>
                         </div>
-                        <results-table
-                            id="rare-table"
-                            :data="getDataForRareTable"
-                            x-show="showTables.rare"
-                        ></results-table>
+                        <results-table :data="getDataForRareTable" x-show="showTables.rare"></results-table>
                     </div>
                 </div>
             </div>

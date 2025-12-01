@@ -11,15 +11,19 @@ export default {
         } else if (type === "gene") {
             attribute = "gene_id";
         }
-
         let groupedData = Object.groupBy(data, ({ display_snp }) => display_snp);
 
         groupedData = Object.entries(groupedData).filter(([_, group]) => {
-            const hasId = attribute ? group.some(entry => parseInt(entry[attribute]) === id) : true;
+            let hasId = attribute ? group.some(entry => parseInt(entry[attribute]) === id) : true;
+            if (type === "gene") {
+                hasId = group.some(entry => parseInt(entry.gene_id) === id || parseInt(entry.situated_gene_id) === id);
+            }
             const hasTrait = displayFilters.traitName
                 ? group.some(entry => entry.trait_name === displayFilters.traitName)
                 : true;
-            const hasGene = displayFilters.gene ? group.some(entry => entry.gene === displayFilters.gene) : true;
+            const hasGene = displayFilters.gene
+                ? group.some(entry => entry.gene === displayFilters.gene || entry.situated_gene === displayFilters.gene)
+                : true;
             const moreThanOneTrait = group.length > 1;
             return hasId && hasTrait && hasGene && moreThanOneTrait;
         });
@@ -43,6 +47,26 @@ export default {
         });
 
         return Object.fromEntries(groupedData);
+    },
+
+    handleColocGroupClick(displaySnp, variantType) {
+        this.displayFilters.candidateSnp = displaySnp;
+        const isColoc = variantType === constants.colors.dataTypes.common;
+        const headerId = isColoc ? "coloc-table" : "rare-table";
+        this.showTables.coloc = isColoc;
+        this.showTables.rare = !isColoc;
+
+        const scrollToHeader = () => {
+            const headerElement = document.getElementById(headerId);
+            if (headerElement && headerElement.offsetParent !== null) {
+                const y = headerElement.getBoundingClientRect().top + window.pageYOffset - 80;
+                window.scrollTo(0, y);
+                return true;
+            }
+            return false;
+        };
+
+        this.$nextTick(() => scrollToHeader());
     },
 
     addColorForSNPs(entries) {
@@ -324,7 +348,7 @@ export default {
             if (
                 this.displayFilters.gene !== null ||
                 this.displayFilters.traitName !== null ||
-                this.displayFilters.snp !== null
+                this.displayFilters.candidateSnp !== null
             ) {
                 const btnX = innerWidth / 2 + 90;
                 const btnY = innerHeight + graphConstants.outerMargin.bottom - 25;
@@ -392,10 +416,16 @@ export default {
                 const tooltipContent = graphTransformations.getTraitListHTML(d.studies);
                 graphTransformations.getTooltip(tooltipContent, event);
             })
-            .on("click", (event, d) => {
-                this.displayFilters.snp = d.snp;
+            .on("click", (_, d) => {
+                const firstStudy = d.studies && d.studies.length > 0 ? d.studies[0] : null;
+                const variantType =
+                    firstStudy && firstStudy.coloc_group_id
+                        ? constants.colors.dataTypes.common
+                        : constants.colors.dataTypes.rare;
+                graphTransformations.handleColocGroupClick.bind(this)(d.snp, variantType);
+                d3.selectAll(".tooltip").remove();
             })
-            .on("mouseout", function (event, d) {
+            .on("mouseout", function (_, d) {
                 d3.select(this)
                     .transition()
                     .duration("200")

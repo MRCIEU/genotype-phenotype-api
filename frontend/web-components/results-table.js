@@ -80,8 +80,8 @@ export class ResultsTable extends HTMLElement {
                                             row.trait_category
                                         ) {
                                             return `<td>${row.data_type} (${row.trait_category})</td>`;
-                                        } else if (col.key === "gene" && row.gene) {
-                                            return `<td><a href="gene.html?id=${row.gene}">${row.gene}</a></td>`;
+                                        } else if (col.key === "gene" && (row.gene || row.situated_gene)) {
+                                            return `<td><a href="gene.html?id=${row.gene || row.situated_gene}">${row.gene || row.situated_gene}</a></td>`;
                                         } else if (
                                             col.key === "trait_name" &&
                                             row.data_type === "Phenotype" &&

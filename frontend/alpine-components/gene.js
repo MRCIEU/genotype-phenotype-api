@@ -156,8 +156,8 @@ export default function gene() {
 
             this.filteredData.groupedRare = graphTransformations.groupBySnp(
                 this.filteredData.rare,
-                "gene",
-                this.data.gene.id,
+                "situated_gene",
+                this.data.gene.situated_gene_id,
                 this.displayFilters
             );
             this.filteredData.groupedColocs = graphTransformations.groupBySnp(
@@ -228,25 +228,40 @@ export default function gene() {
         get getDataForColocTable() {
             if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return [];
 
-            const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp]) => {
-                    return (
-                        this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
-                    );
-                })
-            );
+            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedColocs));
+
+            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.candidateSnp) {
+                const entries = Object.entries(tableData);
+                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (selectedIndex > 0) {
+                    const selectedEntry = entries[selectedIndex];
+                    entries.splice(selectedIndex, 1);
+                    entries.unshift(selectedEntry);
+                    tableData = Object.fromEntries(entries);
+                }
+            }
+
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get getDataForRareTable() {
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
-            const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp]) => {
-                    return (
-                        this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
-                    );
-                })
-            );
+
+            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedRare));
+
+            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.candidateSnp) {
+                const entries = Object.entries(tableData);
+                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (selectedIndex > 0) {
+                    const selectedEntry = entries[selectedIndex];
+                    entries.splice(selectedIndex, 1);
+                    entries.unshift(selectedEntry);
+                    tableData = Object.fromEntries(entries);
+                }
+            }
+
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 

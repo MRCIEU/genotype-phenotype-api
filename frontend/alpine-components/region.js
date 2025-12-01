@@ -182,25 +182,40 @@ export default function region() {
         get getDataForColocTable() {
             if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) return [];
 
-            const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedColocs).filter(([candidateSnp, _]) => {
-                    return (
-                        this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
-                    );
-                })
-            );
+            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedColocs));
+
+            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.candidateSnp) {
+                const entries = Object.entries(tableData);
+                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (selectedIndex > 0) {
+                    const selectedEntry = entries[selectedIndex];
+                    entries.splice(selectedIndex, 1);
+                    entries.unshift(selectedEntry);
+                    tableData = Object.fromEntries(entries);
+                }
+            }
+
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get getDataForRareTable() {
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
-            const tableData = Object.fromEntries(
-                Object.entries(this.filteredData.groupedRare).filter(([candidateSnp, _]) => {
-                    return (
-                        this.displayFilters.candidateSnp === null || candidateSnp === this.displayFilters.candidateSnp
-                    );
-                })
-            );
+
+            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedRare));
+
+            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.candidateSnp) {
+                const entries = Object.entries(tableData);
+                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (selectedIndex > 0) {
+                    const selectedEntry = entries[selectedIndex];
+                    entries.splice(selectedIndex, 1);
+                    entries.unshift(selectedEntry);
+                    tableData = Object.fromEntries(entries);
+                }
+            }
+
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
