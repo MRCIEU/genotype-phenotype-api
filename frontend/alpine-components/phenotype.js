@@ -357,6 +357,7 @@ export default function pheontype() {
                 margin: { top: 20, right: 20, bottom: 60, left: 80 },
                 legend: { width: 450, height: 20 },
             };
+            const textColor = graphTransformations.graphColor();
 
             // Get container dimensions
             const containerWidth = chartContainer.clientWidth;
@@ -473,7 +474,9 @@ export default function pheontype() {
                 .axisLeft(yScale)
                 .ticks(10)
                 .tickFormat(d => d);
-            plotGroup.append("g").call(yAxis).selectAll("text").style("text-anchor", "end").style("font-size", "12px");
+            const yAxisGroup = plotGroup.append("g").call(yAxis);
+            yAxisGroup.selectAll("text").style("text-anchor", "end").style("font-size", "12px").style("fill", textColor);
+            yAxisGroup.selectAll("line, path").style("stroke", textColor);
             plotGroup
                 .append("text")
                 .attr("transform", "rotate(-90)")
@@ -481,6 +484,7 @@ export default function pheontype() {
                 .attr("y", -50)
                 .style("text-anchor", "middle")
                 .style("font-size", "14px")
+                .style("fill", textColor)
                 .text("-log10(p-value)");
 
             // Add reference lines to SVG (behind Canvas)
@@ -491,7 +495,7 @@ export default function pheontype() {
                 .attr("x2", width)
                 .attr("y1", yScale(4))
                 .attr("y2", yScale(4))
-                .attr("stroke", "darkred")
+                .attr("stroke", textColor)
                 .attr("opacity", 0.8)
                 .attr("stroke-width", 0.6)
                 .attr("stroke-dasharray", "5,5");
@@ -502,7 +506,7 @@ export default function pheontype() {
                 .attr("x2", width)
                 .attr("y1", yScale(7.3))
                 .attr("y2", yScale(7.3))
-                .attr("stroke", "darkred")
+                .attr("stroke", textColor)
                 .attr("opacity", 0.8)
                 .attr("stroke-width", 0.6);
 
@@ -528,6 +532,9 @@ export default function pheontype() {
                 ctx.lineWidth = 1;
                 ctx.strokeRect(-10, -10, graphConstants.legend.width, graphConstants.legend.height);
 
+                // Get text color from graphTransformations
+                const textColor = graphTransformations.graphColor();
+
                 // Common circle
                 ctx.beginPath();
                 ctx.arc(0, 2, 5, 0, 2 * Math.PI);
@@ -537,7 +544,7 @@ export default function pheontype() {
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
-                ctx.fillStyle = "#000";
+                ctx.fillStyle = textColor;
                 ctx.font = "12px Arial";
                 ctx.textAlign = "left";
                 ctx.fillText("Common", 10, 6);
@@ -550,6 +557,7 @@ export default function pheontype() {
                 ctx.strokeStyle = "#fff";
                 ctx.stroke();
 
+                ctx.fillStyle = textColor;
                 ctx.fillText("Rare", 80, 6);
 
                 // Suggestive significance line
@@ -562,6 +570,7 @@ export default function pheontype() {
                 ctx.stroke();
                 ctx.setLineDash([]);
 
+                ctx.fillStyle = textColor;
                 ctx.fillText("Suggestive significance", 135, 6);
 
                 // Genome-wide significance line
@@ -572,6 +581,7 @@ export default function pheontype() {
                 ctx.lineWidth = 0.8;
                 ctx.stroke();
 
+                ctx.fillStyle = textColor;
                 ctx.fillText("Genome-wide significance", 295, 6);
 
                 ctx.restore();
@@ -719,7 +729,7 @@ export default function pheontype() {
                         .attr("text-anchor", "middle")
                         .attr("alignment-baseline", "middle")
                         .attr("font-size", 13)
-                        .attr("fill", "#363636")
+                        .attr("fill", textColor)
                         .attr("class", "button is-small")
                         .style("cursor", "pointer")
                         .text("Reset Display")
@@ -774,13 +784,15 @@ export default function pheontype() {
                 const xScale = d3.scaleLinear().domain([chrMeta.bp_start, chrMeta.bp_end]).range([0, width]);
 
                 const xAxis = d3.axisBottom(xScale).ticks(0).tickSize(0);
-                plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+                const xAxisGroup = plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+                xAxisGroup.selectAll("line, path").style("stroke", textColor);
                 plotGroup
                     .append("text")
                     .attr("x", width / 2)
                     .attr("y", height + 40)
                     .style("text-anchor", "middle")
                     .style("font-size", "14px")
+                    .style("fill", textColor)
                     .text(`Chromosome ${self.displayFilters.chr}`);
 
                 chrLabels
@@ -835,7 +847,8 @@ export default function pheontype() {
                     .domain([0, self.svgs.metadata.x_axis[self.svgs.metadata.x_axis.length - 1].bp_end])
                     .range([0, width]);
                 const xAxis = d3.axisBottom(xScale).ticks(0).tickSize(0);
-                plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+                const xAxisGroup = plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+                xAxisGroup.selectAll("line, path").style("stroke", textColor);
                 // X-axis label
                 plotGroup
                     .append("text")
@@ -843,6 +856,7 @@ export default function pheontype() {
                     .attr("y", height + 40)
                     .style("text-anchor", "middle")
                     .style("font-size", "14px")
+                    .style("fill", textColor)
                     .text("Chromosome");
 
                 renderResetDisplayButton();
@@ -886,6 +900,7 @@ export default function pheontype() {
                         .attr("y", height + 20)
                         .style("text-anchor", "middle")
                         .style("font-size", "10px")
+                        .style("fill", textColor)
                         .text(chr.CHR);
                     label.transition().duration(500).attr("opacity", 1);
                 });

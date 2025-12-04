@@ -223,8 +223,13 @@ export default function snp() {
             const chartContainer = d3.select("#graph-cluster-diagram");
             const width = chartContainer.node().getBoundingClientRect().width - 50;
             const height = 500;
+            const footerHeight = 40; // Fixed height for footer to prevent layout shift
 
             const self = this;
+            const textColor = graphTransformations.graphColor();
+
+            // Set container to have fixed height to prevent layout shifts
+            chartContainer.style("height", (height + footerHeight) + "px").style("position", "relative");
 
             // Create canvas element with high-DPI support
             const canvas = chartContainer.append("canvas").style("display", "block").node();
@@ -245,21 +250,24 @@ export default function snp() {
             // Scale the drawing context so everything draws at the correct size
             ctx.scale(dpr, dpr);
 
-            // Create footer text element separately
+            // Create footer text element separately with fixed min-height to prevent layout shifts
             const footerText = chartContainer
                 .append("div")
                 .attr("id", "graph-footer-text")
                 .style("text-align", "center")
                 .style("font-weight", "bold")
                 .style("font-size", "18px")
-                .style("margin-top", "10px")
+                .style("min-height", footerHeight + "px")
+                .style("padding-top", "10px")
+                .style("box-sizing", "border-box")
+                .style("color", textColor)
                 .text("");
 
             // If too many studies, show message and exit early
             const numStudies = (this.filteredData.colocs || []).length;
             if (numStudies > 1000) {
                 // Increased limit since Canvas is more performant
-                ctx.fillStyle = "#333";
+                ctx.fillStyle = textColor;
                 ctx.font = "16px Arial";
                 ctx.textAlign = "center";
                 ctx.fillText(
@@ -400,7 +408,7 @@ export default function snp() {
                     ctx.fill();
 
                     // Draw node border
-                    ctx.strokeStyle = isHighlighted ? "#000" : "#fff";
+                    ctx.strokeStyle = isHighlighted ? textColor : "#fff";
                     ctx.lineWidth = isHighlighted ? 3 : isLargeGraph ? 1 : 2;
                     ctx.stroke();
                 });
@@ -618,7 +626,7 @@ export default function snp() {
                 const dataTypes = Array.from(new Set(nodes.map(d => d.data_type)));
 
                 // Draw "Trait Type" header
-                ctx.fillStyle = "#333";
+                ctx.fillStyle = textColor;
                 ctx.font = "bold 12px Arial";
                 ctx.fillText("Trait Type:", legendX, legendY);
 
@@ -636,7 +644,7 @@ export default function snp() {
                     ctx.stroke();
 
                     // Draw text
-                    ctx.fillStyle = "#333";
+                    ctx.fillStyle = textColor;
                     ctx.font = "12px Arial";
                     ctx.textAlign = "left";
                     ctx.fillText(type, legendX + 15, y + 4);
@@ -644,7 +652,7 @@ export default function snp() {
 
                 // Draw link legend
                 const linkLegendY = legendY + (dataTypes.length + 1) * 20 + 10;
-                ctx.fillStyle = "#333";
+                ctx.fillStyle = textColor;
                 ctx.font = "bold 12px Arial";
                 ctx.fillText("Link Strength (H4):", legendX, linkLegendY);
 
@@ -665,7 +673,7 @@ export default function snp() {
                     ctx.stroke();
 
                     // Draw text
-                    ctx.fillStyle = "#333";
+                    ctx.fillStyle = textColor;
                     ctx.font = "10px Arial";
                     ctx.fillText(linkType.label, legendX + 25, y + 4);
                 });
@@ -675,7 +683,7 @@ export default function snp() {
                 if (colocGroups.length > 0) {
                     const connectednessY = linkLegendY + linkTypes.length * 15 + 30; // Added extra spacing for line break
 
-                    ctx.fillStyle = "#333";
+                    ctx.fillStyle = textColor;
                     ctx.font = "bold 12px Arial";
                     ctx.fillText("Group Connectedness:", legendX, connectednessY);
                     const onlyOneColocGroup = colocGroups.length === 1;
@@ -684,7 +692,7 @@ export default function snp() {
                         // Find the first node in this group to get the connectedness value
                         const groupNode = nodes.find(n => n.coloc_group_id === groupId);
                         const connectednessValue = groupNode
-                            ? self.data.coloc_groups.find(cg => cg.coloc_group_id === groupId)?.connectedness || 0
+                            ? self.data.coloc_groups.find(cg => cg.coloc_group_id === groupId)?.h4_connectedness || 0
                             : 0;
                         const connectednessPercentage = Math.round(connectednessValue * 100);
 
@@ -697,7 +705,7 @@ export default function snp() {
                         const y = connectednessY + (i + 1) * 15;
 
                         // Draw group indicator
-                        ctx.fillStyle = "#333";
+                        ctx.fillStyle = textColor;
                         ctx.font = "11px Arial";
                         const connectednessText = onlyOneColocGroup
                             ? `Connectedness: ${connectednessPercentage}% (${strengthText})`
@@ -730,6 +738,7 @@ export default function snp() {
             const margin = { top: 45, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
             const height = this.filteredData.colocs.length * 27;
+            const textColor = graphTransformations.graphColor();
 
             const svg = plotContainer
                 .append("svg")
@@ -759,21 +768,23 @@ export default function snp() {
                 .range([0, height])
                 .padding(0);
 
-            svg.append("g")
+            const xAxisGroup = svg.append("g")
                 .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x))
-                .selectAll("text")
+                .call(d3.axisBottom(x));
+            xAxisGroup.selectAll("text")
                 .style("font-size", "10px")
+                .style("fill", textColor)
                 .attr("transform", "rotate(-65) translate(-15,-10)");
+            xAxisGroup.selectAll("line, path").style("stroke", textColor);
 
-            svg.append("g").call(d3.axisLeft(y).tickSize(0).tickFormat("")).selectAll(".domain").attr("stroke", "#ddd");
+            svg.append("g").call(d3.axisLeft(y).tickSize(0).tickFormat("")).selectAll(".domain").attr("stroke", textColor);
 
             svg.append("line")
                 .attr("x1", x(0))
                 .attr("y1", 0)
                 .attr("x2", x(0))
                 .attr("y2", height)
-                .attr("stroke", "#000")
+                .attr("stroke", textColor)
                 .attr("stroke-width", 2);
 
             allData.forEach(d => {
@@ -818,6 +829,7 @@ export default function snp() {
                 .attr("transform", `translate(${width / 2}, ${height + margin.bottom})`)
                 .style("text-anchor", "middle")
                 .style("font-size", "12px")
+                .style("fill", textColor)
                 .text("Effect Size (Beta)");
         },
     };

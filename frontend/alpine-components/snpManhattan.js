@@ -146,7 +146,7 @@ export default function snp() {
                 .call(
                     d3
                         .axisBottom(x)
-                        .ticks((maxBP - minBP) / 0.1)
+                        .ticks(Math.min((maxBP - minBP) / 0.1, 20))
                         .tickFormat(d3.format(".1f"))
                 );
             svg.append("text")
@@ -176,6 +176,10 @@ export default function snp() {
                     });
                 } else {
                     importedSvg.querySelectorAll("g, path").forEach(element => {
+                        if (constants.darkMode) {
+                            element.setAttribute("fill", "#aaaaaa");
+                            element.setAttribute("stroke", "#aaaaaa");
+                        }
                         element.removeAttribute("class");
                         element.removeAttribute("style");
                         element.setAttribute("opacity", "0.4");

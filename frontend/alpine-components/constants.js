@@ -48,6 +48,10 @@ export default {
             rare: "red",
             highlighted: "black",
         },
+        textColors: {
+            dark: "#ffffff",
+            light: "#000000",
+        },
     },
     tableColors: ["antiquewhite", "#fffff5", "lavenderblush", "honeydew", "aliceblue", "oldlace", "mintcream"],
     variantTypes: [
