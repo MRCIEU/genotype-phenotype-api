@@ -31,7 +31,7 @@ async def get_genes(request: Request) -> GetGenesResponse:
     try:
         studies_service = StudiesService()
         genes = studies_service.get_genes()
-        return GetGenesResponse(genes=genes)
+        return genes
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -68,7 +68,8 @@ async def get_gene(
             raise HTTPException(status_code=404, detail=f"Gene {gene_identifier} not found")
         gene = convert_duckdb_to_pydantic_model(Gene, gene)
 
-        genes = studies_service.get_genes()
+        genes = studies_db.get_genes()
+        genes = convert_duckdb_to_pydantic_model(Gene, genes)
 
         genes_in_region = [
             g

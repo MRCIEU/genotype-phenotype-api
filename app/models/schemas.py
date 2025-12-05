@@ -125,6 +125,11 @@ class Gene(BaseModel):
     distinct_protein_coding_genes: Optional[int] = None
     genes_in_region: Optional[List[Gene]] = None
 
+class ExtendedGene(Gene):
+    num_study_extractions: Optional[int] = None
+    num_coloc_groups: Optional[int] = None
+    num_coloc_studies: Optional[int] = None
+    num_rare_results: Optional[int] = None
 
 class GeneMetadata(BaseModel):
     symbol: str
@@ -161,6 +166,12 @@ class BasicTraitResponse(BaseModel):
     sample_size: int
     category: str
     ancestry: str
+    heritability: Optional[float] = None
+    heritability_se: Optional[float] = None
+    num_study_extractions: int
+    num_coloc_groups: int
+    num_coloc_studies: int
+    num_rare_results: int
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -268,6 +279,7 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
+    sample_size: Optional[int] = None
     num_extractions: Optional[int] = None
     num_coloc_groups: Optional[int] = None
     num_coloc_studies: Optional[int] = None
@@ -358,7 +370,7 @@ class ExtendedVariant(Variant):
 
 
 class GetGenesResponse(BaseModel):
-    genes: List[Gene]
+    genes: List[ExtendedGene]
 
 
 class GeneResponse(BaseModel):

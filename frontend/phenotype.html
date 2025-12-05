@@ -178,7 +178,7 @@
                             <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
                             <h4 class="title is-4 mb-2" style="margin-bottom: 0">Coloc Results</h4>
                             <h6 class="subtitle is-6 mb-2" style="margin-bottom: 0; font-size: 10px">
-                                (Truncated at 50 groups)
+                                (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
                             </h6>
                         </div>
                         <results-table
@@ -186,26 +186,26 @@
                             :data="getDataForColocTable"
                             x-show="showTables.coloc"
                         ></results-table>
-
                         <div
                             id="rare-table"
                             x-show="doRareResultsExist"
-                            style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
+                            style="display: flex; align-items: center; cursor: pointer;"
                             @click="showTables.rare = !showTables.rare"
                         >
-                            <span
-                                x-text="showTables.rare ? '▼' : '►'"
-                                style="margin-right: 8px; display: inline"
-                            ></span>
-                            <h4 class="title is-4 mb-2" style="margin: 0; display: inline; vertical-align: middle">
-                                Rare Results
-                            </h4>
+                            
+                            <div>
+                                <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
+                                <h4 class="title is-4" style="margin-bottom: 0; display: inline; margin-right: 10px;">Rare Results</h4>
+                                <span class="subtitle is-6" style="font-size: 10px; display: inline; white-space: nowrap;">
+                                    (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
+                                </span>
+                            </div>
+                            <results-table
+                                id="rare-table"
+                                :data="getDataForRareTable"
+                                x-show="showTables.rare"
+                            ></results-table>
                         </div>
-                        <results-table
-                            id="rare-table"
-                            :data="getDataForRareTable"
-                            x-show="showTables.rare && doRareResultsExist"
-                        ></results-table>
                     </div>
                 </div>
             </div>

@@ -6,8 +6,9 @@ import graphTransformations from "./graphTransformations.js";
 import constants from "./constants.js";
 import downloads from "./downloads.js";
 
-export default function pheontype() {
+export default function phenotype() {
     return {
+        constants: constants,
         userUpload: false,
         data: null,
         filteredData: {
@@ -279,6 +280,7 @@ export default function pheontype() {
                 else return true;
             });
 
+            console.log('grouping');
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
                 tableData,
@@ -289,17 +291,14 @@ export default function pheontype() {
 
             // If a SNP is selected, reorder so that its group appears first
             if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(groupedData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
-                    groupedData = Object.fromEntries(entries);
-                }
+                const candidateSnpKey = this.displayFilters.candidateSnp;
+                const selectedEntryValue = groupedData[candidateSnpKey];
+                delete groupedData[candidateSnpKey];
+                groupedData = { ...groupedData, [candidateSnpKey]: selectedEntryValue };
             }
 
-            return stringify(Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)));
+            const truncatedData = Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay));
+            return stringify(truncatedData);
         },
 
         get doRareResultsExist() {
@@ -325,17 +324,14 @@ export default function pheontype() {
 
             // If a SNP is selected, reorder so that its group appears first
             if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(groupedData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
-                    groupedData = Object.fromEntries(entries);
-                }
+                const candidateSnpKey = this.displayFilters.candidateSnp;
+                const selectedEntryValue = groupedData[candidateSnpKey];
+                delete groupedData[candidateSnpKey];
+                groupedData = { ...groupedData, [candidateSnpKey]: selectedEntryValue };
             }
 
-            return stringify(Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)));
+            const truncatedData = Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay));
+            return stringify(truncatedData);
         },
 
         initPhenotypeGraph() {

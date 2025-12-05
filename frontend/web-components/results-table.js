@@ -26,7 +26,7 @@ export class ResultsTable extends HTMLElement {
     }
 
     render() {
-        if (!this.data) return;
+        if (!this.data || Object.keys(this.data).length === 0) return;
 
         const columns = [
             { key: "display_snp", label: "Info" },
@@ -91,6 +91,8 @@ export class ResultsTable extends HTMLElement {
                                             return `<td><a href="phenotype.html?id=${row.trait_id}">${row.trait_name}</a></td>`;
                                         } else if (col.key === "min_p") {
                                             return `<td>${row.min_p.toExponential(2)}</td>`;
+                                        } else if (col.key === "tissue" && row.cell_type) {
+                                            return `<td>${row.tissue} (${row.cell_type})</td>`;
                                         } else {
                                             return `<td>${row[col.key] ?? ""}</td>`;
                                         }

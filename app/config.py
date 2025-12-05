@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str
     WEBSITE_URL: str = "https://gpmap.opengwas.io"
     VERSION: str = "1.0.0"
+    GA4_MEASUREMENT_ID: str = ""
+    GA4_API_SECRET: str = ""
 
     model_config = {"env_file": ".env"}
 

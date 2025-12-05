@@ -162,6 +162,7 @@ export default {
     },
 
     getTooltip(content, event) {
+        d3.selectAll(".tooltip").remove();
         // If the tooltip would overflow the right edge, expand left
         // We need to allow the DOM to update so we can measure the tooltip, hence the setTimeout
         const tooltip = d3

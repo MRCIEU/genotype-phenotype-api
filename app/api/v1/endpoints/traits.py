@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException, Path, Query, Request
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
-    BasicTraitResponse,
     ColocGroup,
     GetTraitsResponse,
     RareResult,
@@ -19,6 +18,8 @@ from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.associations_service import AssociationsService
 from app.config import get_settings
+from app.services.studies_service import StudiesService
+
 
 router = APIRouter()
 
@@ -31,10 +32,9 @@ settings = get_settings()
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_traits(request: Request) -> GetTraitsResponse:
     try:
-        db = StudiesDBClient()
-        traits = db.get_traits()
-        traits = convert_duckdb_to_pydantic_model(BasicTraitResponse, traits)
-        return GetTraitsResponse(traits=traits)
+        studies_service = StudiesService()
+        traits = studies_service.get_traits()
+        return traits
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -51,7 +51,6 @@ async def get_trait(
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
     try:
-        logger.info(request.headers)
         studies_db = StudiesDBClient()
         associations_service = AssociationsService()
 
@@ -70,7 +69,6 @@ async def get_trait(
         if trait.rare_study is not None:
             rare_results_data = studies_db.get_rare_results_for_study_id(trait.rare_study.id)
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results_data) if rare_results_data else []
-            logger.info(f"rare_results length: {len(rare_results)}")
 
         study_ids = [study.id for study in [trait.common_study, trait.rare_study] if study is not None]
         if study_ids:
@@ -114,7 +112,6 @@ async def get_trait_coloc_pairs(
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> dict:
     try:
-        logger.info(request.headers)
         studies_db = StudiesDBClient()
         coloc_pairs_db = ColocPairsDBClient()
 

@@ -1,9 +1,24 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import GeneResponse
+from app.models.schemas import GeneResponse, GetGenesResponse
 
 client = TestClient(app)
 
+def test_get_genes():
+    response = client.get("/v1/genes")
+    assert response.status_code == 200
+    genes = response.json()
+    assert genes is not None
+    genes = GetGenesResponse(**genes)
+    assert genes is not None
+    assert len(genes.genes) > 0
+    for gene in genes.genes:
+        assert gene.id is not None
+        assert gene.gene is not None
+        assert gene.num_study_extractions is not None
+        assert gene.num_coloc_groups is not None
+        assert gene.num_coloc_studies is not None
+        assert gene.num_rare_results is not None
 
 def test_get_genes_with_coloc_groups():
     response = client.get("/v1/genes/WNT7B")

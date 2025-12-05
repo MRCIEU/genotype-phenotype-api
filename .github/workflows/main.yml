@@ -74,12 +74,16 @@ jobs:
         ORACLE_SERVER: ${{ secrets.ORACLE_SERVER }}
         EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
+        GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
       run: |
         cp .env.prod .env.backend
         echo "SENTRY_DSN=${SENTRY_DSN}" >> .env.backend
         echo "ORACLE_SERVER=${ORACLE_SERVER}" >> .env.backend
         echo "EMAIL_USERNAME=${EMAIL_USERNAME}" >> .env.backend
         echo "EMAIL_PASSWORD=${EMAIL_PASSWORD}" >> .env.backend
+        echo "GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}" >> .env.backend
+        echo "GA4_API_SECRET=${GA4_API_SECRET}" >> .env.backend
         cp frontend/.env.prod .env.frontend
         cp docker-compose-prod.yml docker-compose.yml
 
