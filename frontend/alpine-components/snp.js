@@ -229,7 +229,7 @@ export default function snp() {
             const textColor = graphTransformations.graphColor();
 
             // Set container to have fixed height to prevent layout shifts
-            chartContainer.style("height", (height + footerHeight) + "px").style("position", "relative");
+            chartContainer.style("height", height + footerHeight + "px").style("position", "relative");
 
             // Create canvas element with high-DPI support
             const canvas = chartContainer.append("canvas").style("display", "block").node();
@@ -768,16 +768,18 @@ export default function snp() {
                 .range([0, height])
                 .padding(0);
 
-            const xAxisGroup = svg.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x));
-            xAxisGroup.selectAll("text")
+            const xAxisGroup = svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+            xAxisGroup
+                .selectAll("text")
                 .style("font-size", "10px")
                 .style("fill", textColor)
                 .attr("transform", "rotate(-65) translate(-15,-10)");
             xAxisGroup.selectAll("line, path").style("stroke", textColor);
 
-            svg.append("g").call(d3.axisLeft(y).tickSize(0).tickFormat("")).selectAll(".domain").attr("stroke", textColor);
+            svg.append("g")
+                .call(d3.axisLeft(y).tickSize(0).tickFormat(""))
+                .selectAll(".domain")
+                .attr("stroke", textColor);
 
             svg.append("line")
                 .attr("x1", x(0))

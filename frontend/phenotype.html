@@ -189,14 +189,18 @@
                         <div
                             id="rare-table"
                             x-show="doRareResultsExist"
-                            style="display: flex; align-items: center; cursor: pointer;"
+                            style="display: flex; align-items: center; cursor: pointer"
                             @click="showTables.rare = !showTables.rare"
                         >
-                            
                             <div>
                                 <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
-                                <h4 class="title is-4" style="margin-bottom: 0; display: inline; margin-right: 10px;">Rare Results</h4>
-                                <span class="subtitle is-6" style="font-size: 10px; display: inline; white-space: nowrap;">
+                                <h4 class="title is-4" style="margin-bottom: 0; display: inline; margin-right: 10px">
+                                    Rare Results
+                                </h4>
+                                <span
+                                    class="subtitle is-6"
+                                    style="font-size: 10px; display: inline; white-space: nowrap"
+                                >
                                     (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
                                 </span>
                             </div>

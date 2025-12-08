@@ -280,7 +280,7 @@ export default function phenotype() {
                 else return true;
             });
 
-            console.log('grouping');
+            console.log("grouping");
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
                 tableData,
@@ -297,7 +297,9 @@ export default function phenotype() {
                 groupedData = { ...groupedData, [candidateSnpKey]: selectedEntryValue };
             }
 
-            const truncatedData = Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay));
+            const truncatedData = Object.fromEntries(
+                Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)
+            );
             return stringify(truncatedData);
         },
 
@@ -330,7 +332,9 @@ export default function phenotype() {
                 groupedData = { ...groupedData, [candidateSnpKey]: selectedEntryValue };
             }
 
-            const truncatedData = Object.fromEntries(Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay));
+            const truncatedData = Object.fromEntries(
+                Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)
+            );
             return stringify(truncatedData);
         },
 
@@ -381,7 +385,7 @@ export default function phenotype() {
                         const traitId = self.data.trait.id;
                         // Check if this is a rare variant group (no coloc_group_id)
                         const isRareVariantGroup = group.some(entry => !entry.coloc_group_id);
-                        
+
                         // First try to find a study with matching trait_id
                         let study = group.find(s => s.trait_id === traitId);
                         // For rare variants, if no matching trait_id found, use the first study
@@ -439,10 +443,31 @@ export default function phenotype() {
                 .style("z-index", "1")
                 .style("pointer-events", "none"); // Make SVG non-interactive
 
+            // Create separate interactive SVG layer for buttons (above canvas)
+            const interactiveSvg = containerDiv
+                .append("svg")
+                .attr("width", width + graphConstants.margin.left + graphConstants.margin.right)
+                .attr("height", height + graphConstants.margin.top + graphConstants.margin.bottom)
+                .attr(
+                    "viewBox",
+                    `0 0 ${width + graphConstants.margin.left + graphConstants.margin.right} ${height + graphConstants.margin.top + graphConstants.margin.bottom}`
+                )
+                .style("position", "absolute")
+                .style("top", "0")
+                .style("left", "0")
+                .style("z-index", "3")
+                .style("pointer-events", "none"); // Only button will have pointer events
+
             // Create main plot group for SVG (for embedded content only)
             const plotGroup = svg
                 .append("g")
                 .attr("transform", `translate(${graphConstants.margin.left},${graphConstants.margin.top})`);
+
+            // Create interactive plot group for buttons
+            const interactivePlotGroup = interactiveSvg
+                .append("g")
+                .attr("transform", `translate(${graphConstants.margin.left},${graphConstants.margin.top})`)
+                .style("pointer-events", "none"); // Group level is none, but button will have all
 
             // Create a foreignObject to properly embed the SVG
             const foreignObject = plotGroup
@@ -451,7 +476,7 @@ export default function phenotype() {
                 .attr("height", height)
                 .attr("overflow", "hidden");
 
-            // Add chromosome backgrounds for ALL chromosomes (will be drawn on canvas)
+            // Add chromosome backgrounds for ALL chromosomes (behind canvas in main SVG)
             const chrBackgrounds = plotGroup
                 .append("g")
                 .attr("class", "chr-backgrounds")
@@ -471,7 +496,11 @@ export default function phenotype() {
                 .ticks(10)
                 .tickFormat(d => d);
             const yAxisGroup = plotGroup.append("g").call(yAxis);
-            yAxisGroup.selectAll("text").style("text-anchor", "end").style("font-size", "12px").style("fill", textColor);
+            yAxisGroup
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .style("font-size", "12px")
+                .style("fill", textColor);
             yAxisGroup.selectAll("line, path").style("stroke", textColor);
             plotGroup
                 .append("text")
@@ -515,6 +544,8 @@ export default function phenotype() {
             // Store circle data for Canvas rendering
             let canvasCircles = [];
             let highlightedCircle = null;
+            let hoveredChromosome = null;
+            let chromosomeRects = null;
 
             const renderLegend = () => {
                 const legendY = graphConstants.margin.top - 10;
@@ -655,6 +686,23 @@ export default function phenotype() {
 
                 if (circle) {
                     canvas.style.cursor = "pointer";
+                    // Reset chromosome hover if hovering over a circle
+                    if (hoveredChromosome !== null) {
+                        if (chromosomeRects) {
+                            chromosomeRects.each(function (d) {
+                                if (d.CHR === hoveredChromosome.CHR) {
+                                    const i = self.svgs.metadata.x_axis.indexOf(d);
+                                    const chrBgColor1 = constants.darkMode ? "#3a3a3a" : "#e5e5e5";
+                                    const chrBgColor2 = constants.darkMode ? "#2d2d2d" : "#ffffff";
+                                    d3.select(this)
+                                        .transition()
+                                        .duration(200)
+                                        .attr("fill", i % 2 === 0 ? chrBgColor1 : chrBgColor2);
+                                }
+                            });
+                        }
+                        hoveredChromosome = null;
+                    }
                     if (highlightedCircle !== circle) {
                         highlightedCircle = circle;
                         renderCanvas();
@@ -665,7 +713,60 @@ export default function phenotype() {
                         graphTransformations.getTooltip(tooltipContent, e);
                     }
                 } else {
-                    canvas.style.cursor = "default";
+                    // Check for chromosome hover (only in full view)
+                    if (self.displayFilters.view === "full" || self.displayFilters.chr === null) {
+                        const chr = getChromosomeAt(mousePos.x, mousePos.y);
+                        if (chr) {
+                            canvas.style.cursor = "grab";
+                            if (hoveredChromosome?.CHR !== chr.CHR) {
+                                // Reset previous hover
+                                if (hoveredChromosome !== null && chromosomeRects) {
+                                    chromosomeRects.each(function (d) {
+                                        if (d.CHR === hoveredChromosome.CHR) {
+                                            const i = self.svgs.metadata.x_axis.indexOf(d);
+                                            const chrBgColor1 = constants.darkMode ? "#3a3a3a" : "#e5e5e5";
+                                            const chrBgColor2 = constants.darkMode ? "#2d2d2d" : "#ffffff";
+                                            d3.select(this)
+                                                .transition()
+                                                .duration(200)
+                                                .attr("fill", i % 2 === 0 ? chrBgColor1 : chrBgColor2);
+                                        }
+                                    });
+                                }
+                                // Set new hover
+                                hoveredChromosome = chr;
+                                if (chromosomeRects) {
+                                    const chrHoverColor = constants.darkMode ? "#4a5a6a" : "#e6f3ff";
+                                    chromosomeRects.each(function (d) {
+                                        if (d.CHR === chr.CHR) {
+                                            d3.select(this).transition().duration(200).attr("fill", chrHoverColor);
+                                        }
+                                    });
+                                }
+                            }
+                        } else {
+                            canvas.style.cursor = "default";
+                            // Reset chromosome hover
+                            if (hoveredChromosome !== null) {
+                                if (chromosomeRects) {
+                                    chromosomeRects.each(function (d) {
+                                        if (d.CHR === hoveredChromosome.CHR) {
+                                            const i = self.svgs.metadata.x_axis.indexOf(d);
+                                            const chrBgColor1 = constants.darkMode ? "#3a3a3a" : "#e5e5e5";
+                                            const chrBgColor2 = constants.darkMode ? "#2d2d2d" : "#ffffff";
+                                            d3.select(this)
+                                                .transition()
+                                                .duration(200)
+                                                .attr("fill", i % 2 === 0 ? chrBgColor1 : chrBgColor2);
+                                        }
+                                    });
+                                }
+                                hoveredChromosome = null;
+                            }
+                        }
+                    } else {
+                        canvas.style.cursor = "default";
+                    }
                     if (highlightedCircle) {
                         highlightedCircle = null;
                         renderCanvas();
@@ -676,28 +777,45 @@ export default function phenotype() {
                 }
             });
 
+            canvas.addEventListener("mousedown", () => {
+                if (hoveredChromosome) {
+                    canvas.style.cursor = "grabbing";
+                }
+            });
+
+            canvas.addEventListener("mouseup", () => {
+                if (hoveredChromosome) {
+                    canvas.style.cursor = "grab";
+                }
+            });
+
             canvas.addEventListener("click", e => {
                 const mousePos = getMousePos(e);
                 const circle = getCircleAt(mousePos.x, mousePos.y);
 
                 if (circle) {
                     const variantType = circle.coloc_group_id
-                            ? constants.colors.dataTypes.common
-                            : constants.colors.dataTypes.rare;
+                        ? constants.colors.dataTypes.common
+                        : constants.colors.dataTypes.rare;
                     graphTransformations.handleColocGroupClick.bind(self)(circle.display_snp, variantType);
                     d3.selectAll(".tooltip").remove();
                 } else {
-                    // Check for chromosome click
-                    const chr = getChromosomeAt(mousePos.x, mousePos.y);
-                    if (chr) {
-                        self.displayFilters.view = "chromosome";
-                        self.displayFilters.chr = chr.CHR;
-                        self.displayFilters.candidateSnp = null;
+                    // Only check for chromosome click when in full view (not when zoomed in on a chromosome)
+                    if (self.displayFilters.view === "full" || self.displayFilters.chr === null) {
+                        const chr = getChromosomeAt(mousePos.x, mousePos.y);
+                        if (chr) {
+                            self.displayFilters.view = "chromosome";
+                            self.displayFilters.chr = chr.CHR;
+                            self.displayFilters.candidateSnp = null;
+                        }
                     }
                 }
             });
 
             function renderResetDisplayButton() {
+                // Clear any existing reset button
+                interactivePlotGroup.selectAll(".reset-button-group").remove();
+
                 if (
                     self.displayFilters.chr !== null ||
                     self.displayFilters.candidateSnp !== null ||
@@ -707,18 +825,28 @@ export default function phenotype() {
                     const btnY = height + 25;
                     const btnWidth = 90;
                     const btnHeight = 22;
-                    plotGroup
+                    // Use adaptive colors for button background
+                    const buttonBgColor = constants.darkMode ? "#2d2d2d" : "#ffffff";
+                    const buttonBorderColor = constants.darkMode ? "#666666" : "#b5b5b5";
+
+                    // Create a separate interactive group for the button (above canvas)
+                    const resetButtonGroup = interactivePlotGroup
+                        .append("g")
+                        .attr("class", "reset-button-group")
+                        .style("pointer-events", "all");
+
+                    resetButtonGroup
                         .append("rect")
                         .attr("x", btnX)
                         .attr("y", btnY)
                         .attr("width", btnWidth)
                         .attr("height", btnHeight)
                         .attr("rx", 6)
-                        .attr("fill", "white")
-                        .attr("stroke", "#b5b5b5")
+                        .attr("fill", buttonBgColor)
+                        .attr("stroke", buttonBorderColor)
                         .style("cursor", "pointer")
                         .on("click", () => self.removeDisplayFilters());
-                    plotGroup
+                    resetButtonGroup
                         .append("text")
                         .attr("x", btnX + btnWidth / 2)
                         .attr("y", btnY + btnHeight / 2 + 3)
@@ -799,6 +927,10 @@ export default function phenotype() {
                     .duration(500)
                     .attr("opacity", 0);
 
+                // Clear chromosome backgrounds when zoomed in (they should only be interactive in full view)
+                chrBackgrounds.selectAll("rect").remove();
+                hoveredChromosome = null;
+
                 renderResetDisplayButton();
 
                 // Prepare circle data for Canvas rendering
@@ -857,35 +989,32 @@ export default function phenotype() {
 
                 renderResetDisplayButton();
 
-                // Add chromosome backgrounds to SVG
-                self.svgs.metadata.x_axis.forEach((chr, i) => {
-                    const xStart = (chr.pixel_start / self.svgs.metadata.svg_width) * width;
-                    const xEnd = (chr.pixel_end / self.svgs.metadata.svg_width) * width;
-                    chrBackgrounds
-                        .append("rect")
-                        .datum(chr)
-                        .attr("x", xStart)
-                        .attr("y", 0)
-                        .attr("width", xEnd - xStart)
-                        .attr("height", height)
-                        .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff")
-                        .attr("opacity", 0.5)
-                        .style("cursor", "pointer")
-                        .on("mouseover", function () {
-                            d3.select(this).transition().duration(200).attr("fill", "#e6f3ff");
-                        })
-                        .on("mouseout", function () {
-                            d3.select(this)
-                                .transition()
-                                .duration(200)
-                                .attr("fill", i % 2 === 0 ? "#e5e5e5" : "#ffffff");
-                        })
-                        .on("click", function () {
-                            self.displayFilters.view = "chromosome";
-                            self.displayFilters.chr = chr.CHR;
-                            self.displayFilters.candidateSnp = null;
-                        });
-                });
+                // Clear existing chromosome backgrounds before adding new ones
+                chrBackgrounds.selectAll("rect").remove();
+
+                // Add chromosome backgrounds to main SVG (behind canvas)
+                // Use adaptive colors for dark/light mode with original opacity
+                const chrBgColor1 = constants.darkMode ? "#3a3a3a" : "#e5e5e5";
+                const chrBgColor2 = constants.darkMode ? "#2d2d2d" : "#ffffff";
+
+                chromosomeRects = chrBackgrounds
+                    .selectAll("rect")
+                    .data(self.svgs.metadata.x_axis)
+                    .enter()
+                    .append("rect")
+                    .attr("x", chr => {
+                        const xStart = (chr.pixel_start / self.svgs.metadata.svg_width) * width;
+                        return xStart;
+                    })
+                    .attr("y", 0)
+                    .attr("width", chr => {
+                        const xStart = (chr.pixel_start / self.svgs.metadata.svg_width) * width;
+                        const xEnd = (chr.pixel_end / self.svgs.metadata.svg_width) * width;
+                        return xEnd - xStart;
+                    })
+                    .attr("height", height)
+                    .attr("fill", (_, i) => (i % 2 === 0 ? chrBgColor1 : chrBgColor2))
+                    .attr("opacity", 0.5);
 
                 // Add chromosome labels to SVG
                 self.svgs.metadata.x_axis.forEach(chr => {

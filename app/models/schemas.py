@@ -81,6 +81,7 @@ class ColocGroup(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
     source_id: int
     source_name: str
     source_url: str
@@ -125,11 +126,13 @@ class Gene(BaseModel):
     distinct_protein_coding_genes: Optional[int] = None
     genes_in_region: Optional[List[Gene]] = None
 
+
 class ExtendedGene(Gene):
     num_study_extractions: Optional[int] = None
     num_coloc_groups: Optional[int] = None
     num_coloc_studies: Optional[int] = None
     num_rare_results: Optional[int] = None
+
 
 class GeneMetadata(BaseModel):
     symbol: str
@@ -222,6 +225,7 @@ class Study(BaseModel):
     category: Optional[str] = None
     probe: Optional[str] = None
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
     source_id: Optional[int] = None
     variant_type: Optional[str] = None
     p_value_threshold: float
@@ -268,6 +272,7 @@ class ExtendedStudyExtraction(StudyExtraction):
     trait_category: Optional[str] = None
     data_type: str
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -311,6 +316,7 @@ class RareResult(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
     ld_block: Optional[str] = None
     source_id: Optional[int] = None
     source_name: Optional[str] = None

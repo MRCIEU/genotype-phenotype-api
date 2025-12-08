@@ -10,6 +10,7 @@ from app.logging_config import get_logger
 settings = get_settings()
 logger = get_logger(__name__)
 
+
 @lru_cache()
 def get_gpm_db_connection():
     connection = duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)

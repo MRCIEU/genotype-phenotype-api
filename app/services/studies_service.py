@@ -106,7 +106,7 @@ class StudiesService(metaclass=Singleton):
         ]
 
         return SearchTerms(search_terms=gene_search_terms + trait_search_terms)
-    
+
     @redis_cache(prefix=studies_db_cache_prefix, model_class=GetTraitsResponse)
     def get_traits(self) -> GetTraitsResponse:
         """
@@ -165,16 +165,22 @@ class StudiesService(metaclass=Singleton):
         genes = self.db.get_genes()
 
         num_coloc_groups_per_gene = self.db.get_num_coloc_groups_per_gene()
-        num_coloc_groups_per_gene = { gene_id: num_coloc_groups for gene_id, num_coloc_groups in num_coloc_groups_per_gene }
+        num_coloc_groups_per_gene = {
+            gene_id: num_coloc_groups for gene_id, num_coloc_groups in num_coloc_groups_per_gene
+        }
 
         num_coloc_studies_per_gene = self.db.get_num_coloc_studies_per_gene()
-        num_coloc_studies_per_gene = { gene_id: num_coloc_studies for gene_id, num_coloc_studies in num_coloc_studies_per_gene }
+        num_coloc_studies_per_gene = {
+            gene_id: num_coloc_studies for gene_id, num_coloc_studies in num_coloc_studies_per_gene
+        }
 
         num_rare_results_per_gene = self.db.get_num_rare_results_per_gene()
-        num_rare_results_per_gene = { gene_id: num_rare_results for gene_id, num_rare_results in num_rare_results_per_gene }
+        num_rare_results_per_gene = {
+            gene_id: num_rare_results for gene_id, num_rare_results in num_rare_results_per_gene
+        }
 
         num_extractions_per_gene = self.db.get_num_study_extractions_per_gene()
-        num_extractions_per_gene = { gene_id: num_extractions for gene_id, num_extractions in num_extractions_per_gene }
+        num_extractions_per_gene = {gene_id: num_extractions for gene_id, num_extractions in num_extractions_per_gene}
 
         genes = [
             ExtendedGene(

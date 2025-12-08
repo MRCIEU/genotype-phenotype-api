@@ -4,6 +4,7 @@ from app.models.schemas import GeneResponse, GetGenesResponse
 
 client = TestClient(app)
 
+
 def test_get_genes():
     response = client.get("/v1/genes")
     assert response.status_code == 200
@@ -19,6 +20,7 @@ def test_get_genes():
         assert gene.num_coloc_groups is not None
         assert gene.num_coloc_studies is not None
         assert gene.num_rare_results is not None
+
 
 def test_get_genes_with_coloc_groups():
     response = client.get("/v1/genes/WNT7B")

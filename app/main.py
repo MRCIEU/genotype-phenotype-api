@@ -34,7 +34,7 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(SecurityMiddleware)
-    
+
     # Add analytics middleware (after security, before CORS)
     app.add_middleware(AnalyticsMiddleware)
 
