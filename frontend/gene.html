@@ -25,7 +25,10 @@
 
                 <div class="columns mt-4 mb-0">
                     <div class="column is-10">
-                        <h3 class="title is-2 has-text-centered mb-0" x-text="'Gene: '+ geneName"></h3>
+                        <h3 class="title is-2 has-text-centered mb-0">
+                            <span x-text="'Gene: '+ geneName"></span>
+                            <a href="faq.html#gene-region-view" target="_blank" class="is-size-4">ⓘ</a>
+                        </h3>
                         <h6 class="has-text-centered mb-0 mt-0">Gene Range: <span x-text="genomicRange"></span></h6>
                         <h6 class="has-text-centered mb-0">
                             <a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a>

@@ -280,7 +280,6 @@ export default function phenotype() {
                 else return true;
             });
 
-            console.log("grouping");
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
                 tableData,

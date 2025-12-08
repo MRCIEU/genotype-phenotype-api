@@ -23,7 +23,7 @@
         <div class="content columns mt-2 is-centered">
             <div class="column is-11">
                 <h1>FAQ</h1>
-                <h2>R Package</h2>
+                <h2 id="r-package-view">R Package</h2>
 
                 <p>
                     <a href="https://github.com/MRCIEU/gpmapr">The R package</a> is used to download the data from the
@@ -41,23 +41,28 @@
                         >
                     </li>
                 </ul>
-                <h2 id="graph-options">Graph Options</h2>
+                <h2 id="graph-options-view">Graph Options</h2>
                 <ul>
-                    <li>Study P-value:</li>
-                    <li>Include Trans Markers:</li>
-                    <li>Trait Types:</li>
-                    <li>Trait Categories:</li>
+                    <li><b></b>Study P-value:</b> The p-value threshold for the traits to be displayed in the legend.</li>
+                    <li><b></b>Include Trans Markers:</b> Whether to include trans markers in the graph.</li>
+                    <li><b>Trait Types:</b> The type of trait to be displayed in the graph. 'Molecular Only' will still include the phenotype in question on the phenotype view, 'Phenotype Only' will not include molecular traits.</li>
+                    <li><b>Trait Categories:</b> The category of trait to be displayed in the graph. If no categories are selected, all traits will be displayed.</li>
                 </ul>
-                <h2>Trait View</h2>
+                <h2 id="trait-view">Phenotype View</h2>
                 <ul></ul>
-                <h2>Variant View</h2>
+                <h2 id="variant-view">SNP View</h2>
+                SNP view displays the colocalisation results for a single SNP.  Each circle represents a trait that is in the colocalisation group.
                 <ul>
-                    <li>Link Strength:</li>
-                    <li>Group Connectedness:</li>
-                    <li>Trait Type:</li>
+                    <li><b>How the SNP is chosen:</b> The SNP is chosen as the cumulative sum of the log bayes factor, which is returned by <a href="https://github.com/stephenslab/susieR">susie</a>.  Every trait in the colocalisation group is included in the cumulative sum, and the maximum is taken.</li>
+                    <li><b>Node size:</b> Each node is sized by the p-value of the SNP for that specific trait, the smaller the p-value, the larger the node.</li>
+                    <li><b>Links:</b> Each link represents a colocalization pair result, as returned by <a href="https://chr1swallace.github.io/coloc/">coloc</a>.</li>
+                    <li><b>Link Strength:</b> The strength of the link is displayed as the H4 value, which is a measure of the strength of the colocalization pair result. A significant link (H4 > 0.8) is displayed in blue, a weak link (0.8 > H4 > 0.5) is displayed in orange.</li>
+                    <li><b>Group Connectedness:</b> The connectedness of the colocalisation group is calculated as the sum of the H4 values of the coloc pairs, divided by the total number of coloc pairs in the gorup.  A higher connectedness means that the colocalisation group is more strongly connected to other colocalisation groups.</li>
+                    <li><b>Trait Type:</b> The type of trait is displayed in the legend.</li>
+                    <li><b>Common vs Rare:</b> The common groups are visualised in the graph, but the rare results are not, they are included in the results table and forest plot</li>
+                    <li><b>VEP annotation:</b> The data displayed under VEP annotation is data related to the SNP, as provided by the <a href="https://www.ensembl.org/info/docs/tools/vep/index.html">Ensembl Variant Effect Predictor</a></li>
                 </ul>
-                <h2>Gene View</h2>
-                <h2>Region View</h2>
+                <h2 id="gene-region-view">Gene and Region View</h2>
             </div>
         </div>
     </body>

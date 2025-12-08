@@ -65,8 +65,18 @@ export default function snp() {
                     ...coloc,
                     tissue: coloc.tissue ? coloc.tissue : "N/A",
                     cis_trans: coloc.cis_trans ? coloc.cis_trans : "N/A",
+                    type: "coloc",
                 }));
                 this.data.coloc_groups.sort((a, b) => a.data_type.localeCompare(b.data_type));
+
+                // Prepare rare variant results (if any)
+                this.data.rare_results = (this.data.rare_results || []).map(rare => ({
+                    ...rare,
+                    tissue: rare.tissue ? rare.tissue : "N/A",
+                    cis_trans: rare.cis_trans ? rare.cis_trans : "N/A",
+                    data_type: rare.data_type || "Rare",
+                    type: "rare",
+                }));
 
                 const snpGraphStore = Alpine.store("snpGraphStore");
                 snpGraphStore.colocs = this.data.coloc_groups;
@@ -90,7 +100,10 @@ export default function snp() {
         },
 
         getDataForTable() {
-            return this.data ? this.filteredData.colocs || [] : [];
+            if (!this.data) return [];
+            const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])];
+            console.log(all);
+            return all.sort((a, b) => a.min_p - b.min_p);
         },
 
         setHighlightedStudy(item) {
@@ -163,6 +176,15 @@ export default function snp() {
                 }
 
                 return graphOptionFilters && categoryFilters;
+            });
+
+            // Rare variant filtering (no category filter because rare traits may lack categories)
+            this.filteredData.rare = (this.data.rare_results || []).filter(rare => {
+                const graphOptionFilters =
+                    rare.min_p <= graphOptions.pValue &&
+                    (graphOptions.includeTrans ? true : rare.cis_trans !== "trans") &&
+                    (graphOptions.traitType === "all" || graphOptions.traitType === "phenotype");
+                return graphOptionFilters;
             });
 
             const allRelevantStudyExtractionIds = new Set(
@@ -730,14 +752,17 @@ export default function snp() {
         },
 
         getForestPlot() {
-            if (!this.data || !this.filteredData.colocs) return;
+            if (!this.data) return;
 
             const plotContainer = d3.select("#forest-plot");
             plotContainer.selectAll("*").remove();
 
             const margin = { top: 45, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
-            const height = this.filteredData.colocs.length * 27;
+            const allData = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])].sort(
+                (a, b) => a.min_p - b.min_p
+            );
+            const height = allData.length * 27;
             const textColor = graphTransformations.graphColor();
 
             const svg = plotContainer
@@ -747,7 +772,6 @@ export default function snp() {
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            const allData = this.filteredData.colocs;
             const validData = allData.filter(
                 d =>
                     d.association &&
@@ -762,11 +786,13 @@ export default function snp() {
 
             const x = d3.scaleLinear().domain(xRange).range([0, width]);
 
+            const getYId = d => d.study_extraction_id || d.rare_result_group_id || d.display_snp || Math.random();
+
             const y = d3
                 .scaleBand()
-                .domain(allData.map(d => d.study_extraction_id))
+                .domain(allData.map(getYId))
                 .range([0, height])
-                .padding(0);
+                .padding(0.1);
 
             const xAxisGroup = svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
             xAxisGroup
@@ -790,7 +816,7 @@ export default function snp() {
                 .attr("stroke-width", 2);
 
             allData.forEach(d => {
-                const yPos = y(d.study_extraction_id) + y.bandwidth() / 2;
+                const yPos = y(getYId(d)) + y.bandwidth() / 2;
 
                 const hasValidData =
                     d.association &&

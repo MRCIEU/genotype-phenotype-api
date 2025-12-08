@@ -200,7 +200,7 @@
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 120px; white-space: nowrap; overflow: hidden"
-                                            x-text="item.tissue"
+                                            x-text="(item.cell_type ? item.tissue + ' (' + item.cell_type + ')' : item.tissue)"
                                         ></td>
                                         <td class="py-1 px-2" x-text="item.min_p.toExponential(2)"></td>
                                         <td class="py-1 px-2" x-text="item.cis_trans"></td>
