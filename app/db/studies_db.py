@@ -5,8 +5,11 @@ import duckdb
 
 from app.models.schemas import CisTrans, StudyDataType, VariantType
 from app.db.utils import log_performance
+from app.logging_config import get_logger
 
 settings = get_settings()
+logger = get_logger(__name__)
+
 
 @lru_cache()
 def get_gpm_db_connection():
@@ -27,7 +30,7 @@ class StudiesDBClient:
     @log_performance
     def get_traits(self):
         query = f"""
-            SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry
+            SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry, studies.heritability, studies.heritability_se
             FROM traits
             JOIN studies ON traits.id = studies.trait_id
             WHERE traits.data_type IN ({",".join(self.common_data_types)})
@@ -234,7 +237,7 @@ class StudiesDBClient:
     @log_performance
     def get_trait_names_for_search(self):
         return self.studies_conn.execute(f"""
-            SELECT traits.id, traits.trait_name
+            SELECT traits.id, traits.trait_name, studies.sample_size
             FROM traits
             JOIN studies ON traits.id = studies.trait_id 
             WHERE traits.data_type IN ({",".join(self.common_data_types)}) AND studies.variant_type = '{VariantType.common.name}'
@@ -384,7 +387,7 @@ class StudiesDBClient:
             FROM study_extractions 
             JOIN studies ON study_extractions.study_id = studies.id
             JOIN traits ON studies.trait_id = traits.id
-            WHERE studies.data_type IN ({",".join(self.common_data_types)}) AND studies.variant_type = '{VariantType.common.name}'
+            WHERE studies.data_type IN ({",".join(self.common_data_types)})
             GROUP BY traits.id
         """
         return self.studies_conn.execute(query).fetchall()

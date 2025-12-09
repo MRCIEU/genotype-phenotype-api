@@ -1,6 +1,35 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
-// import glob from 'glob'
+import { readdirSync, statSync } from "fs";
+
+function findHtmlFiles(dir, baseDir = dir) {
+    const files = {};
+
+    try {
+        const entries = readdirSync(dir);
+
+        for (const entry of entries) {
+            const fullPath = resolve(dir, entry);
+            const stat = statSync(fullPath);
+
+            if (stat.isDirectory()) {
+                Object.assign(files, findHtmlFiles(fullPath, baseDir));
+            } else if (entry.endsWith(".html")) {
+                const relativePath = fullPath.replace(baseDir + "/", "");
+                const key = relativePath.includes("/")
+                    ? relativePath.replace(".html", "").replace("/", "-")
+                    : entry.replace(".html", "");
+                files[key] = fullPath;
+            }
+        }
+    } catch (error) {
+        console.warn(`Could not read directory ${dir}:`, error.message);
+    }
+
+    return files;
+}
+
+const htmlFiles = findHtmlFiles(__dirname);
 
 export default defineConfig({
     css: {
@@ -14,25 +43,7 @@ export default defineConfig({
         sourcemap: true, // Enable source maps for production
         chunkSizeWarningLimit: 1024, // kB
         rollupOptions: {
-            input: {
-                // Object.fromEntries(
-                main: resolve(__dirname, "index.html"),
-                gene: resolve(__dirname, "gene.html"),
-                phenotype: resolve(__dirname, "phenotype.html"),
-                region: resolve(__dirname, "region.html"),
-                snp: resolve(__dirname, "snp.html"),
-                about: resolve(__dirname, "about.html"),
-                data: resolve(__dirname, "data.html"),
-                contact: resolve(__dirname, "contact.html"),
-                "navigation-bar": resolve(__dirname, "web-components/navigation-bar.html"),
-                "graph-options": resolve(__dirname, "web-components/graph-options.html"),
-                "pipeline-summary": resolve(__dirname, "web-components/pipeline-summary.html"),
-                // glob.sync('*.html').map(file => [
-                // file.slice(0, file.length - 5),
-                // resolve(__dirname, file)
-                // ])
-                // )
-            },
+            input: htmlFiles,
         },
     },
 });

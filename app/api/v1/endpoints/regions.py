@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Path, Request
 
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
+    Gene,
     LdBlock,
     RegionResponse,
     ColocGroup,
@@ -35,7 +36,8 @@ async def get_region(
             raise HTTPException(status_code=404, detail=f"LD Block {ld_block_id} not found")
         ld_block = convert_duckdb_to_pydantic_model(LdBlock, ld_block)
 
-        genes = studies_service.get_genes()
+        genes = db.get_genes()
+        genes = convert_duckdb_to_pydantic_model(Gene, genes)
         genes_in_region = [
             g for g in genes if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
         ]

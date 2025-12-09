@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.middleware.security import SecurityMiddleware
+from app.middleware.analytics import AnalyticsMiddleware
 from app.api.v1.router import api_router
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
@@ -33,6 +34,9 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(SecurityMiddleware)
+
+    # Add analytics middleware (after security, before CORS)
+    app.add_middleware(AnalyticsMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

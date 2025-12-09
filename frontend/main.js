@@ -8,9 +8,9 @@ import Alpine from "alpinejs";
 import about from "./alpine-components/about.js";
 import gene from "./alpine-components/gene.js";
 import region from "./alpine-components/region.js";
-import phenotype from "./alpine-components/phenotype.js";
+import trait from "./alpine-components/trait.js";
 import homepage from "./alpine-components/homepage.js";
-import snp from "./alpine-components/snp.js";
+import variant from "./alpine-components/variant.js";
 import snpManhattan from "./alpine-components/snpManhattan.js";
 import data from "./alpine-components/data.js";
 import contact from "./alpine-components/contact.js";
@@ -109,12 +109,12 @@ Alpine.store("snpGraphStore", {
 });
 
 Alpine.data("homepage", homepage);
-Alpine.data("phenotype", phenotype);
+Alpine.data("trait", trait);
 Alpine.data("gene", gene);
 Alpine.data("about", about);
 Alpine.data("data", data);
 Alpine.data("region", region);
-Alpine.data("snp", snp);
+Alpine.data("variant", variant);
 Alpine.data("snpManhattan", snpManhattan);
 Alpine.data("contact", contact);
 Alpine.start();

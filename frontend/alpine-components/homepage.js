@@ -12,6 +12,7 @@ export default function homepage() {
         variantSearchInProgress: false,
         variantSearchResponse: null,
         gpmapMetadata: null,
+        rPackageModalOpen: false,
         uploadMetadata: {
             currentlyUploading: false,
             modalOpen: false,
@@ -90,7 +91,7 @@ export default function homepage() {
         goToItem(item) {
             console.log(item);
             if (item.type === "trait") {
-                window.location.href = "phenotype.html?id=" + item.type_id;
+                window.location.href = "trait.html?id=" + item.type_id;
             } else if (item.type === "gene") {
                 window.location.href = "gene.html?id=" + item.type_id;
             }
@@ -289,7 +290,7 @@ export default function homepage() {
                     "Upload successful!  An email will be sent to " +
                     this.uploadMetadata.formData.email +
                     " once the analysis has been completed.  Or, you can check the status of your upload " +
-                    '<a href="phenotype.html?id=' +
+                    '<a href="trait.html?id=' +
                     result.guid +
                     '">here</a>.';
             } else {
@@ -302,6 +303,14 @@ export default function homepage() {
             this.uploadMetadata.postUploadModalOpen = false;
             this.uploadMetadata.message = "";
             this.uploadMetadata.uploadSuccess = null;
+        },
+
+        openRPackageModal() {
+            this.rPackageModalOpen = true;
+        },
+
+        closeRPackageModal() {
+            this.rPackageModalOpen = false;
         },
     };
 }

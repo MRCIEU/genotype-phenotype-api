@@ -31,9 +31,8 @@ mkdir -p /oradiskvdb1/static/svgs_new
 
 sudo docker compose up -d --remove-orphans
 
-# immediately populate cache
+echo "Refreshing cache"
 sleep 5
-curl http://localhost:8000/v1/info/gpmap_metadata
-curl http://localhost:8000/v1/search/options
+./refresh_cache.sh
 
 echo "Done"

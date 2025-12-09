@@ -26,7 +26,7 @@ export class ResultsTable extends HTMLElement {
     }
 
     render() {
-        if (!this.data) return;
+        if (!this.data || Object.keys(this.data).length === 0) return;
 
         const columns = [
             { key: "display_snp", label: "Info" },
@@ -63,7 +63,7 @@ export class ResultsTable extends HTMLElement {
                                     .map(col => {
                                         if (col.key === "display_snp" && i === 0) {
                                             return `<td rowspan="${rows.length}">
-                                            ${row.display_snp ? `Candidate Variant: <a href="snp.html?id=${row.snp_id}">${row.display_snp}</a><br>` : ""}
+                                            ${row.display_snp ? `Candidate Variant: <a href="variant.html?id=${row.snp_id}">${row.display_snp}</a><br>` : ""}
                                             ${row.ld_block_id ? `LD Region: <a href="region.html?id=${row.ld_block_id}">${row.ld_block || ""}</a><br>` : ""}
                                             ${
                                                 row.posterior_prob !== undefined && row.posterior_prob !== null
@@ -88,9 +88,11 @@ export class ResultsTable extends HTMLElement {
                                             row.trait_id &&
                                             !row.rare_result_group_id
                                         ) {
-                                            return `<td><a href="phenotype.html?id=${row.trait_id}">${row.trait_name}</a></td>`;
+                                            return `<td><a href="trait.html?id=${row.trait_id}">${row.trait_name}</a></td>`;
                                         } else if (col.key === "min_p") {
                                             return `<td>${row.min_p.toExponential(2)}</td>`;
+                                        } else if (col.key === "tissue" && row.cell_type) {
+                                            return `<td>${row.tissue} (${row.cell_type})</td>`;
                                         } else {
                                             return `<td>${row[col.key] ?? ""}</td>`;
                                         }

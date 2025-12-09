@@ -81,6 +81,7 @@ class ColocGroup(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
     source_id: int
     source_name: str
     source_url: str
@@ -126,6 +127,13 @@ class Gene(BaseModel):
     genes_in_region: Optional[List[Gene]] = None
 
 
+class ExtendedGene(Gene):
+    num_study_extractions: Optional[int] = None
+    num_coloc_groups: Optional[int] = None
+    num_coloc_studies: Optional[int] = None
+    num_rare_results: Optional[int] = None
+
+
 class GeneMetadata(BaseModel):
     symbol: str
     chr: int
@@ -161,6 +169,12 @@ class BasicTraitResponse(BaseModel):
     sample_size: int
     category: str
     ancestry: str
+    heritability: Optional[float] = None
+    heritability_se: Optional[float] = None
+    num_study_extractions: int
+    num_coloc_groups: int
+    num_coloc_studies: int
+    num_rare_results: int
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -211,6 +225,7 @@ class Study(BaseModel):
     category: Optional[str] = None
     probe: Optional[str] = None
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
     source_id: Optional[int] = None
     variant_type: Optional[str] = None
     p_value_threshold: float
@@ -257,6 +272,7 @@ class ExtendedStudyExtraction(StudyExtraction):
     trait_category: Optional[str] = None
     data_type: str
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -268,7 +284,8 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
-    num_extractions: Optional[int] = None
+    sample_size: Optional[int] = None
+    num_study_extractions: Optional[int] = None
     num_coloc_groups: Optional[int] = None
     num_coloc_studies: Optional[int] = None
     num_rare_results: Optional[int] = None
@@ -299,6 +316,7 @@ class RareResult(BaseModel):
     trait_category: Optional[str] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
+    cell_type: Optional[str] = None
     ld_block: Optional[str] = None
     source_id: Optional[int] = None
     source_name: Optional[str] = None
@@ -358,7 +376,7 @@ class ExtendedVariant(Variant):
 
 
 class GetGenesResponse(BaseModel):
-    genes: List[Gene]
+    genes: List[ExtendedGene]
 
 
 class GeneResponse(BaseModel):

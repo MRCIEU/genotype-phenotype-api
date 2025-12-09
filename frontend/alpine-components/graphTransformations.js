@@ -24,6 +24,7 @@ export default {
             const hasGene = displayFilters.gene
                 ? group.some(entry => entry.gene === displayFilters.gene || entry.situated_gene === displayFilters.gene)
                 : true;
+
             const moreThanOneTrait = group.length > 1;
             return hasId && hasTrait && hasGene && moreThanOneTrait;
         });
@@ -80,6 +81,11 @@ export default {
                 color: constants.tableColors[hash],
             };
         });
+    },
+
+    graphColor() {
+        if (constants.darkMode) return constants.colors.textColors.dark;
+        else return constants.colors.textColors.light;
     },
 
     getVariantTypeColor(variantType) {
@@ -156,6 +162,7 @@ export default {
     },
 
     getTooltip(content, event) {
+        d3.selectAll(".tooltip").remove();
         // If the tooltip would overflow the right edge, expand left
         // We need to allow the DOM to update so we can measure the tooltip, hence the setTimeout
         const tooltip = d3
@@ -170,6 +177,7 @@ export default {
             .style("border", "1px solid black")
             .style("border-radius", "5px")
             .style("visibility", "hidden")
+            .style("z-index", "10")
             .html(content);
 
         setTimeout(() => {
@@ -190,7 +198,9 @@ export default {
     },
 
     traitByPositionGraph() {
+        const self = this;
         const genesInRegion = this.data.genes_in_region ? this.data.genes_in_region : this.data.gene.genes_in_region;
+        const textColor = graphTransformations.graphColor();
 
         const container = document.getElementById("trait-by-position-chart");
         container.innerHTML = "";
@@ -219,27 +229,72 @@ export default {
         const dynamicHeight = Math.max(numLevels * 16, 350);
 
         const innerHeight = dynamicHeight - graphConstants.outerMargin.top - graphConstants.outerMargin.bottom;
+        const totalWidth = graphConstants.width;
+        const totalHeight = dynamicHeight;
 
-        const svg = d3
+        // Create a container div to hold both Canvas and SVG
+        const containerDiv = d3
             .select("#trait-by-position-chart")
+            .append("div")
+            .style("position", "relative")
+            .style("width", totalWidth + "px")
+            .style("height", totalHeight + "px");
+
+        // Create Canvas container for interactive circles
+        const canvas = containerDiv
+            .append("canvas")
+            .attr("width", totalWidth)
+            .attr("height", totalHeight)
+            .style("display", "block")
+            .style("position", "relative")
+            .style("z-index", "2")
+            .node();
+
+        const ctx = canvas.getContext("2d");
+
+        // Create SVG container for static elements (axes, labels, legend)
+        const svg = containerDiv
             .append("svg")
-            .attr("viewBox", `0 0 ${graphConstants.width} ${dynamicHeight}`)
-            .attr("preserveAspectRatio", "xMidYMid meet")
-            .style("width", "100%")
-            .style("height", "100%")
+            .attr("width", totalWidth)
+            .attr("height", totalHeight)
+            .attr("viewBox", `0 0 ${totalWidth} ${totalHeight}`)
+            .style("position", "absolute")
+            .style("top", "0")
+            .style("left", "0")
+            .style("z-index", "1")
+            .style("pointer-events", "none"); // Make SVG non-interactive
+
+        // Create separate interactive SVG layer for gene rectangles (above canvas)
+        const interactiveSvg = containerDiv
+            .append("svg")
+            .attr("width", totalWidth)
+            .attr("height", totalHeight)
+            .attr("viewBox", `0 0 ${totalWidth} ${totalHeight}`)
+            .style("position", "absolute")
+            .style("top", "0")
+            .style("left", "0")
+            .style("z-index", "3")
+            .style("pointer-events", "none"); // Only gene rectangles will have pointer events
+
+        // Create main plot group for SVG
+        const plotGroup = svg
             .append("g")
             .attr("transform", `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`);
 
-        // Draw the x-axis
-        svg.append("g")
+        // Draw the x-axis to SVG
+        const xAxisGroup = plotGroup
+            .append("g")
             .attr("class", "x-axis")
             .attr("transform", `translate(0,${innerHeight})`)
-            .call(d3.axisBottom(xScale))
+            .call(d3.axisBottom(xScale));
+        xAxisGroup
             .selectAll("text")
             .style("text-anchor", "end")
+            .style("fill", textColor)
             .attr("dx", "-.8em")
             .attr("dy", ".15em")
             .attr("transform", "rotate(-65)");
+        xAxisGroup.selectAll("line, path").style("stroke", textColor);
 
         // Function to detect overlaps and assign vertical levels to SNP circles
         function assignCircleLevels(snpGroups, xScale) {
@@ -300,150 +355,221 @@ export default {
         function renderLegend() {
             const legendWidth = 120;
             const legendHeight = 20;
-            const legend = svg
-                .append("g")
-                .attr("class", "legend")
-                .attr("transform", `translate(${innerWidth - legendWidth}, -${graphConstants.outerMargin.top - 10})`);
+            const legendX = graphConstants.outerMargin.left + innerWidth - legendWidth;
+            const legendY = graphConstants.outerMargin.top - 10;
 
-            legend
-                .append("rect")
-                .attr("x", -8)
-                .attr("y", -10)
-                .attr("width", legendWidth)
-                .attr("height", legendHeight)
-                .attr("fill", "none")
-                .attr("stroke", "#bbb")
-                .attr("stroke-width", 1);
+            ctx.save();
+            ctx.translate(legendX, legendY);
+
+            // Draw legend border
+            ctx.strokeStyle = "#bbb";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-8, -10, legendWidth, legendHeight);
 
             // Common variant legend item
-            legend
-                .append("circle")
-                .attr("cx", 0)
-                .attr("cy", 0)
-                .attr("r", 5)
-                .attr("fill", constants.colors.dataTypes.common)
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 1);
+            ctx.beginPath();
+            ctx.arc(0, 0, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = constants.colors.dataTypes.common;
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1;
+            ctx.stroke();
 
-            legend.append("text").attr("x", 10).attr("y", 4).style("font-size", "12px").text("Common");
+            ctx.fillStyle = textColor;
+            ctx.font = "12px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText("Common", 10, 4);
 
             // Rare variant legend item
-            legend
-                .append("circle")
-                .attr("cx", 70)
-                .attr("cy", 0)
-                .attr("r", 5)
-                .attr("fill", constants.colors.dataTypes.rare)
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 1);
+            ctx.beginPath();
+            ctx.arc(70, 0, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = constants.colors.dataTypes.rare;
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.stroke();
 
-            legend.append("text").attr("x", 80).attr("y", 4).style("font-size", "12px").text("Rare");
+            ctx.fillStyle = textColor;
+            ctx.fillText("Rare", 80, 4);
 
-            svg.append("text")
+            ctx.restore();
+
+            // X-axis label
+            plotGroup
+                .append("text")
                 .attr("x", innerWidth / 2)
                 .attr("y", innerHeight + graphConstants.outerMargin.bottom - 10)
                 .style("text-anchor", "middle")
+                .style("fill", textColor)
                 .text("Genomic Position (MB)");
 
+            // Reset button (needs to be interactive, so put in interactive SVG layer above canvas)
+            // Clear any existing reset button first
+            interactivePlotGroup.selectAll(".reset-button-group").remove();
+
             if (
-                this.displayFilters.gene !== null ||
-                this.displayFilters.traitName !== null ||
-                this.displayFilters.candidateSnp !== null
+                self.displayFilters.gene !== null ||
+                self.displayFilters.traitName !== null ||
+                self.displayFilters.candidateSnp !== null
             ) {
                 const btnX = innerWidth / 2 + 90;
                 const btnY = innerHeight + graphConstants.outerMargin.bottom - 25;
                 const btnWidth = 90;
                 const btnHeight = 22;
-                svg.append("rect")
+                // Use adaptive colors for button background
+                const buttonBgColor = constants.darkMode ? "#2d2d2d" : "#ffffff";
+                const buttonBorderColor = constants.darkMode ? "#666666" : "#b5b5b5";
+
+                const resetButtonGroup = interactivePlotGroup
+                    .append("g")
+                    .attr("class", "reset-button-group")
+                    .style("pointer-events", "all");
+                resetButtonGroup
+                    .append("rect")
                     .attr("x", btnX)
                     .attr("y", btnY)
                     .attr("width", btnWidth)
                     .attr("height", btnHeight)
                     .attr("rx", 6)
-                    .attr("fill", "white")
-                    .attr("stroke", "#b5b5b5")
+                    .attr("fill", buttonBgColor)
+                    .attr("stroke", buttonBorderColor)
                     .style("cursor", "pointer")
-                    .on("click", () => this.removeDisplayFilters());
-                svg.append("text")
+                    .on("click", () => self.removeDisplayFilters());
+                resetButtonGroup
+                    .append("text")
                     .attr("x", btnX + btnWidth / 2)
                     .attr("y", btnY + btnHeight / 2 + 3)
                     .attr("text-anchor", "middle")
                     .attr("alignment-baseline", "middle")
                     .attr("font-size", 13)
-                    .attr("fill", "#363636")
+                    .attr("fill", textColor)
                     .attr("class", "button is-small")
                     .style("cursor", "pointer")
                     .text("Reset Display")
-                    .on("click", () => this.removeDisplayFilters());
+                    .on("click", () => self.removeDisplayFilters());
             }
         }
 
-        // Add circles for each SNP group with adjusted vertical positions
-        svg.selectAll(".snp-circle")
-            .data(positionedGroups)
-            .enter()
-            .append("circle")
-            .attr("class", "snp-circle")
-            .attr("cx", d => xScale(d.bp))
-            .attr("cy", d => {
-                const baseRadius = 2;
-                const radius =
-                    d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius;
-                return innerHeight - d.level * (radius * 1.8) - 10;
-            })
-            .attr("r", d => {
-                const baseRadius = 2;
-                return d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius;
-            })
-            .attr("fill", d => graphTransformations.getResultColorType(d.studies[0].type))
-            .attr("stroke", "#fff")
-            .attr("stroke-width", 1.5)
-            .style("opacity", 0.9)
-            .on("mouseover", function (event, d) {
-                d3.select(this).style("cursor", "pointer");
-                d3.select(this)
-                    .transition()
-                    .duration("100")
-                    .attr("fill", constants.colors.dataTypes.highlighted)
-                    .attr("r", function () {
-                        const baseRadius = 2;
-                        return (
-                            (d.studies.length > 0
-                                ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10)
-                                : baseRadius) + 8
-                        );
-                    });
-                const tooltipContent = graphTransformations.getTraitListHTML(d.studies);
-                graphTransformations.getTooltip(tooltipContent, event);
-            })
-            .on("click", (_, d) => {
-                const firstStudy = d.studies && d.studies.length > 0 ? d.studies[0] : null;
+        // Prepare circle data for Canvas rendering
+        const canvasCircles = positionedGroups.map(d => {
+            const baseRadius = 2;
+            const radius =
+                d.studies.length > 0 ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10) : baseRadius;
+            const x = xScale(d.bp);
+            const y = innerHeight - d.level * (radius * 1.8) - 10;
+
+            return {
+                ...d,
+                x,
+                y,
+                radius,
+                fillColor: graphTransformations.getResultColorType(d.studies[0].type),
+            };
+        });
+
+        let highlightedCircle = null;
+
+        // Canvas rendering functions
+        const renderCanvas = () => {
+            // Clear canvas
+            ctx.clearRect(0, 0, totalWidth, totalHeight);
+        };
+
+        const renderCircles = () => {
+            ctx.save();
+            ctx.translate(graphConstants.outerMargin.left, graphConstants.outerMargin.top);
+
+            canvasCircles.forEach(circle => {
+                const isHighlighted = highlightedCircle && circle.snp === highlightedCircle.snp;
+                const radius = isHighlighted ? circle.radius + 8 : circle.radius;
+
+                ctx.beginPath();
+                ctx.arc(circle.x, circle.y, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = isHighlighted ? constants.colors.dataTypes.highlighted : circle.fillColor;
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            ctx.restore();
+        };
+
+        // Mouse interaction handling
+        const getMousePos = e => {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+            };
+        };
+
+        const getCircleAt = (x, y) => {
+            const plotX = x - graphConstants.outerMargin.left;
+            const plotY = y - graphConstants.outerMargin.top;
+
+            for (let i = canvasCircles.length - 1; i >= 0; i--) {
+                const circle = canvasCircles[i];
+                const distance = Math.sqrt((plotX - circle.x) ** 2 + (plotY - circle.y) ** 2);
+                if (distance <= circle.radius + 5) {
+                    return circle;
+                }
+            }
+            return null;
+        };
+
+        // Mouse event handlers
+        canvas.addEventListener("mousemove", e => {
+            const mousePos = getMousePos(e);
+            const circle = getCircleAt(mousePos.x, mousePos.y);
+
+            if (circle) {
+                canvas.style.cursor = "pointer";
+                if (highlightedCircle !== circle) {
+                    highlightedCircle = circle;
+                    renderCanvas();
+                    renderCircles();
+                    renderLegend();
+
+                    const tooltipContent = graphTransformations.getTraitListHTML(circle.studies);
+                    graphTransformations.getTooltip(tooltipContent, e);
+                }
+            } else {
+                canvas.style.cursor = "default";
+                if (highlightedCircle) {
+                    highlightedCircle = null;
+                    renderCanvas();
+                    renderCircles();
+                    renderLegend();
+                    d3.selectAll(".tooltip").remove();
+                }
+            }
+        });
+
+        canvas.addEventListener("click", e => {
+            const mousePos = getMousePos(e);
+            const circle = getCircleAt(mousePos.x, mousePos.y);
+
+            if (circle) {
+                const firstStudy = circle.studies && circle.studies.length > 0 ? circle.studies[0] : null;
                 const variantType =
                     firstStudy && firstStudy.coloc_group_id
                         ? constants.colors.dataTypes.common
                         : constants.colors.dataTypes.rare;
-                graphTransformations.handleColocGroupClick.bind(this)(d.snp, variantType);
+                graphTransformations.handleColocGroupClick.bind(this)(circle.snp, variantType);
                 d3.selectAll(".tooltip").remove();
-            })
-            .on("mouseout", function (_, d) {
-                d3.select(this)
-                    .transition()
-                    .duration("200")
-                    .attr("fill", graphTransformations.getResultColorType(d.studies[0].type))
-                    .attr("r", function () {
-                        const baseRadius = 2;
-                        return d.studies.length > 0
-                            ? Math.min(baseRadius + Math.sqrt(d.studies.length) * 1.5, 10)
-                            : baseRadius;
-                    });
-                d3.selectAll(".tooltip").remove();
-            });
+            }
+        });
 
         const geneTrackY = innerHeight + graphConstants.geneTrackMargin.top;
         const genes = genesInRegion.filter(gene => gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp);
 
         assignGeneLevels(genes);
-        const geneGroup = svg.append("g").attr("class", "gene-track");
+        // Gene rectangles need to be interactive, so put them in a separate interactive SVG layer above canvas
+        const interactivePlotGroup = interactiveSvg
+            .append("g")
+            .attr("transform", `translate(${graphConstants.outerMargin.left},${graphConstants.outerMargin.top})`)
+            .style("pointer-events", "none"); // Group level is none, but rectangles will have all
+        const geneGroup = interactivePlotGroup.append("g").attr("class", "gene-track").style("pointer-events", "all");
 
         geneGroup
             .selectAll(".gene-rect")
@@ -456,7 +582,7 @@ export default {
             .attr("width", d => xScale(d.stop / 1000000) - xScale(d.start / 1000000))
             .attr("height", graphConstants.geneTrackMargin.height)
             .attr("fill", (d, i) => constants.colors.palette[i % constants.colors.palette.length])
-            .attr("stroke", d => (d.focus ? "black" : null))
+            .attr("stroke", d => (d.focus ? textColor : null))
             .attr("stroke-width", 3)
             .attr("opacity", 0.7)
             .on("mouseover", (event, d) => {
@@ -464,15 +590,18 @@ export default {
                 d3.select(event.target).style("cursor", "pointer").style("stroke", "#808080").style("stroke-width", 3);
             })
             .on("click", (event, d) => {
-                this.displayFilters.gene = d.gene;
+                self.displayFilters.gene = d.gene;
             })
             .on("mouseout", event => {
                 d3.selectAll(".tooltip").remove();
                 d3.select(event.target)
-                    .style("stroke", d => (d.focus ? "black" : null))
+                    .style("stroke", d => (d.focus ? textColor : null))
                     .style("stroke-width", d => (d.focus ? 3 : null));
             });
 
-        renderLegend.bind(this)();
+        // Initial render
+        renderCanvas();
+        renderCircles();
+        renderLegend();
     },
 };

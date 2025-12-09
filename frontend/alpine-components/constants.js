@@ -36,12 +36,21 @@ export default {
         21: 48129895,
         22: 51304566,
     },
+    clusterConnectednessThresholds: {
+        90: "Strong",
+        70: "Moderate",
+        0: "Weak",
+    },
     colors: {
         palette: ["#d5a7d6", "#7eb0d5", "#fd7f6f", "#b2e061", "#ffb55a", "#beb9db", "#fdcce5", "#8bd3c7"],
         dataTypes: {
             common: "#1976d2",
             rare: "red",
             highlighted: "black",
+        },
+        textColors: {
+            dark: "#ffffff",
+            light: "#000000",
         },
     },
     tableColors: ["antiquewhite", "#fffff5", "lavenderblush", "honeydew", "aliceblue", "oldlace", "mintcream"],
@@ -56,7 +65,7 @@ export default {
         "non_coding_transcript_variant",
     ],
     orderedDataTypes: ["Splice Variant", "Gene Expression", "Methylation", "Protein", "Phenotype"],
-    maxSNPGroupsToDisplay: 50,
+    maxSNPGroupsToDisplay: 30,
     findMinAndMaxValues: function (data) {
         const idFrequencies = data.reduce((acc, obj) => {
             if (obj.id) {

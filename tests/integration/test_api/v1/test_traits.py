@@ -15,6 +15,13 @@ def test_get_traits():
     for trait in traits.traits:
         assert trait.id is not None
         assert trait.trait_name is not None
+        assert trait.sample_size is not None
+        assert trait.category is not None
+        assert trait.ancestry is not None
+        assert trait.num_study_extractions is not None
+        assert trait.num_coloc_groups is not None
+        assert trait.num_coloc_studies is not None
+        assert trait.num_rare_results is not None
 
 
 def test_get_trait_by_id():

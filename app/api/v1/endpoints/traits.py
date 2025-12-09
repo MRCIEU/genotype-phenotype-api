@@ -1,10 +1,8 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query, Request
-
 from app.db.coloc_pairs_db import ColocPairsDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
-    BasicTraitResponse,
     ColocGroup,
     GetTraitsResponse,
     RareResult,
@@ -20,6 +18,8 @@ from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.associations_service import AssociationsService
 from app.config import get_settings
+from app.services.studies_service import StudiesService
+
 
 router = APIRouter()
 
@@ -32,10 +32,9 @@ settings = get_settings()
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_traits(request: Request) -> GetTraitsResponse:
     try:
-        db = StudiesDBClient()
-        traits = db.get_traits()
-        traits = convert_duckdb_to_pydantic_model(BasicTraitResponse, traits)
-        return GetTraitsResponse(traits=traits)
+        studies_service = StudiesService()
+        traits = studies_service.get_traits()
+        return traits
     except HTTPException as e:
         raise e
     except Exception as e:
