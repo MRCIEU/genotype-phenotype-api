@@ -6,7 +6,7 @@ import graphTransformations from "./graphTransformations.js";
 import constants from "./constants.js";
 import downloads from "./downloads.js";
 
-export default function phenotype() {
+export default function trait() {
     return {
         constants: constants,
         userUpload: false,
@@ -337,18 +337,16 @@ export default function phenotype() {
             return stringify(truncatedData);
         },
 
-        initPhenotypeGraph() {
+        initTraitGraph() {
             this.filterDataForGraphs();
-            const chartContainer = document.getElementById("phenotype-chart");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
-                this.getPhenotypeGraph()
-            );
+            const chartContainer = document.getElementById("trait-chart");
+            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getTraitGraph());
         },
 
-        getPhenotypeGraph() {
+        getTraitGraph() {
             if (!this.svgs.metadata) return;
 
-            const chartContainer = document.getElementById("phenotype-chart");
+            const chartContainer = document.getElementById("trait-chart");
             chartContainer.innerHTML = "";
 
             let self = this;

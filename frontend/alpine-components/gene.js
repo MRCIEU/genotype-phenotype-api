@@ -189,6 +189,12 @@ export default function gene() {
             return this.filteredData.coloc_groups && this.filteredData.coloc_groups.length > 0;
         },
 
+        get genePleiotropy() {
+            return this.data
+                ? `Pleiotropy info: ${this.data.gene.distinct_trait_categories} distinct trait categories, ${this.data.gene.distinct_protein_coding_genes} distinct protein coding genes`
+                : "...";
+        },
+
         get genomicRange() {
             return this.data ? `${this.data.gene.chr}:${this.data.gene.start}-${this.data.gene.stop}` : "...";
         },

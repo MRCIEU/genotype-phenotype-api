@@ -20,7 +20,7 @@
 
     <body>
         <div id="wait-to-load" style="display: none">
-            <div id="phenotype" x-data="phenotype" x-init="loadData">
+            <div id="trait" x-data="trait" x-init="loadData">
                 <navigation-bar></navigation-bar>
 
                 <!-- Title, status and text -->
@@ -28,7 +28,7 @@
                     <div class="column is-10 pb-0 mb-0">
                         <h3 class="title is-2 has-text-centered mb-0">
                             <span x-text="getStudyToDisplay"></span>
-                            <a href="faq.html#phenotype-view" target="_blank" class="is-size-4">ⓘ</a>
+                            <a href="faq.html#trait-view" target="_blank" class="is-size-4">ⓘ</a>
                         </h3>
                         <p class="has-text-centered mb-0" x-show="userUpload">
                             <span x-text="getUploadStatus"></span>
@@ -80,7 +80,7 @@
                 <!-- Graph and options -->
                 <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
                     <div class="column is-10 pb-0 mb-0">
-                        <div x-model="initPhenotypeGraph" id="phenotype-chart"></div>
+                        <div x-model="initTraitGraph" id="trait-chart"></div>
                     </div>
 
                     <div class="column is-2">

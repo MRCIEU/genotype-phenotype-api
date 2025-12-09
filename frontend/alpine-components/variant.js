@@ -5,7 +5,7 @@ import constants from "./constants.js";
 import downloads from "./downloads.js";
 import graphTransformations from "./graphTransformations.js";
 
-export default function snp() {
+export default function variant() {
     return {
         data: null,
         filteredData: {
@@ -102,7 +102,6 @@ export default function snp() {
         getDataForTable() {
             if (!this.data) return [];
             const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])];
-            console.log(all);
             return all.sort((a, b) => a.min_p - b.min_p);
         },
 
@@ -788,11 +787,7 @@ export default function snp() {
 
             const getYId = d => d.study_extraction_id || d.rare_result_group_id || d.display_snp || Math.random();
 
-            const y = d3
-                .scaleBand()
-                .domain(allData.map(getYId))
-                .range([0, height])
-                .padding(0.1);
+            const y = d3.scaleBand().domain(allData.map(getYId)).range([0, height]).padding(0.1);
 
             const xAxisGroup = svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
             xAxisGroup

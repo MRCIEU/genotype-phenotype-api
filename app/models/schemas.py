@@ -285,7 +285,7 @@ class SearchTerm(BaseModel):
     alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
     sample_size: Optional[int] = None
-    num_extractions: Optional[int] = None
+    num_study_extractions: Optional[int] = None
     num_coloc_groups: Optional[int] = None
     num_coloc_studies: Optional[int] = None
     num_rare_results: Optional[int] = None
