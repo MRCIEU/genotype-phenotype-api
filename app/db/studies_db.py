@@ -248,7 +248,7 @@ class StudiesDBClient:
         query = """SELECT gene_annotations.*,
             gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
             FROM gene_annotations
-            JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id"""
+            LEFT JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id"""
         if symbol:
             query += " WHERE gene_annotations.gene = ?"
             data = [symbol]

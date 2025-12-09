@@ -195,8 +195,14 @@
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 200px; white-space: nowrap; overflow: hidden"
-                                            x-text="item.trait_name"
-                                        ></td>
+                                        >
+                                            <a
+                                                :href="`trait.html?id=${item.trait_id}`"
+                                                x-text="item.trait_name"
+                                                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%;"
+                                                @click.stop
+                                            ></a>
+                                        </td>
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 120px; white-space: nowrap; overflow: hidden"

@@ -293,7 +293,7 @@ export default function trait() {
                 const candidateSnpKey = this.displayFilters.candidateSnp;
                 const selectedEntryValue = groupedData[candidateSnpKey];
                 delete groupedData[candidateSnpKey];
-                groupedData = { ...groupedData, [candidateSnpKey]: selectedEntryValue };
+                groupedData = { [candidateSnpKey]: selectedEntryValue, ...groupedData };
             }
 
             const truncatedData = Object.fromEntries(
@@ -328,7 +328,7 @@ export default function trait() {
                 const candidateSnpKey = this.displayFilters.candidateSnp;
                 const selectedEntryValue = groupedData[candidateSnpKey];
                 delete groupedData[candidateSnpKey];
-                groupedData = { ...groupedData, [candidateSnpKey]: selectedEntryValue };
+                groupedData = { [candidateSnpKey]: selectedEntryValue, ...groupedData };
             }
 
             const truncatedData = Object.fromEntries(
