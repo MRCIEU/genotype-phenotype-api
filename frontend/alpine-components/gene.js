@@ -190,9 +190,9 @@ export default function gene() {
         },
 
         get genePleiotropy() {
-            return this.data
+            return this.data && this.data.gene.distinct_trait_categories && this.data.gene.distinct_protein_coding_genes
                 ? `Pleiotropy info: ${this.data.gene.distinct_trait_categories} distinct trait categories, ${this.data.gene.distinct_protein_coding_genes} distinct protein coding genes`
-                : "...";
+                : "";
         },
 
         get genomicRange() {

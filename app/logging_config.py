@@ -111,6 +111,10 @@ for name in logging.root.manager.loggerDict.keys():
     logging.getLogger(name).handlers = []
     logging.getLogger(name).propagate = True
 
+# Silence noisy HTTP client logs (e.g., httpx) at INFO level
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 
 def get_logger(name):
     return logger.bind(name=name)

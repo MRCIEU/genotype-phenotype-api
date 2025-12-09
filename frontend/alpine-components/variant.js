@@ -404,8 +404,8 @@ export default function variant() {
                     if (isConnected) {
                         strokeOpacity = 0.8;
                         strokeColor = link.h4 > 0.8 ? "#2563EB" : "#EA580C";
-                    } else if (link.h4 >= 0.8) {
-                        strokeOpacity = 0.3;
+                    } else {
+                        strokeOpacity = highlightedNode ? 0.05 : 0.3;
                     }
 
                     if (strokeOpacity > 0) {
