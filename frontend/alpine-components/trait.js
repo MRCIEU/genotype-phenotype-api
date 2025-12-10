@@ -937,7 +937,16 @@ export default function trait() {
                     const bpPosition = d.bp / (chrMeta.bp_end - chrMeta.bp_start);
                     const x = bpPosition * width;
                     const yValue = -Math.log10(d.min_p);
-                    const y = yScale(yValue);
+                    // Clip yValue to y-axis domain to prevent circles from being drawn outside canvas
+                    const clippedYValue = Math.max(
+                        self.svgs.metadata.y_axis.min_lp,
+                        Math.min(self.svgs.metadata.y_axis.max_lp, yValue)
+                    );
+                    let y = yScale(clippedYValue);
+                    // If circle was clipped at the top, offset it slightly downward for visibility
+                    if (yValue > self.svgs.metadata.y_axis.max_lp) {
+                        y = y + 8; // Add 8 pixels downward offset
+                    }
                     const radius = calculateDynamicCircleRadius(d._group.length);
 
                     let fillColor;
@@ -953,6 +962,7 @@ export default function trait() {
                         ...d,
                         x,
                         y,
+                        yValue, // Store original yValue for debugging
                         radius,
                         fillColor,
                     };
@@ -1037,7 +1047,16 @@ export default function trait() {
                                 self.svgs.metadata.svg_width) *
                             width;
                         const yValue = -Math.log10(d.min_p);
-                        const y = yScale(yValue);
+                        // Clip yValue to y-axis domain to prevent circles from being drawn outside canvas
+                        const clippedYValue = Math.max(
+                            self.svgs.metadata.y_axis.min_lp,
+                            Math.min(self.svgs.metadata.y_axis.max_lp, yValue)
+                        );
+                        let y = yScale(clippedYValue);
+                        // If circle was clipped at the top, offset it slightly downward for visibility
+                        if (yValue > self.svgs.metadata.y_axis.max_lp) {
+                            y = y + 8;
+                        }
                         const radius = calculateDynamicCircleRadius(d._group.length);
 
                         let fillColor;
@@ -1053,6 +1072,7 @@ export default function trait() {
                             ...d,
                             x,
                             y,
+                            yValue, // Store original yValue for debugging
                             radius,
                             fillColor,
                         };
