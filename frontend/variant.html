@@ -189,7 +189,9 @@
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 200px; white-space: nowrap; overflow: hidden"
                                         >
-                                            <template x-if="item.data_type === 'Phenotype' && item.trait_id && !item.rare_result_group_id">
+                                            <template
+                                                x-if="item.data_type === 'Phenotype' && item.trait_id && !item.rare_result_group_id"
+                                            >
                                                 <a
                                                     :href="`trait.html?id=${item.trait_id}`"
                                                     x-text="item.trait_name"
@@ -203,7 +205,9 @@
                                                     @click.stop
                                                 ></a>
                                             </template>
-                                            <template x-if="!(item.data_type === 'Phenotype' && item.trait_id && !item.rare_result_group_id)">
+                                            <template
+                                                x-if="!(item.data_type === 'Phenotype' && item.trait_id && !item.rare_result_group_id)"
+                                            >
                                                 <span
                                                     x-text="item.trait_name"
                                                     style="
