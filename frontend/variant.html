@@ -46,15 +46,8 @@
                                 <div class="content" style="overflow-wrap: anywhere; word-break: break-word">
                                     <p class="title is-4">VEP Annotation</p>
                                     <p>
-                                        <strong>Position:</strong>
-                                        <span x-text="`${getVariantData().chr}:${getVariantData().bp}`"></span>
-                                    </p>
-                                    <div class="is-divider" style="margin: 0"></div>
-                                    <p>
-                                        <strong>Alleles:</strong>
-                                        <span
-                                            x-text="`REF: ${getVariantData().ea} / ALT:${getVariantData().oa}`"
-                                        ></span>
+                                        <strong>Variant :</strong>
+                                        <span x-text="`${getVariantData().display_snp}`"></span>
                                     </p>
                                     <div class="is-divider" style="margin: 0"></div>
                                     <p><strong>Gene:</strong> <span x-text="getVariantData().symbol"></span></p>
@@ -139,7 +132,7 @@
                     <div class="column is-9 mr-0 pr-0">
                         <div class="level mb-2">
                             <div class="level-left">
-                                <h4 class="title is-4">Colocalization Results</h4>
+                                <h4 class="title is-4">Variant Information</h4>
                             </div>
                             <div class="level-right">
                                 <div
@@ -196,18 +189,32 @@
                                             class="py-1 px-2 has-text-ellipsis"
                                             style="max-width: 200px; white-space: nowrap; overflow: hidden"
                                         >
-                                            <a
-                                                :href="`trait.html?id=${item.trait_id}`"
-                                                x-text="item.trait_name"
-                                                style="
-                                                    white-space: nowrap;
-                                                    overflow: hidden;
-                                                    text-overflow: ellipsis;
-                                                    display: inline-block;
-                                                    max-width: 100%;
-                                                "
-                                                @click.stop
-                                            ></a>
+                                            <template x-if="item.data_type === 'Phenotype' && item.trait_id && !item.rare_result_group_id">
+                                                <a
+                                                    :href="`trait.html?id=${item.trait_id}`"
+                                                    x-text="item.trait_name"
+                                                    style="
+                                                        white-space: nowrap;
+                                                        overflow: hidden;
+                                                        text-overflow: ellipsis;
+                                                        display: inline-block;
+                                                        max-width: 100%;
+                                                    "
+                                                    @click.stop
+                                                ></a>
+                                            </template>
+                                            <template x-if="!(item.data_type === 'Phenotype' && item.trait_id && !item.rare_result_group_id)">
+                                                <span
+                                                    x-text="item.trait_name"
+                                                    style="
+                                                        white-space: nowrap;
+                                                        overflow: hidden;
+                                                        text-overflow: ellipsis;
+                                                        display: inline-block;
+                                                        max-width: 100%;
+                                                    "
+                                                ></span>
+                                            </template>
                                         </td>
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"
