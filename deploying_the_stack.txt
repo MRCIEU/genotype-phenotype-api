@@ -1,0 +1,59 @@
+2 Boxes:
+
+- Swarm Manager (runs Redis + API + frontend)
+- Swarm Worker (runs gwas_upload_pipeline)
+
+
+
+1. Initialize Docker Swarm on Swarm Manager
+
+        docker swarm init --advertise-addr SWARM_MANAGER_IP
+
+    This will return a command like `docker swarm join --token SWMTKN-1-xxxx SWARM_MANAGER_IP:2377`. Copy it
+
+
+2. Join Swarm Worker to the Swarm
+
+    Run the join command on Swarm Worker:
+
+        docker swarm join --token SWMTKN-1-xxxx MACHINE_A_IP:2377
+
+    Check membership on Swarm Manager:
+
+        docker node ls
+
+    You should see:
+
+    Swarm Manager → Leader
+    Swarm Worker → Worker
+
+
+3. Create a Swarm-wide overlay network
+
+    Run on Swarm Manager:
+
+        docker network create --driver=overlay --attachable gwas_net
+
+    (gwas_net is defined in the stack yml files, name is important to keep the same)
+
+
+4. Deploy
+
+    docker stack deploy -c stack-main.yml gwas-main
+    docker stack deploy -c stack-worker.yml gwas-worker
+
+
+5. Define redis in upload worker's env vars
+
+    REDIS_HOST=redis
+    REDIS_PORT=6379
+
+
+
+
+Component	            Machine
+
+Redis	                A
+API	                    A
+frontend	            A
+gwas_upload_pipeline	B
