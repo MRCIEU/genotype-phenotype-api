@@ -3,16 +3,29 @@
 - Swarm Manager (runs Redis + API + frontend)
 - Swarm Worker (runs gwas_upload_pipeline)
 
-
-
 1. Initialize Docker Swarm on Swarm Manager
 
-        docker swarm init --advertise-addr SWARM_MANAGER_IP
+        docker swarm init --advertise-addr <private-ip-address>
 
     This will return a command like `docker swarm join --token SWMTKN-1-xxxx SWARM_MANAGER_IP:2377`. Copy it
 
+    You will need to open up the port for other boxes to join:
+    No
+	
+    Stateless Source IP Protocol Source Port Range Destination Port Range Type and Code Allows
+    0.0.0.0/0 TCP All 2377 TCP traffic for ports: 2377 
+
+    Also, you will need to open the port on the OS
+    sudo firewall-cmd --permanent --add-port=2377/tcp
+    sudo firewall-cmd --permanent --add-port=6379/tcp
+    sudo firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/16
+    sudo firewall-cmd --reload
+
 
 2. Join Swarm Worker to the Swarm
+
+    Run to leave a docker swarm:
+        sudo docker swarm leave
 
     Run the join command on Swarm Worker:
 
@@ -32,23 +45,21 @@
 
     Run on Swarm Manager:
 
-        docker network create --driver=overlay --attachable gwas_net
+        docker network create --driver=overlay --attachable gpmap_network
 
-    (gwas_net is defined in the stack yml files, name is important to keep the same)
+    (gpmap_network is defined in the stack yml files, name is important to keep the same)
 
+4. Create node labels
+
+sudo docker node update --label-add type=special-box <node-id>
+
+5. Take down the whole stack
+
+docker stack rm gpmap
 
 4. Deploy
 
-    docker stack deploy -c stack-main.yml gwas-main
-    docker stack deploy -c stack-worker.yml gwas-worker
-
-
-5. Define redis in upload worker's env vars
-
-    REDIS_HOST=redis
-    REDIS_PORT=6379
-
-
+    sudo docker stack deploy -c docker-swarm.yml gpmap
 
 
 Component	            Machine

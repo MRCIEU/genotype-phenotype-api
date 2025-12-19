@@ -1,10 +1,6 @@
 #!/bin/bash
 set -e
 
-sudo docker compose pull
-sudo docker compose up certbot
-sudo docker compose down
-
 echo "Swapping to new databases"
 if [ -f /oradiskvdb1/db/studies_new.db ]; then
     mv /oradiskvdb1/db/studies.db /oradiskvdb1/db/studies_backup.db
@@ -37,7 +33,8 @@ mv /oradiskvdb1/static/svgs /oradiskvdb1/static/svgs_backup
 mv /oradiskvdb1/static/svgs_new /oradiskvdb1/static/svgs
 mkdir -p /oradiskvdb1/static/svgs_new
 
-sudo docker compose up -d --remove-orphans
+sudo docker stack rm gpmap
+sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune
 
 echo "Refreshing cache"
 sleep 5
