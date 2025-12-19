@@ -1,6 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 import json
+import datetime
 from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional, Union, Iterable
 from app.db.utils import log_performance
@@ -425,6 +426,13 @@ class TraitResponse(BaseModel):
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
+class UploadTraitResponse(BaseModel):
+    trait: Trait | GwasUpload
+    coloc_groups: List[ExtendedUploadColocGroup]
+    coloc_pairs: List[UploadColocPair]
+    study_extractions: List[UploadStudyExtraction]
+    associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
+
 
 class GwasStatus(Enum):
     PROCESSING = "processing"
@@ -461,10 +469,32 @@ class ProcessGwasRequest(BaseModel):
 class UpdateGwasRequest(BaseModel):
     success: bool
     failure_reason: Optional[str] = None
-    coloc_pairs: Optional[List[UploadColocPair]] = None
-    coloc_groups: Optional[List[UploadColocGroup]] = None
-    study_extractions: Optional[List[UploadStudyExtraction]] = None
+    coloc_pairs: Optional[List[UpdateGwasColocPair]] = None
+    coloc_groups: Optional[List[UpdateGwasColocGroup]] = None
+    study_extractions: Optional[List[UpdateGwasStudyExtraction]] = None
 
+class UpdateGwasColocPair(BaseModel):
+    unique_study_id_a: str
+    unique_study_id_b: str
+    h3: float
+    h4: float
+    ld_block: str
+
+class UpdateGwasColocGroup(BaseModel):
+    coloc_group_id: int
+    unique_study_id: str
+    snp: str
+    ld_block: str
+
+class UpdateGwasStudyExtraction(BaseModel):
+    study: str
+    unique_study_id: str
+    snp: str
+    file: str
+    chr: int
+    bp: int
+    min_p: float
+    ld_block: str
 
 class GwasColumnNames(BaseModel):
     SNP: Optional[str] = None
@@ -498,6 +528,12 @@ class GwasUpload(BaseModel):
     doi: str
     should_be_added: bool
     status: GwasStatus
+    failure_reason: Optional[str] = None
+    created_at: Optional[datetime.datetime] = None
+    updated_at: Optional[datetime.datetime] = None
+
+
+GwasUpload.model_rebuild()
 
 
 class UploadStudyExtraction(BaseModel):
@@ -512,46 +548,30 @@ class UploadStudyExtraction(BaseModel):
     chr: Optional[int] = None
     bp: Optional[int] = None
     min_p: Optional[float] = None
-    cis_trans: Optional[str] = None
     ld_block: Optional[str] = None
-    gene: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
 
 class UploadColocGroup(BaseModel):
-    gwas_upload_id: Optional[int] = None
-    upload_study_extraction_id: Optional[int] = None
+    gwas_upload_id: int
+    coloc_group_id: int
+    study_extraction_id: Optional[int] = None
     existing_study_extraction_id: Optional[int] = None
-    snp_id: Optional[int] = None
-    ld_block_id: Optional[int] = None
-    coloc_group_id: Optional[int] = None
-    iteration: Optional[int] = None
-    unique_study_id: Optional[str] = None
-    posterior_prob: Optional[float] = None
-    regional_prob: Optional[float] = None
-    posterior_explained_by_snp: Optional[float] = None
-    display_snp: Optional[str] = None
-    study_id: Optional[int] = None
-    chr: Optional[int] = None
-    bp: Optional[int] = None
-    min_p: Optional[float] = None
-    cis_trans: Optional[str] = None
-    ld_block: Optional[str] = None
-    gene: Optional[str] = None
-    gene_id: Optional[int] = None
+    snp_id: int
+    ld_block_id: int
+    h4_connectedness: float
+    h3_connectedness: float
 
     model_config = {"from_attributes": True}
 
 
 class UploadColocPair(BaseModel):
     gwas_upload_id: Optional[int] = None
-    existing_study_extraction_id: Optional[int] = None
-    snp_id: Optional[int] = None
-    ld_block_id: Optional[int] = None
-    coloc_group_id: Optional[int] = None
-    study_extraction_a_id: int
-    study_extraction_b_id: int
+    existing_study_extraction_a_id: Optional[int] = None
+    study_extraction_a_id: Optional[int] = None
+    existing_study_extraction_b_id: Optional[int] = None
+    study_extraction_b_id: Optional[int] = None
     ld_block_id: int
     h3: float
     h4: float

@@ -51,10 +51,19 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
-    def get_colocs_by_gwas_upload_id(self, gwas_upload_id: int):
+    def get_coloc_groups_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
-            result = conn.execute(f"SELECT * FROM colocalisations WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
+            result = conn.execute(f"SELECT * FROM coloc_groups WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
+            return result
+        finally:
+            conn.close()
+    
+    @log_performance
+    def get_coloc_pairs_by_gwas_upload_id(self, gwas_upload_id: int):
+        conn = self.connect()
+        try:
+            result = conn.execute(f"SELECT * FROM coloc_pairs WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
             return result
         finally:
             conn.close()
