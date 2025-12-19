@@ -485,6 +485,8 @@ class UpdateGwasColocGroup(BaseModel):
     unique_study_id: str
     snp: str
     ld_block: str
+    h4_connectedness: float
+    h3_connectedness: float
 
 class UpdateGwasStudyExtraction(BaseModel):
     study: str

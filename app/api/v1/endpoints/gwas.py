@@ -131,8 +131,9 @@ async def update_gwas(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error: {e}\n{error_traceback}")
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n\n{error_traceback}")
 
 
 @router.get("/{guid}", response_model=UploadTraitResponse)

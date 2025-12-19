@@ -144,7 +144,7 @@ class GwasDBClient:
         return results
 
     @log_performance
-    def populate_colocs(self, colocs: List[UploadColocGroup]):
+    def populate_coloc_groups(self, colocs: List[UploadColocGroup]):
         conn = self.connect()
         try:
             coloc_fields = list(UploadColocGroup.model_fields.keys())
