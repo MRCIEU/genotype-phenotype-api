@@ -64,7 +64,6 @@ class GwasUploadService():
         existing_study_extractions = self.studies_db.get_study_extractions_by_unique_study_id(unique_study_ids)
         existing_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, existing_study_extractions)
         existing_study_extractions = [study for study in existing_study_extractions if study is not None]
-        print(existing_study_extractions)
 
         upload_study_id_map = {study.unique_study_id: study for study in upload_study_extractions}
         existing_study_id_map = {study.unique_study_id: study for study in existing_study_extractions}
@@ -96,23 +95,26 @@ class GwasUploadService():
             upload_coloc_group.ld_block_id = ld_block_map.get(mapped_study_extraction.ld_block) if ld_block_map.get(mapped_study_extraction.ld_block) else None
             upload_coloc_groups.append(upload_coloc_group)
         
+        upload_coloc_pairs = []
         for i, coloc_pair in enumerate(update_gwas_request.coloc_pairs):
             upload_coloc_pair = UploadColocPair(
                 gwas_upload_id=gwas.id,
-                ld_block_id=existing_ld_blocks[i].id if existing_ld_blocks[i] else None,
+                ld_block_id=ld_block_map.get(coloc_pair.ld_block) if ld_block_map.get(coloc_pair.ld_block) else None,
                 h3=coloc_pair.h3,
                 h4=coloc_pair.h4
             )
 
             if coloc_pair.unique_study_id_a in upload_study_id_map:
-                coloc_pair.study_extraction_id_a = upload_study_id_map.get(coloc_pair.unique_study_id_a).id
+                upload_coloc_pair.study_extraction_id_a = upload_study_id_map.get(coloc_pair.unique_study_id_a).id
             else:
-                coloc_pair.existing_study_extraction_id_a = existing_study_id_map.get(coloc_pair.unique_study_id_a).id 
+                upload_coloc_pair.existing_study_extraction_id_a = existing_study_id_map.get(coloc_pair.unique_study_id_a).id 
 
             if coloc_pair.unique_study_id_b in upload_study_id_map:
-                coloc_pair.study_extraction_id_b = upload_study_id_map.get(coloc_pair.unique_study_id_b).id
+                upload_coloc_pair.study_extraction_id_b = upload_study_id_map.get(coloc_pair.unique_study_id_b).id
             else:
-                coloc_pair.existing_study_extraction_id_b = existing_study_id_map.get(coloc_pair.unique_study_id_b).id
+                upload_coloc_pair.existing_study_extraction_id_b = existing_study_id_map.get(coloc_pair.unique_study_id_b).id
+            
+            upload_coloc_pairs.append(upload_coloc_pair)
 
         self.gwas_upload_db.populate_coloc_groups(upload_coloc_groups)
         self.gwas_upload_db.populate_coloc_pairs(upload_coloc_pairs)

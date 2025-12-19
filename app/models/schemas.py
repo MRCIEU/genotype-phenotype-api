@@ -570,10 +570,10 @@ class UploadColocGroup(BaseModel):
 
 class UploadColocPair(BaseModel):
     gwas_upload_id: Optional[int] = None
-    existing_study_extraction_a_id: Optional[int] = None
-    study_extraction_a_id: Optional[int] = None
-    existing_study_extraction_b_id: Optional[int] = None
-    study_extraction_b_id: Optional[int] = None
+    existing_study_extraction_id_a: Optional[int] = None
+    study_extraction_id_a: Optional[int] = None
+    existing_study_extraction_id_b: Optional[int] = None
+    study_extraction_id_b: Optional[int] = None
     ld_block_id: int
     h3: float
     h4: float
