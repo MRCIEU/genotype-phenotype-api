@@ -33,7 +33,6 @@ mv /oradiskvdb1/static/svgs /oradiskvdb1/static/svgs_backup
 mv /oradiskvdb1/static/svgs_new /oradiskvdb1/static/svgs
 mkdir -p /oradiskvdb1/static/svgs_new
 
-sudo docker stack rm gpmap
 sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune
 
 echo "Refreshing cache"

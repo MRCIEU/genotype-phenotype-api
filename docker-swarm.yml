@@ -61,7 +61,7 @@ services:
       - gpmap_network
     command: renew --webroot --webroot-path=/var/www/certbot
 
-  gwas_upload_pipeline:
+  gwas_upload_worker:
     image: mrcieu/genotype-phenotype-map:latest
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]

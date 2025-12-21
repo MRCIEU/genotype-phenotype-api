@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-sudo docker stack rm gpmap
-
 echo "Swapping back to old databases"
 mv /oradiskvdb1/db/studies.db /oradiskvdb1/db/studies_new.db
 mv /oradiskvdb1/db/studies_backup.db /oradiskvdb1/db/studies.db
