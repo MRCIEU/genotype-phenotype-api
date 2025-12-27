@@ -758,10 +758,17 @@ export default function variant() {
 
             const margin = { top: 45, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
-            const allData = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])].sort(
-                (a, b) => a.min_p - b.min_p
-            );
-            const height = allData.length * 27;
+            const allData = this.getDataForTable();
+            
+            const table = document.querySelector("table tbody");
+            let height;
+            if (table && allData.length > 0) {
+                const tableHeight = table.getBoundingClientRect().height;
+                height = tableHeight;
+            } else {
+                height = allData.length * 35;
+            }
+            
             const textColor = graphTransformations.graphColor();
 
             const svg = plotContainer

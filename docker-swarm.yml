@@ -1,6 +1,7 @@
 version: "3.9"
 
 services:
+
   redis:
     image: redis:7-alpine
     deploy:
@@ -79,17 +80,19 @@ services:
       - gpmap_network
 
 volumes:
+
   upload_volume:
     driver: local
     driver_opts:
       type: none
       device: /oradiskvdb1/
       o: bind
+
   api_volume:
     driver: local
     driver_opts:
       type: none
-      device: /oradiskvdb1/
+      device: /home/opc/gpmap_data/
       o: bind
 
 networks:

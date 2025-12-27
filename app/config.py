@@ -8,12 +8,11 @@ class Settings(BaseSettings):
     COLOC_PAIRS_DB_PATH: str
     LD_DB_PATH: str
     GWAS_UPLOAD_DB_PATH: str
-    SUMMARY_STATS_DIR: str
     REDIS_HOST: str
     REDIS_PORT: int
     DEBUG: bool = False
+    LOGS_DIR: str
     GWAS_DIR: str
-    DATA_DIR: str
     SENTRY_DSN: str
     EMAIL_FROM: str = "gpmap@opengwas.io"
     EMAIL_SERVER: str = "smtp.email.uk-london-1.oci.oraclecloud.com"

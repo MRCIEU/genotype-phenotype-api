@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import (
@@ -105,6 +106,7 @@ def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
         assert isinstance(coloc_pair, dict)
 
 
+@pytest.mark.skip(reason="Summary stats from the bucket are not available yet")
 def test_get_variant_summary_stats(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants/{snp_ids[0]}/summary-stats")
