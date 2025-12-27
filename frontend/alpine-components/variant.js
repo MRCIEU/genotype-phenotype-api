@@ -759,7 +759,7 @@ export default function variant() {
             const margin = { top: 45, right: 20, bottom: 40, left: 10 };
             let width = plotContainer.node().getBoundingClientRect().width;
             const allData = this.getDataForTable();
-            
+
             const table = document.querySelector("table tbody");
             let height;
             if (table && allData.length > 0) {
@@ -768,7 +768,7 @@ export default function variant() {
             } else {
                 height = allData.length * 35;
             }
-            
+
             const textColor = graphTransformations.graphColor();
 
             const svg = plotContainer
