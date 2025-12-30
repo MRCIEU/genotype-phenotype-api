@@ -12,13 +12,14 @@ Here are the steps after the server is available:
 
 *Leave and Join A Docker Swarm*
 
-You will also need to manually create the network
-
-```docker network create --driver=overlay --attachable gpmap_network```
 
 To create a swarm, you must choose a server node to be a 'manager', and initalise the swarm
 
 ```sudo docker swarm init --advertise-addr <private-ip-address-of-server>```
+
+You will also need to manually create the network
+
+```docker network create --driver=overlay --attachable gpmap_network```
 
 This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node
 
