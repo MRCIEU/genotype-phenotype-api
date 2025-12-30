@@ -30,8 +30,6 @@ services:
       placement:
         constraints:
           - node.labels.type == api
-      depends_on:
-        - redis
     restart_policy:
       condition: on-failure
     working_dir: /workspace
@@ -57,8 +55,6 @@ services:
       placement:
         constraints:
           - node.labels.type == api
-      depends_on:
-        - api
       restart_policy:
         condition: on-failure
     volumes:
@@ -92,8 +88,6 @@ services:
       placement:
         constraints:
           - node.labels.type == upload
-      depends_on:
-        - redis
       restart_policy:
         condition: on-failure
     volumes:
