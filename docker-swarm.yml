@@ -1,0 +1,118 @@
+version: "3.9"
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    deploy:
+      placement:
+        constraints:
+          - node.labels.type == api
+    command: redis-server --save 60 1 --loglevel warning --dir /oradiskvdb1/redis --dbfilename redis.rdb
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart_policy:
+      condition: on-failure
+    volumes:
+      - api_volume:/oradiskvdb1
+    networks:
+      - gpmap_network
+    ports:
+      - "6379:6379"
+
+  api:
+    image: mrcieu/genotype-phenotype-api:latest
+    deploy:
+      placement:
+        constraints:
+          - node.labels.type == api
+    working_dir: /workspace
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart_policy:
+      condition: on-failure
+    volumes:
+      - api_volume:/oradiskvdb1
+    networks:
+      - gpmap_network
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.backend
+
+  frontend:
+    image: mrcieu/genotype-phenotype-frontend:latest
+    deploy:
+      placement:
+        constraints:
+          - node.labels.type == api
+    restart_policy:
+      condition: on-failure
+    volumes:
+      - api_volume:/oradiskvdb1
+      - ./certbot/webroot:/var/www/certbot
+      - ./certbot/letsencrypt:/etc/letsencrypt
+    networks:
+      - gpmap_network
+    ports:
+      - "80:80"
+      - "443:443"
+
+  certbot:
+    image: certbot/certbot
+    deploy:
+      placement:
+        constraints:
+          - node.labels.type == api
+    volumes:
+      - ./certbot/webroot:/var/www/certbot
+      - ./certbot/letsencrypt:/etc/letsencrypt
+    networks:
+      - gpmap_network
+    command: renew --webroot --webroot-path=/var/www/certbot
+
+  gwas_upload_worker:
+    image: mrcieu/genotype-phenotype-map:latest
+    working_dir: /home/pipeline
+    command: ["Rscript", "worker/pipeline_worker.R"]
+    restart_policy:
+      condition: on-failure
+    deploy:
+      placement:
+        constraints:
+          - node.labels.type == upload
+    volumes:
+      - upload_volume:/oradiskvdb1
+    env_file:
+      - .env.pipeline_worker
+    networks:
+      - gpmap_network
+
+volumes:
+
+  upload_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /oradiskvdb1/
+      o: bind
+
+  api_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/opc/gpmap_data/
+      o: bind
+
+networks:
+  gpmap_network:
+    external: true

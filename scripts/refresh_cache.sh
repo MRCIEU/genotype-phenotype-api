@@ -1,13 +1,14 @@
 #!/bin/bash
 set -e
 
-curl -X POST "http://localhost:8000/v1/internal/clear-cache/all"
+# curl -X POST "http://127.0.0.1:8000/v1/internal/clear-cache/studies"
+curl -X POST "http://127.0.0.1:8000/v1/internal/clear-cache/all"
 echo "All redis caches cleared"
 
-curl "http://localhost:8000/v1/info/gpmap_metadata" > /dev/null
-curl "http://localhost:8000/v1/search/options" > /dev/null
-curl "http://localhost:8000/v1/traits" > /dev/null
-curl "http://localhost:8000/v1/genes" > /dev/null
+curl "http://127.0.0.1:8000/v1/info/gpmap_metadata" > /dev/null
+curl "http://127.0.0.1:8000/v1/search/options" > /dev/null
+curl "http://127.0.0.1:8000/v1/traits" > /dev/null
+curl "http://127.0.0.1:8000/v1/genes" > /dev/null
 
 # Array of study IDs to set cache for
 study_ids=(
@@ -26,5 +27,5 @@ study_ids=(
 
 for study_id in "${study_ids[@]}"; do
     echo "Setting associations cache for: $study_id"
-    curl "http://localhost:8000/v1/traits/$study_id?include_associations=true" > /dev/null
+    curl "http://127.0.0.1:8000/v1/traits/$study_id?include_associations=true" > /dev/null
 done

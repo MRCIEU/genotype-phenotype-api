@@ -42,8 +42,9 @@ You will need to have the following installed:
 
    The are two docker compose profiles, `web` and `all`.
 
-   * `docker-compose --profile web up --build --detach`: runs the website, API, and redis
-   * `docker-compose --profile all up --build --detach`: runs above and the gwas upload worker
+   * `docker-compose up api redis frontend`: runs the website, API, and redis
+   * Add `--detach` if you want to run in the background, and `--build` if you want to build the images from scratch
+   * `docker-compose up api redis frontend gwas_upload_worker`: runs above and the gwas upload worker
 
    Docker compose will start the following services:
    * The frontend will be available at `http://localhost:5173`

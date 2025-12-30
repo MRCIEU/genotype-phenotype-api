@@ -10,7 +10,7 @@ settings = get_settings()
 
 class SummaryStatService:
     def __init__(self):
-        self.summary_stats_dir = settings.SUMMARY_STATS_DIR
+        self.summary_stats_dir = None  # settings.SUMMARY_STATS_DIR
 
     def get_study_summary_stats(self, study_extractions: List[ExtendedStudyExtraction]):
         if settings.DEBUG:

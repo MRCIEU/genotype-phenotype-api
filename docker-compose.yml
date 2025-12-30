@@ -58,20 +58,20 @@ services:
       - frontend
       - all
 
-  # gwas_upload_pipeline:
-  #   image: mrcieu/genotype-phenotype-map:latest
-  #   working_dir: /home/pipeline
-  #   volumes:
-  #     - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
-  #     - ../genotype-phenotype-map:/home/pipeline
-  #   environment:
-  #     - PYTHONPATH=/workspace
-  #   env_file:
-  #     - ../genotype-phenotype-map/.env
-  #   restart: unless-stopped
-  #   command: ["Rscript", "worker/pipeline_worker.R"]
-  #   profiles:
-  #     - all
+  gwas_upload_worker:
+    image: mrcieu/genotype-phenotype-map:latest
+    working_dir: /home/pipeline
+    volumes:
+      - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload
+      - ../genotype-phenotype-map:/home/pipeline
+    environment:
+      - PYTHONPATH=/workspace
+    env_file:
+      - ../genotype-phenotype-map/.env
+    restart: unless-stopped
+    command: ["Rscript", "worker/pipeline_worker.R"]
+    profiles:
+      - all
 
 volumes:
   redis_data: 

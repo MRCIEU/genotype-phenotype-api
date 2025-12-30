@@ -2,7 +2,10 @@ name: CI/CD
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
   test:
@@ -68,7 +71,7 @@ jobs:
           mrcieu/genotype-phenotype-frontend:latest
           mrcieu/genotype-phenotype-frontend:${{ github.sha }}
 
-    - name: Populate .env files and copy deployment files to server
+    - name: Deploy the stack to the api server(s)
       env:
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         ORACLE_SERVER: ${{ secrets.ORACLE_SERVER }}
@@ -84,8 +87,8 @@ jobs:
         echo "EMAIL_PASSWORD=${EMAIL_PASSWORD}" >> .env.backend
         echo "GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}" >> .env.backend
         echo "GA4_API_SECRET=${GA4_API_SECRET}" >> .env.backend
+        cp .env.backend .env.pipeline_worker
         cp frontend/.env.prod .env.frontend
-        cp docker-compose-prod.yml docker-compose.yml
 
-        FILES="docker-compose.yml .env.backend .env.frontend scripts/*"
+        FILES="docker-swarm.yml .env.backend .env.frontend .env.pipeline_worker scripts/*"
         scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${ORACLE_SERVER}:/home/opc/genotype-phenotype-api/

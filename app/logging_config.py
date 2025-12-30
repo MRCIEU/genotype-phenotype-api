@@ -8,7 +8,7 @@ from functools import wraps
 
 settings = get_settings()
 
-log_dir = Path(settings.DATA_DIR, "logs")
+log_dir = Path(settings.LOGS_DIR, "logs")
 log_dir.mkdir(exist_ok=True, parents=True)
 
 

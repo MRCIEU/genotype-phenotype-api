@@ -151,6 +151,98 @@ class RedisClient(metaclass=Singleton):
             logger.error(f"Error retrying messages from DLQ: {e}")
             return retried_count
 
+    def get_all_guids_from_dlq(self, queue_name: str) -> list[str]:
+        """
+        Get all GUIDs from messages in the dead letter queue.
+        Returns a list of GUIDs found in the DLQ.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        dlq_name = f"{queue_name}_dlq"
+        guids = []
+
+        try:
+            messages = self.redis.lrange(dlq_name, 0, -1)
+            for message in messages:
+                try:
+                    dlq_entry = json.loads(message)
+                    original_message = dlq_entry.get("original_message", {})
+                    guid = original_message.get("metadata", {}).get("guid")
+                    if guid:
+                        guids.append(guid)
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    logger.warning(f"Error parsing DLQ message to extract GUID: {e}")
+                    continue
+        except Exception as e:
+            logger.error(f"Error getting GUIDs from DLQ: {e}")
+
+        return guids
+
+    def clear_dlq(self, queue_name: str) -> bool:
+        """
+        Clear all messages from the dead letter queue.
+        Returns True if successful, False otherwise.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        dlq_name = f"{queue_name}_dlq"
+
+        try:
+            self.redis.delete(dlq_name)
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing DLQ: {e}")
+            return False
+
+    def retry_guid_from_dlq(self, queue_name: str, guid: str) -> bool:
+        """
+        Find and retry a specific message from the dead letter queue by GUID.
+        Returns True if the message was found and successfully moved, False otherwise.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        dlq_name = f"{queue_name}_dlq"
+
+        try:
+            # Get all messages from DLQ
+            messages = self.redis.lrange(dlq_name, 0, -1)
+
+            for i, message in enumerate(messages):
+                try:
+                    dlq_entry = json.loads(message)
+                    original_message = dlq_entry["original_message"]
+
+                    # Check if this message has the matching GUID
+                    if original_message.get("metadata", {}).get("guid") == guid:
+                        # Remove this message from DLQ
+                        # We need to remove it by index, so we'll rebuild the list
+                        remaining_messages = [msg for j, msg in enumerate(messages) if j != i]
+
+                        # Clear DLQ and rebuild without the matched message
+                        self.redis.delete(dlq_name)
+                        if remaining_messages:
+                            for msg in remaining_messages:
+                                self.redis.rpush(dlq_name, msg)
+
+                        # Push back to original queue
+                        if self.add_to_queue(queue_name, original_message):
+                            return True
+                        else:
+                            # If failed to add, put it back in DLQ
+                            self.redis.rpush(dlq_name, message)
+                            return False
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    logger.warning(f"Error parsing DLQ message at index {i}: {e}")
+                    continue
+
+            return False  # GUID not found
+        except Exception as e:
+            logger.error(f"Error retrying GUID from DLQ: {e}")
+            return False
+
     def schedule_job(self, job_data: dict, run_at: datetime.datetime) -> bool:
         """
         Schedule a job to run at a specific time.
