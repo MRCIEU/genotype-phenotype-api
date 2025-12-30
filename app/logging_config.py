@@ -8,9 +8,9 @@ from functools import wraps
 
 settings = get_settings()
 
-log_dir = Path(settings.LOGS_DIR, "logs")
-log_dir.mkdir(exist_ok=True, parents=True)
-
+log_dir = Path(settings.LOGS_DIR)
+if not log_dir.exists():
+    log_dir.mkdir(exist_ok=True)
 
 def time_endpoint(func):
     @wraps(func)

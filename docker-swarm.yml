@@ -8,17 +8,17 @@ services:
       placement:
         constraints:
           - node.labels.type == api
-    command: redis-server --save 60 1 --loglevel warning --dir /oradiskvdb1/redis --dbfilename redis.rdb
+      restart_policy:
+        condition: on-failure
+    command: redis-server --save 60 1 --loglevel warning --dir /home/opc/gpmap_data/redis --dbfilename redis.rdb
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-    restart_policy:
-      condition: on-failure
     volumes:
-      - api_volume:/oradiskvdb1
+      - api_volume:/home/opc/gpmap_data
     networks:
       - gpmap_network
     ports:
@@ -30,6 +30,8 @@ services:
       placement:
         constraints:
           - node.labels.type == api
+    restart_policy:
+      condition: on-failure
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     healthcheck:
@@ -38,10 +40,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    restart_policy:
-      condition: on-failure
     volumes:
-      - api_volume:/oradiskvdb1
+      - api_volume:/home/opc/gpmap_data
     networks:
       - gpmap_network
     ports:
@@ -55,10 +55,10 @@ services:
       placement:
         constraints:
           - node.labels.type == api
-    restart_policy:
-      condition: on-failure
+      restart_policy:
+        condition: on-failure
     volumes:
-      - api_volume:/oradiskvdb1
+      - api_volume:/home/opc/gpmap_data
       - ./certbot/webroot:/var/www/certbot
       - ./certbot/letsencrypt:/etc/letsencrypt
     networks:
@@ -84,12 +84,12 @@ services:
     image: mrcieu/genotype-phenotype-map:latest
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
-    restart_policy:
-      condition: on-failure
     deploy:
       placement:
         constraints:
           - node.labels.type == upload
+      restart_policy:
+        condition: on-failure
     volumes:
       - upload_volume:/oradiskvdb1
     env_file:
