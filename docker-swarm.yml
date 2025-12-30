@@ -9,6 +9,14 @@ services:
         constraints:
           - node.labels.type == api
     command: redis-server --save 60 1 --loglevel warning --dir /oradiskvdb1/redis --dbfilename redis.rdb
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart_policy:
+      condition: on-failure
     volumes:
       - api_volume:/oradiskvdb1
     networks:
@@ -24,6 +32,14 @@ services:
           - node.labels.type == api
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart_policy:
+      condition: on-failure
     volumes:
       - api_volume:/oradiskvdb1
     networks:
@@ -39,6 +55,8 @@ services:
       placement:
         constraints:
           - node.labels.type == api
+    restart_policy:
+      condition: on-failure
     volumes:
       - api_volume:/oradiskvdb1
       - ./certbot/webroot:/var/www/certbot
@@ -66,12 +84,12 @@ services:
     image: mrcieu/genotype-phenotype-map:latest
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
+    restart_policy:
+      condition: on-failure
     deploy:
       placement:
         constraints:
           - node.labels.type == upload
-      restart_policy:
-        condition: on-failure
     volumes:
       - upload_volume:/oradiskvdb1
     env_file:
