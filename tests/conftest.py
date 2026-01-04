@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
+from app.models.schemas import Singleton
 
 variant_data = {
     "8466160": {"rsid": "rs16879765", "variant": "7:37949493"},
@@ -46,6 +47,37 @@ def snp_study_pairs_in_associations_db():
             2608105,
         ],
     }
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_redis():
+    """Mock the underlying Redis connection so actual RedisClient code runs."""
+    from app.db.redis import RedisClient
+
+    mock_redis_instance = Mock()
+    mock_redis_instance.lpush.return_value = None
+    mock_redis_instance.get.return_value = None
+    mock_redis_instance.set.return_value = None
+    mock_redis_instance.delete.return_value = None
+    mock_redis_instance.rpop.return_value = None
+    mock_redis_instance.brpop.return_value = None
+    mock_redis_instance.llen.return_value = 0
+    mock_redis_instance.lrange.return_value = []
+    mock_redis_instance.rpush.return_value = None
+    mock_redis_instance.zadd.return_value = None
+    mock_redis_instance.zrangebyscore.return_value = []
+    mock_redis_instance.zremrangebyscore.return_value = None
+    mock_redis_instance.zrange.return_value = []
+    mock_redis_instance.zcount.return_value = 0
+    mock_redis_instance.keys.return_value = []
+
+    # Patch redis.Redis so when RedisClient creates it, it gets our mock
+    with patch("app.db.redis.Redis", return_value=mock_redis_instance):
+        # Clear singleton instance so it's recreated with our mocked Redis
+        if RedisClient in Singleton._instances:
+            del Singleton._instances[RedisClient]
+
+        yield mock_redis_instance
 
 
 @pytest.fixture(autouse=True)

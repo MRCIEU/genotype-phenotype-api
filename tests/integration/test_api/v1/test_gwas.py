@@ -4,32 +4,14 @@ from fastapi.testclient import TestClient
 from app.main import app
 import json
 from app.models.schemas import GwasStatus
+
 client = TestClient(app)
 
 guid = None
 
-# TODO: Uncomment once you get around to fixing GWAS upload
-
-# @pytest.fixture(autouse=True)
-# def setup_db():
-#     gwas_db = GwasDBClient()
-#     with gwas_db.connect() as conn:
-#         conn.execute("DELETE FROM gwas_upload")
-#         conn.execute("DELETE FROM study_extractions")
-#         conn.execute("DELETE FROM colocalisations")
 
 @pytest.fixture(scope="module")
-def mock_redis_client(module_mocker):
-    mock = module_mocker.patch('app.db.redis.RedisClient')
-    mock_instance = Mock()
-    mock_instance.add_to_queue.return_value = None
-    mock_instance.process_gwas_queue = "process_gwas"
-    mock.return_value = mock_instance
-    return mock_instance
-
-
-@pytest.fixture(scope="module")
-def test_guid():
+def test_guid(mock_redis):
     with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         request_data = {
             "reference_build": "GRCh38",
@@ -65,7 +47,7 @@ def test_guid():
     print(response.json())
     assert response.status_code == 200
     assert "guid" in response.json()
-    # mock_redis_client.add_to_queue.assert_called_once()
+    mock_redis.lpush.assert_called_once()
     return response.json()["guid"]
 
 
@@ -82,23 +64,24 @@ def test_get_gwas_not_found():
 
 
 def test_put_gwas_success(test_guid):
-    with open('tests/test_data/update_gwas_success_payload.json', 'rb') as update_gwas_payload:
+    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
 
     print(response.json())
     assert response.status_code == 200
-    assert response.json()['status'] == GwasStatus.COMPLETED.value
+    assert response.json()["status"] == GwasStatus.COMPLETED.value
 
 
 def test_put_gwas_failure(test_guid):
-    with open('tests/test_data/update_gwas_failure_payload.json', 'rb') as update_gwas_payload:
+    with open("tests/test_data/update_gwas_failure_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
 
     print(response.json())
     assert response.status_code == 200
-    assert response.json()['status'] == GwasStatus.FAILED.value
+    assert response.json()["status"] == GwasStatus.FAILED.value
+
 
 def test_put_gwas_not_found():
     with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:

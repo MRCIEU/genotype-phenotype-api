@@ -3,8 +3,6 @@ import traceback
 import uuid
 import os
 import hashlib
-import sentry_sdk
-import json
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
@@ -40,7 +38,7 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         # Parse the request body from form data (JSON string)
         # The ProcessGwasRequest model validator handles json.loads() internally
         request_body = ProcessGwasRequest.model_validate(request_body_str)
-        
+
         # redis = RedisClient()
         # is_allowed, recent_uploads = redis.update_user_upload(request_body.email)
         # if not is_allowed:
@@ -63,6 +61,7 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
 
         os.makedirs(os.path.join(settings.GWAS_DIR, file_guid), exist_ok=True)
         file_location = os.path.join(settings.GWAS_DIR, file_guid, file.filename)
+        bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
         os.rename(file_path, file_location)
 
         db = GwasDBClient()
@@ -83,7 +82,7 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         redis_json = {
-            "file_location": file_location,
+            "file_location": bucket_file_location,
             "metadata": request_body.model_dump(mode="json"),
         }
 
@@ -110,7 +109,6 @@ async def update_gwas(
 ):
     try:
         gwas_upload_db = GwasDBClient()
-        studies_db = StudiesDBClient()
         gwas_upload_service = GwasUploadService()
         # email_service = EmailService()
 

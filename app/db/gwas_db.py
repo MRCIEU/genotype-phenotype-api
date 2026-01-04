@@ -58,7 +58,7 @@ class GwasDBClient:
             return result
         finally:
             conn.close()
-    
+
     @log_performance
     def get_coloc_pairs_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
