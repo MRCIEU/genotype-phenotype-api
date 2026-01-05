@@ -30,7 +30,7 @@ We currently have two types of nodes, one to run the api/nginx/redis, and the ot
 * Check membership of swarm `sudo docker node ls`
 * List what is running on the stack: `sudo docker stack ps gpmap`
 * Run to leave a docker swarm: `sudo docker swarm leave`
-* Destroy the docker swarm and start again: `sudo docker stack rm gpmap`
+* Destroy the docker stack and start again: `sudo docker stack rm gpmap`
 
 ### Deploy Code Changes
 

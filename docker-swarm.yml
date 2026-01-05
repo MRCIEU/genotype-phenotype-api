@@ -11,12 +11,13 @@ services:
       restart_policy:
         condition: on-failure
     command: >
-    redis-server
-      --save 60 1
-      --loglevel warning
-      --dir /home/opc/gpmap_data/redis
-      --protected-mode no
-      --dbfilename redis.rdb
+      redis-server
+        --save 60 1
+        --bind 0.0.0.0
+        --loglevel warning
+        --dir /home/opc/gpmap_data/redis
+        --protected-mode no
+        --dbfilename redis.rdb
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -98,6 +99,7 @@ services:
         condition: on-failure
     volumes:
       - upload_volume:/oradiskvdb1
+      - oci_credentials_volume:/home/opc/.oci
     env_file:
       - .env.pipeline_worker
     networks:
@@ -117,6 +119,13 @@ volumes:
     driver_opts:
       type: none
       device: /home/opc/gpmap_data/
+      o: bind
+  
+  oci_credentials_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/opc/.oci
       o: bind
 
 networks:
