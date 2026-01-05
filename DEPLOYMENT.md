@@ -23,7 +23,7 @@ You will also need to manually create the network
 
 This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node
 
-```sudo docker node update --label-add type=special-box <api|upload>```
+```sudo docker node update --label-add type=<api|upload> <name_of_node>```
 
 We currently have two types of nodes, one to run the api/nginx/redis, and the other to run the upload worker.  Add the new box to one of these.
 
