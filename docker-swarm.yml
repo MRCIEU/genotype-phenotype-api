@@ -81,7 +81,7 @@ services:
     command: renew --webroot --webroot-path=/var/www/certbot
 
   gwas_upload_worker:
-    image: mrcieu/genotype-phenotype-map:latest
+    image: mrcieu/genotype-phenotype-upload:latest
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
     deploy:
