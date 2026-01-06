@@ -68,10 +68,6 @@ class OCIService:
                 if not content_type:
                     content_type = "application/octet-stream"
 
-            put_object_details = oci.object_storage.models.PutObjectDetails()
-            if metadata:
-                put_object_details.metadata = metadata
-
             self.object_storage_client.put_object(
                 namespace_name=self.namespace,
                 bucket_name=self.bucket_name,
