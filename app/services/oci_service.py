@@ -68,14 +68,17 @@ class OCIService:
                 if not content_type:
                     content_type = "application/octet-stream"
 
-            self.object_storage_client.put_object(
-                namespace_name=self.namespace,
-                bucket_name=self.bucket_name,
-                object_name=object_name,
-                put_object_body=file_data,
-                content_type=content_type,
-                opc_meta=metadata,
-            )
+            put_kwargs = {
+                "namespace_name": self.namespace,
+                "bucket_name": self.bucket_name,
+                "object_name": object_name,
+                "put_object_body": file_data,
+                "content_type": content_type,
+            }
+            if metadata:
+                put_kwargs["opc_meta"] = metadata
+
+            self.object_storage_client.put_object(**put_kwargs)
 
             logger.info(f"Successfully uploaded {local_file_path} to {object_name} in bucket {self.bucket_name}")
             return object_name
