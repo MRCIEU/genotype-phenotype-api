@@ -289,14 +289,14 @@
                                                     <label class="label"
                                                         >P-Value Threshold:
                                                         <span
-                                                            x-text="Number(uploadMetadata.formData.pValue).toExponential()"
+                                                            x-text="Number(uploadMetadata.formData.pValueThreshold).toExponential()"
                                                         ></span
                                                     ></label>
                                                     <input
                                                         class="slider is-fullwidth"
                                                         type="range"
                                                         x-model="uploadMetadata.formData.pValueIndex"
-                                                        @input="uploadMetadata.formData.pValue = uploadMetadata.formData.pValueOptions[uploadMetadata.formData.pValueIndex]"
+                                                        @input="uploadMetadata.formData.pValueThreshold = uploadMetadata.formData.pValueOptions[uploadMetadata.formData.pValueIndex]"
                                                         step="1"
                                                         min="0"
                                                         max="7"

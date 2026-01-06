@@ -18,7 +18,7 @@ JSON_PAYLOAD='{
       "BP": "BP",
       "EA": "EA",
       "OA": "OA",
-      "P": null,
+      "P": "P",
       "BETA": "BETA",
       "OR": null,
       "SE": "SE",
