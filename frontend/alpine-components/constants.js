@@ -4,10 +4,7 @@ export default {
         typeof window !== "undefined" &&
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches,
-    apiUrl:
-        import.meta.env.MODE === "development" || !import.meta.env.PROD
-            ? "http://localhost:8000/v1"
-            : "/api/v1",
+    apiUrl: import.meta.env.MODE === "development" || !import.meta.env.PROD ? "http://localhost:8000/v1" : "/api/v1",
     assetBaseUrl:
         import.meta.env.MODE === "development" || !import.meta.env.PROD
             ? "/assets/images/"
