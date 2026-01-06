@@ -7,7 +7,7 @@ export default {
     apiUrl:
         import.meta.env.MODE === "development" || !import.meta.env.PROD
             ? "http://localhost:8000/v1"
-            : "https://gpmap.opengwas.io/api/v1",
+            : "/api/v1",
     assetBaseUrl:
         import.meta.env.MODE === "development" || !import.meta.env.PROD
             ? "/assets/images/"
