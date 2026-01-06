@@ -263,7 +263,7 @@ export default function homepage() {
             formData.append("request", JSON.stringify(gwasRequest));
 
             try {
-                const response = await fetch(constants.apiUrl + "/gwas/", {
+                const response = await fetch(constants.apiUrl + "/gwas", {
                     method: "POST",
                     body: formData,
                 });
