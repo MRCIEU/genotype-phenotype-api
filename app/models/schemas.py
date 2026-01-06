@@ -429,9 +429,9 @@ class TraitResponse(BaseModel):
 
 class UploadTraitResponse(BaseModel):
     trait: Trait | GwasUpload
-    coloc_groups: List[ExtendedUploadColocGroup]
-    coloc_pairs: List[UploadColocPair]
-    study_extractions: List[UploadStudyExtraction]
+    coloc_groups: Optional[List[ExtendedUploadColocGroup]] = None
+    coloc_pairs: Optional[List[UploadColocPair]] = None
+    study_extractions: Optional[List[UploadStudyExtraction]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
@@ -537,7 +537,6 @@ class GwasUpload(BaseModel):
     status: GwasStatus
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
-    updated_at: Optional[datetime.datetime] = None
 
 
 GwasUpload.model_rebuild()

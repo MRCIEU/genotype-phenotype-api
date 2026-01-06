@@ -26,7 +26,7 @@ class GwasUploadService:
 
     def update_gwas_success(self, gwas: GwasUpload, update_gwas_request: UpdateGwasRequest):
         gwas.status = GwasStatus.COMPLETED
-        gwas.updated_at = datetime.now()
+        # gwas.updated_at = datetime.now()
         ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
 
         existing_ld_blocks = self.studies_db.get_ld_blocks_by_ld_block(ld_blocks)

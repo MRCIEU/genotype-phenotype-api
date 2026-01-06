@@ -190,6 +190,7 @@ class GwasDBClient:
         conn = self.connect()
         try:
             conn.execute(f"UPDATE gwas_upload SET status = '{status.value}' WHERE guid = '{guid}'")
+            # conn.execute(f"UPDATE gwas_upload SET status = '{status.value}', updated_at = CURRENT_TIMESTAMP WHERE guid = '{guid}'")
             conn.commit()
 
             result = conn.execute(f"SELECT * FROM gwas_upload WHERE guid = '{guid}'")
