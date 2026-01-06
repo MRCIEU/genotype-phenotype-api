@@ -89,6 +89,7 @@ services:
 
   gwas_upload_worker:
     image: mrcieu/genotype-phenotype-upload:latest
+    user: "1000:1000"
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
     deploy:

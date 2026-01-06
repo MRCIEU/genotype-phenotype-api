@@ -23,6 +23,7 @@ from app.models.schemas import (
 )
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
+from app.services.oci_service import OCIService
 
 settings = get_settings()
 router = APIRouter()
@@ -61,8 +62,12 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
 
         os.makedirs(os.path.join(settings.GWAS_DIR, file_guid), exist_ok=True)
         file_location = os.path.join(settings.GWAS_DIR, file_guid, file.filename)
+
         bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
         os.rename(file_path, file_location)
+
+        oci_service = OCIService()
+        oci_service.upload_file(file_location, bucket_file_location)
 
         db = GwasDBClient()
         gwas = db.get_gwas_by_guid(file_guid)

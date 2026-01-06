@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     GA4_MEASUREMENT_ID: str = ""
     GA4_API_SECRET: str = ""
+    OCI_BUCKET_NAME: str = ""
+    OCI_NAMESPACE: str = ""
 
     model_config = {"env_file": ".env"}
 

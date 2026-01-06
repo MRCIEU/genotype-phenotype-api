@@ -79,6 +79,8 @@ jobs:
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
         GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
+        OCI_BUCKET_NAME: ${{ secrets.OCI_BUCKET_NAME }}
+        OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
       run: |
         cp .env.prod .env.backend
         echo "SENTRY_DSN=${SENTRY_DSN}" >> .env.backend
@@ -87,8 +89,9 @@ jobs:
         echo "EMAIL_PASSWORD=${EMAIL_PASSWORD}" >> .env.backend
         echo "GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}" >> .env.backend
         echo "GA4_API_SECRET=${GA4_API_SECRET}" >> .env.backend
-        cp .env.backend .env.pipeline_worker
+        echo "OCI_BUCKET_NAME=${OCI_BUCKET_NAME}" >> .env.backend
+        echo "OCI_NAMESPACE=${OCI_NAMESPACE}" >> .env.backend
         cp frontend/.env.prod .env.frontend
 
-        FILES="docker-swarm.yml .env.backend .env.frontend .env.pipeline_worker scripts/*"
+        FILES="docker-swarm.yml .env.backend .env.frontend scripts/*"
         scp -i ~/.ssh/oracle_gpmap.key $FILES opc@${ORACLE_SERVER}:/home/opc/genotype-phenotype-api/

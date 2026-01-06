@@ -11,7 +11,7 @@ guid = None
 
 
 @pytest.fixture(scope="module")
-def test_guid(mock_redis):
+def test_guid(mock_redis, mock_oci_service):
     with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         request_data = {
             "reference_build": "GRCh38",
@@ -48,6 +48,8 @@ def test_guid(mock_redis):
     assert response.status_code == 200
     assert "guid" in response.json()
     mock_redis.lpush.assert_called_once()
+    # Verify OCI service was called to upload the file
+    mock_oci_service.upload_file.assert_called_once()
     return response.json()["guid"]
 
 
