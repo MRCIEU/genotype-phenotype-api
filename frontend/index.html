@@ -535,7 +535,11 @@
                                     </section>
                                     <footer class="modal-card-foot">
                                         <div class="buttons">
-                                            <button class="button is-success" @click="uploadGWAS()" :disabled="uploadMetadata.currentlyUploading">
+                                            <button
+                                                class="button is-success"
+                                                @click="uploadGWAS()"
+                                                :disabled="uploadMetadata.currentlyUploading"
+                                            >
                                                 Upload
                                             </button>
                                             <button
