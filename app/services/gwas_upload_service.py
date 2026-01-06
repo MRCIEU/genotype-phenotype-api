@@ -11,7 +11,6 @@ from app.models.schemas import (
     StudyExtraction,
     convert_duckdb_to_pydantic_model,
 )
-from datetime import datetime
 from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
 import sentry_sdk
