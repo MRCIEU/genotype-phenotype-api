@@ -33,6 +33,7 @@ services:
 
   api:
     image: mrcieu/genotype-phenotype-api:latest
+    user: "opc:opc"
     deploy:
       placement:
         constraints:
@@ -49,6 +50,7 @@ services:
       start_period: 30s
     volumes:
       - api_volume:/home/opc/gpmap_data
+      - oci_credentials_volume:/home/opc/.oci
     networks:
       - gpmap_network
     ports:
@@ -89,7 +91,7 @@ services:
 
   gwas_upload_worker:
     image: mrcieu/genotype-phenotype-upload:latest
-    user: "1000:1000"
+    user: "opc:opc"
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
     deploy:
