@@ -116,17 +116,21 @@ class GwasUploadService:
 
             if coloc_pair.unique_study_id_a in upload_study_id_map:
                 upload_coloc_pair.study_extraction_id_a = upload_study_id_map.get(coloc_pair.unique_study_id_a).id
-            else:
+            elif coloc_pair.unique_study_id_a in existing_study_id_map:
                 upload_coloc_pair.existing_study_extraction_id_a = existing_study_id_map.get(
                     coloc_pair.unique_study_id_a
                 ).id
+            else:
+                raise ValueError(f"Study extraction A not found for unique study id: {coloc_pair.unique_study_id_a}")
 
             if coloc_pair.unique_study_id_b in upload_study_id_map:
                 upload_coloc_pair.study_extraction_id_b = upload_study_id_map.get(coloc_pair.unique_study_id_b).id
-            else:
+            elif coloc_pair.unique_study_id_b in existing_study_id_map:
                 upload_coloc_pair.existing_study_extraction_id_b = existing_study_id_map.get(
                     coloc_pair.unique_study_id_b
                 ).id
+            else:
+                raise ValueError(f"Study extraction B not found for unique study id: {coloc_pair.unique_study_id_b}")
 
             upload_coloc_pairs.append(upload_coloc_pair)
 
@@ -144,7 +148,9 @@ class GwasUploadService:
         }
 
         logger.error(
-            f"GWAS processing failed: {update_gwas_request.failure_reason}",
+            "GWAS processing failed for {guid}: {reason}",
+            guid=gwas.guid,
+            reason=update_gwas_request.failure_reason,
             extra=error_context,
         )
 

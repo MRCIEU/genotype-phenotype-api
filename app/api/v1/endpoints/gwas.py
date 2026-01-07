@@ -135,7 +135,7 @@ async def update_gwas(
         raise e
     except Exception as e:
         error_traceback = traceback.format_exc()
-        logger.error(f"Error: {e}\n{error_traceback}")
+        logger.error("Error: {error}\n{traceback}", error=str(e), traceback=error_traceback)
         raise HTTPException(status_code=500, detail=f"{str(e)}\n\n{error_traceback}")
 
 
