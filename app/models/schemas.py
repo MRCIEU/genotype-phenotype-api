@@ -587,6 +587,9 @@ class UploadColocPair(BaseModel):
     ld_block_id: int
     h3: float
     h4: float
+    false_positive: bool
+    false_negative: bool
+    ignore: bool
 
 
 class ExtendedUploadColocGroup(UploadColocGroup):

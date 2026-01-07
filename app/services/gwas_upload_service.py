@@ -112,6 +112,9 @@ class GwasUploadService:
                 ld_block_id=ld_block_map.get(coloc_pair.ld_block) if ld_block_map.get(coloc_pair.ld_block) else None,
                 h3=coloc_pair.h3,
                 h4=coloc_pair.h4,
+                false_positive=coloc_pair.false_positive,
+                false_negative=coloc_pair.false_negative,
+                ignore=coloc_pair.ignore
             )
 
             if coloc_pair.unique_study_id_a in upload_study_id_map:
