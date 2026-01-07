@@ -7,21 +7,30 @@
       "unique_study_id_b": "ukb-b-6027_EUR/1/21002467-22858108_2",
       "h3": 0.01,
       "h4": 0.90,
-      "ld_block": "EUR/1/21002467-22858108"
+      "ld_block": "EUR/1/21002467-22858108",
+      "false_positive": false,
+      "false_negative": false,
+      "ignore": false
     },
     {
       "unique_study_id_a": "ebi-a-GCST90002369_EUR/1/21002467-22858108_1",
       "unique_study_id_b": "ukb-b-6027_EUR/1/21002467-22858108_2",
       "h3": 0.01,
       "h4": 0.80,
-      "ld_block": "EUR/1/21002467-22858108"
+      "ld_block": "EUR/1/21002467-22858108",
+      "false_positive": false,
+      "false_negative": false,
+      "ignore": false
     },
     {
       "unique_study_id_a": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_1",
       "unique_study_id_b": "ebi-a-GCST90002369_EUR/1/21002467-22858108_1",
       "h3": 0.01,
       "h4": 0.99,
-      "ld_block": "EUR/1/21002467-22858108"
+      "ld_block": "EUR/1/21002467-22858108",
+      "false_positive": false,
+      "false_negative": false,
+      "ignore": false
     }
   ],
   "coloc_groups": [
