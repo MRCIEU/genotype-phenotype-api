@@ -12,7 +12,6 @@ Here are the steps after the server is available:
 
 *Leave and Join A Docker Swarm*
 
-
 To create a swarm, you must choose a server node to be a 'manager', and initalise the swarm
 
 ```
@@ -48,10 +47,12 @@ sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prun
 
 If there are problems when trying to update the docker swarm config / images, check here
 
+
 * ```sudo docker stack ps gpmap --no-trunc```: Look at the "CURRENT STATE" and "ERROR" columns.  Rejected usually means scaling issue Preparing (for a long time) might mean failing to pull image.
 * ```sudo docker service ps gpmap_api```
 * ```sudo docker service logs -f --tail 50 gpmap_api```: you can also look at the container logs
 * ```sudo docker service inspect gpmap_api --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'```: verify image version
+* ```sudo docker service update --force gpmap_gwas_upload_worker```: if the upload worker just stopped.
 
 ## Data and Code Deployment
 

@@ -482,6 +482,9 @@ class UpdateGwasColocPair(BaseModel):
     h3: float
     h4: float
     ld_block: str
+    false_positive: bool
+    false_negative: bool
+    ignore: bool
 
 
 class UpdateGwasColocGroup(BaseModel):
