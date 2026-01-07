@@ -113,6 +113,9 @@ class GwasDBClient:
     def delete_gwas_upload(self, guid: str):
         conn = self.connect()
         try:
+            conn.execute(f"DELETE FROM coloc_groups WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = '{guid}')")
+            conn.execute(f"DELETE FROM coloc_pairs WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = '{guid}')")
+            conn.execute(f"DELETE FROM study_extractions WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = '{guid}')")
             conn.execute(f"DELETE FROM gwas_upload WHERE guid = '{guid}'")
             conn.commit()
         finally:
