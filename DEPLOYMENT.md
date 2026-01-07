@@ -15,13 +15,17 @@ Here are the steps after the server is available:
 
 To create a swarm, you must choose a server node to be a 'manager', and initalise the swarm
 
-```sudo docker swarm init --advertise-addr <private-ip-address-of-server>```
+```
+sudo docker swarm init --advertise-addr <private-ip-address-of-server>
+sudo docker swarm update --task-history-limit 2
+```
+
 
 You will also need to manually create the network
 
 ```docker network create --driver=overlay --attachable gpmap_network```
 
-This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node
+This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node.  You can get that join command again by `sudo docker swarm join-token worker`
 
 ```sudo docker node update --label-add type=<api|upload> <name_of_node>```
 

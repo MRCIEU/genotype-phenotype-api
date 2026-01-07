@@ -458,6 +458,7 @@ class ProcessGwasRequest(BaseModel):
     should_be_added: bool
     ancestry: str
     sample_size: int
+    p_value_threshold: float
     column_names: GwasColumnNames
     status: Optional[GwasStatus] = None
 
@@ -513,6 +514,8 @@ class GwasColumnNames(BaseModel):
     P: Optional[str] = None
     BETA: Optional[str] = None
     OR: Optional[str] = None
+    LB: Optional[str] = None
+    UB: Optional[str] = None
     SE: Optional[str] = None
     EAF: Optional[str] = None
 

@@ -35,10 +35,9 @@
                         </p>
 
                         <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'failed'">
-                            <div class="columns mt-0 is-centered">
-                                <h4 class="title">Upload failed</h4>
-                                <br />
-                                <p>Maybe give error message here?</p>
+                            <div class="column has-text-centered">
+                                <h4 class="title mb-4">Upload failed</h4>
+                                <p class="mt-2" x-text="data.trait.failure_reason"></p>
                             </div>
                         </div>
                         <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'processing'">
