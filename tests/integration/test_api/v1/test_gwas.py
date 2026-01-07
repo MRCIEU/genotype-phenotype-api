@@ -23,6 +23,7 @@ def test_guid(mock_redis, mock_oci_service):
             "should_be_added": "false",
             "sample_size": "23423",
             "ancestry": "EUR",
+            "p_value_threshold": 1.5e-4,
             "column_names": {
                 "chr": "CHR",
                 "bp": "BP",
