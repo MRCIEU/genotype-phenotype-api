@@ -83,6 +83,7 @@ def test_put_gwas_not_found():
 
     assert response.status_code == 404
 
+
 def test_put_gwas_success(test_guid):
     with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)

@@ -104,13 +104,13 @@ def mock_oci_service():
     """Mock OCI Service for all tests - stubs all OCI Object Storage operations"""
 
     mock_oci_service_instance = Mock()
-    
+
     mock_oci_service_instance.upload_file.return_value = "mocked_object_name"
     mock_oci_service_instance.download_file.return_value = "/mocked/local/path"
     mock_oci_service_instance.delete_file.return_value = True
     mock_oci_service_instance.get_file_url.return_value = "https://mocked-url.example.com/file"
     mock_oci_service_instance.download_and_zip_prefix.return_value = io.BytesIO(b"mocked zip content")
-    
+
     mock_oci_service_instance.bucket_name = "test_bucket"
     mock_oci_service_instance.namespace = "test_namespace"
     mock_oci_service_instance.region = "us-ashburn-1"

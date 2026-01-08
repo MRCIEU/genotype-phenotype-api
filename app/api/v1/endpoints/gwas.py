@@ -25,7 +25,6 @@ from app.models.schemas import (
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
 from app.services.oci_service import OCIService
-from app.services.associations_service import AssociationsService
 
 settings = get_settings()
 router = APIRouter()
@@ -144,9 +143,12 @@ async def update_gwas(
 @router.get("/{guid}", response_model=UploadTraitResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_gwas(request: Request, guid: str, include_associations: bool = Query(False, description="Whether to include associations for SNPs")) -> UploadTraitResponse:
+async def get_gwas(
+    request: Request,
+    guid: str,
+    include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
+) -> UploadTraitResponse:
     try:
-        associations_service = AssociationsService()
         studies_db = StudiesDBClient()
         gwas_upload_db = GwasDBClient()
         gwas = gwas_upload_db.get_gwas_by_guid(guid)

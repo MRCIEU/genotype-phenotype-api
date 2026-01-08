@@ -115,7 +115,7 @@ class GwasUploadService:
                 h4=coloc_pair.h4,
                 false_positive=coloc_pair.false_positive,
                 false_negative=coloc_pair.false_negative,
-                ignore=coloc_pair.ignore
+                ignore=coloc_pair.ignore,
             )
 
             if coloc_pair.unique_study_id_a in upload_study_id_map:

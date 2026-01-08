@@ -148,7 +148,6 @@ class OCIService:
             logger.error(f"Failed to delete file {object_name} from OCI: {e}")
             raise
 
-
     def get_file_url(self, object_name: str, expires_in_seconds: int = 3600) -> str:
         """
         Generate a pre-signed URL for accessing a file in OCI Object Storage.
