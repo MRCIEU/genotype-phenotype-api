@@ -431,7 +431,8 @@ class UploadTraitResponse(BaseModel):
     trait: Trait | GwasUpload
     coloc_groups: Optional[List[ExtendedUploadColocGroup]] = None
     coloc_pairs: Optional[List[UploadColocPair]] = None
-    study_extractions: Optional[List[UploadStudyExtraction]] = None
+    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
+    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
@@ -568,8 +569,8 @@ class UploadStudyExtraction(BaseModel):
 class UploadColocGroup(BaseModel):
     gwas_upload_id: int
     coloc_group_id: int
-    study_extraction_id: Optional[int] = None
     existing_study_extraction_id: Optional[int] = None
+    study_extraction_id: Optional[int] = None
     snp_id: int
     ld_block_id: int
     h4_connectedness: float

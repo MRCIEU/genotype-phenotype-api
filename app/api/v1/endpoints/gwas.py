@@ -1,14 +1,14 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Request, Form
+from fastapi import APIRouter, HTTPException, UploadFile, Request, Form, Query
 import traceback
 import uuid
 import os
 import hashlib
-
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
+
 from app.models.schemas import (
     ExtendedStudyExtraction,
     ExtendedUploadColocGroup,
@@ -19,11 +19,13 @@ from app.models.schemas import (
     UploadTraitResponse,
     UpdateGwasRequest,
     UploadStudyExtraction,
+    UploadColocPair,
     convert_duckdb_to_pydantic_model,
 )
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
 from app.services.oci_service import OCIService
+from app.services.associations_service import AssociationsService
 
 settings = get_settings()
 router = APIRouter()
@@ -142,8 +144,9 @@ async def update_gwas(
 @router.get("/{guid}", response_model=UploadTraitResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_gwas(request: Request, guid: str):
+async def get_gwas(request: Request, guid: str, include_associations: bool = Query(False, description="Whether to include associations for SNPs")) -> UploadTraitResponse:
     try:
+        associations_service = AssociationsService()
         studies_db = StudiesDBClient()
         gwas_upload_db = GwasDBClient()
         gwas = gwas_upload_db.get_gwas_by_guid(guid)
@@ -157,18 +160,21 @@ async def get_gwas(request: Request, guid: str):
                 trait=gwas,
                 study_extractions=None,
                 upload_study_extractions=None,
-                colocs=None,
+                coloc_groups=None,
+                coloc_pairs=None,
             )
 
-        colocalisations = gwas_upload_db.get_colocs_by_gwas_upload_id(gwas.id)
-        colocalisations = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, colocalisations)
+        coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
+        coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
+        coloc_pairs = gwas_upload_db.get_coloc_pairs_by_gwas_upload_id(gwas.id)
+        coloc_pairs = convert_duckdb_to_pydantic_model(UploadColocPair, coloc_pairs)
 
         upload_study_extractions = gwas_upload_db.get_study_extractions_by_gwas_upload_id(gwas.id)
         upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
 
         existing_study_extraction_ids = [
             coloc.existing_study_extraction_id
-            for coloc in colocalisations
+            for coloc in coloc_groups
             if coloc.existing_study_extraction_id is not None
         ]
         existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
@@ -176,7 +182,7 @@ async def get_gwas(request: Request, guid: str):
             ExtendedStudyExtraction, existing_study_extractions
         )
 
-        for coloc in colocalisations:
+        for coloc in coloc_groups:
             if coloc.existing_study_extraction_id is not None:
                 existing_study_extraction = next(
                     (se for se in existing_study_extractions if se.id == coloc.existing_study_extraction_id),
@@ -195,10 +201,11 @@ async def get_gwas(request: Request, guid: str):
                 coloc.cis_trans = None
 
         return UploadTraitResponse(
-            gwas=gwas,
+            trait=gwas,
             study_extractions=existing_study_extractions,
             upload_study_extractions=upload_study_extractions,
-            coloc_groups=colocalisations,
+            coloc_groups=coloc_groups,
+            coloc_pairs=coloc_pairs,
         )
 
     except HTTPException as e:

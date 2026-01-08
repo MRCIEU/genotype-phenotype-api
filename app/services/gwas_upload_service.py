@@ -24,7 +24,7 @@ class GwasUploadService:
         self.studies_db = StudiesDBClient()
 
     def update_gwas_success(self, gwas: GwasUpload, update_gwas_request: UpdateGwasRequest):
-        gwas.status = GwasStatus.COMPLETED
+        gwas.status = GwasStatus.COMPLETED.value
         # gwas.updated_at = datetime.now()
         ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
 
@@ -60,7 +60,8 @@ class GwasUploadService:
                 )
             )
 
-        self.gwas_upload_db.populate_study_extractions(upload_study_extractions)
+        inserted_study_extractions = self.gwas_upload_db.populate_study_extractions(upload_study_extractions)
+        upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, inserted_study_extractions)
 
         unique_study_ids = [coloc_pair.unique_study_id_a for coloc_pair in update_gwas_request.coloc_pairs] + [
             coloc_pair.unique_study_id_b for coloc_pair in update_gwas_request.coloc_pairs
@@ -163,7 +164,7 @@ class GwasUploadService:
             level="error",
         )
 
-        gwas.status = GwasStatus.FAILED
+        gwas.status = GwasStatus.FAILED.value
         gwas.failure_reason = update_gwas_request.failure_reason
         updated_gwas = self.gwas_upload_db.update_gwas_status(gwas.guid, GwasStatus.FAILED)
         updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)

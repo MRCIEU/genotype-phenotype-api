@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 import json
-from app.models.schemas import GwasStatus
+from app.models.schemas import GwasStatus, UploadTraitResponse, GwasUpload
 
 client = TestClient(app)
 
@@ -66,16 +66,6 @@ def test_get_gwas_not_found():
     assert response.status_code == 404
 
 
-def test_put_gwas_success(test_guid):
-    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
-        update_gwas_payload = json.load(update_gwas_payload)
-        response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
-
-    print(response.json())
-    assert response.status_code == 200
-    assert response.json()["status"] == GwasStatus.COMPLETED.value
-
-
 def test_put_gwas_failure(test_guid):
     with open("tests/test_data/update_gwas_failure_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
@@ -93,14 +83,29 @@ def test_put_gwas_not_found():
 
     assert response.status_code == 404
 
+def test_put_gwas_success(test_guid):
+    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
+        update_gwas_payload = json.load(update_gwas_payload)
+        response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
 
-# def test_get_gwas(test_guid):
-#     response = client.get(f"/v1/gwas/{test_guid}")
-#     assert response.status_code == 200
+    print(response.json())
+    assert response.status_code == 200
+    gwas_model = GwasUpload(**response.json())
+    assert gwas_model.status == GwasStatus.COMPLETED
 
-#     gwas_model = TraitResponse(**response.json())
-#     assert gwas_model.trait.guid == test_guid
-#     assert gwas_model.trait.status == GwasStatus.COMPLETED
-#     assert len(gwas_model.study_extractions) > 1
-#     assert len(gwas_model.upload_study_extractions) > 1
-#     assert len(gwas_model.colocs) > 1
+
+def test_get_gwas(test_guid):
+    response = client.get(f"/v1/gwas/{test_guid}")
+    print(response.json())
+    assert response.status_code == 200
+
+    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
+        update_gwas_payload = json.load(update_gwas_payload)
+
+    gwas_model = UploadTraitResponse(**response.json())
+    assert gwas_model.trait.guid == test_guid
+    assert gwas_model.trait.status == GwasStatus.COMPLETED
+    assert len(gwas_model.coloc_groups) == len(update_gwas_payload["coloc_groups"])
+    assert len(gwas_model.coloc_pairs) == len(update_gwas_payload["coloc_pairs"])
+    assert len(gwas_model.study_extractions) >= 1
+    assert len(gwas_model.upload_study_extractions) >= 1
