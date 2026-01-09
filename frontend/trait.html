@@ -23,6 +23,10 @@
             <div id="trait" x-data="trait" x-init="loadData">
                 <navigation-bar></navigation-bar>
 
+                <div x-show="errorMessage" class="notification is-danger is-light mt-4">
+                    <span x-text="errorMessage"></span>
+                </div>
+
                 <!-- Title, status and text -->
                 <div class="columns mt-4 mb-0 pb-0 pt-0">
                     <div class="column is-10 pb-0 mb-0">
@@ -34,40 +38,48 @@
                             <span x-text="getUploadStatus"></span>
                         </p>
 
-                        <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'failed'">
+                        <div
+                            class="columns mt-0 is-centered"
+                            x-show="userUpload && data && data.trait.status === 'failed'"
+                        >
                             <div class="column has-text-centered">
                                 <h4 class="title mb-4">Upload failed</h4>
-                                <p class="mt-2" x-text="data.trait.failure_reason"></p>
+                                <p class="mt-2" x-text="data ? data.trait.failure_reason : ''"></p>
                             </div>
                         </div>
-                        <div class="columns mt-0 is-centered" x-show="userUpload && data.trait.status === 'processing'">
+                        <div
+                            class="columns mt-0 is-centered"
+                            x-show="userUpload && data && data.trait.status === 'processing'"
+                        >
                             This may take a while...
                         </div>
 
                         <div x-show="showResults" class="mb-0">
                             <p class="is-size-8 has-text-centered">
-                                <a x-bind:href="getStudySourceLink" target="_blank">Study source</a>
+                                <a x-bind:href="getStudySourceLink" target="_blank" x-show="!userUpload"
+                                    >Study source</a
+                                >
                                 <br />
                                 Sample size (common variant study): <b x-text="getSampleSizes.common"></b>
                                 <span x-show="getSampleSizes.rare"
                                     >Sample size (rare variant study): <b x-text="getSampleSizes.rare"></b
                                 ></span>
                             </p>
-                            <p class="is-size-7 has-text-centered">
+                            <p class="is-size-7 has-text-centered" x-show="!userUpload">
                                 Displays colocalised results of the study in question, and shows all studies which
                                 colocalise with it
                             </p>
-                            <p class="is-size-7 has-text-centered">
+                            <p class="is-size-7 has-text-centered" x-show="!userUpload">
                                 Also displays significant rare and non-colocalising results
                             </p>
-                            <p class="is-size-7 has-text-centered">
+                            <p class="is-size-7 has-text-centered" x-show="!userUpload">
                                 To compare 2 specific traits, please use the 'Filter Results By' dropdown
                             </p>
                         </div>
                     </div>
                     <div class="column is-2">
                         <div
-                            x-show="showResults && filteredData.coloc_groups && data.coloc_groups.length === 0"
+                            x-show="showResults && filteredData.coloc_groups && data && data.coloc_groups.length === 0"
                             class="notification is-danger is-light"
                             style="padding: 5px; margin-right: 5px"
                         >
@@ -78,11 +90,11 @@
 
                 <!-- Graph and options -->
                 <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
-                    <div class="column is-10 pb-0 mb-0">
+                    <div class="column pb-0 mb-0" :class="userUpload ? 'is-12' : 'is-10'">
                         <div x-model="initTraitGraph" id="trait-chart"></div>
                     </div>
 
-                    <div class="column is-2">
+                    <div class="column is-2" x-show="!userUpload">
                         <graph-options></graph-options>
                     </div>
                 </div>

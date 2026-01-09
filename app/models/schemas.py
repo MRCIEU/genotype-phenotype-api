@@ -419,8 +419,8 @@ class VariantSearchResponse(BaseModel):
 
 
 class TraitResponse(BaseModel):
-    trait: Trait | GwasUpload
-    coloc_groups: Optional[List[ColocGroup]] | Optional[List[ExtendedUploadColocGroup]] = None
+    trait: Trait
+    coloc_groups: Optional[List[ColocGroup]] = None
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
@@ -428,11 +428,12 @@ class TraitResponse(BaseModel):
 
 
 class UploadTraitResponse(BaseModel):
-    trait: Trait | GwasUpload
+    trait: GwasUpload
     coloc_groups: Optional[List[ExtendedUploadColocGroup]] = None
     coloc_pairs: Optional[List[UploadColocPair]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
+    rare_results: Optional[List[RareResult]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
@@ -533,7 +534,7 @@ class GwasState(BaseModel):
 class GwasUpload(BaseModel):
     id: int
     guid: Optional[str] = None
-    email: str
+    email: Optional[str] = None
     name: str
     sample_size: int
     ancestry: str
@@ -544,6 +545,7 @@ class GwasUpload(BaseModel):
     status: GwasStatus
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
+    updated_at: Optional[datetime.datetime] = None
 
 
 GwasUpload.model_rebuild()
@@ -594,11 +596,34 @@ class UploadColocPair(BaseModel):
 
 
 class ExtendedUploadColocGroup(UploadColocGroup):
+    chr: Optional[int] = None
+    bp: Optional[int] = None
+    min_p: Optional[float] = None
+    cis_trans: Optional[str] = None
+    ld_block: Optional[str] = None
+    unique_study_id: Optional[str] = None
+    study: Optional[str] = None
+    file: Optional[str] = None
+    svg_file: Optional[str] = None
+    file_with_lbfs: Optional[str] = None
+    display_snp: Optional[str] = None
+    rsid: Optional[str] = None
+    gene: Optional[str] = None
+    gene_id: Optional[int] = None
+    trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
+    sample_size: Optional[int] = None
+    category: Optional[str] = None
+    ancestry: Optional[str] = None
+    heritability: Optional[float] = None
+    heritability_se: Optional[float] = None
     data_type: Optional[str] = None
     tissue: Optional[str] = None
-    cis_trans: Optional[str] = None
+    cell_type: Optional[str] = None
+    source_id: Optional[int] = None
+    source_name: Optional[str] = None
+    source_url: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):

@@ -10,6 +10,13 @@ client = TestClient(app)
 guid = None
 
 
+# Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
+@pytest.fixture(scope="module", autouse=True)
+def test_remove_all_data():
+    yield
+    system("git checkout tests/test_data/gwas_upload_small.db")
+
+
 @pytest.fixture(scope="module")
 def test_guid(mock_redis, mock_oci_service):
     with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
@@ -52,13 +59,6 @@ def test_guid(mock_redis, mock_oci_service):
     # Verify OCI service was called to upload the file
     mock_oci_service.upload_file.assert_called_once()
     return response.json()["guid"]
-
-
-# Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
-@pytest.fixture(scope="module", autouse=True)
-def test_remove_all_data():
-    yield
-    system("git checkout tests/test_data/gwas_upload_small.db")
 
 
 def test_get_gwas_not_found():

@@ -15,7 +15,6 @@ from app.models.schemas import (
     GwasUpload,
     ProcessGwasRequest,
     GwasStatus,
-    StudyDataType,
     UploadTraitResponse,
     UpdateGwasRequest,
     UploadStudyExtraction,
@@ -156,6 +155,7 @@ async def get_gwas(
             raise HTTPException(status_code=404, detail="GWAS not found")
 
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+        gwas.email = None
 
         if gwas.status != GwasStatus.COMPLETED:
             return UploadTraitResponse(
@@ -164,6 +164,7 @@ async def get_gwas(
                 upload_study_extractions=None,
                 coloc_groups=None,
                 coloc_pairs=None,
+                rare_results=None,
             )
 
         coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
@@ -184,30 +185,13 @@ async def get_gwas(
             ExtendedStudyExtraction, existing_study_extractions
         )
 
-        for coloc in coloc_groups:
-            if coloc.existing_study_extraction_id is not None:
-                existing_study_extraction = next(
-                    (se for se in existing_study_extractions if se.id == coloc.existing_study_extraction_id),
-                    None,
-                )
-
-                coloc.trait_name = existing_study_extraction.trait_name
-                coloc.trait_category = existing_study_extraction.trait_category
-                coloc.data_type = existing_study_extraction.data_type
-                coloc.tissue = existing_study_extraction.tissue
-                coloc.cis_trans = existing_study_extraction.cis_trans
-            else:
-                coloc.trait_name = gwas.name
-                coloc.data_type = StudyDataType.phenotype.name
-                coloc.tissue = None
-                coloc.cis_trans = None
-
         return UploadTraitResponse(
             trait=gwas,
             study_extractions=existing_study_extractions,
             upload_study_extractions=upload_study_extractions,
             coloc_groups=coloc_groups,
             coloc_pairs=coloc_pairs,
+            rare_results=[],
         )
 
     except HTTPException as e:

@@ -55,17 +55,15 @@
                     </div>
                 </div>
 
-                <!-- Trait by position graph and options -->
                 <div class="columns mt-2">
                     <div class="column is-10">
                         <div class="is-divider mt-0 mb-2"></div>
-                        <h4 class="title is-3 has-text-centered mb-0">Trait by Position Graph</h4>
-                        <p class="is-size-7 has-text-centered">Displays colocalising studies that are either</p>
-                        <p class="is-size-7 has-text-centered">(a) within the BP range of the gene, or</p>
+                        <h4 class="title is-3 has-text-centered mb-0">Colocalization Groups by Position</h4>
                         <p class="is-size-7 has-text-centered">
-                            (b) annotated by the QTL resource as associated with that Gene (within +/-1Mb)
+                            Displays colocalization groups that are annotated by a QTL, or within the BP range of the
+                            gene
                         </p>
-                        <div x-model="initTraitByPositionGraph" id="trait-by-position-chart"></div>
+                        <div x-model="initColocByPositionGraph" id="coloc-by-position-chart"></div>
                     </div>
 
                     <div class="column is-2">

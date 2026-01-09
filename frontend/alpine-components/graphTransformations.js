@@ -3,11 +3,11 @@ import * as d3 from "d3";
 import graphTransformations from "./graphTransformations.js";
 
 export default {
-    groupBySnp(data, type, id, displayFilters) {
+    groupBySnp(data, type, id, displayFilters, userUpload = false) {
         id = parseInt(id);
         let attribute = null;
         if (type === "trait") {
-            attribute = "trait_id";
+            attribute = userUpload ? "gwas_upload_id" : "trait_id";
         } else if (type === "gene") {
             attribute = "gene_id";
         }
@@ -197,12 +197,12 @@ export default {
         }, 0);
     },
 
-    traitByPositionGraph() {
+    colocByPositionGraph() {
         const self = this;
         const genesInRegion = this.data.genes_in_region ? this.data.genes_in_region : this.data.gene.genes_in_region;
         const textColor = graphTransformations.graphColor();
 
-        const container = document.getElementById("trait-by-position-chart");
+        const container = document.getElementById("coloc-by-position-chart");
         container.innerHTML = "";
 
         const graphConstants = {
@@ -234,7 +234,7 @@ export default {
 
         // Create a container div to hold both Canvas and SVG
         const containerDiv = d3
-            .select("#trait-by-position-chart")
+            .select("#coloc-by-position-chart")
             .append("div")
             .style("position", "relative")
             .style("width", totalWidth + "px")
