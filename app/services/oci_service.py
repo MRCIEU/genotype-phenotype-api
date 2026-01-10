@@ -15,6 +15,9 @@ logger = get_logger(__name__)
 
 class OCIService:
     """
+    -  config recreated
+    - make this a singleton
+    -
     Service for interacting with Oracle Cloud Infrastructure (OCI) Object Storage.
     Handles file uploads, downloads, deletions, and other bucket operations.
     """
@@ -28,9 +31,12 @@ class OCIService:
         self.namespace = settings.OCI_NAMESPACE
 
         try:
-            self.config = oci.config.from_file()
-            self.object_storage_client = oci.object_storage.ObjectStorageClient(self.config)
-            self.region = self.config.get("region")
+            signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+            self.object_storage_client = oci.object_storage.ObjectStorageClient(
+                config={},
+                signer=signer
+            )
+            self.region = signer.region
         except Exception as e:
             logger.error(f"Failed to initialize OCI client: {e}")
             raise
