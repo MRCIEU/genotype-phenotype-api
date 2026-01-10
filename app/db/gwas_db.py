@@ -53,7 +53,7 @@ class GwasDBClient:
     @log_performance
     def get_coloc_groups_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
-        conn.execute(f"ATTACH DATABASE '{settings.STUDIES_DB_PATH}' AS studies_db")
+        conn.execute(f"ATTACH DATABASE '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
 
         try:
             upload_result = conn.execute(f"""SELECT coloc_groups.*,
