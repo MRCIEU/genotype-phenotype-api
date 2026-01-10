@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 from app.config import get_settings
 from app.logging_config import get_logger
+from app.models.schemas import Singleton
 import os
 import io
 import zipfile
@@ -13,7 +14,7 @@ settings = get_settings()
 logger = get_logger(__name__)
 
 
-class OCIService:
+class OCIService(metaclass=Singleton):
     """
     Service for interacting with Oracle Cloud Infrastructure (OCI) Object Storage.
     Handles file uploads, downloads, deletions, and other bucket operations.
@@ -22,15 +23,17 @@ class OCIService:
     def __init__(self):
         """
         Initialize OCI Object Storage client.
-        Uses OCI config file at ~/.oci/config or environment variables for authentication.
+
+        Uses an Oracle policy which allows all instances in a dynamic group to access resources in a given
+        compartment. In this case, all gpmap instances can read from the gpmap bucket.
         """
         self.bucket_name = settings.OCI_BUCKET_NAME
         self.namespace = settings.OCI_NAMESPACE
 
         try:
-            self.config = oci.config.from_file()
-            self.object_storage_client = oci.object_storage.ObjectStorageClient(self.config)
-            self.region = self.config.get("region")
+            signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+            self.object_storage_client = oci.object_storage.ObjectStorageClient(config={}, signer=signer)
+            self.region = signer.region
         except Exception as e:
             logger.error(f"Failed to initialize OCI client: {e}")
             raise
