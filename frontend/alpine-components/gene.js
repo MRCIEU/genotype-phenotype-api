@@ -271,16 +271,16 @@ export default function gene() {
             return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
-        initTraitByPositionGraph() {
+        initColocByPositionGraph() {
             this.filterDataForGraphs();
-            const chartContainer = document.getElementById("trait-by-position-chart");
+            const chartContainer = document.getElementById("coloc-by-position-chart");
             graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
-                this.getTraitByPositionGraph()
+                this.getColocByPositionGraph()
             );
         },
 
-        getTraitByPositionGraph() {
-            graphTransformations.traitByPositionGraph.bind(this)();
+        getColocByPositionGraph() {
+            graphTransformations.colocByPositionGraph.bind(this)();
         },
     };
 }

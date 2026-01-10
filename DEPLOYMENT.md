@@ -12,25 +12,28 @@ Here are the steps after the server is available:
 
 *Leave and Join A Docker Swarm*
 
-
 To create a swarm, you must choose a server node to be a 'manager', and initalise the swarm
 
-```sudo docker swarm init --advertise-addr <private-ip-address-of-server>```
+```
+sudo docker swarm init --advertise-addr <private-ip-address-of-server>
+sudo docker swarm update --task-history-limit 2
+```
+
 
 You will also need to manually create the network
 
 ```docker network create --driver=overlay --attachable gpmap_network```
 
-This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node
+This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node.  You can get that join command again by `sudo docker swarm join-token worker`
 
-```sudo docker node update --label-add type=special-box <api|upload>```
+```sudo docker node update --label-add type=<api|upload> <name_of_node>```
 
 We currently have two types of nodes, one to run the api/nginx/redis, and the other to run the upload worker.  Add the new box to one of these.
 
 * Check membership of swarm `sudo docker node ls`
 * List what is running on the stack: `sudo docker stack ps gpmap`
 * Run to leave a docker swarm: `sudo docker swarm leave`
-* Destroy the docker swarm and start again: `sudo docker stack rm gpmap`
+* Destroy the docker stack and start again: `sudo docker stack rm gpmap`
 
 ### Deploy Code Changes
 
@@ -44,10 +47,12 @@ sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prun
 
 If there are problems when trying to update the docker swarm config / images, check here
 
+
 * ```sudo docker stack ps gpmap --no-trunc```: Look at the "CURRENT STATE" and "ERROR" columns.  Rejected usually means scaling issue Preparing (for a long time) might mean failing to pull image.
 * ```sudo docker service ps gpmap_api```
 * ```sudo docker service logs -f --tail 50 gpmap_api```: you can also look at the container logs
 * ```sudo docker service inspect gpmap_api --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'```: verify image version
+* ```sudo docker service update --force gpmap_gwas_upload_worker```: if the upload worker just stopped.
 
 ## Data and Code Deployment
 

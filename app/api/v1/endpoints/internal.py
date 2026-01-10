@@ -116,3 +116,29 @@ async def clear_gwas_dlq(request: Request):
     except Exception as e:
         logger.error(f"Error in clear_gwas_dlq: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/gwas-queue/add", response_model=dict, include_in_schema=False)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def add_to_gwas_queue(request: Request, message: dict):
+    """
+    Add a JSON message to the process_gwas_queue.
+    The message will be added to the queue for processing.
+    """
+    try:
+        redis_client = RedisClient()
+        success = redis_client.add_to_queue(redis_client.process_gwas_queue, message)
+
+        if success:
+            return {
+                "message": "Successfully added message to process_gwas_queue",
+                "queue_size": redis_client.get_queue_size(redis_client.process_gwas_queue),
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to add message to queue")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in add_to_gwas_queue: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))

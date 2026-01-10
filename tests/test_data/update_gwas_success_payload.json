@@ -1,0 +1,84 @@
+{
+  "success": true,
+  "failure_reason": null,
+  "coloc_pairs": [
+    {
+      "unique_study_id_a": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_1",
+      "unique_study_id_b": "ukb-b-6027_EUR/1/21002467-22858108_2",
+      "h3": 0.01,
+      "h4": 0.90,
+      "ld_block": "EUR/1/21002467-22858108",
+      "false_positive": false,
+      "false_negative": false,
+      "ignore": false
+    },
+    {
+      "unique_study_id_a": "ebi-a-GCST90002369_EUR/1/21002467-22858108_1",
+      "unique_study_id_b": "ukb-b-6027_EUR/1/21002467-22858108_2",
+      "h3": 0.01,
+      "h4": 0.80,
+      "ld_block": "EUR/1/21002467-22858108",
+      "false_positive": false,
+      "false_negative": false,
+      "ignore": false
+    },
+    {
+      "unique_study_id_a": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_1",
+      "unique_study_id_b": "ebi-a-GCST90002369_EUR/1/21002467-22858108_1",
+      "h3": 0.01,
+      "h4": 0.99,
+      "ld_block": "EUR/1/21002467-22858108",
+      "false_positive": false,
+      "false_negative": false,
+      "ignore": false
+    }
+  ],
+  "coloc_groups": [
+    {
+      "coloc_group_id": 1,
+      "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_1",
+      "snp": "1:22365104_A_C",
+      "ld_block": "EUR/1/21002467-22858108",
+      "h4_connectedness": 0.86,
+      "h3_connectedness": 0.00
+    },
+    {
+      "coloc_group_id": 1,
+      "unique_study_id": "ebi-a-GCST90002369_EUR/1/21002467-22858108_1",
+      "snp": "1:22365104_A_C",
+      "ld_block": "EUR/1/21002467-22858108",
+      "h4_connectedness": 0.86,
+      "h3_connectedness": 0.00
+    },
+    {
+      "coloc_group_id": 1,
+      "unique_study_id": "ukb-b-6027_EUR/1/21002467-22858108_2",
+      "snp": "1:22365104_A_C",
+      "ld_block": "EUR/1/21002467-22858108",
+      "h4_connectedness": 0.86,
+      "h3_connectedness": 0.00
+    }
+  ],
+  "study_extractions": [
+    {
+      "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b",
+      "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_1",
+      "snp": "1:22365104_A_C",
+      "file": "/local-scratch/projects/genotype-phenotype-map/test/data/study/gwas_upload/22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b//finemapped/EUR_1_101950949_1.tsv.gz",
+      "chr": "1",
+      "bp": 101683765,
+      "min_p": 3.0203e-22,
+      "ld_block": "EUR/1/21002467-22858108"
+    },
+    {
+      "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b",
+      "unique_study_id": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_2",
+      "snp": "1:22365104_A_C",
+      "file": "/local-scratch/projects/genotype-phenotype-map/test/data/study/gwas_upload/22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b//finemapped/EUR_1_101950949_2.tsv.gz",
+      "chr": "1",
+      "bp": 103534368,
+      "min_p": 3.4851e-18,
+      "ld_block": "EUR/1/21002467-22858108"
+    }
+  ]
+}

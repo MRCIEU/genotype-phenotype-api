@@ -48,6 +48,10 @@
                                     <p>
                                         <strong>Variant :</strong>
                                         <span x-text="`${getVariantData().display_snp}`"></span>
+                                        <br />
+                                        <span
+                                            x-text="`REF: ${getVariantData().oa} / ALT:${getVariantData().ea}`"
+                                        ></span>
                                     </p>
                                     <div class="is-divider" style="margin: 0"></div>
                                     <p><strong>Gene:</strong> <span x-text="getVariantData().symbol"></span></p>
@@ -84,24 +88,24 @@
                                     </p>
                                     <div class="is-divider" style="margin: 0"></div>
                                     <p>
-                                        <strong>EUR AF:</strong>
-                                        <span x-text="getVariantData().eur_af?.toFixed(2)"></span>
+                                        <strong>EUR EAF:</strong>
+                                        <span x-text="getVariantData().eur_af?.toFixed(3)"></span>
                                     </p>
                                     <p>
-                                        <strong>AFR AF:</strong>
-                                        <span x-text="getVariantData().afr_af?.toFixed(2)"></span>
+                                        <strong>AFR EAF:</strong>
+                                        <span x-text="getVariantData().afr_af?.toFixed(3)"></span>
                                     </p>
                                     <p>
-                                        <strong>EAS AF:</strong>
-                                        <span x-text="getVariantData().eas_af?.toFixed(2)"></span>
+                                        <strong>EAS EAF:</strong>
+                                        <span x-text="getVariantData().eas_af?.toFixed(3)"></span>
                                     </p>
                                     <p>
-                                        <strong>SAS AF:</strong>
-                                        <span x-text="getVariantData().sas_af?.toFixed(2)"></span>
+                                        <strong>SAS EAF:</strong>
+                                        <span x-text="getVariantData().sas_af?.toFixed(3)"></span>
                                     </p>
                                     <p>
-                                        <strong>AMR AF:</strong>
-                                        <span x-text="getVariantData().amr_af?.toFixed(2)"></span>
+                                        <strong>AMR EAF:</strong>
+                                        <span x-text="getVariantData().amr_af?.toFixed(3)"></span>
                                     </p>
                                 </div>
                             </div>

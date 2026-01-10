@@ -1,29 +1,29 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Request
+from fastapi import APIRouter, HTTPException, UploadFile, Request, Form, Query
 import traceback
 import uuid
 import os
 import hashlib
-import sentry_sdk
-
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
+
 from app.models.schemas import (
     ExtendedStudyExtraction,
     ExtendedUploadColocGroup,
     GwasUpload,
     ProcessGwasRequest,
     GwasStatus,
-    StudyDataType,
-    StudyExtraction,
-    TraitResponse,
+    UploadTraitResponse,
     UpdateGwasRequest,
     UploadStudyExtraction,
+    UploadColocPair,
     convert_duckdb_to_pydantic_model,
 )
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
+from app.services.gwas_upload_service import GwasUploadService
+from app.services.oci_service import OCIService
 
 settings = get_settings()
 router = APIRouter()
@@ -34,10 +34,14 @@ logger = get_logger(__name__)
 @router.post("", response_model=GwasUpload)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def upload_gwas(request: Request, request_body: ProcessGwasRequest, file: UploadFile):
+async def upload_gwas(request: Request, request_body_str: str = Form(..., alias="request"), file: UploadFile = None):
     try:
+        # Parse the request body from form data (JSON string)
+        # The ProcessGwasRequest model validator handles json.loads() internally
+        request_body = ProcessGwasRequest.model_validate(request_body_str)
+
         # redis = RedisClient()
-        # is_allowed, recent_uploads = redis.update_user_upload(request.email)
+        # is_allowed, recent_uploads = redis.update_user_upload(request_body.email)
         # if not is_allowed:
         #     raise HTTPException(
         #         status_code=429,
@@ -58,11 +62,15 @@ async def upload_gwas(request: Request, request_body: ProcessGwasRequest, file: 
 
         os.makedirs(os.path.join(settings.GWAS_DIR, file_guid), exist_ok=True)
         file_location = os.path.join(settings.GWAS_DIR, file_guid, file.filename)
+
+        bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
         os.rename(file_path, file_location)
+
+        oci_service = OCIService()
+        oci_service.upload_file(file_location, bucket_file_location)
 
         db = GwasDBClient()
         gwas = db.get_gwas_by_guid(file_guid)
-        # TODO: change this to FAILED once we are done testing
         if gwas is not None:
             gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
             if gwas.status == GwasStatus.COMPLETED:
@@ -79,7 +87,7 @@ async def upload_gwas(request: Request, request_body: ProcessGwasRequest, file: 
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         redis_json = {
-            "file_location": file_location,
+            "file_location": bucket_file_location,
             "metadata": request_body.model_dump(mode="json"),
         }
 
@@ -106,7 +114,8 @@ async def update_gwas(
 ):
     try:
         gwas_upload_db = GwasDBClient()
-        studies_db = StudiesDBClient()
+        gwas_upload_service = GwasUploadService()
+        # email_service = EmailService()
 
         gwas = gwas_upload_db.get_gwas_by_guid(guid)
         if gwas is None:
@@ -114,93 +123,30 @@ async def update_gwas(
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         if not update_gwas_request.success:
-            error_context = {
-                "guid": guid,
-                "failure_reason": update_gwas_request.failure_reason,
-                "user_email": gwas.email if hasattr(gwas, "email") else "unknown",
-            }
-
-            logger.error(
-                f"GWAS processing failed: {update_gwas_request.failure_reason}",
-                extra=error_context,
-            )
-
-            sentry_sdk.set_context("gwas_upload", error_context)
-            sentry_sdk.capture_message(
-                f"GWAS processing failed: {update_gwas_request.failure_reason}",
-                level="error",
-            )
-
-            gwas.status = GwasStatus.FAILED
-            gwas.failure_reason = update_gwas_request.failure_reason
-            updated_gwas = gwas_upload_db.update_gwas_status(guid, GwasStatus.FAILED)
-            updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
-            # email_service = EmailService()
+            updated_gwas = gwas_upload_service.update_gwas_failure(gwas, update_gwas_request)
             # await email_service.send_failure_email(gwas.email, guid)
             return updated_gwas
 
-        ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
-        existing_ld_blocks = studies_db.get_ld_blocks_by_ld_block(ld_blocks)
-
-        coloc_snps = [coloc.snp_id for coloc in update_gwas_request.coloc_groups]
-        coloc_snps = studies_db.get_variants_by_snp_strings(coloc_snps)
-
-        study_extractions_snps = [study_extractions.snp for study_extractions in update_gwas_request.study_extractions]
-        study_extractions_snps = studies_db.get_variants_by_snp_strings(study_extractions_snps)
-
-        for i, study in enumerate(update_gwas_request.study_extractions):
-            study.gwas_upload_id = gwas.id
-            study.snp_id = study_extractions_snps[i][0] if study_extractions_snps[i] else None
-            study.ld_block_id = existing_ld_blocks[i][0] if existing_ld_blocks[i] else None
-
-        study_extractions = gwas_upload_db.populate_study_extractions(update_gwas_request.study_extractions)
-        study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, study_extractions)
-
-        study_id_map = {study.unique_study_id: study for study in update_gwas_request.study_extractions}
-
-        unique_study_ids = [coloc.unique_study_id for coloc in update_gwas_request.coloc_results]
-        existing_study_extractions = studies_db.get_study_extractions_by_unique_study_id(unique_study_ids)
-        existing_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, existing_study_extractions)
-        for i, coloc in enumerate(update_gwas_request.coloc_results):
-            coloc.gwas_upload_id = gwas.id
-            coloc.snp_id = coloc_snps[i][0] if coloc_snps[i] else None
-
-            if coloc.unique_study_id in study_id_map:
-                upload_study_extraction = study_id_map.get(coloc.unique_study_id)
-                coloc.upload_study_extraction_id = upload_study_extraction.id
-                coloc.chr = upload_study_extraction.chr
-                coloc.bp = upload_study_extraction.bp
-                coloc.min_p = upload_study_extraction.min_p
-                coloc.ld_block = upload_study_extraction.ld_block
-            else:
-                coloc.existing_study_extraction_id = existing_study_extractions[i].id
-                coloc.study_id = existing_study_extractions[i].study_id
-                coloc.chr = existing_study_extractions[i].chr
-                coloc.bp = existing_study_extractions[i].bp
-                coloc.min_p = existing_study_extractions[i].min_p
-                coloc.ld_block = existing_study_extractions[i].ld_block
-                coloc.gene = existing_study_extractions[i].gene
-                coloc.gene_id = existing_study_extractions[i].gene_id
-
-        gwas_upload_db.populate_colocs(update_gwas_request.coloc_results)
-        updated_gwas = gwas_upload_db.update_gwas_status(guid, GwasStatus.COMPLETED)
-        updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
-
-        # email_service = EmailService()
+        updated_gwas = gwas_upload_service.update_gwas_success(gwas, update_gwas_request)
         # await email_service.send_results_email(gwas.email, guid)
 
         return updated_gwas
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_traceback = traceback.format_exc()
+        logger.error("Error: {error}\n{traceback}", error=str(e), traceback=error_traceback)
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n\n{error_traceback}")
 
 
-@router.get("/{guid}", response_model=TraitResponse)
+@router.get("/{guid}", response_model=UploadTraitResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_gwas(request: Request, guid: str):
+async def get_gwas(
+    request: Request,
+    guid: str,
+    include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
+) -> UploadTraitResponse:
     try:
         studies_db = StudiesDBClient()
         gwas_upload_db = GwasDBClient()
@@ -209,24 +155,29 @@ async def get_gwas(request: Request, guid: str):
             raise HTTPException(status_code=404, detail="GWAS not found")
 
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+        gwas.email = None
 
         if gwas.status != GwasStatus.COMPLETED:
-            return TraitResponse(
+            return UploadTraitResponse(
                 trait=gwas,
                 study_extractions=None,
                 upload_study_extractions=None,
-                colocs=None,
+                coloc_groups=None,
+                coloc_pairs=None,
+                rare_results=None,
             )
 
-        colocalisations = gwas_upload_db.get_colocs_by_gwas_upload_id(gwas.id)
-        colocalisations = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, colocalisations)
+        coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
+        coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
+        coloc_pairs = gwas_upload_db.get_coloc_pairs_by_gwas_upload_id(gwas.id)
+        coloc_pairs = convert_duckdb_to_pydantic_model(UploadColocPair, coloc_pairs)
 
         upload_study_extractions = gwas_upload_db.get_study_extractions_by_gwas_upload_id(gwas.id)
         upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
 
         existing_study_extraction_ids = [
             coloc.existing_study_extraction_id
-            for coloc in colocalisations
+            for coloc in coloc_groups
             if coloc.existing_study_extraction_id is not None
         ]
         existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
@@ -234,29 +185,13 @@ async def get_gwas(request: Request, guid: str):
             ExtendedStudyExtraction, existing_study_extractions
         )
 
-        for coloc in colocalisations:
-            if coloc.existing_study_extraction_id is not None:
-                existing_study_extraction = next(
-                    (se for se in existing_study_extractions if se.id == coloc.existing_study_extraction_id),
-                    None,
-                )
-
-                coloc.trait_name = existing_study_extraction.trait_name
-                coloc.trait_category = existing_study_extraction.trait_category
-                coloc.data_type = existing_study_extraction.data_type
-                coloc.tissue = existing_study_extraction.tissue
-                coloc.cis_trans = existing_study_extraction.cis_trans
-            else:
-                coloc.trait_name = gwas.name
-                coloc.data_type = StudyDataType.phenotype.name
-                coloc.tissue = None
-                coloc.cis_trans = None
-
-        return TraitResponse(
+        return UploadTraitResponse(
             trait=gwas,
             study_extractions=existing_study_extractions,
             upload_study_extractions=upload_study_extractions,
-            colocs=colocalisations,
+            coloc_groups=coloc_groups,
+            coloc_pairs=coloc_pairs,
+            rare_results=[],
         )
 
     except HTTPException as e:

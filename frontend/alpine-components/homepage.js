@@ -89,7 +89,6 @@ export default function homepage() {
         },
 
         goToItem(item) {
-            console.log(item);
             if (item.type === "trait") {
                 window.location.href = "trait.html?id=" + item.type_id;
             } else if (item.type === "gene") {
@@ -227,6 +226,7 @@ export default function homepage() {
 
         async uploadGWAS() {
             if (this.doesUploadDataHaveErrors()) {
+                console.log("Validation errors found:", this.uploadMetadata.validationErrors);
                 return;
             }
 
@@ -242,6 +242,7 @@ export default function homepage() {
                 should_be_added: !!this.uploadMetadata.formData.shouldBeAdded,
                 sample_size: this.uploadMetadata.formData.sampleSize,
                 ancestry: this.uploadMetadata.formData.ancestry,
+                p_value_threshold: this.uploadMetadata.formData.pValueThreshold,
                 column_names: {
                     CHR: this.uploadMetadata.formData.chr,
                     BP: this.uploadMetadata.formData.bp,
@@ -262,20 +263,24 @@ export default function homepage() {
             formData.append("request", JSON.stringify(gwasRequest));
 
             try {
-                const response = await fetch(constants.apiUrl + "/gwas/", {
+                const response = await fetch(constants.apiUrl + "/gwas", {
                     method: "POST",
                     body: formData,
                 });
 
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Upload failed:", response.status, errorText);
                     this.openPostUploadModal(false);
                 } else {
                     const result = await response.json();
                     this.openPostUploadModal(true, result);
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Upload error:", error);
                 this.openPostUploadModal(false);
+            } finally {
+                this.uploadMetadata.currentlyUploading = false;
             }
         },
 

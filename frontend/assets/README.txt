@@ -1,10 +1,14 @@
 Data Export
 
 
-Files included:
-- coloc.tsv: Colocalization results
+Files may include:
+- coloc_groups.tsv: Clustered colocalization results
+- coloc_pairs.tsv: Pairwise colocalization results
 - rare.tsv: Rare variant results  
+- trait.tsv: High level information about the trait
+- gene.tsv: High level information about the gene
 - study_extractions.tsv: Study extraction data
+- upload_study_extractions.tsv: additional upload specific study extraction data
 - README.txt: This file
 
 Column descriptions:

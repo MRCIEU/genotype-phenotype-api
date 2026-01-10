@@ -10,7 +10,14 @@ services:
           - node.labels.type == api
       restart_policy:
         condition: on-failure
-    command: redis-server --save 60 1 --loglevel warning --dir /home/opc/gpmap_data/redis --dbfilename redis.rdb
+    command: >
+      redis-server
+        --save 60 1
+        --bind 0.0.0.0
+        --loglevel warning
+        --dir /home/opc/gpmap_data/redis
+        --protected-mode no
+        --dbfilename redis.rdb
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -26,12 +33,13 @@ services:
 
   api:
     image: mrcieu/genotype-phenotype-api:latest
+    user: "opc:opc"
     deploy:
       placement:
         constraints:
           - node.labels.type == api
-    restart_policy:
-      condition: on-failure
+      restart_policy:
+        condition: on-failure
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     healthcheck:
@@ -42,6 +50,7 @@ services:
       start_period: 30s
     volumes:
       - api_volume:/home/opc/gpmap_data
+      - oci_credentials_volume:/home/opc/.oci
     networks:
       - gpmap_network
     ports:
@@ -81,7 +90,8 @@ services:
     command: renew --webroot --webroot-path=/var/www/certbot
 
   gwas_upload_worker:
-    image: mrcieu/genotype-phenotype-map:latest
+    image: mrcieu/genotype-phenotype-upload:latest
+    user: "opc:opc"
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
     deploy:
@@ -92,6 +102,7 @@ services:
         condition: on-failure
     volumes:
       - upload_volume:/oradiskvdb1
+      - oci_credentials_volume:/home/opc/.oci
     env_file:
       - .env.pipeline_worker
     networks:
@@ -111,6 +122,13 @@ volumes:
     driver_opts:
       type: none
       device: /home/opc/gpmap_data/
+      o: bind
+  
+  oci_credentials_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/opc/.oci
       o: bind
 
 networks:

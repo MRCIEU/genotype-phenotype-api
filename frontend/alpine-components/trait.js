@@ -59,7 +59,7 @@ export default function trait() {
                 this.data = await response.json();
                 await this.getSvgData(traitId);
 
-                document.title = "GP Map: " + this.data.trait.trait_name;
+                document.title = "GP Map: " + (this.userUpload ? this.data.trait.name : this.data.trait.trait_name);
 
                 this.transformDataForGraphs();
             } catch (error) {
@@ -120,6 +120,7 @@ export default function trait() {
             const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
 
             this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
+                if (this.userUpload) return true;
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
                     (graphOptions.includeTrans ? true : coloc.cis_trans !== "trans") &&
@@ -154,13 +155,15 @@ export default function trait() {
                 this.filteredData.coloc_groups,
                 "trait",
                 this.data.trait.id,
-                this.displayFilters
+                this.displayFilters,
+                this.userUpload
             );
             this.filteredData.groupedRare = graphTransformations.groupBySnp(
                 this.filteredData.rare,
                 "trait",
                 this.data.trait.id,
-                this.displayFilters
+                this.displayFilters,
+                this.userUpload
             );
 
             const allFilteredData = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
@@ -168,6 +171,14 @@ export default function trait() {
         },
 
         async getSvgData(traitId) {
+            if (this.userUpload) {
+                this.svgs = {
+                    metadata: null,
+                    full: null,
+                    chromosomes: {},
+                };
+                return;
+            }
             if (constants.isLocal) {
                 const minP = this.data.coloc_groups.reduce((min, se) => Math.min(min, se.min_p), Infinity);
                 traitId = minP < 1e-10 ? "gwas" : "short_gwas";
@@ -203,12 +214,12 @@ export default function trait() {
         },
 
         async downloadData() {
-            await downloads.downloadDataToZip(this.data, this.data.trait.trait_name);
+            await downloads.downloadDataToZip(this.data, this.data.trait.trait_name || this.data.trait.name);
             this.downloadClicked = true;
         },
 
         get showResults() {
-            if (this.userUpload) return this.data.trait.status === "completed";
+            if (this.userUpload) return this.data && this.data.trait.status === "completed";
             return true;
         },
 
@@ -230,15 +241,20 @@ export default function trait() {
 
         get getSampleSizes() {
             if (this.data === null) return "...";
-            let sampleSizes = {
+            if (this.userUpload) {
+                return {
+                    common: this.data.trait.sample_size.toLocaleString(),
+                    rare: null,
+                };
+            }
+            return {
                 common: this.data.trait.common_study.sample_size.toLocaleString(),
                 rare: this.data.trait.rare_study ? this.data.trait.rare_study.sample_size.toLocaleString() : null,
             };
-            return sampleSizes;
         },
 
         get getStudySourceLink() {
-            if (this.data === null) return null;
+            if (this.data === null || this.userUpload || !this.data.trait.trait) return null;
             const traitForUrl = this.data.trait.trait.replace(/-/g, (match, offset) => {
                 // Count dashes before current position
                 const dashesBefore = (this.data.trait.trait.substring(0, offset).match(/-/g) || []).length;
@@ -285,7 +301,8 @@ export default function trait() {
                 tableData,
                 "trait",
                 this.data.trait.id,
-                this.displayFilters
+                this.displayFilters,
+                this.userUpload
             );
 
             // If a SNP is selected, reorder so that its group appears first
@@ -303,7 +320,7 @@ export default function trait() {
         },
 
         get doRareResultsExist() {
-            return this.data && this.data.trait.rare_study !== null;
+            return this.data && this.data.trait.rare_study;
         },
 
         get getDataForRareTable() {
@@ -320,7 +337,8 @@ export default function trait() {
                 tableData,
                 "trait",
                 this.data.trait.id,
-                this.displayFilters
+                this.displayFilters,
+                this.userUpload
             );
 
             // If a SNP is selected, reorder so that its group appears first
@@ -339,6 +357,7 @@ export default function trait() {
 
         initTraitGraph() {
             this.filterDataForGraphs();
+            if (this.userUpload) return;
             const chartContainer = document.getElementById("trait-chart");
             graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getTraitGraph());
         },

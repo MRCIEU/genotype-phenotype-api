@@ -59,7 +59,7 @@ services:
       - all
 
   gwas_upload_worker:
-    image: mrcieu/genotype-phenotype-map:latest
+    image: mrcieu/genotype-phenotype-upload:latest
     working_dir: /home/pipeline
     volumes:
       - ./tests/test_data/gwas_upload:/workspace/tests/test_data/gwas_upload

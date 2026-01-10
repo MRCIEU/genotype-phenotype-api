@@ -3,33 +3,22 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 import json
+from app.models.schemas import GwasStatus, UploadTraitResponse, GwasUpload
 
 client = TestClient(app)
 
 guid = None
 
-# TODO: Uncomment once you get around to fixing GWAS upload
 
-# @pytest.fixture(autouse=True)
-# def setup_db():
-#     gwas_db = GwasDBClient()
-#     with gwas_db.connect() as conn:
-#         conn.execute("DELETE FROM gwas_upload")
-#         conn.execute("DELETE FROM study_extractions")
-#         conn.execute("DELETE FROM colocalisations")
-
-# @pytest.fixture(scope="module")
-# def mock_redis_client(module_mocker):
-#     mock = module_mocker.patch('app.db.redis.RedisClient')
-#     mock_instance = Mock()
-#     mock_instance.add_to_queue.return_value = None
-#     mock_instance.process_gwas_queue = "process_gwas"
-#     mock.return_value = mock_instance
-#     return mock_instance
+# Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
+@pytest.fixture(scope="module", autouse=True)
+def test_remove_all_data():
+    yield
+    system("git checkout tests/test_data/gwas_upload_small.db")
 
 
 @pytest.fixture(scope="module")
-def test_guid():
+def test_guid(mock_redis, mock_oci_service):
     with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         request_data = {
             "reference_build": "GRCh38",
@@ -41,6 +30,7 @@ def test_guid():
             "should_be_added": "false",
             "sample_size": "23423",
             "ancestry": "EUR",
+            "p_value_threshold": 1.5e-4,
             "column_names": {
                 "chr": "CHR",
                 "bp": "BP",
@@ -62,17 +52,13 @@ def test_guid():
             files={"file": f},
         )
 
+    print(response.json())
     assert response.status_code == 200
     assert "guid" in response.json()
-    # mock_redis_client.add_to_queue.assert_called_once()
+    mock_redis.lpush.assert_called_once()
+    # Verify OCI service was called to upload the file
+    mock_oci_service.upload_file.assert_called_once()
     return response.json()["guid"]
-
-
-# Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
-@pytest.fixture(scope="module", autouse=True)
-def test_remove_all_data():
-    yield
-    system("git checkout tests/test_data/gwas_upload_small.db")
 
 
 def test_get_gwas_not_found():
@@ -80,30 +66,47 @@ def test_get_gwas_not_found():
     assert response.status_code == 404
 
 
-# def test_put_gwas(test_guid):
-#     with open('tests/test_data/update_gwas_payload.json', 'rb') as update_gwas_payload:
-#         update_gwas_payload = json.load(update_gwas_payload)
-#         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
+def test_put_gwas_failure(test_guid):
+    with open("tests/test_data/update_gwas_failure_payload.json", "rb") as update_gwas_payload:
+        update_gwas_payload = json.load(update_gwas_payload)
+        response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
 
-#     assert response.status_code == 200
-#     assert response.json()['status'] == GwasStatus.COMPLETED.value
+    print(response.json())
+    assert response.status_code == 200
+    assert response.json()["status"] == GwasStatus.FAILED.value
 
 
 def test_put_gwas_not_found():
-    with open("tests/test_data/update_gwas_payload.json", "rb") as update_gwas_payload:
+    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put("/v1/gwas/bad-guid", json=update_gwas_payload)
 
     assert response.status_code == 404
 
 
-# def test_get_gwas(test_guid):
-#     response = client.get(f"/v1/gwas/{test_guid}")
-#     assert response.status_code == 200
+def test_put_gwas_success(test_guid):
+    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
+        update_gwas_payload = json.load(update_gwas_payload)
+        response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
 
-#     gwas_model = TraitResponse(**response.json())
-#     assert gwas_model.trait.guid == test_guid
-#     assert gwas_model.trait.status == GwasStatus.COMPLETED
-#     assert len(gwas_model.study_extractions) > 1
-#     assert len(gwas_model.upload_study_extractions) > 1
-#     assert len(gwas_model.colocs) > 1
+    print(response.json())
+    assert response.status_code == 200
+    gwas_model = GwasUpload(**response.json())
+    assert gwas_model.status == GwasStatus.COMPLETED
+
+
+def test_get_gwas(test_guid):
+    response = client.get(f"/v1/gwas/{test_guid}")
+    print(response.json())
+    assert response.status_code == 200
+
+    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
+        update_gwas_payload = json.load(update_gwas_payload)
+
+    gwas_model = UploadTraitResponse(**response.json())
+    assert gwas_model.trait.guid == test_guid
+    assert gwas_model.trait.status == GwasStatus.COMPLETED
+    assert len(gwas_model.coloc_groups) == len(update_gwas_payload["coloc_groups"])
+    assert len(gwas_model.coloc_pairs) == len(update_gwas_payload["coloc_pairs"])
+    assert len(gwas_model.study_extractions) >= 1
+    assert len(gwas_model.upload_study_extractions) >= 1
