@@ -13,11 +13,20 @@ settings = get_settings()
 logger = get_logger(__name__)
 
 
-class OCIService:
+class OCIServiceSingleton:
     """
-    -  config recreated
-    - make this a singleton
-    -
+    Avoid having to recreate the signer and client on each call
+    """
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = _OCIService()
+        return cls._instance
+
+
+class _OCIService:
+    """
     Service for interacting with Oracle Cloud Infrastructure (OCI) Object Storage.
     Handles file uploads, downloads, deletions, and other bucket operations.
     """
@@ -25,7 +34,9 @@ class OCIService:
     def __init__(self):
         """
         Initialize OCI Object Storage client.
-        Uses OCI config file at ~/.oci/config or environment variables for authentication.
+
+        Uses an Oracle policy which allows all instances in a dynamic group to access resources in a given
+        compartment. In this case, all gpmap instances can read from the gpmap bucket.
         """
         self.bucket_name = settings.OCI_BUCKET_NAME
         self.namespace = settings.OCI_NAMESPACE
