@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 from app.config import get_settings
 from app.logging_config import get_logger
+from app.models.schemas import Singleton
 import os
 import io
 import zipfile
@@ -13,19 +14,7 @@ settings = get_settings()
 logger = get_logger(__name__)
 
 
-class OCIServiceSingleton:
-    """
-    Avoid having to recreate the signer and client on each call
-    """
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = _OCIService()
-        return cls._instance
-
-
-class _OCIService:
+class OCIService(metaclass=Singleton):
     """
     Service for interacting with Oracle Cloud Infrastructure (OCI) Object Storage.
     Handles file uploads, downloads, deletions, and other bucket operations.
@@ -43,10 +32,7 @@ class _OCIService:
 
         try:
             signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
-            self.object_storage_client = oci.object_storage.ObjectStorageClient(
-                config={},
-                signer=signer
-            )
+            self.object_storage_client = oci.object_storage.ObjectStorageClient(config={}, signer=signer)
             self.region = signer.region
         except Exception as e:
             logger.error(f"Failed to initialize OCI client: {e}")

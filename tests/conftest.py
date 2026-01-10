@@ -116,7 +116,7 @@ def mock_oci_service():
     mock_oci_service_instance.region = "us-ashburn-1"
 
     with (
-        patch("app.api.v1.endpoints.gwas.OCIServiceSingleton", return_value=mock_oci_service_instance),
-        patch("app.services.oci_service.OCIServiceSingleton", return_value=mock_oci_service_instance),
+        patch("app.api.v1.endpoints.gwas.OCIService", return_value=mock_oci_service_instance),
+        patch("app.services.oci_service.OCIService", return_value=mock_oci_service_instance),
     ):
         yield mock_oci_service_instance
