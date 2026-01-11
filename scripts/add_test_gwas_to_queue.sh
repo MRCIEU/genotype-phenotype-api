@@ -29,3 +29,9 @@ JSON_PAYLOAD='{
 }'
 
 curl -X POST http://127.0.0.1:8000/v1/internal/gwas-queue/add -H "Content-Type: application/json" -d "$JSON_PAYLOAD"
+
+#Delete specific GWAS upload
+#curl -X DELETE http://127.0.0.1:8000/v1/internal/gwas/c32e8a74-818a-0f0f-8ebf-4cc5097e6ad4
+
+#Clear GWAS dead letter queue
+#curl -X DELETE http://127.0.0.1:8000/v1/internal/gwas-dlq
