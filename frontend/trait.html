@@ -171,12 +171,36 @@
                                 <a href="data.html#data-availability" target="_blank">click here</a>
                             </span>
                             <button
+                                x-show="!userUpload"
                                 id="download-data"
                                 class="button is-success is-small mt-0 mb-0"
-                                @click="downloadData"
+                                @click="downloadDataOnly"
                             >
                                 Download Data
                             </button>
+                            <div
+                                class="dropdown is-right"
+                                x-show="userUpload"
+                                x-data="{ open: false }"
+                                :class="{ 'is-active': open }"
+                                style="display: inline-block"
+                            >
+                                <div class="dropdown-trigger">
+                                    <button class="button is-success is-small" @click="open = !open" :disabled="!data">
+                                        <span>Download Data</span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu">
+                                    <div class="dropdown-content">
+                                        <a class="dropdown-item" @click="downloadDataOnly(); open = false;">
+                                            Download Data Only
+                                        </a>
+                                        <a class="dropdown-item" @click="downloadDataAndGWAS(); open = false;">
+                                            Download Data + GWAS
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

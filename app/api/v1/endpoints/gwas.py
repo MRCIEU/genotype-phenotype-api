@@ -150,6 +150,7 @@ async def get_gwas(
     try:
         studies_db = StudiesDBClient()
         gwas_upload_db = GwasDBClient()
+
         gwas = gwas_upload_db.get_gwas_by_guid(guid)
         if gwas is None:
             raise HTTPException(status_code=404, detail="GWAS not found")
@@ -158,14 +159,7 @@ async def get_gwas(
         gwas.email = None
 
         if gwas.status != GwasStatus.COMPLETED:
-            return UploadTraitResponse(
-                trait=gwas,
-                study_extractions=None,
-                upload_study_extractions=None,
-                coloc_groups=None,
-                coloc_pairs=None,
-                rare_results=None,
-            )
+            return UploadTraitResponse(trait=gwas)
 
         coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
         coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
@@ -198,4 +192,21 @@ async def get_gwas(
         raise e
     except Exception as e:
         logger.error(f"Error in get_gwas: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{guid}/summary-stats", response_model=str)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def get_gwas_summary_stats(
+    request: Request,
+    guid: str,
+):
+    try:
+        oci_service = OCIService()
+        return oci_service.get_file_url(f"gwas_upload/{guid}/gwas_with_lbfs.tsv.gz")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in get_gwas_summary_stats: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

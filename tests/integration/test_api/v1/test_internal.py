@@ -207,3 +207,16 @@ def test_add_to_gwas_queue_exception(mock_redis_client):
             response = client.post("/v1/internal/gwas-queue/add", json=test_message)
 
             assert response.status_code == 500
+
+
+def test_delete_gwas_success(mock_oci_service):
+    """Test successfully deleting a GWAS upload."""
+    guid = "test-guid-123"
+
+    with patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service):
+        response = client.delete(f"/v1/internal/gwas/{guid}")
+
+        assert response.status_code == 200
+        assert (
+            f"Successfully deleted GWAS upload with GUID {guid} and all associated data" in response.json()["message"]
+        )

@@ -23,7 +23,7 @@ export default function homepage() {
                 studyType: "continuous",
                 ancestry: "EUR",
                 pValueIndex: 7,
-                pValue: 0.00000005,
+                pValueThreshold: 0.00000005,
                 pValueOptions: [
                     0.00015, // 1.5e-4
                     0.00005, // 5e-5

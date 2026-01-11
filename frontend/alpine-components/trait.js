@@ -213,9 +213,30 @@ export default function trait() {
             }
         },
 
-        async downloadData() {
+        async downloadDataOnly() {
             await downloads.downloadDataToZip(this.data, this.data.trait.trait_name || this.data.trait.name);
             this.downloadClicked = true;
+        },
+
+        async downloadDataAndGWAS() {
+            if (this.userUpload) {
+                let traitId = new URLSearchParams(location.search).get("id");
+                try {
+                    await this.downloadDataOnly();
+                    const response = await fetch(constants.apiUrl + "/gwas/" + traitId + "/summary-stats");
+                    if (!response.ok) {
+                        this.errorMessage = `Failed to get summary stats: ${response.status} ${response.statusText}`;
+                        return;
+                    }
+                    const downloadUrl = await response.text();
+                    if (downloadUrl) {
+                        downloads.downloadFile(downloadUrl);
+                    }
+                } catch (error) {
+                    console.error("Error downloading GWAS data:", error);
+                    this.errorMessage = "Error initiating download. Please try again.";
+                }
+            }
         },
 
         get showResults() {

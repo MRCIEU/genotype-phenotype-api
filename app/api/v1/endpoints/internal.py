@@ -1,6 +1,8 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Request, Path
 
+from app.db.gwas_db import GwasDBClient
+from app.services.oci_service import OCIService
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
@@ -141,4 +143,27 @@ async def add_to_gwas_queue(request: Request, message: dict):
         raise e
     except Exception as e:
         logger.error(f"Error in add_to_gwas_queue: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/gwas/{guid}", response_model=dict, include_in_schema=False)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def delete_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to delete")):
+    """
+    Delete a GWAS upload by GUID.
+    Deletes associated files from OCI and entries from the database.
+    """
+    try:
+        oci_service = OCIService()
+        gwas_db = GwasDBClient()
+
+        oci_service.delete_prefix(f"gwas_upload/{guid}/")
+        gwas_db.delete_gwas_upload(guid)
+
+        return {"message": f"Successfully deleted GWAS upload with GUID {guid} and all associated data"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in delete_gwas: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
