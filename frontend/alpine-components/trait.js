@@ -228,7 +228,7 @@ export default function trait() {
                         this.errorMessage = `Failed to get summary stats: ${response.status} ${response.statusText}`;
                         return;
                     }
-                    const downloadUrl = await response.text();
+                    const downloadUrl = await response.json();
                     if (downloadUrl) {
                         downloads.downloadFile(downloadUrl);
                     }
