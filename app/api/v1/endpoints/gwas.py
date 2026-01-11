@@ -8,7 +8,7 @@ from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
-
+from app.services.email_service import EmailService
 from app.models.schemas import (
     ExtendedStudyExtraction,
     ExtendedUploadColocGroup,
@@ -47,6 +47,7 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         #         status_code=429,
         #         detail=f"Too many upload attempts (limit 100/day). Current uploads in last 24h: {recent_uploads}"
         #     )
+
 
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
@@ -115,7 +116,7 @@ async def update_gwas(
     try:
         gwas_upload_db = GwasDBClient()
         gwas_upload_service = GwasUploadService()
-        # email_service = EmailService()
+        email_service = EmailService()
 
         gwas = gwas_upload_db.get_gwas_by_guid(guid)
         if gwas is None:
@@ -124,11 +125,11 @@ async def update_gwas(
 
         if not update_gwas_request.success:
             updated_gwas = gwas_upload_service.update_gwas_failure(gwas, update_gwas_request)
-            # await email_service.send_failure_email(gwas.email, guid)
+            await email_service.send_failure_email(gwas.email, guid)
             return updated_gwas
 
         updated_gwas = gwas_upload_service.update_gwas_success(gwas, update_gwas_request)
-        # await email_service.send_results_email(gwas.email, guid)
+        await email_service.send_results_email(gwas.email, guid)
 
         return updated_gwas
     except HTTPException as e:

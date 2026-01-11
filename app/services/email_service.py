@@ -10,7 +10,7 @@ class EmailService:
     def __init__(self):
         self.from_email = settings.EMAIL_FROM
         self.contact_email = settings.EMAIL_FROM
-        self.contact_url = f"{settings.WEBSITE_URL}/contact"
+        self.contact_url = f"{settings.WEBSITE_URL}/contact.html"
 
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.EMAIL_USERNAME,
@@ -69,4 +69,27 @@ class EmailService:
             await fm.send_message(msg)
         except Exception as e:
             logger.error(f"Failed to send results email: {e}")
+            raise
+
+
+    async def send_failure_email(self, to_email: EmailStr, guid: str) -> None:
+        """
+        Send an email notification that the GWAS upload failed.
+        """
+        subject = "Your Genotype-Phenotype Map Upload Failed"
+        html = f"""
+        <html>
+        <body>
+            <p>Sorry, your Genotype-Phenotype Map upload failed. Please try again.</p>
+            <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
+            <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
+        </body>
+        </html>
+        """
+        msg = MessageSchema(subject=subject, recipients=[to_email], body=html, subtype="html")
+        fm = FastMail(self.conf)
+        try:
+            await fm.send_message(msg)
+        except Exception as e:
+            logger.error(f"Failed to send failure email: {e}")
             raise
