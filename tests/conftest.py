@@ -99,6 +99,15 @@ def mock_redis_cache():
 
 
 @pytest.fixture(scope="module", autouse=True)
+def mock_email_service():
+    """Mock Email Service for all tests - stubs all email operations"""
+    mock_email_service_instance = Mock()
+    mock_email_service_instance.send_failure_email.return_value = None
+    mock_email_service_instance.send_results_email.return_value = None
+    with patch("app.services.email_service.EmailService", return_value=mock_email_service_instance):
+        yield mock_email_service_instance
+
+@pytest.fixture(scope="module", autouse=True)
 def mock_oci_service():
     """Mock OCI Service for all tests - stubs all OCI Object Storage operations"""
 

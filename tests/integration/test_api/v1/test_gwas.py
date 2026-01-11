@@ -56,7 +56,6 @@ def test_guid(mock_redis, mock_oci_service):
     assert response.status_code == 200
     assert "guid" in response.json()
     mock_redis.lpush.assert_called_once()
-    # Verify OCI service was called to upload the file
     mock_oci_service.upload_file.assert_called_once()
     return response.json()["guid"]
 
@@ -66,7 +65,7 @@ def test_get_gwas_not_found():
     assert response.status_code == 404
 
 
-def test_put_gwas_failure(test_guid):
+def test_put_gwas_failure(test_guid, mock_email_service):
     with open("tests/test_data/update_gwas_failure_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
@@ -74,6 +73,7 @@ def test_put_gwas_failure(test_guid):
     print(response.json())
     assert response.status_code == 200
     assert response.json()["status"] == GwasStatus.FAILED.value
+    mock_email_service.send_failure_email.assert_called_once()
 
 
 def test_put_gwas_not_found():
@@ -84,7 +84,7 @@ def test_put_gwas_not_found():
     assert response.status_code == 404
 
 
-def test_put_gwas_success(test_guid):
+def test_put_gwas_success(test_guid, mock_email_service):
     with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
@@ -106,6 +106,7 @@ def test_get_gwas(test_guid):
     gwas_model = UploadTraitResponse(**response.json())
     assert gwas_model.trait.guid == test_guid
     assert gwas_model.trait.status == GwasStatus.COMPLETED
+    mock_email_service.send_results_email.assert_called_once()
     assert len(gwas_model.coloc_groups) == len(update_gwas_payload["coloc_groups"])
     assert len(gwas_model.coloc_pairs) == len(update_gwas_payload["coloc_pairs"])
     assert len(gwas_model.study_extractions) >= 1
