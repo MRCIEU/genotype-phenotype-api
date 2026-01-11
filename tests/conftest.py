@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from app.models.schemas import Singleton
 
 variant_data = {
@@ -102,9 +102,13 @@ def mock_redis_cache():
 def mock_email_service():
     """Mock Email Service for all tests - stubs all email operations"""
     mock_email_service_instance = Mock()
-    mock_email_service_instance.send_failure_email.return_value = None
-    mock_email_service_instance.send_results_email.return_value = None
-    with patch("app.services.email_service.EmailService", return_value=mock_email_service_instance):
+    mock_email_service_instance.send_failure_email = AsyncMock(return_value=None)
+    mock_email_service_instance.send_results_email = AsyncMock(return_value=None)
+    with (
+        patch("app.api.v1.endpoints.gwas.EmailService", return_value=mock_email_service_instance),
+        patch("app.api.v1.endpoints.info.EmailService", return_value=mock_email_service_instance),
+        patch("app.services.email_service.EmailService", return_value=mock_email_service_instance),
+    ):
         yield mock_email_service_instance
 
 @pytest.fixture(scope="module", autouse=True)
