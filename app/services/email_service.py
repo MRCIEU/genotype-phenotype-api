@@ -71,7 +71,6 @@ class EmailService:
             logger.error(f"Failed to send results email: {e}")
             raise
 
-
     async def send_failure_email(self, to_email: EmailStr, guid: str) -> None:
         """
         Send an email notification that the GWAS upload failed.

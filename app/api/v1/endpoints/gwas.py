@@ -48,7 +48,6 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         #         detail=f"Too many upload attempts (limit 100/day). Current uploads in last 24h: {recent_uploads}"
         #     )
 
-
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -160,7 +159,12 @@ async def get_gwas(
         gwas.email = None
 
         if gwas.status != GwasStatus.COMPLETED:
-            return UploadTraitResponse(trait=gwas)
+            queue_position = None
+            if gwas.status == GwasStatus.PROCESSING:
+                redis_client = RedisClient()
+                queue_position = redis_client.get_queue_position(redis_client.process_gwas_queue, guid)
+
+            return UploadTraitResponse(trait=gwas, queue_position=queue_position)
 
         coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
         coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)

@@ -65,6 +65,17 @@ def test_get_gwas_not_found():
     assert response.status_code == 404
 
 
+def test_get_gwas_processing(test_guid, mock_redis):
+    mock_redis.lrange.return_value = [json.dumps({"metadata": {"guid": test_guid}})]
+
+    response = client.get(f"/v1/gwas/{test_guid}")
+    assert response.status_code == 200
+    print(response.json())
+
+    gwas_model = UploadTraitResponse(**response.json())
+    assert gwas_model.queue_position == 1
+
+
 def test_put_gwas_failure(test_guid, mock_email_service):
     with open("tests/test_data/update_gwas_failure_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)

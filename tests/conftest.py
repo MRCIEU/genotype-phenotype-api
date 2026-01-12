@@ -111,6 +111,7 @@ def mock_email_service():
     ):
         yield mock_email_service_instance
 
+
 @pytest.fixture(scope="module", autouse=True)
 def mock_oci_service():
     """Mock OCI Service for all tests - stubs all OCI Object Storage operations"""

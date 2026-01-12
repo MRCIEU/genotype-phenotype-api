@@ -22,11 +22,11 @@ export default function homepage() {
             formData: {
                 studyType: "continuous",
                 ancestry: "EUR",
-                pValueIndex: 7,
+                pValueIndex: 5,
                 pValueThreshold: 0.00000005,
                 pValueOptions: [
-                    0.00015, // 1.5e-4
-                    0.00005, // 5e-5
+                    // 0.00015, // 1.5e-4
+                    // 0.00005, // 5e-5
                     0.00001, // 1e-5
                     0.000005, // 5e-6
                     0.000001, // 1e-6

@@ -14,7 +14,7 @@ mv /home/opc/gpmap_data/db/associations_backup.db /home/opc/gpmap_data/db/associ
 mv /home/opc/gpmap_data/db/ld.db /home/opc/gpmap_data/db/ld_new.db
 mv /home/opc/gpmap_data/db/ld_backup.db /home/opc/gpmap_data/db/ld.db
 
-sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune
+sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune --detach=true
 
 echo "Refreshing cache"
 sleep 5

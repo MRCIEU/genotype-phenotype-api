@@ -435,6 +435,7 @@ class UploadTraitResponse(BaseModel):
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
     rare_results: Optional[List[RareResult]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
+    queue_position: Optional[int] = None
 
 
 class GwasStatus(Enum):
@@ -542,6 +543,7 @@ class GwasUpload(BaseModel):
     is_published: bool
     doi: str
     should_be_added: bool
+    upload_metadata: str
     status: GwasStatus
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None

@@ -2,7 +2,7 @@ from typing import List
 import duckdb
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
-
+import json
 from app.config import get_settings
 from app.models.schemas import (
     GwasStatus,
@@ -152,6 +152,7 @@ class GwasDBClient:
 
     @log_performance
     def create_gwas_upload(self, gwas_request: ProcessGwasRequest):
+        upload_metadata = json.dumps(gwas_request.model_dump(mode="json"))
         conn = self.connect()
         try:
             result = conn.execute(f"""INSERT INTO gwas_upload (
@@ -164,6 +165,7 @@ class GwasDBClient:
                 is_published,
                 doi,
                 should_be_added,
+                upload_metadata,
                 status
             ) VALUES (
                 '{gwas_request.guid}',
@@ -175,6 +177,7 @@ class GwasDBClient:
                 {gwas_request.is_published},
                 '{gwas_request.doi}',
                 {gwas_request.should_be_added},
+                '{upload_metadata}',
                 '{gwas_request.status.value}'
             ) RETURNING *""").fetchone()
             conn.commit()

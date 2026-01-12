@@ -317,3 +317,25 @@ class RedisClient(metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error tracking user upload: {e}")
             return True, 0  # Default to allowing upload if Redis fails
+
+    def get_queue_position(self, queue_name: str, guid: str) -> Optional[int]:
+        """
+        Find the position of a message with the given GUID in the queue.
+        Returns 1-based position if found, None otherwise.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        try:
+            messages = self.redis.lrange(queue_name, 0, -1)
+            for i, message in enumerate(messages):
+                try:
+                    data = json.loads(message)
+                    if data.get("metadata", {}).get("guid") == guid:
+                        return i + 1
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    continue
+            return None
+        except Exception as e:
+            logger.error(f"Error getting queue position for {guid}: {e}")
+            return None

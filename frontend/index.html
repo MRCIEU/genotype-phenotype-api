@@ -299,7 +299,7 @@
                                                         @input="uploadMetadata.formData.pValueThreshold = uploadMetadata.formData.pValueOptions[uploadMetadata.formData.pValueIndex]"
                                                         step="1"
                                                         min="0"
-                                                        max="7"
+                                                        :max="uploadMetadata.formData.pValueOptions.length - 1"
                                                     />
                                                     <p class="is-size-7">
                                                         Only LD Regions with variants with a p-value less than this
