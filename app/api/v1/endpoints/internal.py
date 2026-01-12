@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Request, Path
 
 from app.db.gwas_db import GwasDBClient
 from app.services.oci_service import OCIService
+from app.models.schemas import convert_duckdb_to_pydantic_model, GwasUpload
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
