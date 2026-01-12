@@ -97,9 +97,9 @@ async def retry_all_gwas_dlq(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/gwas/rerun/{guid}", response_model=dict, include_in_schema=False)
+@router.post("/gwas-queue/rerun/{guid}", response_model=dict, include_in_schema=False)
 @time_endpoint
-async def rerun_gwas(request: Request):
+async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to rerun")):
     """
     Rerun a GWAS upload by GUID.
     """
