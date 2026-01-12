@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import duckdb
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -190,15 +190,16 @@ class GwasDBClient:
         conn = self.connect()
         try:
             conn.execute(
-                f"DELETE FROM coloc_groups WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = '{guid}')"
+                "DELETE FROM coloc_groups WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = ?)", [guid]
             )
             conn.execute(
-                f"DELETE FROM coloc_pairs WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = '{guid}')"
+                "DELETE FROM coloc_pairs WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = ?)", [guid]
             )
             conn.execute(
-                f"DELETE FROM study_extractions WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = '{guid}')"
+                "DELETE FROM study_extractions WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = ?)",
+                [guid],
             )
-            conn.execute(f"DELETE FROM gwas_upload WHERE guid = '{guid}'")
+            conn.execute("DELETE FROM gwas_upload WHERE guid = ?", [guid])
             conn.commit()
         finally:
             conn.close()
@@ -271,15 +272,19 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
-    def update_gwas_status(self, guid: str, status: GwasStatus):
+    def update_gwas_status(self, guid: str, status: GwasStatus, failure_reason: Optional[str] = None):
         conn = self.connect()
         try:
             conn.execute(
-                f"UPDATE gwas_upload SET status = '{status.value}', updated_at = CURRENT_TIMESTAMP WHERE guid = '{guid}'"
+                "UPDATE gwas_upload SET status = ?, failure_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE guid = ?",
+                [status.value, failure_reason, guid],
             )
             conn.commit()
 
-            result = conn.execute(f"SELECT * FROM gwas_upload WHERE guid = '{guid}'")
+            result = conn.execute(
+                "SELECT id, guid, email, name, sample_size, ancestry, category, is_published, doi, should_be_added, upload_metadata, status, failure_reason, created_at, updated_at FROM gwas_upload WHERE guid = ?",
+                [guid],
+            )
             return result.fetchone()
         finally:
             conn.close()

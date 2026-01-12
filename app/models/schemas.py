@@ -541,9 +541,9 @@ class GwasUpload(BaseModel):
     ancestry: str
     category: str
     is_published: bool
-    doi: str
+    doi: Optional[str] = None
     should_be_added: bool
-    upload_metadata: str
+    upload_metadata: Optional[str] = None
     status: GwasStatus
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
