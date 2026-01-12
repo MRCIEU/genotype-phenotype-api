@@ -17,37 +17,40 @@ def test_remove_all_data():
     system("git checkout tests/test_data/gwas_upload_small.db")
 
 
-@pytest.fixture(scope="module")
-def test_guid(mock_redis, mock_oci_service):
-    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
-        request_data = {
-            "reference_build": "GRCh38",
-            "email": "ae@email.com",
-            "name": "Example Study",
-            "category": "continuous",
-            "is_published": "false",
-            "doi": None,
-            "should_be_added": "false",
-            "sample_size": "23423",
-            "ancestry": "EUR",
-            "p_value_threshold": 1.5e-4,
-            "column_names": {
-                "chr": "CHR",
-                "bp": "BP",
-                "ea": "EA",
-                "oa": "OA",
-                "beta": "BETA",
-                "se": "SE",
-                "p": "P",
-                "eaf": "EAF",
-                "rsid": "RSID",
-            },
-        }
+@pytest.fixture(scope="module", autouse=True)
+def test_request_data():
+    return {
+        "reference_build": "GRCh38",
+        "email": "ae@email.com",
+        "name": "Example Study",
+        "category": "continuous",
+        "is_published": "false",
+        "doi": None,
+        "should_be_added": "false",
+        "sample_size": "23423",
+        "ancestry": "EUR",
+        "p_value_threshold": 1.5e-4,
+        "column_names": {
+            "chr": "CHR",
+            "bp": "BP",
+            "ea": "EA",
+            "oa": "OA",
+            "beta": "BETA",
+            "se": "SE",
+            "p": "P",
+            "eaf": "EAF",
+            "rsid": "RSID",
+        },
+    }
 
+
+@pytest.fixture(scope="module")
+def test_guid(mock_redis, mock_oci_service, test_request_data):
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         response = client.post(
             "/v1/gwas/",
             data={
-                "request": json.dumps(request_data),
+                "request": json.dumps(test_request_data),
             },
             files={"file": f},
         )
@@ -58,6 +61,25 @@ def test_guid(mock_redis, mock_oci_service):
     mock_redis.lpush.assert_called_once()
     mock_oci_service.upload_file.assert_called_once()
     return response.json()["guid"]
+
+
+def test_upload_gwas_duplicate(test_guid, mock_redis, test_request_data):
+    mock_redis.lrange.return_value = [json.dumps({"metadata": {"guid": test_guid, "email": "ae@email.com"}})]
+
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
+        response = client.post(
+            "/v1/gwas/",
+            data={
+                "request": json.dumps(test_request_data),
+            },
+            files={"file": f},
+        )
+    print(response.json())
+
+    # Reset mock for other tests
+    mock_redis.lrange.return_value = []
+
+    assert response.status_code == 429
 
 
 def test_get_gwas_not_found():
@@ -73,6 +95,7 @@ def test_get_gwas_processing(test_guid, mock_redis):
     print(response.json())
 
     gwas_model = UploadTraitResponse(**response.json())
+    mock_redis.lrange.return_value = []
     assert gwas_model.queue_position == 1
 
 

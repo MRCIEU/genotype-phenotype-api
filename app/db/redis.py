@@ -339,3 +339,39 @@ class RedisClient(metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error getting queue position for {guid}: {e}")
             return None
+
+    def get_processing_guids_for_user(self, email: str) -> list[str]:
+        """
+        Find all GUIDs currently in the processing queue for a specific user email.
+        """
+        processing_guids = []
+        try:
+            # We use the standard queue name
+            queue_items = self.redis.lrange(self.process_gwas_queue, 0, -1)
+            for item in queue_items:
+                try:
+                    data = item
+                    if isinstance(item, bytes):
+                        data = item.decode("utf-8")
+                    data_json = json.loads(data)
+
+                    if data_json.get("metadata", {}).get("email") == email:
+                        guid = data_json["metadata"].get("guid")
+                        if guid:
+                            processing_guids.append(guid)
+                except Exception:
+                    continue
+        except Exception as e:
+            logger.error(f"Error checking processing queue for user {email}: {e}")
+
+        return processing_guids
+
+    def add_gwas_to_queue(self, file_location: str, metadata: dict) -> bool:
+        """
+        Add a GWAS processing request to the queue.
+        """
+        message = {
+            "file_location": file_location,
+            "metadata": metadata,
+        }
+        return self.add_to_queue(self.process_gwas_queue, message)

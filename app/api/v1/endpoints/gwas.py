@@ -36,17 +36,17 @@ logger = get_logger(__name__)
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def upload_gwas(request: Request, request_body_str: str = Form(..., alias="request"), file: UploadFile = None):
     try:
-        # Parse the request body from form data (JSON string)
-        # The ProcessGwasRequest model validator handles json.loads() internally
-        request_body = ProcessGwasRequest.model_validate(request_body_str)
+        redis = RedisClient()
 
-        # redis = RedisClient()
-        # is_allowed, recent_uploads = redis.update_user_upload(request_body.email)
-        # if not is_allowed:
-        #     raise HTTPException(
-        #         status_code=429,
-        #         detail=f"Too many upload attempts (limit 100/day). Current uploads in last 24h: {recent_uploads}"
-        #     )
+        request_body = ProcessGwasRequest.model_validate(request_body_str)
+        processing_guids = redis.get_processing_guids_for_user(request_body.email)
+
+        print(processing_guids)
+        if processing_guids:
+            raise HTTPException(
+                status_code=429,
+                detail=f"You already have an upload processing (GUIDs: {', '.join(processing_guids)}). Please wait until it finishes.",
+            )
 
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
@@ -86,13 +86,7 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         gwas = db.create_gwas_upload(request_body)
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
-        redis_json = {
-            "file_location": bucket_file_location,
-            "metadata": request_body.model_dump(mode="json"),
-        }
-
-        redis = RedisClient()
-        redis.add_to_queue(redis.process_gwas_queue, redis_json)
+        redis.add_gwas_to_queue(bucket_file_location, request_body.model_dump(mode="json"))
 
         return gwas
     except HTTPException as e:
