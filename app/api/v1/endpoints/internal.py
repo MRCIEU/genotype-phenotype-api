@@ -111,7 +111,9 @@ async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID o
         if gwas is None:
             raise HTTPException(status_code=404, detail="GWAS not found")
 
+        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
         redis_client.add_to_queue(redis_client.process_gwas_queue, gwas.upload_metadata)
+
         return {"message": f"Successfully rerun GWAS upload with GUID {guid}"}
     except HTTPException as e:
         raise e
