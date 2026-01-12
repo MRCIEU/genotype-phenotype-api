@@ -97,21 +97,21 @@ async def retry_all_gwas_dlq(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/gwas/rerun/{guid}", response_model=dict, include_in_schema=False)
+@router.post("/gwas/rerun/{guid}", response_model=dict, include_in_schema=False)
 @time_endpoint
-async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to rerun")):
+async def rerun_gwas(request: Request):
     """
     Rerun a GWAS upload by GUID.
-    Reruns the GWAS upload by GUID.
     """
     try:
         gwas_db = GwasDBClient()
         redis_client = RedisClient()
+
         gwas = gwas_db.get_gwas_by_guid(guid)
         if gwas is None:
             raise HTTPException(status_code=404, detail="GWAS not found")
 
-        redis_client.add_to_queue(redis_client.process_gwas_queue, gwas)
+        redis_client.add_to_queue(redis_client.process_gwas_queue, gwas.upload_metadata)
         return {"message": f"Successfully rerun GWAS upload with GUID {guid}"}
     except HTTPException as e:
         raise e
