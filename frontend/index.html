@@ -217,8 +217,8 @@
                                             @click="closePostUploadModal"
                                             aria-label="close"
                                         ></button>
-                                        <div x-show="uploadMetadata.uploadSuccess" class="notification is-success">
-                                            <h3 class="title is-4">Upload Successful</h3>
+                                        <div x-show="uploadMetadata.uploadSuccess">
+                                            <h3 class="is-4">Upload Successful</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
                                         <div
