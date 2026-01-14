@@ -221,7 +221,10 @@
                                             <h3 class="title is-4">Upload Successful</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
-                                        <div x-show="uploadMetadata.uploadSuccess === false" class="notification is-danger">
+                                        <div
+                                            x-show="uploadMetadata.uploadSuccess === false"
+                                            class="notification is-danger"
+                                        >
                                             <h3 class="title is-4">Upload Failed</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
