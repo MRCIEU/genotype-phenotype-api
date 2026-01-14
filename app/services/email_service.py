@@ -57,7 +57,7 @@ class EmailService:
         <html>
         <body>
             <p>Thanks for using the Genotype-Phenotype Map!</p>
-            <p>Your results are ready to view. <a href='{settings.WEBSITE_URL}/phenotype/{guid}'>Click here</a> to view your results.</p>
+            <p>Your results are ready to view. <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>Click here</a> to view your results.</p>
             <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
             <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
         </body>
@@ -79,7 +79,7 @@ class EmailService:
         html = f"""
         <html>
         <body>
-            <p>Sorry, your Genotype-Phenotype Map upload failed. Please try again.</p>
+            <p>Sorry, your Genotype-Phenotype Map <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>upload failed</a>.</p>
             <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
             <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
         </body>

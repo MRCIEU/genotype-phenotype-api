@@ -19,6 +19,7 @@ export default function homepage() {
             postUploadModalOpen: false,
             uploadSuccess: null,
             message: "",
+            guid: null,
             formData: {
                 studyType: "continuous",
                 ancestry: "EUR",
@@ -291,15 +292,14 @@ export default function homepage() {
 
             if (isSuccess) {
                 this.uploadMetadata.uploadSuccess = true;
+                this.uploadMetadata.guid = result.guid;
                 this.uploadMetadata.message =
                     "Upload successful!  An email will be sent to " +
                     this.uploadMetadata.formData.email +
-                    " once the analysis has been completed.  Or, you can check the status of your upload " +
-                    '<a href="trait.html?id=' +
-                    result.guid +
-                    '">here</a>.';
+                    " once the analysis has been completed.";
             } else {
                 this.uploadMetadata.uploadSuccess = false;
+                this.uploadMetadata.guid = null;
                 this.uploadMetadata.message = "There was an error uploading your file. Please try again later.";
             }
         },
@@ -308,6 +308,7 @@ export default function homepage() {
             this.uploadMetadata.postUploadModalOpen = false;
             this.uploadMetadata.message = "";
             this.uploadMetadata.uploadSuccess = null;
+            this.uploadMetadata.guid = null;
         },
 
         openRPackageModal() {

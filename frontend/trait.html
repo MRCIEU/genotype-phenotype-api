@@ -51,20 +51,10 @@
                             class="columns mt-0 is-centered"
                             x-show="userUpload && data && data.trait.status === 'processing'"
                         >
-                            This may take a while...
+                            You are currently in position <span x-text="data.trait.queue_position"></span> in the queue.
                         </div>
 
                         <div x-show="showResults" class="mb-0">
-                            <p class="is-size-8 has-text-centered">
-                                <a x-bind:href="getStudySourceLink" target="_blank" x-show="!userUpload"
-                                    >Study source</a
-                                >
-                                <br />
-                                Sample size (common variant study): <b x-text="getSampleSizes.common"></b>
-                                <span x-show="getSampleSizes.rare"
-                                    >Sample size (rare variant study): <b x-text="getSampleSizes.rare"></b
-                                ></span>
-                            </p>
                             <p class="is-size-7 has-text-centered" x-show="!userUpload">
                                 Displays colocalised results of the study in question, and shows all studies which
                                 colocalise with it

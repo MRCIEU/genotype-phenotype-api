@@ -210,22 +210,35 @@
                             >
                                 <div class="modal-background" @click="closePostUploadModal"></div>
                                 <div class="modal-content">
-                                    <div class="box">
-                                        <div x-show="uploadMetadata.uploadSuccess" class="notification">
+                                    <div class="box" style="position: relative">
+                                        <button
+                                            class="delete"
+                                            style="position: absolute; top: 10px; right: 10px"
+                                            @click="closePostUploadModal"
+                                            aria-label="close"
+                                        ></button>
+                                        <div x-show="uploadMetadata.uploadSuccess" class="notification is-success">
                                             <h3 class="title is-4">Upload Successful</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
-                                        <div x-show="!uploadMetadata.uploadSuccess" class="notification">
+                                        <div x-show="uploadMetadata.uploadSuccess === false" class="notification is-danger">
                                             <h3 class="title is-4">Upload Failed</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
-                                        <button
-                                            class="button mt-4"
-                                            :class="uploadMetadata.uploadSuccess ? 'is-success' : 'is-danger'"
-                                            @click="closePostUploadModal"
-                                        >
-                                            Close
-                                        </button>
+                                        <div class="buttons mt-4">
+                                            <template x-if="uploadMetadata.uploadSuccess">
+                                                <a
+                                                    :href="'trait.html?id=' + uploadMetadata.guid"
+                                                    class="button is-success"
+                                                    >Go To Upload</a
+                                                >
+                                            </template>
+                                            <template x-if="uploadMetadata.uploadSuccess === false">
+                                                <button class="button is-danger" @click="closePostUploadModal">
+                                                    Close
+                                                </button>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
