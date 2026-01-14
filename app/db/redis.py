@@ -14,7 +14,8 @@ class RedisClient(metaclass=Singleton):
     def __init__(self):
         self.process_gwas_queue = "process_gwas"
         self.process_gwas_dlq = f"{self.process_gwas_queue}_dlq"
-        self.accepted_queue_names = [self.process_gwas_queue, self.process_gwas_dlq]
+        self.delete_gwas_queue = "delete_gwas"
+        self.accepted_queue_names = [self.process_gwas_queue, self.process_gwas_dlq, self.delete_gwas_queue]
         self.scheduled_jobs_key = "scheduled_jobs"
         self.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
 
@@ -375,3 +376,9 @@ class RedisClient(metaclass=Singleton):
             "metadata": metadata,
         }
         return self.add_to_queue(self.process_gwas_queue, message)
+
+    def add_delete_gwas_to_queue(self, guid: str) -> bool:
+        """
+        Add a GWAS deletion request to the queue.
+        """
+        return self.add_to_queue(self.delete_gwas_queue, {"guid": guid})
