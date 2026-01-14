@@ -1,5 +1,6 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Request, Path
+import json
 
 from app.db.gwas_db import GwasDBClient
 from app.services.oci_service import OCIService
