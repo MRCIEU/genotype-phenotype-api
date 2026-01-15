@@ -158,11 +158,12 @@ class GwasUploadService:
             extra=error_context,
         )
 
-        sentry_sdk.set_context("gwas_upload", error_context)
-        sentry_sdk.capture_message(
-            f"GWAS processing failed: {update_gwas_request.failure_reason}",
-            level="error",
-        )
+        if "Caught error" not in update_gwas_request.failure_reason:
+            sentry_sdk.set_context("gwas_upload", error_context)
+            sentry_sdk.capture_message(
+                f"GWAS processing failed: {update_gwas_request.failure_reason}",
+                level="error",
+            )
 
         gwas.status = GwasStatus.FAILED.value
         gwas.failure_reason = update_gwas_request.failure_reason
