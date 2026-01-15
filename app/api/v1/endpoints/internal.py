@@ -1,7 +1,10 @@
 import traceback
+import shutil
 from fastapi import APIRouter, HTTPException, Request, Path
 import json
+import os
 
+from app.config import get_settings
 from app.db.gwas_db import GwasDBClient
 from app.services.oci_service import OCIService
 from app.models.schemas import convert_duckdb_to_pydantic_model, GwasUpload
@@ -14,6 +17,7 @@ from app.db.redis import RedisClient
 logger = get_logger(__name__)
 router = APIRouter()
 
+settings = get_settings()
 
 @router.post("/clear-cache/all", response_model=dict, include_in_schema=False)
 @time_endpoint
@@ -185,6 +189,9 @@ async def delete_gwas(request: Request, guid: str = Path(..., description="GUID 
         oci_service = OCIService()
         gwas_db = GwasDBClient()
         redis_client = RedisClient()
+
+        if os.path.exists(f"{settings.GWAS_DIR}/{guid}/"):
+            shutil.rmtree(f"{settings.GWAS_DIR}/{guid}/")
 
         oci_service.delete_prefix(f"gwas_upload/{guid}/")
         redis_client.add_delete_gwas_to_queue(guid)

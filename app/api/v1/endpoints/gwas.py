@@ -3,6 +3,8 @@ import traceback
 import uuid
 import os
 import hashlib
+import shutil
+
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
@@ -60,8 +62,9 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         hash_bytes = sha256_hash.digest()[:16]
         file_guid = str(uuid.UUID(bytes=hash_bytes))
 
-        os.makedirs(os.path.join(settings.GWAS_DIR, file_guid), exist_ok=True)
-        file_location = os.path.join(settings.GWAS_DIR, file_guid, file.filename)
+        file_directory = os.path.join(settings.GWAS_DIR, file_guid)
+        os.makedirs(file_directory, exist_ok=True)
+        file_location = os.path.join(file_directory, file.filename)
 
         bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
         os.rename(file_path, file_location)
@@ -88,13 +91,17 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
 
         redis.add_gwas_to_queue(bucket_file_location, request_body.model_dump(mode="json"))
 
+        if os.path.exists(file_directory):
+            shutil.rmtree(file_directory)
+
         return gwas
     except HTTPException as e:
         raise e
     except Exception as e:
-        # Clean up file if there's an error
-        if "file_path" in locals() and os.path.exists(file_path):
-            os.remove(file_path)
+        # Clean up file directory if there's an error
+        if "file_directory" in locals() and os.path.exists(file_directory):
+            shutil.rmtree(file_directory)
+
         logger.error(f"Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
