@@ -221,10 +221,7 @@
                                             <h3 class="is-4">Upload Successful</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
-                                        <div
-                                            x-show="uploadMetadata.uploadSuccess === false"
-                                            class="notification is-danger"
-                                        >
+                                        <div x-show="uploadMetadata.uploadSuccess === false" class="notification">
                                             <h3 class="title is-4">Upload Failed</h3>
                                             <p x-html="uploadMetadata.message"></p>
                                         </div>
@@ -256,6 +253,7 @@
                                 <div class="modal-card is-large" style="width: 900px; max-width: 90%">
                                     <header class="modal-card-head">
                                         <p class="modal-card-title">Upload GWAS for Comparison</p>
+                                        <button class="delete" aria-label="close" @click="closeModal()"></button>
                                     </header>
                                     <section class="modal-card-body">
                                         <div class="field">

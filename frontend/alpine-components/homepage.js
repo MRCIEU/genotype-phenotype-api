@@ -272,7 +272,7 @@ export default function homepage() {
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error("Upload failed:", response.status, errorText);
-                    this.openPostUploadModal(false);
+                    this.openPostUploadModal(false, null, response.status);
                 } else {
                     const result = await response.json();
                     this.openPostUploadModal(true, result);
@@ -285,7 +285,7 @@ export default function homepage() {
             }
         },
 
-        openPostUploadModal(isSuccess, result) {
+        openPostUploadModal(isSuccess, result, status = null) {
             this.uploadMetadata.currentlyUploading = false;
             this.uploadMetadata.modalOpen = false;
             this.uploadMetadata.postUploadModalOpen = true;
@@ -300,7 +300,12 @@ export default function homepage() {
             } else {
                 this.uploadMetadata.uploadSuccess = false;
                 this.uploadMetadata.guid = null;
-                this.uploadMetadata.message = "There was an error uploading your file. Please try again later.";
+                if (status === 429) {
+                    this.uploadMetadata.message =
+                        "You already have a GWAS upload in the queue. Please wait for it to complete before uploading another.";
+                } else {
+                    this.uploadMetadata.message = "There was an error uploading your file. Please try again later.";
+                }
             }
         },
 
