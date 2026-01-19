@@ -38,8 +38,11 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_trait(self, trait_id: str):
-        query = "SELECT * FROM traits WHERE id = ?"
+    def get_trait(self, trait_id: str | int):
+        if isinstance(trait_id, str) and not trait_id.isdigit():
+            query = "SELECT * FROM traits WHERE trait = ?"
+        else:
+            query = "SELECT * FROM traits WHERE id = ?"
         return self.studies_conn.execute(query, [trait_id]).fetchone()
 
     @log_performance

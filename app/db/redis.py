@@ -197,6 +197,65 @@ class RedisClient(metaclass=Singleton):
             logger.error(f"Error clearing DLQ: {e}")
             return False
 
+    def _find_and_remove_from_dlq(self, queue_name: str, guid: str) -> Optional[dict]:
+        """
+        Find and remove a message from the dead letter queue by GUID.
+        Returns the DLQ entry if found and removed, None otherwise.
+        """
+        dlq_name = f"{queue_name}_dlq"
+        try:
+            # Get all messages from the DLQ
+            messages = self.redis.lrange(dlq_name, 0, -1)
+
+            for message in messages:
+                try:
+                    dlq_entry = json.loads(message)
+                    original_message = dlq_entry.get("original_message", {})
+
+                    if original_message.get("metadata", {}).get("guid") == guid:
+                        # Found the message with the matching GUID, now remove it
+                        if self.redis.lrem(dlq_name, 1, message) > 0:
+                            return dlq_entry
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    continue
+            return None
+        except Exception as e:
+            logger.error(f"Error finding and removing from DLQ: {e}")
+            return None
+
+    def remove_from_dlq(self, queue_name: str, guid: str) -> bool:
+        """
+        Remove a specific message from the dead letter queue by GUID.
+        Returns True if the message was found and successfully removed, False otherwise.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        return self._find_and_remove_from_dlq(queue_name, guid) is not None
+
+    def remove_from_queue(self, queue_name: str, guid: str) -> bool:
+        """
+        Remove a specific message from a queue by GUID.
+        Returns True if the message was found and successfully removed, False otherwise.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        try:
+            messages = self.redis.lrange(queue_name, 0, -1)
+            for message in messages:
+                try:
+                    data = json.loads(message)
+                    if data.get("metadata", {}).get("guid") == guid:
+                        if self.redis.lrem(queue_name, 1, message) > 0:
+                            return True
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    continue
+            return False
+        except Exception as e:
+            logger.error(f"Error removing from queue {queue_name}: {e}")
+            return False
+
     def retry_guid_from_dlq(self, queue_name: str, guid: str) -> bool:
         """
         Find and retry a specific message from the dead letter queue by GUID.
@@ -205,41 +264,18 @@ class RedisClient(metaclass=Singleton):
         if queue_name not in self.accepted_queue_names:
             raise ValueError(f"Queue name {queue_name} is not accepted")
 
-        dlq_name = f"{queue_name}_dlq"
-
         try:
-            # Get all messages from DLQ
-            messages = self.redis.lrange(dlq_name, 0, -1)
+            dlq_entry = self._find_and_remove_from_dlq(queue_name, guid)
+            if dlq_entry:
+                original_message = dlq_entry["original_message"]
+                if self.add_to_queue(queue_name, original_message):
+                    return True
+                else:
+                    # If failed to add back to the original queue, put it back in DLQ
+                    self.move_to_dlq(queue_name, original_message, dlq_entry.get("error", "Unknown error"))
+                    return False
 
-            for i, message in enumerate(messages):
-                try:
-                    dlq_entry = json.loads(message)
-                    original_message = dlq_entry["original_message"]
-
-                    # Check if this message has the matching GUID
-                    if original_message.get("metadata", {}).get("guid") == guid:
-                        # Remove this message from DLQ
-                        # We need to remove it by index, so we'll rebuild the list
-                        remaining_messages = [msg for j, msg in enumerate(messages) if j != i]
-
-                        # Clear DLQ and rebuild without the matched message
-                        self.redis.delete(dlq_name)
-                        if remaining_messages:
-                            for msg in remaining_messages:
-                                self.redis.rpush(dlq_name, msg)
-
-                        # Push back to original queue
-                        if self.add_to_queue(queue_name, original_message):
-                            return True
-                        else:
-                            # If failed to add, put it back in DLQ
-                            self.redis.rpush(dlq_name, message)
-                            return False
-                except (json.JSONDecodeError, KeyError, TypeError) as e:
-                    logger.warning(f"Error parsing DLQ message at index {i}: {e}")
-                    continue
-
-            return False  # GUID not found
+            return False
         except Exception as e:
             logger.error(f"Error retrying GUID from DLQ: {e}")
             return False

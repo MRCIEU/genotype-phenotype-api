@@ -195,6 +195,7 @@ async def delete_gwas(request: Request, guid: str = Path(..., description="GUID 
 
         oci_service.delete_prefix(f"gwas_upload/{guid}/")
         redis_client.add_delete_gwas_to_queue(guid)
+        redis_client.remove_from_queue(redis_client.process_gwas_queue, guid)
         gwas_db.delete_gwas_upload(guid)
 
         return {"message": f"Successfully deleted GWAS upload with GUID {guid} and all associated data"}

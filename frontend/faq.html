@@ -21,7 +21,7 @@
     <body>
         <navigation-bar></navigation-bar>
         <div class="content columns mt-2 is-centered">
-            <div class="column is-11">
+            <div x-data="faq" class="column is-11">
                 <h1>FAQ</h1>
                 <h2 id="r-package-view">R Package</h2>
 
@@ -41,6 +41,45 @@
                         <a href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
                             >Please start with the intorudctory vignette.</a
                         >
+                    </li>
+                </ul>
+                <h2 id="gwas-upload-pipeline-view">GWAS Upload Pipeline</h2>
+                <img :src="gwasUploadPipeline" alt="GWAS Upload Pipeline" />
+                <p>
+                    The GWAS upload pipeline is a process that allows you to upload a GWAS and perform the
+                    colocalization and rare variant analysis. It uses the same data processing pipeline used to created
+                    this resource, with some caveats. There are a series of steps that are taken to process the data,
+                    some of which will remove the data and make it look potentially inconsistent.
+                </p>
+                <ul>
+                    <li>
+                        <b>Filtered list of comparisons:</b> Due to server constraints, only studies that have a minimum
+                        p-value of 1e-6 for that ld block will be compared with your GWAS.
+                    </li>
+                    <li>
+                        <b>No GWAS QC step:</b> Due to server constraints, DENTIST (which is used in the pipeline) is
+                        not run on any GWAS Uploads.
+                    </li>
+                    <li>
+                        <b>Sparesly Populated Studies Not Supported:</b> Only studies with a minimum of 150 samples in a
+                        significant ld block will be processed.
+                    </li>
+                    <li>
+                        <b>Rare Variant Analysis Not Supported:</b> Only samples with a MAF of 0.01 or greater will be
+                        processed.
+                    </li>
+                    <li>
+                        <b>Conditional Imputation:</b> Imputation is only performed if the correlation between origina
+                        and imputed SNPs is greater than 0.7.
+                    </li>
+                    <li>
+                        <b>Conditional Finemapping:</b> If finemapping only finds a single credible set or does not
+                        converge, then the LBF values are merely calculated from the original summary statistics.
+                    </li>
+                    <li>
+                        <b>Missing LBF Values:</b> There are a series of finemapping filtering steps that find and
+                        remove over inflated LBF values, these are removed from the analysis. Hence you may see some
+                        missing LBF values in the results.
                     </li>
                 </ul>
                 <h2 id="graph-options-view">Graph Options</h2>

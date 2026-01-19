@@ -13,6 +13,7 @@ import homepage from "./alpine-components/homepage.js";
 import variant from "./alpine-components/variant.js";
 import snpManhattan from "./alpine-components/snpManhattan.js";
 import data from "./alpine-components/data.js";
+import faq from "./alpine-components/faq.js";
 import contact from "./alpine-components/contact.js";
 
 window.Alpine = Alpine;
@@ -117,4 +118,5 @@ Alpine.data("region", region);
 Alpine.data("variant", variant);
 Alpine.data("snpManhattan", snpManhattan);
 Alpine.data("contact", contact);
+Alpine.data("faq", faq);
 Alpine.start();
