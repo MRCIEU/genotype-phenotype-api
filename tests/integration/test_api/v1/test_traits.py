@@ -65,6 +65,7 @@ def test_get_trait_by_id():
 
     assert trait_response.upload_study_extractions is None
 
+
 def test_get_trait_by_name():
     trait_name = "ukb-d-M13-FIBROBLASTIC"
     response = client.get(f"/v1/traits/{trait_name}")

@@ -90,7 +90,7 @@ class TestRedisDLQ:
 
         # Mock add_to_queue to return True
         mock_add = mocker.patch.object(redis_client, "add_to_queue", return_value=True)
-        
+
         result = redis_client.retry_guid_from_dlq(queue_name, guid)
 
         assert result is True
@@ -128,9 +128,7 @@ class TestRedisDLQ:
         assert result is False
         # Should be moved back to DLQ
         mock_move.assert_called_once_with(
-            queue_name, 
-            sample_dlq_message["original_message"], 
-            sample_dlq_message["error"]
+            queue_name, sample_dlq_message["original_message"], sample_dlq_message["error"]
         )
 
     def test_remove_from_dlq_success(self, redis_client, mock_redis, sample_dlq_message):

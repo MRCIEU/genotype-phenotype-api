@@ -19,6 +19,7 @@ router = APIRouter()
 
 settings = get_settings()
 
+
 @router.post("/clear-cache/all", response_model=dict, include_in_schema=False)
 @time_endpoint
 async def clear_cache(request: Request):

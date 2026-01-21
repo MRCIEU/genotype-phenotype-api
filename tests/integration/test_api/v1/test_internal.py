@@ -59,7 +59,7 @@ def test_retry_gwas_dlq_by_guid_success(mock_redis_client, mocker):
 
     assert response.status_code == 200
     assert mock_redis_client.get_all_guids_from_dlq.return_value == [guid]
-    assert mock_redis_client.retry_guid_from_dlq.return_value == True
+    assert mock_redis_client.retry_guid_from_dlq.return_value
     assert f"Successfully moved message with GUID {guid}" in response.json()["message"]
 
 
@@ -72,7 +72,7 @@ def test_retry_gwas_dlq_by_guid_not_found(mock_redis_client, mocker):
     mock_redis_client.redis.lrange.return_value = [json.dumps(dlq_message)]
 
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
-    
+
     response = client.post(f"/v1/internal/gwas-dlq/retry/{guid}")
 
     assert response.status_code == 404
@@ -85,7 +85,7 @@ def test_retry_gwas_dlq_by_guid_empty_dlq(mock_redis_client, mocker):
     mock_redis_client.redis.lrange.return_value = []
 
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
-    
+
     response = client.post(f"/v1/internal/gwas-dlq/retry/{guid}")
 
     assert response.status_code == 404
@@ -98,7 +98,7 @@ def test_retry_all_gwas_dlq_success(mock_redis_client, mocker):
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "get_all_guids_from_dlq", return_value=guids)
     mocker.patch.object(mock_redis_client, "retry_guid_from_dlq", side_effect=[True, True, True])
-    
+
     response = client.post("/v1/internal/gwas-dlq/retry")
 
     assert response.status_code == 200
@@ -113,7 +113,7 @@ def test_retry_all_gwas_dlq_partial_success(mock_redis_client, mocker):
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "get_all_guids_from_dlq", return_value=guids)
     mocker.patch.object(mock_redis_client, "retry_guid_from_dlq", side_effect=[True, False, True])
-    
+
     response = client.post("/v1/internal/gwas-dlq/retry")
 
     assert response.status_code == 200
@@ -125,7 +125,7 @@ def test_retry_all_gwas_dlq_empty(mock_redis_client, mocker):
     """Test retrying all from empty DLQ."""
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "get_all_guids_from_dlq", return_value=[])
-    
+
     response = client.post("/v1/internal/gwas-dlq/retry")
 
     assert response.status_code == 200
@@ -137,7 +137,7 @@ def test_retry_all_gwas_dlq_exception(mock_redis_client, mocker):
     """Test retrying all handles exceptions."""
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "get_all_guids_from_dlq", side_effect=Exception("Redis error"))
-    
+
     response = client.post("/v1/internal/gwas-dlq/retry")
 
     assert response.status_code == 500
@@ -147,7 +147,7 @@ def test_clear_gwas_dlq_success(mock_redis_client, mocker):
     """Test successfully clearing the DLQ."""
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mock_clear = mocker.patch.object(mock_redis_client, "clear_dlq", return_value=True)
-    
+
     response = client.delete("/v1/internal/gwas-dlq")
 
     assert response.status_code == 200
@@ -159,7 +159,7 @@ def test_clear_gwas_dlq_failure(mock_redis_client, mocker):
     """Test clearing DLQ when it fails."""
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "clear_dlq", return_value=False)
-    
+
     response = client.delete("/v1/internal/gwas-dlq")
 
     assert response.status_code == 500
@@ -170,7 +170,7 @@ def test_clear_gwas_dlq_exception(mock_redis_client, mocker):
     """Test clearing DLQ handles exceptions."""
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "clear_dlq", side_effect=Exception("Redis error"))
-    
+
     response = client.delete("/v1/internal/gwas-dlq")
 
     assert response.status_code == 500
@@ -190,15 +190,13 @@ def test_add_to_gwas_queue_success(mock_redis_client, mocker):
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "add_to_queue", return_value=True)
     mocker.patch.object(mock_redis_client, "get_queue_size", return_value=5)
-    
+
     response = client.post("/v1/internal/gwas-queue/add", json=test_message)
 
     assert response.status_code == 200
     assert "Successfully added message to process_gwas_queue" in response.json()["message"]
     assert response.json()["queue_size"] == 5
-    mock_redis_client.add_to_queue.assert_called_once_with(
-        mock_redis_client.process_gwas_queue, test_message
-    )
+    mock_redis_client.add_to_queue.assert_called_once_with(mock_redis_client.process_gwas_queue, test_message)
 
 
 def test_add_to_gwas_queue_failure(mock_redis_client, mocker):
@@ -207,7 +205,7 @@ def test_add_to_gwas_queue_failure(mock_redis_client, mocker):
 
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "add_to_queue", return_value=False)
-    
+
     response = client.post("/v1/internal/gwas-queue/add", json=test_message)
 
     assert response.status_code == 500
@@ -220,7 +218,7 @@ def test_add_to_gwas_queue_exception(mock_redis_client, mocker):
 
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
     mocker.patch.object(mock_redis_client, "add_to_queue", side_effect=Exception("Redis error"))
-    
+
     response = client.post("/v1/internal/gwas-queue/add", json=test_message)
 
     assert response.status_code == 500
@@ -231,10 +229,8 @@ def test_delete_gwas_success(mock_oci_service, mocker):
     guid = "test-guid-123"
 
     mocker.patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service)
-    
+
     response = client.delete(f"/v1/internal/gwas/{guid}")
 
     assert response.status_code == 200
-    assert (
-        f"Successfully deleted GWAS upload with GUID {guid} and all associated data" in response.json()["message"]
-    )
+    assert f"Successfully deleted GWAS upload with GUID {guid} and all associated data" in response.json()["message"]
