@@ -71,6 +71,31 @@ class EmailService:
             logger.error(f"Failed to send results email: {e}")
             raise
 
+    async def send_submission_email(self, to_email: EmailStr, guid: str, queue_position: int) -> None:
+        """
+        Send an email notification that a job has been successfully submitted.
+        """
+        subject = "Your Genotype-Phenotype Map Job Has Been Submitted"
+        html = f"""
+        <html>
+        <body>
+            <p>Thanks for using the Genotype-Phenotype Map!</p>
+            <p>Your job has been successfully submitted. You can track its progress <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>here</a>.</p>
+            <p>You are currently <b>#{queue_position}</b> in the queue.</p>
+            <p>We will send you another email once the analysis is complete.</p>
+            <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
+            <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
+        </body>
+        </html>
+        """
+        msg = MessageSchema(subject=subject, recipients=[to_email], body=html, subtype="html")
+        fm = FastMail(self.conf)
+        try:
+            await fm.send_message(msg)
+        except Exception as e:
+            logger.error(f"Failed to send submission email: {e}")
+            raise
+
     async def send_failure_email(self, to_email: EmailStr, guid: str) -> None:
         """
         Send an email notification that the GWAS upload failed.

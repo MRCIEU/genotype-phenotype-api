@@ -90,6 +90,10 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
         redis.add_gwas_to_queue(bucket_file_location, request_body.model_dump(mode="json"))
+        queue_position = redis.get_queue_position(redis.process_gwas_queue, file_guid)
+
+        email_service = EmailService()
+        await email_service.send_submission_email(request_body.email, file_guid, queue_position)
 
         if os.path.exists(file_directory):
             shutil.rmtree(file_directory)

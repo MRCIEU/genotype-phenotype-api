@@ -5,6 +5,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     STUDIES_DB_PATH: str
     ASSOCIATIONS_DB_PATH: str
+    ASSOCIATIONS_FULL_DB_PATH: str
     COLOC_PAIRS_DB_PATH: str
     LD_DB_PATH: str
     GWAS_UPLOAD_DB_PATH: str

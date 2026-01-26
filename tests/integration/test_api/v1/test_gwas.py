@@ -45,7 +45,7 @@ def test_request_data():
 
 
 @pytest.fixture(scope="module")
-def test_guid(mock_redis, mock_oci_service, test_request_data):
+def test_guid(mock_redis, mock_oci_service, mock_email_service, test_request_data):
     with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         response = client.post(
             "/v1/gwas/",
@@ -60,6 +60,7 @@ def test_guid(mock_redis, mock_oci_service, test_request_data):
     assert "guid" in response.json()
     mock_redis.lpush.assert_called_once()
     mock_oci_service.upload_file.assert_called_once()
+    mock_email_service.send_submission_email.assert_called_once()
     return response.json()["guid"]
 
 

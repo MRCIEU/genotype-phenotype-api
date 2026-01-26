@@ -82,6 +82,7 @@ def test_get_trait_by_name():
 def test_get_trait_by_id_with_associations():
     response = client.get("/v1/traits/5020?include_associations=true")
     traits = response.json()
+    print(traits)
     assert response.status_code == 200
     assert traits is not None
     trait_response = TraitResponse(**traits)

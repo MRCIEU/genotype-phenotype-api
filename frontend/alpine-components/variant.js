@@ -286,7 +286,7 @@ export default function variant() {
 
             // If too many studies, show message and exit early
             const numStudies = (this.filteredData.colocs || []).length;
-            if (numStudies > 1000) {
+            if (numStudies > 500) {
                 // Increased limit since Canvas is more performant
                 ctx.fillStyle = textColor;
                 ctx.font = "16px Arial";
@@ -346,11 +346,16 @@ export default function variant() {
             const isLargeGraph = nodeCount > 100;
             const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
 
-            // Adjust node size and spacing based on graph size
-            const baseNodeRadius = isLargeGraph ? 3 : 8;
-            const maxNodeRadius = isLargeGraph ? 6 : 15;
-            const linkDistance = isLargeGraph ? 30 : 50;
-            const chargeStrength = isLargeGraph ? -100 : -300;
+            let baseNodeRadius = isLargeGraph ? 3 : 8;
+            let maxNodeRadius = isLargeGraph ? 6 : 15;
+            let linkDistance = isLargeGraph ? 30 : 50;
+            let chargeStrength = isLargeGraph ? -100 : -300;
+            if (numColocGroups > 1) {
+                baseNodeRadius = baseNodeRadius - 3;
+                maxNodeRadius = maxNodeRadius - 6;
+                linkDistance = linkDistance - 30;
+                chargeStrength = chargeStrength + 100;
+            }
 
             nodes.forEach(node => {
                 const pValueRadius = Math.max(baseNodeRadius, Math.min(maxNodeRadius, -Math.log10(node.min_p) * 1.5));
@@ -387,6 +392,47 @@ export default function variant() {
                 // Clear canvas
                 ctx.clearRect(0, 0, width, height);
 
+                // Draw background circles for coloc groups if more than 1
+                if (numColocGroups > 1) {
+                    const groups = d3.group(nodes, d => d.coloc_group_id);
+                    const groupColorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+                    groups.forEach((groupNodes, groupId) => {
+                        if (groupId === null) return;
+
+                        const groupColor = groupColorScale(groupId);
+                        const xExtent = d3.extent(groupNodes, d => d.x);
+                        const yExtent = d3.extent(groupNodes, d => d.y);
+                        const centerX = (xExtent[0] + xExtent[1]) / 2;
+                        const centerY = (yExtent[0] + yExtent[1]) / 2;
+
+                        let maxDist = 0;
+                        groupNodes.forEach(node => {
+                            const dist =
+                                Math.sqrt(Math.pow(node.x - centerX, 2) + Math.pow(node.y - centerY, 2)) + node.radius;
+                            if (dist > maxDist) maxDist = dist;
+                        });
+
+                        const padding = numColocGroups > 1 ? 20 : 30;
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, maxDist + padding, 0, 2 * Math.PI);
+
+                        const rgb = d3.color(groupColor);
+                        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)`;
+                        ctx.fill();
+                        ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
+                        ctx.setLineDash([5, 5]);
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
+                        ctx.font = "bold italic 14px Arial";
+                        ctx.textAlign = "center";
+                        ctx.fillText(`Coloc Group ${groupId}`, centerX, centerY - maxDist - padding - 10);
+                    });
+                }
+
                 // Draw links
                 links.forEach(link => {
                     const sourceNode = nodes.find(n => n.id === link.source.id);
@@ -405,7 +451,13 @@ export default function variant() {
                         strokeOpacity = 0.8;
                         strokeColor = link.h4 > 0.8 ? "#2563EB" : "#EA580C";
                     } else {
-                        strokeOpacity = highlightedNode ? 0.05 : 0.3;
+                        // Only show strong lines in gray when not connected to a highlighted node
+                        if (link.h4 > 0.8) {
+                            strokeOpacity = highlightedNode ? 0.05 : 0.3;
+                            strokeColor = "#999";
+                        } else {
+                            strokeOpacity = 0;
+                        }
                     }
 
                     if (strokeOpacity > 0) {
@@ -564,12 +616,15 @@ export default function variant() {
                 tickCount++;
                 const currentAlpha = simulation.alpha();
 
-                if (isLargeGraph && numColocGroups > 1 && tickCount >= 30) {
+                if (isLargeGraph && numColocGroups > 1 && tickCount >= 200) {
                     simulation.stop();
-                } else if (isLargeGraph && numColocGroups === 1 && tickCount >= 1) {
+                    simulation.on("end")();
+                } else if (isLargeGraph && numColocGroups === 1 && tickCount >= 150) {
                     simulation.stop();
-                } else if (!isLargeGraph && (currentAlpha < 0.01 || tickCount >= 300)) {
+                    simulation.on("end")();
+                } else if (!isLargeGraph && (currentAlpha < 0.01 || tickCount >= 500)) {
                     simulation.stop();
+                    if (tickCount >= 500) simulation.on("end")();
                 }
             });
 
@@ -626,7 +681,12 @@ export default function variant() {
                     const xRange = xBounds[1] - xBounds[0];
                     const yRange = yBounds[1] - yBounds[0];
                     const maxRange = Math.max(xRange, yRange, 1);
-                    const scale = Math.min((componentWidth * 0.8) / maxRange, (componentHeight * 0.8) / maxRange, 1);
+                    const scaleFactor = components.length > 1 ? 0.7 : 0.8;
+                    const scale = Math.min(
+                        (componentWidth * scaleFactor) / maxRange,
+                        (componentHeight * scaleFactor) / maxRange,
+                        1
+                    );
 
                     component.forEach(node => {
                         const offsetX = (node.x - currentCenterX) * scale;

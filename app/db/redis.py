@@ -40,8 +40,16 @@ class RedisClient(metaclass=Singleton):
         if queue_name not in self.accepted_queue_names:
             raise ValueError(f"Queue name {queue_name} is not accepted")
         try:
-            serialized_message = json.dumps(message)
-            self.redis.lpush(queue_name, serialized_message)
+            if isinstance(message, dict):
+                message = json.dumps(message)
+            elif isinstance(message, str):
+                message = message
+            elif isinstance(message, bytes):
+                message = message.decode("utf-8")
+            else:
+                raise ValueError(f"Message must be a dict, str, or bytes, got {type(message)}")
+
+            self.redis.lpush(queue_name, message)
             return True
         except Exception as e:
             logger.error(f"Error adding to queue: {e}")

@@ -86,7 +86,7 @@ async def get_trait(
 
         associations = None
         if include_associations:
-            associations = associations_service.get_associations(colocs, rare_results, trait.id)
+            associations = associations_service.get_associations(colocs, rare_results)
 
         return TraitResponse(
             trait=trait,

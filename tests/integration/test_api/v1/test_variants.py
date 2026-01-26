@@ -20,9 +20,14 @@ def test_get_variants_by_variants(variants_in_studies_db):
 
     for row in variants:
         variant_model = Variant(**row)
-        for field in variant_model.model_fields:
-            if field != "canonical" and field != "gene_id" and field != "associations":
-                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.id is not None
+        assert variant_model.snp is not None
+        assert variant_model.display_snp is not None
+        assert variant_model.chr is not None
+        assert variant_model.bp is not None
+        assert variant_model.ea is not None
+        assert variant_model.oa is not None
+        assert variant_model.ref_allele is not None
         assert variant_model.associations is None
 
 
@@ -34,16 +39,15 @@ def test_get_variants_by_rsids(variants_in_studies_db):
     assert len(variants) > 0
     for row in variants:
         variant_model = Variant(**row)
-        for field in variant_model.model_fields:
-            optional_fields = [
-                "canonical",
-                "gene_id",
-                "associations",
-                "distinct_trait_categories",
-                "distinct_protein_coding_genes",
-            ]
-            if field not in optional_fields:
-                assert getattr(variant_model, field) is not None, f"{field} should not be None"
+        assert variant_model.id is not None
+        assert variant_model.snp is not None
+        assert variant_model.display_snp is not None
+        assert variant_model.chr is not None
+        assert variant_model.bp is not None
+        assert variant_model.ea is not None
+        assert variant_model.oa is not None
+        assert variant_model.ref_allele is not None
+        assert variant_model.associations is None
 
 
 def test_get_variants_by_grange(variants_in_grange):

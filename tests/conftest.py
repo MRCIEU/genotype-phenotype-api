@@ -3,8 +3,8 @@ from unittest.mock import Mock, patch, AsyncMock
 from app.models.schemas import Singleton
 
 variant_data = {
-    "8466160": {"rsid": "rs16879765", "variant": "7:37949493"},
-    "8466304": {"rsid": "rs145159117", "variant": "7:37979301"},
+    "80732": {"rsid": "rs7524102", "variant": "1:22371954"},
+    "80717": {"rsid": "rs11810751", "variant": "1:22365104"},
 }
 
 
@@ -104,6 +104,7 @@ def mock_email_service():
     mock_email_service_instance = Mock()
     mock_email_service_instance.send_failure_email = AsyncMock(return_value=None)
     mock_email_service_instance.send_results_email = AsyncMock(return_value=None)
+    mock_email_service_instance.send_submission_email = AsyncMock(return_value=None)
     with (
         patch("app.api.v1.endpoints.gwas.EmailService", return_value=mock_email_service_instance),
         patch("app.api.v1.endpoints.info.EmailService", return_value=mock_email_service_instance),
