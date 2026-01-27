@@ -30,19 +30,26 @@
                             <a href="faq.html#gene-region-view" target="_blank" class="is-size-4">ⓘ</a>
                         </h3>
                         <h6 class="has-text-centered mb-0 mt-0"><span x-text="genePleiotropy"></span></h6>
-                        <h6 class="has-text-centered mb-0 mt-0">Gene Range: <span x-text="genomicRange"></span></h6>
-                        <h6 class="has-text-centered mb-0">
-                            <a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a>
-                        </h6>
-                        <h6 class="has-text-centered mb-0">
-                            <a
-                                class="button is-link is-small is-centered is-light"
-                                x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName"
-                                target="_blank"
-                            >
-                                <span>NCBI Gene</span>
-                            </a>
-                        </h6>
+                        <div
+                            class="is-flex is-justify-content-center is-align-items-center mb-0 mt-0"
+                            style="gap: 1.5rem"
+                        >
+                            <h6 class="mb-0">Gene Range: <span x-text="genomicRange"></span></h6>
+                            <h6 class="mb-0">
+                                <a class="button is-link is-small is-light" x-bind:href="'region.html?id='+ ldBlockId"
+                                    >LD Region</a
+                                >
+                            </h6>
+                            <h6 class="mb-0">
+                                <a
+                                    class="button is-link is-small is-light"
+                                    x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName"
+                                    target="_blank"
+                                >
+                                    <span>NCBI Gene</span>
+                                </a>
+                            </h6>
+                        </div>
                     </div>
                     <div class="column is-2">
                         <div
@@ -58,7 +65,9 @@
                 <div class="columns mt-2">
                     <div class="column is-10">
                         <div class="is-divider mt-0 mb-2"></div>
-                        <h4 class="title is-3 has-text-centered mb-0">Colocalization Groups for {{geneName}} by Position</h4>
+                        <h4 class="title is-3 has-text-centered mb-0">
+                            Colocalization Groups for <span x-text="geneName"></span> by Position
+                        </h4>
                         <p class="is-size-7 has-text-centered">
                             Displays colocalization groups that are annotated by a QTL, or within the BP range of the
                             gene
@@ -160,10 +169,7 @@
                                         <a class="dropdown-item" @click="downloadData(); open = false;">
                                             Download zip file
                                         </a>
-                                        <a
-                                            class="dropdown-item"
-                                            @click="openRPackageModal(); open = false;"
-                                        >
+                                        <a class="dropdown-item" @click="openRPackageModal(); open = false;">
                                             Download via R package
                                         </a>
                                     </div>
@@ -174,55 +180,11 @@
                 </div>
 
                 <!-- R Package Modal -->
-                <div
-                    id="r-package-modal"
-                    class="modal"
-                    :class="{ 'is-active': rPackageModalOpen }"
-                    @keydown.window.escape="closeRPackageModal()"
-                >
-                    <div class="modal-background" @click="closeRPackageModal()"></div>
-                    <div class="modal-card">
-                        <header class="modal-card-head">
-                            <p class="modal-card-title">R Package Installation</p>
-                            <button class="delete" @click="closeRPackageModal()"></button>
-                        </header>
-                        <section class="modal-card-body pb-0 pt-0">
-                            <div class="content">
-                                <div class="box">
-                                    <pre><code>devtools::install_github('MRCIEU/gpmapr')
-gpmapr::search_gpmapr('Haemoglobin')
-gpmapr::gene('DRD2')</code></pre>
-                                </div>
-
-                                <p class="mt-4">
-                                    <strong>Note:</strong> You'll need to have the <code>devtools</code> package
-                                    installed first.
-                                </p>
-                                <h4>Code and Documentation</h4>
-                                <p>
-                                    <a
-                                        href="https://github.com/MRCIEU/gpmapr"
-                                        target="_blank"
-                                        class="button is-success"
-                                    >
-                                        <span>View on GitHub</span>
-                                    </a>
-                                    <br />
-                                    <br />
-                                    <a
-                                        href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
-                                        target="_blank"
-                                        class="button is-success"
-                                        >View Vignettes</a
-                                    >
-                                </p>
-                            </div>
-                        </section>
-                        <footer class="modal-card-foot">
-                            <button class="button" @click="closeRPackageModal()">Close</button>
-                        </footer>
-                    </div>
-                </div>
+                <r-package-modal
+                    :show="rPackageModalOpen"
+                    :snippet="`gpmapr::gene('${new URLSearchParams(location.search).get('id')}')`"
+                    @close="closeRPackageModal()"
+                ></r-package-modal>
                 <!-- Data tables -->
                 <div class="columns mt-0 mb-0 is-centered">
                     <div class="column is-11">

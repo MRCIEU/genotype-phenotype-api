@@ -162,10 +162,7 @@
                                             <a class="dropdown-item" @click="downloadDataAndGWAS(); open = false;">
                                                 Download Data + GWAS
                                             </a>
-                                            <a
-                                                class="dropdown-item"
-                                                @click="openRPackageModal(); open = false;"
-                                            >
+                                            <a class="dropdown-item" @click="openRPackageModal(); open = false;">
                                                 Download via R package
                                             </a>
                                         </div>
@@ -175,55 +172,11 @@
                         </div>
 
                         <!-- R Package Modal -->
-                        <div
-                            id="r-package-modal"
-                            class="modal"
-                            :class="{ 'is-active': rPackageModalOpen }"
-                            @keydown.window.escape="closeRPackageModal()"
-                        >
-                            <div class="modal-background" @click="closeRPackageModal()"></div>
-                            <div class="modal-card">
-                                <header class="modal-card-head">
-                                    <p class="modal-card-title">R Package Installation</p>
-                                    <button class="delete" @click="closeRPackageModal()"></button>
-                                </header>
-                                <section class="modal-card-body pb-0 pt-0">
-                                    <div class="content">
-                                        <div class="box">
-                                            <pre><code>devtools::install_github('MRCIEU/gpmapr')
-gpmapr::search_gpmapr('Haemoglobin')
-gpmapr::gene('DRD2')</code></pre>
-                                        </div>
-
-                                        <p class="mt-4">
-                                            <strong>Note:</strong> You'll need to have the <code>devtools</code> package
-                                            installed first.
-                                        </p>
-                                        <h4>Code and Documentation</h4>
-                                        <p>
-                                            <a
-                                                href="https://github.com/MRCIEU/gpmapr"
-                                                target="_blank"
-                                                class="button is-success"
-                                            >
-                                                <span>View on GitHub</span>
-                                            </a>
-                                            <br />
-                                            <br />
-                                            <a
-                                                href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
-                                                target="_blank"
-                                                class="button is-success"
-                                                >View Vignettes</a
-                                            >
-                                        </p>
-                                    </div>
-                                </section>
-                                <footer class="modal-card-foot">
-                                    <button class="button" @click="closeRPackageModal()">Close</button>
-                                </footer>
-                            </div>
-                        </div>
+                        <r-package-modal
+                            :show="rPackageModalOpen"
+                            :snippet="`gpmapr::variant(${new URLSearchParams(location.search).get('id')})`"
+                            @close="closeRPackageModal()"
+                        ></r-package-modal>
                         <table
                             class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7 mr-0 is-compact"
                         >
