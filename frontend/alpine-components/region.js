@@ -35,6 +35,7 @@ export default function region() {
         minMbp: null,
         maxMbp: null,
         errorMessage: null,
+        rPackageModalOpen: false,
 
         async loadData() {
             const ldBlockId = new URLSearchParams(location.search).get("id");
@@ -167,6 +168,14 @@ export default function region() {
             if (trait !== null) {
                 this.displayFilters.traitName = trait;
             }
+        },
+
+        openRPackageModal() {
+            this.rPackageModalOpen = true;
+        },
+
+        closeRPackageModal() {
+            this.rPackageModalOpen = false;
         },
 
         get filteredColocDataExist() {

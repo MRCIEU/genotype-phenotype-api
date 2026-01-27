@@ -17,6 +17,7 @@ export default function variant() {
         errorMessage: null,
         selectedRowId: null,
         highlightLock: false,
+        rPackageModalOpen: false,
 
         init() {
             this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
@@ -131,6 +132,14 @@ export default function variant() {
             if (this.clearGraphHighlight) {
                 this.clearGraphHighlight();
             }
+        },
+
+        openRPackageModal() {
+            this.rPackageModalOpen = true;
+        },
+
+        closeRPackageModal() {
+            this.rPackageModalOpen = false;
         },
 
         downloadDataOnly() {

@@ -39,6 +39,7 @@ export default function trait() {
         },
         errorMessage: null,
         downloadClicked: false,
+        rPackageModalOpen: false,
 
         async loadData() {
             let traitId = new URLSearchParams(location.search).get("id");
@@ -213,6 +214,14 @@ export default function trait() {
                     }
                 }
             }
+        },
+
+        openRPackageModal() {
+            this.rPackageModalOpen = true;
+        },
+
+        closeRPackageModal() {
+            this.rPackageModalOpen = false;
         },
 
         async downloadDataOnly() {
