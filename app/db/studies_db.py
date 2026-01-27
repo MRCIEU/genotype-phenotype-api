@@ -491,8 +491,8 @@ class StudiesDBClient:
             SELECT gene_annotations.gene, COUNT(DISTINCT rare_results.rare_result_group_id) as num_rare_results
             FROM rare_results
             JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
-            JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
-            WHERE study_extractions.cis_trans = '{CisTrans.cis.value}'
+            JOIN gene_annotations ON (rare_results.gene_id = gene_annotations.id OR rare_results.situated_gene_id = gene_annotations.id)
+            WHERE study_extractions.cis_trans = '{CisTrans.cis.value}' OR study_extractions.cis_trans IS NULL
             GROUP BY gene_annotations.gene
         """
         return self.studies_conn.execute(query).fetchall()
