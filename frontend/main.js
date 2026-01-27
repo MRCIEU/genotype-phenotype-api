@@ -45,7 +45,7 @@ const graphOptions = {
     categories: {
         "Cell / Protein": {
             "Cell Trait": false,
-            "Plasma Protein": false,
+            "Targeted Protein Measure": false,
         },
         "Social / Behavioural": {
             "Environmental Measures": false,

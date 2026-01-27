@@ -30,7 +30,7 @@ class StudyDataType(Enum):
     methylation = "Methylation"
     protein = "Protein"
     cell_trait = "Cell Trait"
-    plasma_protein = "Plasma Protein"
+    plasma_protein = "Targeted Protein Measure"
     phenotype = "Phenotype"
 
 
