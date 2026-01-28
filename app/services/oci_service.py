@@ -5,10 +5,6 @@ from app.config import get_settings
 from app.logging_config import get_logger
 from app.models.schemas import Singleton
 import os
-import io
-import zipfile
-import tempfile
-import shutil
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -29,6 +25,9 @@ class OCIService(metaclass=Singleton):
         """
         self.bucket_name = settings.OCI_BUCKET_NAME
         self.namespace = settings.OCI_NAMESPACE
+
+        if not self.namespace:
+            raise ValueError("OCI Object Storage not configured. OCIService is disabled.")
 
         try:
             signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
@@ -190,26 +189,21 @@ class OCIService(metaclass=Singleton):
             logger.error(f"Failed to generate pre-signed URL for {object_name}: {e}")
             raise
 
-    def download_and_zip_prefix(
-        self, prefix: str, zip_filename: Optional[str] = None, temp_dir: Optional[str] = None
-    ) -> io.BytesIO:
+    def delete_prefix(self, prefix: str) -> bool:
         """
-        Download all files with a given prefix from OCI Object Storage and zip them.
+        Delete all objects with a given prefix from OCI Object Storage.
 
         Args:
-            prefix: The prefix/directory path in the bucket to download all files from
-            zip_filename: Optional name for the zip file (defaults to prefix-based name)
-            temp_dir: Optional temporary directory for downloads (defaults to system temp)
+            prefix: The prefix/directory path in the bucket to delete all files from
 
         Returns:
-            BytesIO object containing the zip file
+            True if all deletions were successful
 
         Raises:
-            Exception: If download or zip creation fails
+            Exception: If deletion fails
         """
-        temp_download_dir = None
         try:
-            logger.info(f"Listing objects with prefix: {prefix}")
+            logger.info(f"Listing objects with prefix for deletion: {prefix}")
             list_objects_response = self.object_storage_client.list_objects(
                 namespace_name=self.namespace,
                 bucket_name=self.bucket_name,
@@ -218,84 +212,16 @@ class OCIService(metaclass=Singleton):
 
             objects = list_objects_response.data.objects
             if not objects:
-                logger.warning(f"No objects found with prefix: {prefix}")
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-                    pass
-                zip_buffer.seek(0)
-                return zip_buffer
+                logger.warning(f"No objects found with prefix to delete: {prefix}")
+                return True
 
-            logger.info(f"Found {len(objects)} objects to download")
+            logger.info(f"Found {len(objects)} objects to delete")
 
-            if temp_dir:
-                temp_download_dir = tempfile.mkdtemp(dir=temp_dir)
-            else:
-                temp_download_dir = tempfile.mkdtemp()
-
-            downloaded_files = []
             for obj in objects:
-                object_name = obj.name
-                archive_name = object_name
+                self.delete_file(obj.name)
 
-                if archive_name == "" or archive_name.endswith("/"):
-                    continue
-
-                local_file_path = os.path.join(temp_download_dir, os.path.basename(archive_name))
-                if "/" in archive_name:
-                    local_subdir = os.path.join(temp_download_dir, os.path.dirname(archive_name))
-                    os.makedirs(local_subdir, exist_ok=True)
-                    local_file_path = os.path.join(local_subdir, os.path.basename(archive_name))
-
-                try:
-                    response = self.object_storage_client.get_object(
-                        namespace_name=self.namespace,
-                        bucket_name=self.bucket_name,
-                        object_name=object_name,
-                    )
-
-                    # Write to local file
-                    os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-                    with open(local_file_path, "wb") as f:
-                        for chunk in response.data.raw.stream(1024 * 1024, decode_content=False):
-                            f.write(chunk)
-
-                    downloaded_files.append((local_file_path, archive_name))
-                    logger.debug(f"Downloaded {object_name} to {local_file_path}")
-
-                except Exception as e:
-                    logger.error(f"Failed to download {object_name}: {e}")
-                    # Continue with other files
-                    continue
-
-            if not downloaded_files:
-                logger.warning("No files were successfully downloaded")
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-                    pass
-                zip_buffer.seek(0)
-                return zip_buffer
-
-            # Create zip file in memory
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                for local_path, archive_name in downloaded_files:
-                    if os.path.exists(local_path):
-                        zip_file.write(local_path, arcname=archive_name)
-                        logger.debug(f"Added {archive_name} to zip")
-
-            zip_buffer.seek(0)
-            logger.info(f"Successfully created zip with {len(downloaded_files)} files from prefix {prefix}")
-
-            return zip_buffer
+            return True
 
         except Exception as e:
-            logger.error(f"Failed to download and zip prefix {object_name}: {e}")
+            logger.error(f"Failed to delete objects with prefix {prefix}: {e}")
             raise
-        finally:
-            # Clean up temporary directory
-            if temp_download_dir and os.path.exists(temp_download_dir):
-                try:
-                    shutil.rmtree(temp_download_dir)
-                    logger.debug(f"Cleaned up temporary directory: {temp_download_dir}")
-                except Exception as e:
-                    logger.warning(f"Failed to clean up temporary directory {temp_download_dir}: {e}")

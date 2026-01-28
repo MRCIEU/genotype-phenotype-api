@@ -3,12 +3,14 @@ import traceback
 import uuid
 import os
 import hashlib
+import shutil
+
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
 from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
-
+from app.services.email_service import EmailService
 from app.models.schemas import (
     ExtendedStudyExtraction,
     ExtendedUploadColocGroup,
@@ -36,17 +38,17 @@ logger = get_logger(__name__)
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def upload_gwas(request: Request, request_body_str: str = Form(..., alias="request"), file: UploadFile = None):
     try:
-        # Parse the request body from form data (JSON string)
-        # The ProcessGwasRequest model validator handles json.loads() internally
-        request_body = ProcessGwasRequest.model_validate(request_body_str)
+        redis = RedisClient()
 
-        # redis = RedisClient()
-        # is_allowed, recent_uploads = redis.update_user_upload(request_body.email)
-        # if not is_allowed:
-        #     raise HTTPException(
-        #         status_code=429,
-        #         detail=f"Too many upload attempts (limit 100/day). Current uploads in last 24h: {recent_uploads}"
-        #     )
+        request_body = ProcessGwasRequest.model_validate(request_body_str)
+        processing_guids = redis.get_processing_guids_for_user(request_body.email)
+
+        print(processing_guids)
+        if processing_guids:
+            raise HTTPException(
+                status_code=429,
+                detail=f"You already have an upload processing (GUIDs: {', '.join(processing_guids)}). Please wait until it finishes.",
+            )
 
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
@@ -60,8 +62,9 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         hash_bytes = sha256_hash.digest()[:16]
         file_guid = str(uuid.UUID(bytes=hash_bytes))
 
-        os.makedirs(os.path.join(settings.GWAS_DIR, file_guid), exist_ok=True)
-        file_location = os.path.join(settings.GWAS_DIR, file_guid, file.filename)
+        file_directory = os.path.join(settings.GWAS_DIR, file_guid)
+        os.makedirs(file_directory, exist_ok=True)
+        file_location = os.path.join(file_directory, file.filename)
 
         bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
         os.rename(file_path, file_location)
@@ -86,21 +89,23 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         gwas = db.create_gwas_upload(request_body)
         gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
-        redis_json = {
-            "file_location": bucket_file_location,
-            "metadata": request_body.model_dump(mode="json"),
-        }
+        redis.add_gwas_to_queue(bucket_file_location, request_body.model_dump(mode="json"))
+        queue_position = redis.get_queue_position(redis.process_gwas_queue, file_guid)
 
-        redis = RedisClient()
-        redis.add_to_queue(redis.process_gwas_queue, redis_json)
+        email_service = EmailService()
+        await email_service.send_submission_email(request_body.email, file_guid, queue_position)
+
+        if os.path.exists(file_directory):
+            shutil.rmtree(file_directory)
 
         return gwas
     except HTTPException as e:
         raise e
     except Exception as e:
-        # Clean up file if there's an error
-        if "file_path" in locals() and os.path.exists(file_path):
-            os.remove(file_path)
+        # Clean up file directory if there's an error
+        if "file_directory" in locals() and os.path.exists(file_directory):
+            shutil.rmtree(file_directory)
+
         logger.error(f"Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -115,7 +120,7 @@ async def update_gwas(
     try:
         gwas_upload_db = GwasDBClient()
         gwas_upload_service = GwasUploadService()
-        # email_service = EmailService()
+        email_service = EmailService()
 
         gwas = gwas_upload_db.get_gwas_by_guid(guid)
         if gwas is None:
@@ -124,11 +129,11 @@ async def update_gwas(
 
         if not update_gwas_request.success:
             updated_gwas = gwas_upload_service.update_gwas_failure(gwas, update_gwas_request)
-            # await email_service.send_failure_email(gwas.email, guid)
+            await email_service.send_failure_email(gwas.email, guid)
             return updated_gwas
 
         updated_gwas = gwas_upload_service.update_gwas_success(gwas, update_gwas_request)
-        # await email_service.send_results_email(gwas.email, guid)
+        await email_service.send_results_email(gwas.email, guid)
 
         return updated_gwas
     except HTTPException as e:
@@ -150,6 +155,7 @@ async def get_gwas(
     try:
         studies_db = StudiesDBClient()
         gwas_upload_db = GwasDBClient()
+
         gwas = gwas_upload_db.get_gwas_by_guid(guid)
         if gwas is None:
             raise HTTPException(status_code=404, detail="GWAS not found")
@@ -158,14 +164,12 @@ async def get_gwas(
         gwas.email = None
 
         if gwas.status != GwasStatus.COMPLETED:
-            return UploadTraitResponse(
-                trait=gwas,
-                study_extractions=None,
-                upload_study_extractions=None,
-                coloc_groups=None,
-                coloc_pairs=None,
-                rare_results=None,
-            )
+            queue_position = None
+            if gwas.status == GwasStatus.PROCESSING:
+                redis_client = RedisClient()
+                queue_position = redis_client.get_queue_position(redis_client.process_gwas_queue, guid)
+
+            return UploadTraitResponse(trait=gwas, queue_position=queue_position)
 
         coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
         coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
@@ -198,4 +202,21 @@ async def get_gwas(
         raise e
     except Exception as e:
         logger.error(f"Error in get_gwas: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{guid}/summary-stats", response_model=str)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def get_gwas_summary_stats(
+    request: Request,
+    guid: str,
+):
+    try:
+        oci_service = OCIService()
+        return oci_service.get_file_url(f"gwas_upload/{guid}/gwas_with_lbfs.tsv.gz")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in get_gwas_summary_stats: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

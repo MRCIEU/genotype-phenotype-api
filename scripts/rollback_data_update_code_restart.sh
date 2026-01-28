@@ -11,10 +11,13 @@ mv /home/opc/gpmap_data/db/coloc_pairs_backup.db /home/opc/gpmap_data/db/coloc_p
 mv /home/opc/gpmap_data/db/associations.db /home/opc/gpmap_data/db/associations_new.db
 mv /home/opc/gpmap_data/db/associations_backup.db /home/opc/gpmap_data/db/associations.db
 
+mv /home/opc/gpmap_data/db/associations_full.db /home/opc/gpmap_data/db/associations_full_new.db
+mv /home/opc/gpmap_data/db/associations_full_backup.db /home/opc/gpmap_data/db/associations_full.db
+
 mv /home/opc/gpmap_data/db/ld.db /home/opc/gpmap_data/db/ld_new.db
 mv /home/opc/gpmap_data/db/ld_backup.db /home/opc/gpmap_data/db/ld.db
 
-sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune
+sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune --detach=true
 
 echo "Refreshing cache"
 sleep 5

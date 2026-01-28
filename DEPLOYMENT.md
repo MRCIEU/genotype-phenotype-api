@@ -54,6 +54,21 @@ If there are problems when trying to update the docker swarm config / images, ch
 * ```sudo docker service inspect gpmap_api --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'```: verify image version
 * ```sudo docker service update --force gpmap_gwas_upload_worker```: if the upload worker just stopped.
 
+
+## Upload Server Configuration
+
+You may want to increase the swap on each server, to do this
+```
+# 1. Create a 12GB file named 'extraswap' in the root directory
+sudo fallocate -l 12G /extraswap
+# 2. Set strict permissions so only the root user can read it
+sudo chmod 600 /extraswap
+# 3. Format the file to be used as swap
+sudo mkswap /extraswap
+# 4. Activate the swap file immediately
+sudo swapon /extraswap
+```
+
 ## Data and Code Deployment
 
 All of the data for this project gets created on ieu-p1

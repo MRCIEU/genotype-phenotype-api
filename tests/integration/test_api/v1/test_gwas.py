@@ -17,37 +17,40 @@ def test_remove_all_data():
     system("git checkout tests/test_data/gwas_upload_small.db")
 
 
-@pytest.fixture(scope="module")
-def test_guid(mock_redis, mock_oci_service):
-    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
-        request_data = {
-            "reference_build": "GRCh38",
-            "email": "ae@email.com",
-            "name": "Example Study",
-            "category": "continuous",
-            "is_published": "false",
-            "doi": None,
-            "should_be_added": "false",
-            "sample_size": "23423",
-            "ancestry": "EUR",
-            "p_value_threshold": 1.5e-4,
-            "column_names": {
-                "chr": "CHR",
-                "bp": "BP",
-                "ea": "EA",
-                "oa": "OA",
-                "beta": "BETA",
-                "se": "SE",
-                "p": "P",
-                "eaf": "EAF",
-                "rsid": "RSID",
-            },
-        }
+@pytest.fixture(scope="module", autouse=True)
+def test_request_data():
+    return {
+        "reference_build": "GRCh38",
+        "email": "ae@email.com",
+        "name": "Example Study",
+        "category": "continuous",
+        "is_published": "false",
+        "doi": None,
+        "should_be_added": "false",
+        "sample_size": "23423",
+        "ancestry": "EUR",
+        "p_value_threshold": 1.5e-4,
+        "column_names": {
+            "chr": "CHR",
+            "bp": "BP",
+            "ea": "EA",
+            "oa": "OA",
+            "beta": "BETA",
+            "se": "SE",
+            "p": "P",
+            "eaf": "EAF",
+            "rsid": "RSID",
+        },
+    }
 
+
+@pytest.fixture(scope="module")
+def test_guid(mock_redis, mock_oci_service, mock_email_service, test_request_data):
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         response = client.post(
             "/v1/gwas/",
             data={
-                "request": json.dumps(request_data),
+                "request": json.dumps(test_request_data),
             },
             files={"file": f},
         )
@@ -56,9 +59,28 @@ def test_guid(mock_redis, mock_oci_service):
     assert response.status_code == 200
     assert "guid" in response.json()
     mock_redis.lpush.assert_called_once()
-    # Verify OCI service was called to upload the file
     mock_oci_service.upload_file.assert_called_once()
+    mock_email_service.send_submission_email.assert_called_once()
     return response.json()["guid"]
+
+
+def test_upload_gwas_duplicate(test_guid, mock_redis, test_request_data):
+    mock_redis.lrange.return_value = [json.dumps({"metadata": {"guid": test_guid, "email": "ae@email.com"}})]
+
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
+        response = client.post(
+            "/v1/gwas/",
+            data={
+                "request": json.dumps(test_request_data),
+            },
+            files={"file": f},
+        )
+    print(response.json())
+
+    # Reset mock for other tests
+    mock_redis.lrange.return_value = []
+
+    assert response.status_code == 429
 
 
 def test_get_gwas_not_found():
@@ -66,7 +88,19 @@ def test_get_gwas_not_found():
     assert response.status_code == 404
 
 
-def test_put_gwas_failure(test_guid):
+def test_get_gwas_processing(test_guid, mock_redis):
+    mock_redis.lrange.return_value = [json.dumps({"metadata": {"guid": test_guid}})]
+
+    response = client.get(f"/v1/gwas/{test_guid}")
+    assert response.status_code == 200
+    print(response.json())
+
+    gwas_model = UploadTraitResponse(**response.json())
+    mock_redis.lrange.return_value = []
+    assert gwas_model.queue_position == 1
+
+
+def test_put_gwas_failure(test_guid, mock_email_service):
     with open("tests/test_data/update_gwas_failure_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
@@ -74,6 +108,7 @@ def test_put_gwas_failure(test_guid):
     print(response.json())
     assert response.status_code == 200
     assert response.json()["status"] == GwasStatus.FAILED.value
+    mock_email_service.send_failure_email.assert_called_once()
 
 
 def test_put_gwas_not_found():
@@ -84,7 +119,7 @@ def test_put_gwas_not_found():
     assert response.status_code == 404
 
 
-def test_put_gwas_success(test_guid):
+def test_put_gwas_success(test_guid, mock_email_service):
     with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
         update_gwas_payload = json.load(update_gwas_payload)
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
@@ -93,6 +128,7 @@ def test_put_gwas_success(test_guid):
     assert response.status_code == 200
     gwas_model = GwasUpload(**response.json())
     assert gwas_model.status == GwasStatus.COMPLETED
+    mock_email_service.send_results_email.assert_called_once()
 
 
 def test_get_gwas(test_guid):

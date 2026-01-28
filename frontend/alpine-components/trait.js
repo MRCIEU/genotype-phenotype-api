@@ -39,6 +39,7 @@ export default function trait() {
         },
         errorMessage: null,
         downloadClicked: false,
+        rPackageModalOpen: false,
 
         async loadData() {
             let traitId = new URLSearchParams(location.search).get("id");
@@ -71,7 +72,8 @@ export default function trait() {
         transformDataForGraphs() {
             // Count frequency of each id in colocs and scale between 2 and 10
             const [scaledMinNumStudies, scaledMaxNumStudies] = [2, 10];
-            const idFrequencies = this.data.coloc_groups.reduce((acc, obj) => {
+            const colocGroups = this.data.coloc_groups || [];
+            const idFrequencies = colocGroups.reduce((acc, obj) => {
                 if (obj.coloc_group_id) {
                     acc[obj.coloc_group_id] = (acc[obj.coloc_group_id] || 0) + 1;
                 }
@@ -80,22 +82,22 @@ export default function trait() {
 
             // Get min and max frequencies
             const frequencies = Object.values(idFrequencies);
-            const minNumStudies = Math.min(...frequencies);
-            const maxNumStudies = Math.max(...frequencies);
+            const minNumStudies = frequencies.length > 0 ? Math.min(...frequencies) : 0;
+            const maxNumStudies = frequencies.length > 0 ? Math.max(...frequencies) : 0;
 
-            this.data.study_extractions = this.data.study_extractions.map(se => {
+            this.data.study_extractions = (this.data.study_extractions || []).map(se => {
                 se.MbP = se.bp / 1000000;
                 se.chrText = "CHR ".concat(se.chr);
                 se.ignore = false;
                 return se;
             });
-            this.data.rare_results = this.data.rare_results.map(r => {
+            this.data.rare_results = (this.data.rare_results || []).map(r => {
                 r.MbP = r.bp / 1000000;
                 r.chrText = "CHR ".concat(r.chr);
                 r.ignore = false;
                 return r;
             });
-            this.data.coloc_groups = this.data.coloc_groups.map(c => {
+            this.data.coloc_groups = (this.data.coloc_groups || []).map(c => {
                 c.MbP = c.bp / 1000000;
                 c.chrText = "CHR ".concat(c.chr);
                 c.annotationColor =
@@ -119,7 +121,7 @@ export default function trait() {
             const graphOptions = Alpine.store("graphOptionStore");
             const selectedCategories = graphTransformations.selectedTraitCategories(graphOptions);
 
-            this.filteredData.coloc_groups = this.data.coloc_groups.filter(coloc => {
+            this.filteredData.coloc_groups = (this.data.coloc_groups || []).filter(coloc => {
                 if (this.userUpload) return true;
                 let graphOptionFilters =
                     coloc.min_p <= graphOptions.pValue &&
@@ -143,7 +145,7 @@ export default function trait() {
                 return graphOptionFilters && displayFilters && categoryFilters;
             });
 
-            this.filteredData.rare = this.data.rare_results.filter(rare => {
+            this.filteredData.rare = (this.data.rare_results || []).filter(rare => {
                 const graphOptionFilters =
                     rare.min_p <= graphOptions.pValue &&
                     (graphOptions.includeTrans ? true : rare.cis_trans !== "trans") &&
@@ -180,7 +182,8 @@ export default function trait() {
                 return;
             }
             if (constants.isLocal) {
-                const minP = this.data.coloc_groups.reduce((min, se) => Math.min(min, se.min_p), Infinity);
+                const colocGroups = this.data.coloc_groups || [];
+                const minP = colocGroups.reduce((min, se) => Math.min(min, se.min_p), Infinity);
                 traitId = minP < 1e-10 ? "gwas" : "short_gwas";
             }
 
@@ -213,9 +216,38 @@ export default function trait() {
             }
         },
 
-        async downloadData() {
+        openRPackageModal() {
+            this.rPackageModalOpen = true;
+        },
+
+        closeRPackageModal() {
+            this.rPackageModalOpen = false;
+        },
+
+        async downloadDataOnly() {
             await downloads.downloadDataToZip(this.data, this.data.trait.trait_name || this.data.trait.name);
             this.downloadClicked = true;
+        },
+
+        async downloadDataAndGWAS() {
+            if (this.userUpload) {
+                let traitId = new URLSearchParams(location.search).get("id");
+                try {
+                    await this.downloadDataOnly();
+                    const response = await fetch(constants.apiUrl + "/gwas/" + traitId + "/summary-stats");
+                    if (!response.ok) {
+                        this.errorMessage = `Failed to get summary stats: ${response.status} ${response.statusText}`;
+                        return;
+                    }
+                    const downloadUrl = await response.json();
+                    if (downloadUrl) {
+                        downloads.downloadFile(downloadUrl);
+                    }
+                } catch (error) {
+                    console.error("Error downloading GWAS data:", error);
+                    this.errorMessage = "Error initiating download. Please try again.";
+                }
+            }
         },
 
         get showResults() {

@@ -77,25 +77,26 @@ class TestRedisDLQ:
 
         assert guids == []
 
-    def test_retry_guid_from_dlq_success(self, redis_client, mock_redis, sample_dlq_message):
-        """Test successfully retrying a GUID from DLQ."""
+    def test_retry_guid_from_dlq_success(self, redis_client, mock_redis, sample_dlq_message, mocker):
+        """Test successfully retrying a GUID from DLQ using new lrem logic."""
         queue_name = "process_gwas"
         dlq_name = f"{queue_name}_dlq"
         guid = "test-guid-123"
+        serialized_msg = json.dumps(sample_dlq_message)
 
         # Mock DLQ containing the message
-        mock_redis.lrange.return_value = [json.dumps(sample_dlq_message)]
-        mock_redis.delete.return_value = 1
-        mock_redis.rpush.return_value = 1
+        mock_redis.lrange.return_value = [serialized_msg]
+        mock_redis.lrem.return_value = 1
 
         # Mock add_to_queue to return True
-        with patch.object(redis_client, "add_to_queue", return_value=True) as mock_add:
-            result = redis_client.retry_guid_from_dlq(queue_name, guid)
+        mock_add = mocker.patch.object(redis_client, "add_to_queue", return_value=True)
 
-            assert result is True
-            mock_redis.lrange.assert_called_once_with(dlq_name, 0, -1)
-            mock_redis.delete.assert_called_once_with(dlq_name)
-            mock_add.assert_called_once_with(queue_name, sample_dlq_message["original_message"])
+        result = redis_client.retry_guid_from_dlq(queue_name, guid)
+
+        assert result is True
+        mock_redis.lrange.assert_called_once_with(dlq_name, 0, -1)
+        mock_redis.lrem.assert_called_once_with(dlq_name, 1, serialized_msg)
+        mock_add.assert_called_once_with(queue_name, sample_dlq_message["original_message"])
 
     def test_retry_guid_from_dlq_not_found(self, redis_client, mock_redis):
         """Test retrying a GUID that doesn't exist in DLQ."""
@@ -109,42 +110,56 @@ class TestRedisDLQ:
 
         assert result is False
 
-    def test_retry_guid_from_dlq_add_to_queue_fails(self, redis_client, mock_redis, sample_dlq_message):
-        """Test when add_to_queue fails, message is put back in DLQ."""
+    def test_retry_guid_from_dlq_add_to_queue_fails(self, redis_client, mock_redis, sample_dlq_message, mocker):
+        """Test when add_to_queue fails, message is moved back to DLQ."""
         queue_name = "process_gwas"
         guid = "test-guid-123"
+        serialized_msg = json.dumps(sample_dlq_message)
 
-        mock_redis.lrange.return_value = [json.dumps(sample_dlq_message)]
-        mock_redis.delete.return_value = 1
-        mock_redis.rpush.return_value = 1
+        mock_redis.lrange.return_value = [serialized_msg]
+        mock_redis.lrem.return_value = 1
 
         # Mock add_to_queue to return False
-        with patch.object(redis_client, "add_to_queue", return_value=False) as mock_add:
-            result = redis_client.retry_guid_from_dlq(queue_name, guid)
+        mocker.patch.object(redis_client, "add_to_queue", return_value=False)
+        mock_move = mocker.patch.object(redis_client, "move_to_dlq")
 
-            assert result is False
-            mock_add.assert_called_once_with(queue_name, sample_dlq_message["original_message"])
-            # Message should be put back in DLQ
-            assert mock_redis.rpush.call_count >= 1
+        result = redis_client.retry_guid_from_dlq(queue_name, guid)
 
-    def test_retry_guid_from_dlq_with_remaining_messages(self, redis_client, mock_redis):
-        """Test retrying a GUID when there are other messages in DLQ."""
+        assert result is False
+        # Should be moved back to DLQ
+        mock_move.assert_called_once_with(
+            queue_name, sample_dlq_message["original_message"], sample_dlq_message["error"]
+        )
+
+    def test_remove_from_dlq_success(self, redis_client, mock_redis, sample_dlq_message):
+        """Test successfully removing a specific message from DLQ."""
         queue_name = "process_gwas"
-        guid = "guid-to-retry"
+        dlq_name = f"{queue_name}_dlq"
+        guid = "test-guid-123"
+        serialized_msg = json.dumps(sample_dlq_message)
 
-        message_to_retry = {"original_message": {"metadata": {"guid": guid}}}
-        other_message = {"original_message": {"metadata": {"guid": "other-guid"}}}
+        mock_redis.lrange.return_value = [serialized_msg]
+        mock_redis.lrem.return_value = 1
 
-        mock_redis.lrange.return_value = [json.dumps(message_to_retry), json.dumps(other_message)]
-        mock_redis.delete.return_value = 1
-        mock_redis.rpush.return_value = 1
+        result = redis_client.remove_from_dlq(queue_name, guid)
 
-        with patch.object(redis_client, "add_to_queue", return_value=True):
-            result = redis_client.retry_guid_from_dlq(queue_name, guid)
+        assert result is True
+        mock_redis.lrem.assert_called_once_with(dlq_name, 1, serialized_msg)
 
-            assert result is True
-            # Should rebuild DLQ with remaining message
-            assert mock_redis.rpush.call_count >= 1
+    def test_remove_from_queue_success(self, redis_client, mock_redis):
+        """Test successfully removing a specific message from a main queue."""
+        queue_name = "process_gwas"
+        guid = "test-guid-123"
+        message = {"metadata": {"guid": guid}}
+        serialized_msg = json.dumps(message)
+
+        mock_redis.lrange.return_value = [serialized_msg]
+        mock_redis.lrem.return_value = 1
+
+        result = redis_client.remove_from_queue(queue_name, guid)
+
+        assert result is True
+        mock_redis.lrem.assert_called_once_with(queue_name, 1, serialized_msg)
 
     def test_retry_guid_from_dlq_invalid_queue_name(self, redis_client):
         """Test retrying with invalid queue name raises ValueError."""

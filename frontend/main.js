@@ -13,6 +13,7 @@ import homepage from "./alpine-components/homepage.js";
 import variant from "./alpine-components/variant.js";
 import snpManhattan from "./alpine-components/snpManhattan.js";
 import data from "./alpine-components/data.js";
+import faq from "./alpine-components/faq.js";
 import contact from "./alpine-components/contact.js";
 
 window.Alpine = Alpine;
@@ -21,11 +22,13 @@ import { NavigationBar } from "./web-components/navigation-bar.js";
 import { ResultsTable } from "./web-components/results-table.js";
 import { GraphOptions } from "./web-components/graph-options.js";
 import { PipelineSummary } from "./web-components/pipeline-summary.js";
+import { RPackageModal } from "./web-components/r-package-modal.js";
 
 customElements.define("navigation-bar", NavigationBar);
 customElements.define("graph-options", GraphOptions);
 customElements.define("pipeline-summary", PipelineSummary);
 customElements.define("results-table", ResultsTable);
+customElements.define("r-package-modal", RPackageModal);
 
 // import * as Sentry from "@sentry/browser";
 // if (!import.meta.env.VITE_DEBUG === 'true') {
@@ -44,7 +47,7 @@ const graphOptions = {
     categories: {
         "Cell / Protein": {
             "Cell Trait": false,
-            "Plasma Protein": false,
+            "Targeted Protein Measure": false,
         },
         "Social / Behavioural": {
             "Environmental Measures": false,
@@ -117,4 +120,5 @@ Alpine.data("region", region);
 Alpine.data("variant", variant);
 Alpine.data("snpManhattan", snpManhattan);
 Alpine.data("contact", contact);
+Alpine.data("faq", faq);
 Alpine.start();

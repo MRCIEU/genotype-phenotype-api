@@ -1,11 +1,10 @@
 import pytest
-import io
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from app.models.schemas import Singleton
 
 variant_data = {
-    "8466160": {"rsid": "rs16879765", "variant": "7:37949493"},
-    "8466304": {"rsid": "rs145159117", "variant": "7:37979301"},
+    "80732": {"rsid": "rs7524102", "variant": "1:22371954"},
+    "80717": {"rsid": "rs11810751", "variant": "1:22365104"},
 }
 
 
@@ -100,6 +99,21 @@ def mock_redis_cache():
 
 
 @pytest.fixture(scope="module", autouse=True)
+def mock_email_service():
+    """Mock Email Service for all tests - stubs all email operations"""
+    mock_email_service_instance = Mock()
+    mock_email_service_instance.send_failure_email = AsyncMock(return_value=None)
+    mock_email_service_instance.send_results_email = AsyncMock(return_value=None)
+    mock_email_service_instance.send_submission_email = AsyncMock(return_value=None)
+    with (
+        patch("app.api.v1.endpoints.gwas.EmailService", return_value=mock_email_service_instance),
+        patch("app.api.v1.endpoints.info.EmailService", return_value=mock_email_service_instance),
+        patch("app.services.email_service.EmailService", return_value=mock_email_service_instance),
+    ):
+        yield mock_email_service_instance
+
+
+@pytest.fixture(scope="module", autouse=True)
 def mock_oci_service():
     """Mock OCI Service for all tests - stubs all OCI Object Storage operations"""
 
@@ -109,7 +123,6 @@ def mock_oci_service():
     mock_oci_service_instance.download_file.return_value = "/mocked/local/path"
     mock_oci_service_instance.delete_file.return_value = True
     mock_oci_service_instance.get_file_url.return_value = "https://mocked-url.example.com/file"
-    mock_oci_service_instance.download_and_zip_prefix.return_value = io.BytesIO(b"mocked zip content")
 
     mock_oci_service_instance.bucket_name = "test_bucket"
     mock_oci_service_instance.namespace = "test_namespace"

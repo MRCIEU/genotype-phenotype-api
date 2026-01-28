@@ -1,6 +1,7 @@
 from functools import lru_cache, wraps
 from typing import List, Tuple
 from app.db.associations_db import AssociationsDBClient
+from app.db.associations_full_db import AssociationsFullDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger
 from app.services.redis_decorator import redis_cache
@@ -51,17 +52,34 @@ def associations_redis_cache(min_size: int = 100, expire: int = 0, prefix: str =
 class AssociationsService:
     def __init__(self):
         self.associations_db = AssociationsDBClient()
+        self.associations_full_db = AssociationsFullDBClient()
         self.redis_client = RedisClient()
         self.cache_prefix = "associations_cache"
 
+    def get_associations(self, colocs: List[ColocGroup] = [], rare_results: List[RareResult] = []):
+        snp_study_pairs = [(coloc.snp_id, coloc.study_id) for coloc in colocs] + [
+            (r.snp_id, r.study_id) for r in rare_results
+        ]
+        associations, columns = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
+        associations = convert_duckdb_tuples_to_dicts(associations, columns)
+        return associations
+
+    def get_associations_by_snp_ids_and_study_ids(self, snp_ids: List[int], study_ids: List[int]):
+        snp_study_pairs = [(snp_id, study_id) for snp_id in snp_ids for study_id in study_ids]
+        associations, columns = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
+        associations = convert_duckdb_tuples_to_dicts(associations, columns)
+        return associations
+
     @lru_cache(maxsize=1)
-    def get_associations_metadata(self):
-        metadata = self.associations_db.get_associations_metadata()
+    def get_associations_full_metadata(self):
+        raise Exception("associations_full_db is not currently used")
+        metadata = self.associations_full_db.get_associations_metadata()
         metadata = convert_duckdb_to_pydantic_model(AssociationMetadata, metadata)
         return metadata
 
     def split_association_query_by_metadata(self, snp_study_pairs: List[Tuple[int, int]]):
-        associations_metadata = self.get_associations_metadata()
+        raise Exception("associations_full_db is not currently used")
+        associations_metadata = self.get_associations_full_metadata()
         metadata_to_pairs = {metadata.associations_table_name: [] for metadata in associations_metadata}
 
         for pair in snp_study_pairs:
@@ -71,12 +89,8 @@ class AssociationsService:
         return metadata_to_pairs
 
     @associations_redis_cache(min_size=10000)
-    def get_associations(
-        self,
-        colocs: List[ColocGroup] = [],
-        rare_results: List[RareResult] = [],
-        study_id: int = None,
-    ):
+    def get_associations_full(self, colocs: List[ColocGroup] = [], rare_results: List[RareResult] = []):
+        raise Exception("associations_full_db is not currently used")
         colocs = colocs or []
         rare_results = rare_results or []
 
@@ -89,7 +103,7 @@ class AssociationsService:
         all_associations = []
         for table_name, pairs in list(snp_study_pairs_by_table.items()):
             if len(pairs) > 0:
-                associations, columns = self.associations_db.get_associations_by_table_name(table_name, pairs)
+                associations, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
                 associations = convert_duckdb_tuples_to_dicts(associations, columns)
                 all_associations.extend(associations)
 
@@ -103,13 +117,15 @@ class AssociationsService:
         logger.info(f"Returning {len(filtered_associations)} associations for {len(snp_study_pairs)}")
         return filtered_associations
 
-    def get_associations_by_study_ids(self, snp_ids: List[int], study_ids: List[int]):
+    def get_associations_full_by_study_ids(self, snp_ids: List[int], study_ids: List[int]):
+        raise Exception("associations_full_db is not currently used")
+
         snp_study_pairs = [(snp_id, study_id) for snp_id in snp_ids for study_id in study_ids]
         snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
         all_associations = []
         for table_name, pairs in list(snp_study_pairs_by_table.items()):
             if len(pairs) > 0:
-                associations, columns = self.associations_db.get_associations_by_table_name(table_name, pairs)
+                associations, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
                 associations = convert_duckdb_tuples_to_dicts(associations, columns)
                 all_associations.extend(associations)
 

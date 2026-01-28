@@ -66,9 +66,23 @@ def test_get_trait_by_id():
     assert trait_response.upload_study_extractions is None
 
 
+def test_get_trait_by_name():
+    trait_name = "ukb-d-M13-FIBROBLASTIC"
+    response = client.get(f"/v1/traits/{trait_name}")
+    assert response.status_code == 200
+    traits = response.json()
+    assert traits is not None
+    trait_response = TraitResponse(**traits)
+
+    assert trait_response.trait is not None
+    assert trait_response.trait.id is not None
+    assert trait_response.trait.trait_name is not None
+
+
 def test_get_trait_by_id_with_associations():
     response = client.get("/v1/traits/5020?include_associations=true")
     traits = response.json()
+    print(traits)
     assert response.status_code == 200
     assert traits is not None
     trait_response = TraitResponse(**traits)

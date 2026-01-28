@@ -19,14 +19,15 @@ export default function homepage() {
             postUploadModalOpen: false,
             uploadSuccess: null,
             message: "",
+            guid: null,
             formData: {
                 studyType: "continuous",
                 ancestry: "EUR",
-                pValueIndex: 7,
-                pValue: 0.00000005,
+                pValueIndex: 5,
+                pValueThreshold: 0.00000005,
                 pValueOptions: [
-                    0.00015, // 1.5e-4
-                    0.00005, // 5e-5
+                    // 0.00015, // 1.5e-4
+                    // 0.00005, // 5e-5
                     0.00001, // 1e-5
                     0.000005, // 5e-6
                     0.000001, // 1e-6
@@ -271,7 +272,7 @@ export default function homepage() {
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error("Upload failed:", response.status, errorText);
-                    this.openPostUploadModal(false);
+                    this.openPostUploadModal(false, null, response.status);
                 } else {
                     const result = await response.json();
                     this.openPostUploadModal(true, result);
@@ -284,23 +285,27 @@ export default function homepage() {
             }
         },
 
-        openPostUploadModal(isSuccess, result) {
+        openPostUploadModal(isSuccess, result, status = null) {
             this.uploadMetadata.currentlyUploading = false;
             this.uploadMetadata.modalOpen = false;
             this.uploadMetadata.postUploadModalOpen = true;
 
             if (isSuccess) {
                 this.uploadMetadata.uploadSuccess = true;
+                this.uploadMetadata.guid = result.guid;
                 this.uploadMetadata.message =
                     "Upload successful!  An email will be sent to " +
                     this.uploadMetadata.formData.email +
-                    " once the analysis has been completed.  Or, you can check the status of your upload " +
-                    '<a href="trait.html?id=' +
-                    result.guid +
-                    '">here</a>.';
+                    " once the analysis has been completed.";
             } else {
                 this.uploadMetadata.uploadSuccess = false;
-                this.uploadMetadata.message = "There was an error uploading your file. Please try again later.";
+                this.uploadMetadata.guid = null;
+                if (status === 429) {
+                    this.uploadMetadata.message =
+                        "You already have a GWAS upload in the queue. Please wait for it to complete before uploading another.";
+                } else {
+                    this.uploadMetadata.message = "There was an error uploading your file. Please try again later.";
+                }
             }
         },
 
@@ -308,6 +313,7 @@ export default function homepage() {
             this.uploadMetadata.postUploadModalOpen = false;
             this.uploadMetadata.message = "";
             this.uploadMetadata.uploadSuccess = null;
+            this.uploadMetadata.guid = null;
         },
 
         openRPackageModal() {

@@ -47,7 +47,7 @@ async def get_traits(request: Request) -> GetTraitsResponse:
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait(
     request: Request,
-    trait_id: int = Path(..., description="Trait ID"),
+    trait_id: str = Path(..., description="Trait ID or name"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> TraitResponse:
     try:
@@ -86,7 +86,7 @@ async def get_trait(
 
         associations = None
         if include_associations:
-            associations = associations_service.get_associations(colocs, rare_results, trait.id)
+            associations = associations_service.get_associations(colocs, rare_results)
 
         return TraitResponse(
             trait=trait,
@@ -107,7 +107,7 @@ async def get_trait(
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait_coloc_pairs(
     request: Request,
-    trait_id: int = Path(..., description="Trait ID"),
+    trait_id: str = Path(..., description="Trait ID or name"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> dict:

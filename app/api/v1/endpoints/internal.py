@@ -1,6 +1,13 @@
 import traceback
+import shutil
 from fastapi import APIRouter, HTTPException, Request, Path
+import json
+import os
 
+from app.config import get_settings
+from app.db.gwas_db import GwasDBClient
+from app.services.oci_service import OCIService
+from app.models.schemas import convert_duckdb_to_pydantic_model, GwasUpload
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
@@ -9,6 +16,8 @@ from app.db.redis import RedisClient
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+settings = get_settings()
 
 
 @router.post("/clear-cache/all", response_model=dict, include_in_schema=False)
@@ -95,6 +104,31 @@ async def retry_all_gwas_dlq(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/gwas/{guid}/rerun", response_model=dict, include_in_schema=False)
+@time_endpoint
+async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to rerun")):
+    """
+    Rerun a GWAS upload by GUID.
+    """
+    try:
+        gwas_db = GwasDBClient()
+        redis_client = RedisClient()
+
+        gwas = gwas_db.get_gwas_by_guid(guid)
+        if gwas is None:
+            raise HTTPException(status_code=404, detail="GWAS not found")
+
+        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+        redis_client.add_to_queue(redis_client.process_gwas_queue, json.loads(gwas.upload_metadata))
+
+        return {"message": f"Successfully rerun GWAS upload with GUID {guid}"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in rerun_gwas: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/gwas-dlq", response_model=dict, include_in_schema=False)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
@@ -141,4 +175,33 @@ async def add_to_gwas_queue(request: Request, message: dict):
         raise e
     except Exception as e:
         logger.error(f"Error in add_to_gwas_queue: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/gwas/{guid}", response_model=dict, include_in_schema=False)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def delete_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to delete")):
+    """
+    Delete a GWAS upload by GUID.
+    Deletes associated files from OCI and entries from the database.
+    """
+    try:
+        oci_service = OCIService()
+        gwas_db = GwasDBClient()
+        redis_client = RedisClient()
+
+        if os.path.exists(f"{settings.GWAS_DIR}/{guid}/"):
+            shutil.rmtree(f"{settings.GWAS_DIR}/{guid}/")
+
+        oci_service.delete_prefix(f"gwas_upload/{guid}/")
+        redis_client.add_delete_gwas_to_queue(guid)
+        redis_client.remove_from_queue(redis_client.process_gwas_queue, guid)
+        gwas_db.delete_gwas_upload(guid)
+
+        return {"message": f"Successfully deleted GWAS upload with GUID {guid} and all associated data"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in delete_gwas: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))

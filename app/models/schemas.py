@@ -30,7 +30,7 @@ class StudyDataType(Enum):
     methylation = "Methylation"
     protein = "Protein"
     cell_trait = "Cell Trait"
-    plasma_protein = "Plasma Protein"
+    plasma_protein = "Targeted Protein Measure"
     phenotype = "Phenotype"
 
 
@@ -435,6 +435,7 @@ class UploadTraitResponse(BaseModel):
     upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
     rare_results: Optional[List[RareResult]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
+    queue_position: Optional[int] = None
 
 
 class GwasStatus(Enum):
@@ -540,8 +541,9 @@ class GwasUpload(BaseModel):
     ancestry: str
     category: str
     is_published: bool
-    doi: str
+    doi: Optional[str] = None
     should_be_added: bool
+    upload_metadata: Optional[str] = None
     status: GwasStatus
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None

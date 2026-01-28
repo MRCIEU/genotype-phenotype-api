@@ -158,15 +158,18 @@ class GwasUploadService:
             extra=error_context,
         )
 
-        sentry_sdk.set_context("gwas_upload", error_context)
-        sentry_sdk.capture_message(
-            f"GWAS processing failed: {update_gwas_request.failure_reason}",
-            level="error",
-        )
+        if "Caught error" not in update_gwas_request.failure_reason:
+            sentry_sdk.set_context("gwas_upload", error_context)
+            sentry_sdk.capture_message(
+                f"GWAS processing failed: {update_gwas_request.failure_reason}",
+                level="error",
+            )
 
         gwas.status = GwasStatus.FAILED.value
         gwas.failure_reason = update_gwas_request.failure_reason
-        updated_gwas = self.gwas_upload_db.update_gwas_status(gwas.guid, GwasStatus.FAILED)
+        updated_gwas = self.gwas_upload_db.update_gwas_status(
+            gwas.guid, GwasStatus.FAILED, failure_reason=update_gwas_request.failure_reason
+        )
         updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
 
         return updated_gwas

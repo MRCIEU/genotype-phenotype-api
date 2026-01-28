@@ -30,19 +30,26 @@
                             <a href="faq.html#gene-region-view" target="_blank" class="is-size-4">ⓘ</a>
                         </h3>
                         <h6 class="has-text-centered mb-0 mt-0"><span x-text="genePleiotropy"></span></h6>
-                        <h6 class="has-text-centered mb-0 mt-0">Gene Range: <span x-text="genomicRange"></span></h6>
-                        <h6 class="has-text-centered mb-0">
-                            <a x-bind:href="'region.html?id='+ ldBlockId">LD Region</a>
-                        </h6>
-                        <h6 class="has-text-centered mb-0">
-                            <a
-                                class="button is-link is-small is-centered is-light"
-                                x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName"
-                                target="_blank"
-                            >
-                                <span>NCBI Gene</span>
-                            </a>
-                        </h6>
+                        <div
+                            class="is-flex is-justify-content-center is-align-items-center mb-0 mt-0"
+                            style="gap: 1.5rem"
+                        >
+                            <h6 class="mb-0">Gene Range: <span x-text="genomicRange"></span></h6>
+                            <h6 class="mb-0">
+                                <a class="button is-link is-small is-light" x-bind:href="'region.html?id='+ ldBlockId"
+                                    >LD Region</a
+                                >
+                            </h6>
+                            <h6 class="mb-0">
+                                <a
+                                    class="button is-link is-small is-light"
+                                    x-bind:href="'https://www.ncbi.nlm.nih.gov/gene/?term='+geneName"
+                                    target="_blank"
+                                >
+                                    <span>NCBI Gene</span>
+                                </a>
+                            </h6>
+                        </div>
                     </div>
                     <div class="column is-2">
                         <div
@@ -58,7 +65,9 @@
                 <div class="columns mt-2">
                     <div class="column is-10">
                         <div class="is-divider mt-0 mb-2"></div>
-                        <h4 class="title is-3 has-text-centered mb-0">Colocalization Groups by Position</h4>
+                        <h4 class="title is-3 has-text-centered mb-0">
+                            Colocalization Groups for <span x-text="geneName"></span> by Position
+                        </h4>
                         <p class="is-size-7 has-text-centered">
                             Displays colocalization groups that are annotated by a QTL, or within the BP range of the
                             gene
@@ -144,16 +153,38 @@
                                 Data has been downloaded without GWAS summary statistics. For more information
                                 <a href="data.html#data-availability" target="_blank">click here</a>
                             </span>
-                            <button
-                                id="download-data"
-                                class="button is-success is-small mt-0 mb-0"
-                                @click="downloadData"
+                            <div
+                                class="dropdown is-right"
+                                x-data="{ open: false }"
+                                :class="{ 'is-active': open }"
+                                style="display: inline-block"
                             >
-                                Download Data
-                            </button>
+                                <div class="dropdown-trigger">
+                                    <button class="button is-success is-small" @click="open = !open" :disabled="!data">
+                                        <span>Download Data</span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu">
+                                    <div class="dropdown-content">
+                                        <a class="dropdown-item" @click="downloadData(); open = false;">
+                                            Download zip file
+                                        </a>
+                                        <a class="dropdown-item" @click="openRPackageModal(); open = false;">
+                                            Download via R package
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- R Package Modal -->
+                <r-package-modal
+                    :show="rPackageModalOpen"
+                    :snippet="`gpmapr::gene('${new URLSearchParams(location.search).get('id')}')`"
+                    @close="closeRPackageModal()"
+                ></r-package-modal>
                 <!-- Data tables -->
                 <div class="columns mt-0 mb-0 is-centered">
                     <div class="column is-11">

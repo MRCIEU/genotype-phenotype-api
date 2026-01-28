@@ -11,7 +11,7 @@ def test_get_ld_matrix_with_snp_ids(variants_in_ld_db):
     assert response.status_code == 200
 
     ld_matrix = response.json()
-    assert len(ld_matrix) > 0
+    assert len(ld_matrix["lds"]) > 0
     lds = Lds(**ld_matrix)
     for row in lds.lds:
         assert row.lead_snp_id is not None
@@ -26,7 +26,7 @@ def test_get_ld_matrix_with_variants(variants_in_ld_db):
     assert response.status_code == 200
 
     ld_matrix = response.json()
-    assert len(ld_matrix) > 0
+    assert len(ld_matrix["lds"]) > 0
     lds = Lds(**ld_matrix)
     for row in lds.lds:
         assert row.lead_snp_id is not None
@@ -40,7 +40,7 @@ def test_get_ld_proxy_with_snp_ids(variants_in_ld_db):
     response = client.get(f"v1/ld/proxies?snp_ids={snp_ids[0]}&snp_ids={snp_ids[1]}")
     assert response.status_code == 200
     ld_proxy = response.json()
-    assert len(ld_proxy) > 0
+    assert len(ld_proxy["lds"]) > 0
     lds = Lds(**ld_proxy)
     for row in lds.lds:
         assert row.lead_snp_id is not None
@@ -54,7 +54,7 @@ def test_get_ld_proxy_with_variants(variants_in_ld_db):
     response = client.get(f"v1/ld/proxies?variants={variants[0]}&variants={variants[1]}")
     assert response.status_code == 200
     ld_proxy = response.json()
-    assert len(ld_proxy) > 0
+    assert len(ld_proxy["lds"]) > 0
     lds = Lds(**ld_proxy)
     for row in lds.lds:
         assert row.lead_snp_id is not None

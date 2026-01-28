@@ -38,8 +38,11 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_trait(self, trait_id: str):
-        query = "SELECT * FROM traits WHERE id = ?"
+    def get_trait(self, trait_id: str | int):
+        if isinstance(trait_id, str) and not trait_id.isdigit():
+            query = "SELECT * FROM traits WHERE trait = ?"
+        else:
+            query = "SELECT * FROM traits WHERE id = ?"
         return self.studies_conn.execute(query, [trait_id]).fetchone()
 
     @log_performance
@@ -488,8 +491,8 @@ class StudiesDBClient:
             SELECT gene_annotations.gene, COUNT(DISTINCT rare_results.rare_result_group_id) as num_rare_results
             FROM rare_results
             JOIN study_extractions ON rare_results.study_extraction_id = study_extractions.id
-            JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
-            WHERE study_extractions.cis_trans = '{CisTrans.cis.value}'
+            JOIN gene_annotations ON (rare_results.gene_id = gene_annotations.id OR rare_results.situated_gene_id = gene_annotations.id)
+            WHERE study_extractions.cis_trans = '{CisTrans.cis.value}' OR study_extractions.cis_trans IS NULL
             GROUP BY gene_annotations.gene
         """
         return self.studies_conn.execute(query).fetchall()

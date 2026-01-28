@@ -157,16 +157,26 @@
                                     <div class="dropdown-menu">
                                         <div class="dropdown-content">
                                             <a class="dropdown-item" @click="downloadDataOnly(); open = false;">
-                                                Download Data Only
+                                                Download zip file
                                             </a>
                                             <a class="dropdown-item" @click="downloadDataAndGWAS(); open = false;">
                                                 Download Data + GWAS
+                                            </a>
+                                            <a class="dropdown-item" @click="openRPackageModal(); open = false;">
+                                                Download via R package
                                             </a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- R Package Modal -->
+                        <r-package-modal
+                            :show="rPackageModalOpen"
+                            :snippet="`gpmapr::variant(${new URLSearchParams(location.search).get('id')})`"
+                            @close="closeRPackageModal()"
+                        ></r-package-modal>
                         <table
                             class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7 mr-0 is-compact"
                         >

@@ -21,6 +21,8 @@ class LdDBClient:
 
     @log_performance
     def get_ld_proxies(self, snp_ids: List[int]):
+        if not snp_ids:
+            return []
         placeholders = ",".join(["?"] * len(snp_ids))
         query = f"""
             SELECT * FROM ld
@@ -30,6 +32,8 @@ class LdDBClient:
 
     @log_performance
     def get_ld_matrix(self, snp_ids: List[int]):
+        if not snp_ids:
+            return []
         placeholders = ",".join(["?"] * len(snp_ids))
         query = f"""
             SELECT * FROM 

@@ -50,7 +50,6 @@ services:
       start_period: 30s
     volumes:
       - api_volume:/home/opc/gpmap_data
-      - oci_credentials_volume:/home/opc/.oci
     networks:
       - gpmap_network
     ports:
@@ -95,14 +94,14 @@ services:
     working_dir: /home/pipeline
     command: ["Rscript", "worker/pipeline_worker.R"]
     deploy:
+      replicas: 1
       placement:
         constraints:
           - node.labels.type == upload
       restart_policy:
-        condition: on-failure
+        condition: any
     volumes:
       - upload_volume:/oradiskvdb1
-      - oci_credentials_volume:/home/opc/.oci
     env_file:
       - .env.pipeline_worker
     networks:
@@ -124,13 +123,6 @@ volumes:
       device: /home/opc/gpmap_data/
       o: bind
   
-  oci_credentials_volume:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/opc/.oci
-      o: bind
-
 networks:
   gpmap_network:
     external: true
