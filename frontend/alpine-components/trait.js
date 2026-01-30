@@ -59,7 +59,7 @@ export default function trait() {
                 }
 
                 this.data = await response.json();
-                await this.getSvgData(traitId);
+                await this.getSvgData(this.data.trait.id);
 
                 document.title = "GP Map: " + (this.userUpload ? this.data.trait.name : this.data.trait.trait_name);
 
