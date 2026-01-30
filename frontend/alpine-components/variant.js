@@ -18,6 +18,7 @@ export default function variant() {
         selectedRowId: null,
         highlightLock: false,
         rPackageModalOpen: false,
+        groupColorScale: d3.scaleOrdinal(d3.schemeCategory10),
 
         init() {
             this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
@@ -103,7 +104,26 @@ export default function variant() {
         getDataForTable() {
             if (!this.data) return [];
             const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])];
+            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
+
+            if (numColocGroups > 1) {
+                return all.sort((a, b) => {
+                    if (a.coloc_group_id !== b.coloc_group_id) {
+                        return (a.coloc_group_id || 0) - (b.coloc_group_id || 0);
+                    }
+                    return a.min_p - b.min_p;
+                });
+            }
             return all.sort((a, b) => a.min_p - b.min_p);
+        },
+
+        getColocGroupColor(groupId) {
+            if (groupId === null || groupId === undefined) return "transparent";
+            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
+            if (numColocGroups <= 1) return "transparent";
+
+            const color = d3.color(this.groupColorScale(groupId));
+            return `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`;
         },
 
         setHighlightedStudy(item) {
@@ -404,12 +424,11 @@ export default function variant() {
                 // Draw background circles for coloc groups if more than 1
                 if (numColocGroups > 1) {
                     const groups = d3.group(nodes, d => d.coloc_group_id);
-                    const groupColorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
                     groups.forEach((groupNodes, groupId) => {
                         if (groupId === null) return;
 
-                        const groupColor = groupColorScale(groupId);
+                        const groupColor = self.groupColorScale(groupId);
                         const xExtent = d3.extent(groupNodes, d => d.x);
                         const yExtent = d3.extent(groupNodes, d => d.y);
                         const centerX = (xExtent[0] + xExtent[1]) / 2;
