@@ -45,7 +45,8 @@ export default function trait() {
             let traitId = new URLSearchParams(location.search).get("id");
             let traitUrl = constants.apiUrl + "/traits/" + traitId;
 
-            if (traitId && traitId.includes("-")) {
+            const guidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+            if (traitId && guidRegex.test(traitId)) {
                 this.userUpload = true;
                 traitUrl = constants.apiUrl + "/gwas/" + traitId;
             }
