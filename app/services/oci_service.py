@@ -89,36 +89,38 @@ class OCIService(metaclass=Singleton):
             logger.error(f"Failed to upload file {local_file_path} to OCI: {e}")
             raise
 
-    def download_file(self, object_name: str, local_file_path: str) -> str:
+    def get_file(self, object_name: str, download_to_local_file: bool = False, local_file_path: str = None) -> str:
         """
         Download a file from OCI Object Storage to local filesystem.
 
         Args:
             object_name: Name/path of the object in the bucket (with optional prefix)
-            local_file_path: Path where the file should be saved locally
+            download_to_local_file: Whether to download the file to the local filesystem
+            local_file_path: Path where the file should be saved locally if download_to_local_file is True
 
         Returns:
-            Path to the downloaded file
+            Path to the downloaded file if download_to_local_file is True, otherwise the file content
 
         Raises:
             Exception: If download fails
         """
         try:
-            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
             response = self.object_storage_client.get_object(
                 namespace_name=self.namespace,
                 bucket_name=self.bucket_name,
                 object_name=object_name,
             )
-
-            with open(local_file_path, "wb") as f:
-                for chunk in response.data.raw.stream(1024 * 1024, decode_content=False):
-                    f.write(chunk)
-
-            logger.info(f"Successfully downloaded {object_name} from bucket {self.bucket_name} to {local_file_path}")
-            return local_file_path
-
+            if download_to_local_file:
+                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+                with open(local_file_path, "wb") as f:
+                    for chunk in response.data.raw.stream(1024 * 1024, decode_content=False):
+                        f.write(chunk)
+                logger.info(
+                    f"Successfully downloaded {object_name} from bucket {self.bucket_name} to {local_file_path}"
+                )
+                return local_file_path
+            else:
+                return response.data.content
         except Exception as e:
             logger.error(f"Failed to download file {object_name} from OCI: {e}")
             raise

@@ -3,8 +3,8 @@ from unittest.mock import Mock, patch, AsyncMock
 from app.models.schemas import Singleton
 
 variant_data = {
-    "80732": {"rsid": "rs7524102", "variant": "1:22371954"},
-    "80717": {"rsid": "rs11810751", "variant": "1:22365104"},
+    "80732": {"rsid": "rs7524102", "variant": "1:22371954", "num_studies": 55},
+    "80717": {"rsid": "rs11810751", "variant": "1:22365104", "num_studies": 0},
 }
 
 
@@ -123,6 +123,7 @@ def mock_oci_service():
     mock_oci_service_instance.download_file.return_value = "/mocked/local/path"
     mock_oci_service_instance.delete_file.return_value = True
     mock_oci_service_instance.get_file_url.return_value = "https://mocked-url.example.com/file"
+    mock_oci_service_instance.get_file.return_value = b"fake summary stat content"
 
     mock_oci_service_instance.bucket_name = "test_bucket"
     mock_oci_service_instance.namespace = "test_namespace"
@@ -131,5 +132,6 @@ def mock_oci_service():
     with (
         patch("app.api.v1.endpoints.gwas.OCIService", return_value=mock_oci_service_instance),
         patch("app.services.oci_service.OCIService", return_value=mock_oci_service_instance),
+        patch("app.services.summary_stat_service.OCIService", return_value=mock_oci_service_instance),
     ):
         yield mock_oci_service_instance
