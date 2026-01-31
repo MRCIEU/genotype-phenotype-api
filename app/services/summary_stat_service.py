@@ -22,6 +22,7 @@ class SummaryStatService:
 
                 try:
                     object_name = study_extraction.file_with_lbfs
+                    object_name = object_name.replace("//", "/")
                     if not object_name:
                         logger.warning(f"No file path for study extraction {study_extraction.id}")
                         continue
