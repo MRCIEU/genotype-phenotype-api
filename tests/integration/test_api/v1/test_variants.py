@@ -1,4 +1,3 @@
-import pytest
 import io
 import zipfile
 from fastapi.testclient import TestClient
@@ -114,7 +113,7 @@ def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
 
 def test_get_variant_summary_stats(variants_in_studies_db, mock_oci_service):
     snp_ids = list(variants_in_studies_db.keys())
-    
+
     response = client.get(f"/v1/variants/{snp_ids[0]}/summary-stats")
 
     assert response.status_code == 200

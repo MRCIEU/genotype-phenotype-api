@@ -2,7 +2,6 @@ from app.config import get_settings
 from typing import List
 import io
 import zipfile
-import os
 from app.models.schemas import ExtendedStudyExtraction
 from app.services.oci_service import OCIService
 from app.logging_config import get_logger

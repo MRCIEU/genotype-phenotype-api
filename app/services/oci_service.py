@@ -115,7 +115,9 @@ class OCIService(metaclass=Singleton):
                 with open(local_file_path, "wb") as f:
                     for chunk in response.data.raw.stream(1024 * 1024, decode_content=False):
                         f.write(chunk)
-                logger.info(f"Successfully downloaded {object_name} from bucket {self.bucket_name} to {local_file_path}")
+                logger.info(
+                    f"Successfully downloaded {object_name} from bucket {self.bucket_name} to {local_file_path}"
+                )
                 return local_file_path
             else:
                 return response.data.content
