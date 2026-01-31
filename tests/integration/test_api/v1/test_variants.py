@@ -1,4 +1,6 @@
 import pytest
+import io
+import zipfile
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import (
@@ -110,10 +112,19 @@ def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
         assert isinstance(coloc_pair, dict)
 
 
-@pytest.mark.skip(reason="Summary stats from the bucket are not available yet")
-def test_get_variant_summary_stats(variants_in_studies_db):
+def test_get_variant_summary_stats(variants_in_studies_db, mock_oci_service):
     snp_ids = list(variants_in_studies_db.keys())
+    
     response = client.get(f"/v1/variants/{snp_ids[0]}/summary-stats")
+
     assert response.status_code == 200
+    assert mock_oci_service.get_file.call_count == variants_in_studies_db[snp_ids[0]]["num_studies"]
     assert response.headers["Content-Type"] == "application/zip"
     assert response.headers["Content-Disposition"] == f"attachment; filename=variant_{snp_ids[0]}_summary_stats.zip"
+
+    zip_data = io.BytesIO(response.content)
+    with zipfile.ZipFile(zip_data, "r") as zf:
+        namelist = zf.namelist()
+        assert len(namelist) == variants_in_studies_db[snp_ids[0]]["num_studies"]
+        file_content = zf.read(namelist[0])
+        assert file_content
