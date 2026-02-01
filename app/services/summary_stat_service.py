@@ -2,6 +2,7 @@ from app.config import get_settings
 from typing import List
 import io
 import zipfile
+import sentry_sdk
 from app.models.schemas import ExtendedStudyExtraction
 from app.services.oci_service import OCIService
 from app.logging_config import get_logger
@@ -16,14 +17,15 @@ class SummaryStatService:
 
     def get_study_summary_stats(self, study_extractions: List[ExtendedStudyExtraction]):
         zip_buffer = io.BytesIO()
+        missing_files = []
         with zipfile.ZipFile(zip_buffer, "w") as zip_file:
             for study_extraction in study_extractions:
                 file_name = f"{study_extraction.study_id}_with_lbfs.tsv.gz"
-
                 try:
                     object_name = study_extraction.file_with_lbfs
                     object_name = object_name.replace("//", "/")
                     if not object_name:
+                        missing_files.append(file_name)
                         logger.warning(f"No file path for study extraction {study_extraction.id}")
                         continue
 
@@ -32,6 +34,18 @@ class SummaryStatService:
                 except Exception as e:
                     logger.error(f"Failed to fetch summary stats for study {study_extraction.study_id} from OCI: {e}")
                     continue
+
+            if missing_files:
+                sentry_sdk.set_context(
+                    "missing_summary_stat_files",
+                    {
+                        "missing_files": missing_files,
+                    },
+                )
+                sentry_sdk.capture_message(
+                    f"No file path for study extractions {missing_files}",
+                    level="warning",
+                )
 
         zip_buffer.seek(0)
         return zip_buffer
