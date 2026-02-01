@@ -103,26 +103,67 @@ export default function variant() {
 
         getDataForTable() {
             if (!this.data) return [];
-            const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])];
-            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
+            
+            // Get all study extraction IDs that are already in coloc or rare results
+            const existingStudyExtractionIds = new Set([
+                ...(this.filteredData.colocs || []).map(c => c.study_extraction_id),
+                ...(this.filteredData.rare || []).map(r => r.study_extraction_id)
+            ]);
 
-            if (numColocGroups > 1) {
+            // Filter study_extractions to only include those NOT already in coloc or rare
+            const additionalStudies = (this.data.study_extractions || [])
+                .filter(se => !existingStudyExtractionIds.has(se.id))
+                .map(se => ({
+                    ...se,
+                    study_extraction_id: se.id,
+                    type: "extraction",
+                    coloc_group_id: null
+                }));
+
+            const all = [
+                ...(this.filteredData.colocs || []), 
+                ...(this.filteredData.rare || []),
+                ...additionalStudies
+            ];
+
+            const numColocGroups = [...new Set(all.map(item => item.coloc_group_id).filter(id => id !== null))].length;
+
+            if (numColocGroups > 1 || (this.filteredData.rare && this.filteredData.rare.length > 0)) {
                 return all.sort((a, b) => {
+                    // Sort by coloc_group_id first (if exists)
                     if (a.coloc_group_id !== b.coloc_group_id) {
-                        return (a.coloc_group_id || 0) - (b.coloc_group_id || 0);
+                        if (a.coloc_group_id === null) return 1;
+                        if (b.coloc_group_id === null) return -1;
+                        return a.coloc_group_id - b.coloc_group_id;
                     }
+                    // Then by type (coloc -> rare -> extraction)
+                    const typeOrder = { coloc: 0, rare: 1, extraction: 2 };
+                    if (a.type !== b.type) {
+                        return typeOrder[a.type] - typeOrder[b.type];
+                    }
+                    // Finally by p-value
                     return a.min_p - b.min_p;
                 });
             }
             return all.sort((a, b) => a.min_p - b.min_p);
         },
 
-        getColocGroupColor(groupId) {
-            if (groupId === null || groupId === undefined) return "transparent";
-            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
-            if (numColocGroups <= 1) return "transparent";
+        getColocGroupColor(item) {
+            if (!item) return "transparent";
 
-            const color = d3.color(this.groupColorScale(groupId));
+            // If it's a rare result, give it a distinct color
+            if (item.type === "rare") {
+                return "rgba(128, 128, 128, 0.1)";
+            }
+
+            // If it's a study extraction not in a group, keep it transparent
+            if (item.coloc_group_id === null || item.coloc_group_id === undefined) {
+                return "transparent";
+            }
+
+            // For items in a colocalization group, always provide a color
+            // even if there is only one group, to distinguish from extractions
+            const color = d3.color(this.groupColorScale(item.coloc_group_id));
             return `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`;
         },
 
