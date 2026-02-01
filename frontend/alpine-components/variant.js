@@ -103,11 +103,11 @@ export default function variant() {
 
         getDataForTable() {
             if (!this.data) return [];
-            
+
             // Get all study extraction IDs that are already in coloc or rare results
             const existingStudyExtractionIds = new Set([
                 ...(this.filteredData.colocs || []).map(c => c.study_extraction_id),
-                ...(this.filteredData.rare || []).map(r => r.study_extraction_id)
+                ...(this.filteredData.rare || []).map(r => r.study_extraction_id),
             ]);
 
             // Filter study_extractions to only include those NOT already in coloc or rare
@@ -117,14 +117,10 @@ export default function variant() {
                     ...se,
                     study_extraction_id: se.id,
                     type: "extraction",
-                    coloc_group_id: null
+                    coloc_group_id: null,
                 }));
 
-            const all = [
-                ...(this.filteredData.colocs || []), 
-                ...(this.filteredData.rare || []),
-                ...additionalStudies
-            ];
+            const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || []), ...additionalStudies];
 
             const numColocGroups = [...new Set(all.map(item => item.coloc_group_id).filter(id => id !== null))].length;
 
@@ -391,8 +387,25 @@ export default function variant() {
                     min_p: coloc ? coloc.min_p : 1,
                     association: coloc ? coloc.association : null,
                     coloc_group_id: coloc ? coloc.coloc_group_id : null,
+                    type: "coloc",
                 };
             });
+
+            // Add additional study extractions that are not in coloc groups
+            const existingNodeIds = new Set(nodes.map(n => n.id));
+            const additionalNodes = (this.data.study_extractions || [])
+                .filter(se => !existingNodeIds.has(se.id))
+                .map(se => ({
+                    id: se.id,
+                    name: se.trait_name || `Study ${se.id}`,
+                    data_type: se.data_type || "Unknown",
+                    min_p: se.min_p || 1,
+                    association: se.association || null,
+                    coloc_group_id: null,
+                    type: "extraction",
+                }));
+
+            nodes.push(...additionalNodes);
 
             // Create links (coloc pairs)
             const links = colocPairs.map(pair => ({
@@ -403,9 +416,10 @@ export default function variant() {
             }));
 
             // Color scale for data types
-            const fixedColorMap = constants.orderedDataTypes
+            const allPossibleDataTypes = [...constants.orderedDataTypes, "Unknown"];
+            const fixedColorMap = allPossibleDataTypes
                 .map((dataType, index) => ({
-                    [dataType]: constants.colors.palette[index],
+                    [dataType]: constants.colors.palette[index % constants.colors.palette.length],
                 }))
                 .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
@@ -540,6 +554,7 @@ export default function variant() {
                         ctx.globalAlpha = 1;
                     }
                 });
+
                 nodes.forEach(node => {
                     const isHighlighted = highlightedNode && node.id === highlightedNode.id;
 
