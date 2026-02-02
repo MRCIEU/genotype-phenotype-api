@@ -11,6 +11,7 @@ from app.models.schemas import (
     RareResult,
     convert_duckdb_to_pydantic_model,
     convert_duckdb_tuples_to_dicts,
+    ExtendedStudyExtraction,
 )
 
 logger = get_logger(__name__)
@@ -56,12 +57,22 @@ class AssociationsService:
         self.redis_client = RedisClient()
         self.cache_prefix = "associations_cache"
 
-    def get_associations(self, colocs: List[ColocGroup] = [], rare_results: List[RareResult] = []):
-        snp_study_pairs = [(coloc.snp_id, coloc.study_id) for coloc in colocs] + [
-            (r.snp_id, r.study_id) for r in rare_results
-        ]
+    @associations_redis_cache(min_size=10000, prefix="associations_cache")
+    def get_associations(
+        self,
+        colocs: List[ColocGroup] = [],
+        rare_results: List[RareResult] = [],
+        study_extractions: List[ExtendedStudyExtraction] = [],
+    ):
+        snp_study_pairs = (
+            [(coloc.snp_id, coloc.study_id) for coloc in colocs]
+            + [(r.snp_id, r.study_id) for r in rare_results]
+            + [(se.snp_id, se.study_id) for se in study_extractions]
+        )
+        logger.info(snp_study_pairs)
         associations, columns = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
         associations = convert_duckdb_tuples_to_dicts(associations, columns)
+        logger.info(associations)
         return associations
 
     def get_associations_by_snp_ids_and_study_ids(self, snp_ids: List[int], study_ids: List[int]):
@@ -88,7 +99,7 @@ class AssociationsService:
                     metadata_to_pairs[metadata.associations_table_name].append(pair)
         return metadata_to_pairs
 
-    @associations_redis_cache(min_size=10000)
+    @associations_redis_cache(min_size=10000, prefix="associations_full_cache")
     def get_associations_full(self, colocs: List[ColocGroup] = [], rare_results: List[RareResult] = []):
         raise Exception("associations_full_db is not currently used")
         colocs = colocs or []

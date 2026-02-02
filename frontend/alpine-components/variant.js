@@ -12,6 +12,7 @@ export default function variant() {
             colocs: [],
             colocPairs: [],
             rare: [],
+            extractions: [],
             studies: [],
         },
         errorMessage: null,
@@ -104,27 +105,15 @@ export default function variant() {
         getDataForTable() {
             if (!this.data) return [];
 
-            // Get all study extraction IDs that are already in coloc or rare results
-            const existingStudyExtractionIds = new Set([
-                ...(this.filteredData.colocs || []).map(c => c.study_extraction_id),
-                ...(this.filteredData.rare || []).map(r => r.study_extraction_id),
-            ]);
-
-            // Filter study_extractions to only include those NOT already in coloc or rare
-            const additionalStudies = (this.data.study_extractions || [])
-                .filter(se => !existingStudyExtractionIds.has(se.id))
-                .map(se => ({
-                    ...se,
-                    study_extraction_id: se.id,
-                    type: "extraction",
-                    coloc_group_id: null,
-                }));
-
-            const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || []), ...additionalStudies];
+            const all = [
+                ...(this.filteredData.colocs || []),
+                ...(this.filteredData.rare || []),
+                ...(this.filteredData.extractions || []),
+            ];
 
             const numColocGroups = [...new Set(all.map(item => item.coloc_group_id).filter(id => id !== null))].length;
 
-            if (numColocGroups > 1 || (this.filteredData.rare && this.filteredData.rare.length > 0)) {
+            if (numColocGroups > 0 || (this.filteredData.rare && this.filteredData.rare.length > 0)) {
                 return all.sort((a, b) => {
                     // Sort by coloc_group_id first (if exists)
                     if (a.coloc_group_id !== b.coloc_group_id) {
@@ -285,6 +274,47 @@ export default function variant() {
                     remainingStudyIds.has(colocPair.study_extraction_b_id)
                 );
             });
+
+            // Filter study_extractions to only include those NOT already in coloc or rare
+            // AND apply the same filters as coloc groups
+            const existingStudyExtractionIds = new Set([
+                ...this.filteredData.colocs.map(c => c.study_extraction_id),
+                ...this.filteredData.rare.map(r => r.study_extraction_id),
+            ]);
+
+            this.filteredData.extractions = (this.data.study_extractions || [])
+                .filter(se => {
+                    if (existingStudyExtractionIds.has(se.id)) return false;
+
+                    const pValue = se.association ? se.association.p : se.min_p || 1;
+                    let graphOptionFilters =
+                        pValue <= graphOptions.pValue &&
+                        (graphOptions.includeTrans ? true : se.cis_trans !== "trans") &&
+                        (graphOptions.traitType === "all"
+                            ? true
+                            : graphOptions.traitType === "molecular"
+                              ? se.data_type !== "Phenotype"
+                              : graphOptions.traitType === "phenotype"
+                                ? se.data_type === "Phenotype"
+                                : true);
+
+                    let categoryFilters = true;
+                    if (selectedCategories.size > 0) {
+                        categoryFilters = selectedCategories.has(se.trait_category);
+                    }
+
+                    return graphOptionFilters && categoryFilters;
+                })
+                .map(se => {
+                    const association = this.data.associations?.find(a => a.study_id === se.study_id);
+                    return {
+                        ...se,
+                        study_extraction_id: se.id,
+                        type: "extraction",
+                        coloc_group_id: null,
+                        association: association || se.association || null,
+                    };
+                });
         },
 
         initForestPlot() {
@@ -393,7 +423,7 @@ export default function variant() {
 
             // Add additional study extractions that are not in coloc groups
             const existingNodeIds = new Set(nodes.map(n => n.id));
-            const additionalNodes = (this.data.study_extractions || [])
+            const additionalNodes = (this.filteredData.extractions || [])
                 .filter(se => !existingNodeIds.has(se.id))
                 .map(se => ({
                     id: se.id,
@@ -904,14 +934,8 @@ export default function variant() {
             let width = plotContainer.node().getBoundingClientRect().width;
             const allData = this.getDataForTable();
 
-            const table = document.querySelector("table tbody");
-            let height;
-            if (table && allData.length > 0) {
-                const tableHeight = table.getBoundingClientRect().height;
-                height = tableHeight;
-            } else {
-                height = allData.length * 35;
-            }
+            const rowHeight = 31;
+            const height = allData.length * rowHeight;
 
             const textColor = graphTransformations.graphColor();
 

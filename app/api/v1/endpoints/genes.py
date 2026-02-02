@@ -114,7 +114,7 @@ async def get_gene(
 
         associations = None
         if include_associations:
-            associations = associations_service.get_associations(coloc_groups, rare_results)
+            associations = associations_service.get_associations(coloc_groups, rare_results, study_extractions)
 
         coloc_pairs = None
         if include_coloc_pairs:

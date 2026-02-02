@@ -104,7 +104,7 @@ async def get_variant(
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
 
-        associations = associations_service.get_associations(colocs, rare_results)
+        associations = associations_service.get_associations(colocs, rare_results, study_extractions)
 
         coloc_pairs = None
         if include_coloc_pairs:
