@@ -69,10 +69,8 @@ class AssociationsService:
             + [(r.snp_id, r.study_id) for r in rare_results]
             + [(se.snp_id, se.study_id) for se in study_extractions]
         )
-        logger.info(snp_study_pairs)
         associations, columns = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
         associations = convert_duckdb_tuples_to_dicts(associations, columns)
-        logger.info(associations)
         return associations
 
     def get_associations_by_snp_ids_and_study_ids(self, snp_ids: List[int], study_ids: List[int]):
