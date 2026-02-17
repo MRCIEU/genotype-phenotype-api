@@ -57,7 +57,7 @@ class AssociationsService:
         self.redis_client = RedisClient()
         self.cache_prefix = "associations_cache"
 
-    @associations_redis_cache(min_size=10000, prefix="associations_cache")
+    @associations_redis_cache(min_size=4000, prefix="associations_cache")
     def get_associations(
         self,
         colocs: List[ColocGroup] = [],
@@ -97,7 +97,7 @@ class AssociationsService:
                     metadata_to_pairs[metadata.associations_table_name].append(pair)
         return metadata_to_pairs
 
-    @associations_redis_cache(min_size=10000, prefix="associations_full_cache")
+    @associations_redis_cache(min_size=4000, prefix="associations_full_cache")
     def get_associations_full(self, colocs: List[ColocGroup] = [], rare_results: List[RareResult] = []):
         raise Exception("associations_full_db is not currently used")
         colocs = colocs or []
