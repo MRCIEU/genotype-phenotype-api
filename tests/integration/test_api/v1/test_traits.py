@@ -27,6 +27,7 @@ def test_get_traits():
 def test_get_trait_by_id():
     trait_id = 5020
     response = client.get(f"/v1/traits/{trait_id}")
+    print(response.json())
     assert response.status_code == 200
     traits = response.json()
     assert traits is not None
@@ -81,6 +82,7 @@ def test_get_trait_by_name():
 
 def test_get_trait_by_id_with_associations():
     response = client.get("/v1/traits/5020?include_associations=true")
+    print(response.json())
     traits = response.json()
     print(traits)
     assert response.status_code == 200
@@ -97,6 +99,7 @@ def test_get_trait_by_id_with_associations():
 
 def test_get_trait_coloc_pairs():
     response = client.get("/v1/traits/5020/coloc-pairs")
+    print(response.json())
     assert response.status_code == 200
     response_json = response.json()
     assert response_json is not None

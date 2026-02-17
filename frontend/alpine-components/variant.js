@@ -39,12 +39,16 @@ export default function variant() {
                 }
             });
 
-            this.$watch("$store.graphOptionStore", () => {
-                this.$nextTick(() => {
-                    this.initForestPlot();
-                    this.initGraphClusterDiagram();
-                });
-            }, { deep: true });
+            this.$watch(
+                "$store.graphOptionStore",
+                () => {
+                    this.$nextTick(() => {
+                        this.initForestPlot();
+                        this.initGraphClusterDiagram();
+                    });
+                },
+                { deep: true }
+            );
 
             // Clear highlight lock and selection when clicking anywhere outside nodes
             document.addEventListener("click", () => {
@@ -956,7 +960,7 @@ export default function variant() {
                 .attr("stroke", textColor)
                 .attr("stroke-width", 2);
 
-            allData.forEach((d) => {
+            allData.forEach(d => {
                 const yPos = y(getYId(d)) + y.bandwidth() / 2;
 
                 const hasValidData =

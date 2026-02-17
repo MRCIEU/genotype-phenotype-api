@@ -1,5 +1,5 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response, Request, Query
 from app.db.ld_db import LdDBClient
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -43,8 +43,15 @@ async def get_search_options(request: Request, response: Response):
 @router.get("/variant/{search_term}", response_model=VariantSearchResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def variant_search(request: Request, search_term: str):
+async def variant_search(
+    request: Request,
+    search_term: str,
+    rsquared_threshold: float = Query(0.8, description="R squared threshold for LD proxies"),
+):
     try:
+        if rsquared_threshold < 0.8 or rsquared_threshold > 1:
+            raise HTTPException(status_code=400, detail="R squared threshold must be between 0.8 and 1")
+
         studies_db = StudiesDBClient()
         ld_db = LdDBClient()
 
@@ -59,7 +66,7 @@ async def variant_search(request: Request, search_term: str):
 
         original_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, original_variants)
         snp_ids = [variant.id for variant in original_variants]
-        proxies = ld_db.get_ld_proxies(snp_ids=snp_ids)
+        proxies = ld_db.get_ld_proxies(snp_ids=snp_ids, rsquared_threshold=rsquared_threshold)
         proxies = convert_duckdb_to_pydantic_model(Ld, proxies)
         proxy_snp_ids = list(
             set([proxy.lead_snp_id for proxy in proxies] + [proxy.variant_snp_id for proxy in proxies])

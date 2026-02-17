@@ -20,15 +20,15 @@ class LdDBClient:
         self.ld_conn = get_gpm_db_connection()
 
     @log_performance
-    def get_ld_proxies(self, snp_ids: List[int]):
+    def get_ld_proxies(self, snp_ids: List[int], rsquared_threshold: float = 0.8):
         if not snp_ids:
             return []
         placeholders = ",".join(["?"] * len(snp_ids))
         query = f"""
             SELECT * FROM ld
-            WHERE (lead_snp_id IN ({placeholders}) OR variant_snp_id IN ({placeholders})) AND abs(r) > 0.894
+            WHERE (lead_snp_id IN ({placeholders}) OR variant_snp_id IN ({placeholders})) AND r*r >= ?
         """
-        return self.ld_conn.execute(query, snp_ids + snp_ids).fetchall()
+        return self.ld_conn.execute(query, snp_ids + snp_ids + [rsquared_threshold]).fetchall()
 
     @log_performance
     def get_ld_matrix(self, snp_ids: List[int]):

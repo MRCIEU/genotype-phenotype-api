@@ -401,14 +401,14 @@ class StudiesDBClient:
             return []
 
         placeholders = ",".join(["?" for _ in study_ids])
-        return self._fetch_study_extractions(f"study_extractions.study_id IN ({placeholders})", study_ids)
+        return self._fetch_study_extractions(f"study_id IN ({placeholders})", study_ids)
 
     @log_performance
     def get_study_extractions_for_variant(self, snp_id: int):
         if not snp_id:
             return []
 
-        return self._fetch_study_extractions("study_extractions.snp_id = ?", [snp_id])
+        return self._fetch_study_extractions("snp_id = ?", [snp_id])
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):
@@ -416,20 +416,16 @@ class StudiesDBClient:
             return []
 
         placeholders = ",".join(["?" for _ in ids])
-        return self._fetch_study_extractions(f"study_extractions.id IN ({placeholders})", ids)
+        return self._fetch_study_extractions(f"id IN ({placeholders})", ids)
 
     def _fetch_study_extractions(self, condition: str, params: List = None):
+        if not params:
+            raise ValueError("params must be provided for study extraction queries")
         query = f"""
-            SELECT study_extractions.*, gene_annotations.gene AS gene, traits.id as trait_id, traits.trait_name, traits.trait_category, studies.data_type, studies.tissue
-            FROM study_extractions
-            JOIN studies ON study_extractions.study_id = studies.id
-            JOIN traits ON studies.trait_id = traits.id
-            LEFT JOIN gene_annotations ON study_extractions.gene_id = gene_annotations.id
+            SELECT * FROM study_extractions_wide
             WHERE {condition}
         """
-        if params:
-            return self.studies_conn.execute(query, params).fetchall()
-        return self.studies_conn.execute(query).fetchall()
+        return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
     def get_study_extractions_by_unique_study_id(self, unique_study_ids: List[str]):
@@ -501,7 +497,7 @@ class StudiesDBClient:
     def get_study_extractions_for_gene(self, gene_id: int, include_trans: bool = False):
         if not gene_id:
             return []
-        query = "(study_extractions.gene_id = ? OR study_extractions.situated_gene_id = ?)"
+        query = "(gene_id = ? OR situated_gene_id = ?)"
         if not include_trans:
             query += " AND cis_trans = ?"
             params = [gene_id, gene_id, CisTrans.cis.value]
@@ -514,14 +510,14 @@ class StudiesDBClient:
         cis_trans = CisTrans.cis.value
         return self._fetch_study_extractions(
             """
-            study_extractions.chr = ? AND study_extractions.bp BETWEEN ? AND ? AND study_extractions.cis_trans = ?
+            chr = ? AND bp BETWEEN ? AND ? AND cis_trans = ?
             """,
             [chromosome, bp_start, bp_end, cis_trans],
         )
 
     @log_performance
     def get_study_extractions_in_ld_block(self, ld_block_id: int):
-        return self._fetch_study_extractions("study_extractions.ld_block_id = ?", [ld_block_id])
+        return self._fetch_study_extractions("ld_block_id = ?", [ld_block_id])
 
     @log_performance
     def get_ld_block(self, ld_block_id: int):

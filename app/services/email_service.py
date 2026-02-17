@@ -9,8 +9,10 @@ settings = get_settings()
 class EmailService:
     def __init__(self):
         self.from_email = settings.EMAIL_FROM
-        self.contact_email = settings.EMAIL_FROM
-        self.contact_url = f"{settings.WEBSITE_URL}/contact.html"
+        self.footer = f"""<p>Best regards,<br>The GPMap Team</p><br />
+        <p>This email address is not monitored for replies.
+        Please contact us via the <a href='{settings.WEBSITE_URL}/contact.html'>contact form</a>,
+        or file a bug report on <a href='https://github.com/MRCIEU/genotype-phenotype-api/issues'>GitHub</a>.</p><br />"""
 
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.EMAIL_USERNAME,
@@ -28,9 +30,9 @@ class EmailService:
         Send an email to the contact email address from the contact form.
         """
 
-        send_to = "andrew.elmore@bristol.ac.uk"
+        send_to = settings.EMAIL_TO
 
-        subject = f"Contact Form Submission: {reason}"
+        subject = f"GPMap Contact Form Submission: {reason}"
         html = f"""
         <html>
         <body>
@@ -58,8 +60,7 @@ class EmailService:
         <body>
             <p>Thanks for using the Genotype-Phenotype Map!</p>
             <p>Your results are ready to view. <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>Click here</a> to view your results.</p>
-            <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
-            <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
+            {self.footer}
         </body>
         </html>
         """
@@ -83,8 +84,7 @@ class EmailService:
             <p>Your job has been successfully submitted. You can track its progress <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>here</a>.</p>
             <p>You are currently <b>#{queue_position}</b> in the queue.</p>
             <p>We will send you another email once the analysis is complete.</p>
-            <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
-            <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
+            {self.footer}
         </body>
         </html>
         """
@@ -105,8 +105,7 @@ class EmailService:
         <html>
         <body>
             <p>Sorry, your Genotype-Phenotype Map <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>upload failed</a>.</p>
-            <p>If you have any questions, please <a href='{self.contact_url}'>contact us here</a>.</p>
-            <p>Best regards,<br>The Genotype-Phenotype Map Team</p>
+            {self.footer}
         </body>
         </html>
         """
