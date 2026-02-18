@@ -12,6 +12,7 @@ export default function variant() {
             colocs: [],
             colocPairs: [],
             rare: [],
+            extractions: [],
             studies: [],
         },
         errorMessage: null,
@@ -22,7 +23,6 @@ export default function variant() {
 
         init() {
             this.$watch("$store.snpGraphStore.highlightedStudy", newValue => {
-                // Update footer text based on store highlight
                 const footerText = d3.select("#graph-footer-text");
                 if (newValue) {
                     this.updateGraphHighlightFromStore(newValue);
@@ -38,6 +38,17 @@ export default function variant() {
                     footerText.text("");
                 }
             });
+
+            this.$watch(
+                "$store.graphOptionStore",
+                () => {
+                    this.$nextTick(() => {
+                        this.initForestPlot();
+                        this.initGraphClusterDiagram();
+                    });
+                },
+                { deep: true }
+            );
 
             // Clear highlight lock and selection when clicking anywhere outside nodes
             document.addEventListener("click", () => {
@@ -103,26 +114,47 @@ export default function variant() {
 
         getDataForTable() {
             if (!this.data) return [];
-            const all = [...(this.filteredData.colocs || []), ...(this.filteredData.rare || [])];
-            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
 
-            if (numColocGroups > 1) {
+            const all = [
+                ...(this.filteredData.colocs || []),
+                ...(this.filteredData.rare || []),
+                ...(this.filteredData.extractions || []),
+            ];
+
+            const numColocGroups = [...new Set(all.map(item => item.coloc_group_id).filter(id => id !== null))].length;
+
+            if (numColocGroups > 0 || (this.filteredData.rare && this.filteredData.rare.length > 0)) {
                 return all.sort((a, b) => {
+                    // Sort by coloc_group_id first (if exists)
                     if (a.coloc_group_id !== b.coloc_group_id) {
-                        return (a.coloc_group_id || 0) - (b.coloc_group_id || 0);
+                        if (a.coloc_group_id === null) return 1;
+                        if (b.coloc_group_id === null) return -1;
+                        return a.coloc_group_id - b.coloc_group_id;
                     }
+                    // Then by type (coloc -> rare -> extraction)
+                    const typeOrder = { coloc: 0, rare: 1, extraction: 2 };
+                    if (a.type !== b.type) {
+                        return typeOrder[a.type] - typeOrder[b.type];
+                    }
+                    // Finally by p-value
                     return a.min_p - b.min_p;
                 });
             }
             return all.sort((a, b) => a.min_p - b.min_p);
         },
 
-        getColocGroupColor(groupId) {
-            if (groupId === null || groupId === undefined) return "transparent";
-            const numColocGroups = [...new Set(this.filteredData.colocs.map(coloc => coloc.coloc_group_id))].length;
-            if (numColocGroups <= 1) return "transparent";
+        getColocGroupColor(item) {
+            if (!item) return "transparent";
 
-            const color = d3.color(this.groupColorScale(groupId));
+            if (item.type === "rare") {
+                return "rgba(128, 128, 128, 0.1)";
+            }
+
+            if (item.coloc_group_id === null || item.coloc_group_id === undefined) {
+                return "transparent";
+            }
+
+            const color = d3.color(this.groupColorScale(item.coloc_group_id));
             return `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`;
         },
 
@@ -248,20 +280,67 @@ export default function variant() {
                     remainingStudyIds.has(colocPair.study_extraction_b_id)
                 );
             });
+
+            // Filter study_extractions to only include those NOT already in coloc or rare
+            // AND apply the same filters as coloc groups
+            const existingStudyExtractionIds = new Set([
+                ...this.filteredData.colocs.map(c => c.study_extraction_id),
+                ...this.filteredData.rare.map(r => r.study_extraction_id),
+            ]);
+
+            this.filteredData.extractions = (this.data.study_extractions || [])
+                .filter(se => {
+                    if (existingStudyExtractionIds.has(se.id)) return false;
+
+                    const pValue = se.association ? se.association.p : se.min_p || 1;
+                    let graphOptionFilters =
+                        pValue <= graphOptions.pValue &&
+                        (graphOptions.includeTrans ? true : se.cis_trans !== "trans") &&
+                        (graphOptions.traitType === "all"
+                            ? true
+                            : graphOptions.traitType === "molecular"
+                              ? se.data_type !== "Phenotype"
+                              : graphOptions.traitType === "phenotype"
+                                ? se.data_type === "Phenotype"
+                                : true);
+
+                    let categoryFilters = true;
+                    if (selectedCategories.size > 0) {
+                        categoryFilters = selectedCategories.has(se.trait_category);
+                    }
+
+                    return graphOptionFilters && categoryFilters;
+                })
+                .map(se => {
+                    const association = this.data.associations?.find(a => a.study_id === se.study_id);
+                    return {
+                        ...se,
+                        study_extraction_id: se.id,
+                        type: "extraction",
+                        coloc_group_id: null,
+                        association: association || se.association || null,
+                    };
+                });
         },
 
         initForestPlot() {
             this.filterDataForGraphs();
             const chartContainer = document.getElementById("forest-plot");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () => this.getForestPlot());
+            if (chartContainer) {
+                graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
+                    this.getForestPlot()
+                );
+            }
         },
 
         initGraphClusterDiagram() {
             this.filterDataForGraphs();
             const chartContainer = document.getElementById("graph-cluster-diagram");
-            graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
-                this.getGraphClusterDiagram()
-            );
+            if (chartContainer) {
+                graphTransformations.initGraph(chartContainer, this.data, this.errorMessage, () =>
+                    this.getGraphClusterDiagram()
+                );
+            }
         },
 
         getGraphClusterDiagram() {
@@ -281,26 +360,18 @@ export default function variant() {
             // Set container to have fixed height to prevent layout shifts
             chartContainer.style("height", height + footerHeight + "px").style("position", "relative");
 
-            // Create canvas element with high-DPI support
             const canvas = chartContainer.append("canvas").style("display", "block").node();
-
-            // Get device pixel ratio for crisp rendering on high-DPI displays
             const dpr = window.devicePixelRatio || 1;
-
-            // Set the actual canvas size in memory (scaled up for high-DPI)
             canvas.width = width * dpr;
             canvas.height = height * dpr;
 
-            // Scale the canvas back down using CSS
             canvas.style.width = width + "px";
             canvas.style.height = height + "px";
 
             const ctx = canvas.getContext("2d");
 
-            // Scale the drawing context so everything draws at the correct size
             ctx.scale(dpr, dpr);
 
-            // Create footer text element separately with fixed min-height to prevent layout shifts
             const footerText = chartContainer
                 .append("div")
                 .attr("id", "graph-footer-text")
@@ -313,10 +384,8 @@ export default function variant() {
                 .style("color", textColor)
                 .text("");
 
-            // If too many studies, show message and exit early
             const numStudies = (this.filteredData.colocs || []).length;
             if (numStudies > 500) {
-                // Increased limit since Canvas is more performant
                 ctx.fillStyle = textColor;
                 ctx.font = "16px Arial";
                 ctx.textAlign = "center";
@@ -330,17 +399,14 @@ export default function variant() {
 
             if (!this.filteredData.colocPairs || this.filteredData.colocPairs.length === 0) return;
 
-            // Prepare data for force-directed graph
             const colocPairs = this.filteredData.colocPairs;
 
-            // Get unique study extraction IDs from coloc pairs
             const studyExtractionIds = new Set();
             colocPairs.forEach(pair => {
                 studyExtractionIds.add(pair.study_extraction_a_id);
                 studyExtractionIds.add(pair.study_extraction_b_id);
             });
 
-            // Create nodes (study extractions)
             const nodes = Array.from(studyExtractionIds).map(id => {
                 const coloc = this.data.coloc_groups.find(c => c.study_extraction_id === id);
                 return {
@@ -350,10 +416,25 @@ export default function variant() {
                     min_p: coloc ? coloc.min_p : 1,
                     association: coloc ? coloc.association : null,
                     coloc_group_id: coloc ? coloc.coloc_group_id : null,
+                    type: "coloc",
                 };
             });
 
-            // Create links (coloc pairs)
+            const existingNodeIds = new Set(nodes.map(n => n.id));
+            const additionalNodes = (this.filteredData.extractions || [])
+                .filter(se => !existingNodeIds.has(se.id))
+                .map(se => ({
+                    id: se.id,
+                    name: se.trait_name || `Study ${se.id}`,
+                    data_type: se.data_type || "Unknown",
+                    min_p: se.min_p || 1,
+                    association: se.association || null,
+                    coloc_group_id: null,
+                    type: "extraction",
+                }));
+
+            nodes.push(...additionalNodes);
+
             const links = colocPairs.map(pair => ({
                 source: pair.study_extraction_a_id,
                 target: pair.study_extraction_b_id,
@@ -361,10 +442,10 @@ export default function variant() {
                 h3: pair.h3,
             }));
 
-            // Color scale for data types
-            const fixedColorMap = constants.orderedDataTypes
+            const allPossibleDataTypes = [...constants.orderedDataTypes, "Unknown"];
+            const fixedColorMap = allPossibleDataTypes
                 .map((dataType, index) => ({
-                    [dataType]: constants.colors.palette[index],
+                    [dataType]: constants.colors.palette[index % constants.colors.palette.length],
                 }))
                 .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
@@ -410,18 +491,14 @@ export default function variant() {
                 .force("x", d3.forceX(width / 2).strength(centerStrength)) // Stronger centering force
                 .force("y", d3.forceY(height / 2).strength(centerStrength)); // Stronger centering force
 
-            // Store references for Canvas rendering
             let highlightedNode = null;
             let isDragging = false;
             let dragNode = null;
             let mousePos = { x: 0, y: 0 };
 
-            // Function to render the graph on canvas
             const renderGraph = () => {
-                // Clear canvas
                 ctx.clearRect(0, 0, width, height);
 
-                // Draw background circles for coloc groups if more than 1
                 if (numColocGroups > 1) {
                     const groups = d3.group(nodes, d => d.coloc_group_id);
 
@@ -461,7 +538,6 @@ export default function variant() {
                     });
                 }
 
-                // Draw links
                 links.forEach(link => {
                     const sourceNode = nodes.find(n => n.id === link.source.id);
                     const targetNode = nodes.find(n => n.id === link.target.id);
@@ -499,26 +575,23 @@ export default function variant() {
                         ctx.globalAlpha = 1;
                     }
                 });
+
                 nodes.forEach(node => {
                     const isHighlighted = highlightedNode && node.id === highlightedNode.id;
 
-                    // Draw node circle
                     ctx.beginPath();
                     ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
                     ctx.fillStyle = color(node.data_type);
                     ctx.fill();
 
-                    // Draw node border
                     ctx.strokeStyle = isHighlighted ? textColor : "#fff";
                     ctx.lineWidth = isHighlighted ? 3 : isLargeGraph ? 1 : 2;
                     ctx.stroke();
                 });
 
-                // Draw legend after main graph elements
                 drawLegend();
             };
 
-            // Mouse interaction handling
             const getMousePos = e => {
                 const rect = canvas.getBoundingClientRect();
                 return {
@@ -532,14 +605,12 @@ export default function variant() {
                     const node = nodes[i];
                     const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
                     if (distance <= node.radius + 5) {
-                        // Add some padding for easier clicking
                         return node;
                     }
                 }
                 return null;
             };
 
-            // Mouse event handlers
             canvas.addEventListener("mousemove", e => {
                 mousePos = getMousePos(e);
                 const node = getNodeAt(mousePos.x, mousePos.y);
@@ -554,7 +625,6 @@ export default function variant() {
                         highlightedNode = node;
                         renderGraph();
 
-                        // Update footer text
                         const footer = `${node.name} | p=${node.min_p.toExponential(2)}`;
                         footerText.text(footer);
 
@@ -621,11 +691,9 @@ export default function variant() {
                     ) {
                         snpGraphStore.highlightedStudy = newHighlightedStudy;
                     }
-                    // Ensure footer reflects clicked node
                     const footer = `${node.name} | ${node.data_type} | p=${node.min_p.toExponential(2)}`;
                     footerText.text(footer);
                 } else {
-                    // Clicked on empty space - de-highlight
                     const snpGraphStore = Alpine.store("snpGraphStore");
                     self.highlightLock = false;
                     snpGraphStore.highlightedStudy = null;
@@ -638,7 +706,6 @@ export default function variant() {
 
             let tickCount = 0;
             simulation.on("tick", () => {
-                // Re-render the entire graph on each tick
                 renderGraph();
 
                 tickCount++;
@@ -705,7 +772,6 @@ export default function variant() {
                     const currentCenterX = (xBounds[0] + xBounds[1]) / 2;
                     const currentCenterY = (yBounds[0] + yBounds[1]) / 2;
 
-                    // Calculate scale to fit component in its allocated space
                     const xRange = xBounds[1] - xBounds[0];
                     const yRange = yBounds[1] - yBounds[0];
                     const maxRange = Math.max(xRange, yRange, 1);
@@ -724,26 +790,21 @@ export default function variant() {
                     });
                 });
 
-                // Final render after component layout
                 renderGraph();
             });
 
-            // Draw legend on canvas
             const drawLegend = () => {
                 const legendX = 20;
                 const legendY = 20;
                 const dataTypes = Array.from(new Set(nodes.map(d => d.data_type)));
 
-                // Draw "Trait Type" header
                 ctx.fillStyle = textColor;
                 ctx.font = "bold 12px Arial";
                 ctx.fillText("Trait Type:", legendX, legendY);
 
-                // Draw node type legend
                 dataTypes.forEach((type, i) => {
                     const y = legendY + (i + 1) * 20;
 
-                    // Draw circle
                     ctx.beginPath();
                     ctx.arc(legendX + (isLargeGraph ? 4 : 6), y, isLargeGraph ? 4 : 6, 0, 2 * Math.PI);
                     ctx.fillStyle = color(type);
@@ -752,14 +813,12 @@ export default function variant() {
                     ctx.lineWidth = 1;
                     ctx.stroke();
 
-                    // Draw text
                     ctx.fillStyle = textColor;
                     ctx.font = "12px Arial";
                     ctx.textAlign = "left";
                     ctx.fillText(type, legendX + 15, y + 4);
                 });
 
-                // Draw link legend
                 const linkLegendY = legendY + (dataTypes.length + 1) * 20 + 10;
                 ctx.fillStyle = textColor;
                 ctx.font = "bold 12px Arial";
@@ -773,7 +832,6 @@ export default function variant() {
                 linkTypes.forEach((linkType, i) => {
                     const y = linkLegendY + (i + 1) * 15;
 
-                    // Draw line
                     ctx.beginPath();
                     ctx.moveTo(legendX, y);
                     ctx.lineTo(legendX + 20, y);
@@ -781,13 +839,11 @@ export default function variant() {
                     ctx.lineWidth = 2;
                     ctx.stroke();
 
-                    // Draw text
                     ctx.fillStyle = textColor;
                     ctx.font = "10px Arial";
                     ctx.fillText(linkType.label, legendX + 25, y + 4);
                 });
 
-                // Display connectedness for each coloc group using existing data
                 const colocGroups = [...new Set(nodes.map(n => n.coloc_group_id).filter(id => id !== null))];
                 if (colocGroups.length > 0) {
                     const connectednessY = linkLegendY + linkTypes.length * 15 + 30; // Added extra spacing for line break
@@ -848,13 +904,12 @@ export default function variant() {
             let width = plotContainer.node().getBoundingClientRect().width;
             const allData = this.getDataForTable();
 
-            const table = document.querySelector("table tbody");
+            const tableBody = document.querySelector("#variant-table tbody");
             let height;
-            if (table && allData.length > 0) {
-                const tableHeight = table.getBoundingClientRect().height;
-                height = tableHeight;
+            if (tableBody && tableBody.children.length > 0) {
+                height = tableBody.getBoundingClientRect().height;
             } else {
-                height = allData.length * 35;
+                height = allData.length * 31;
             }
 
             const textColor = graphTransformations.graphColor();
@@ -882,7 +937,7 @@ export default function variant() {
 
             const getYId = d => d.study_extraction_id || d.rare_result_group_id || d.display_snp || Math.random();
 
-            const y = d3.scaleBand().domain(allData.map(getYId)).range([0, height]).padding(0.1);
+            const y = d3.scaleBand().domain(allData.map(getYId)).range([0, height]).padding(0);
 
             const xAxisGroup = svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
             xAxisGroup

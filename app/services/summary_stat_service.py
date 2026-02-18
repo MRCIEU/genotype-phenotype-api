@@ -2,31 +2,50 @@ from app.config import get_settings
 from typing import List
 import io
 import zipfile
-import os
+import sentry_sdk
 from app.models.schemas import ExtendedStudyExtraction
+from app.services.oci_service import OCIService
+from app.logging_config import get_logger
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 
 class SummaryStatService:
     def __init__(self):
-        self.summary_stats_dir = None  # settings.SUMMARY_STATS_DIR
+        self.oci_service = OCIService()
 
     def get_study_summary_stats(self, study_extractions: List[ExtendedStudyExtraction]):
-        if settings.DEBUG:
-            all_files = os.listdir(self.summary_stats_dir)
-            file_names = [os.path.join(self.summary_stats_dir, f) for f in all_files]
-
         zip_buffer = io.BytesIO()
+        missing_files = []
         with zipfile.ZipFile(zip_buffer, "w") as zip_file:
             for study_extraction in study_extractions:
-                file_name = str(study_extraction.study_id) + "_with_lbfs.tsv.gz"
-                if settings.DEBUG:
-                    file_path = file_names[study_extraction.id % len(file_names)]
-                else:
-                    file_path = study_extraction.file_with_lbfs
+                file_name = f"{study_extraction.study_id}_with_lbfs.tsv.gz"
+                try:
+                    object_name = study_extraction.file_with_lbfs
+                    object_name = object_name.replace("//", "/")
+                    if not object_name:
+                        missing_files.append(file_name)
+                        logger.warning(f"No file path for study extraction {study_extraction.id}")
+                        continue
 
-                zip_file.write(file_path, arcname=file_name)
+                    response = self.oci_service.get_file(object_name)
+                    zip_file.writestr(file_name, response)
+                except Exception as e:
+                    logger.error(f"Failed to fetch summary stats for study {study_extraction.study_id} from OCI: {e}")
+                    continue
+
+            if missing_files:
+                sentry_sdk.set_context(
+                    "missing_summary_stat_files",
+                    {
+                        "missing_files": missing_files,
+                    },
+                )
+                sentry_sdk.capture_message(
+                    f"No file path for study extractions {missing_files}",
+                    level="warning",
+                )
+
         zip_buffer.seek(0)
-
         return zip_buffer

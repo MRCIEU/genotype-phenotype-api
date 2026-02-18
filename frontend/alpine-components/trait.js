@@ -636,7 +636,6 @@ export default function trait() {
                 ctx.fillStyle = textColor;
                 ctx.fillText("Rare", 80, 6);
 
-                // Suggestive significance line
                 ctx.beginPath();
                 ctx.moveTo(115, 3);
                 ctx.lineTo(135, 3);
@@ -649,7 +648,6 @@ export default function trait() {
                 ctx.fillStyle = textColor;
                 ctx.fillText("Suggestive significance", 135, 6);
 
-                // Genome-wide significance line
                 ctx.beginPath();
                 ctx.moveTo(270, 3);
                 ctx.lineTo(290, 3);
@@ -662,8 +660,6 @@ export default function trait() {
 
                 ctx.restore();
             };
-
-            // Reference lines are now handled by SVG
 
             const renderCircles = () => {
                 ctx.save();
@@ -685,9 +681,6 @@ export default function trait() {
                 ctx.restore();
             };
 
-            // Chromosome backgrounds and labels are now handled by SVG
-
-            // Mouse interaction handling
             const getMousePos = e => {
                 const rect = canvas.getBoundingClientRect();
                 return {
@@ -704,7 +697,6 @@ export default function trait() {
                     const circle = canvasCircles[i];
                     const distance = Math.sqrt((plotX - circle.x) ** 2 + (plotY - circle.y) ** 2);
                     if (distance <= circle.radius + 5) {
-                        // Add padding for easier clicking
                         return circle;
                     }
                 }
@@ -728,14 +720,12 @@ export default function trait() {
                 return null;
             };
 
-            // Mouse event handlers
             canvas.addEventListener("mousemove", e => {
                 const mousePos = getMousePos(e);
                 const circle = getCircleAt(mousePos.x, mousePos.y);
 
                 if (circle) {
                     canvas.style.cursor = "pointer";
-                    // Reset chromosome hover if hovering over a circle
                     if (hoveredChromosome !== null) {
                         if (chromosomeRects) {
                             chromosomeRects.each(function (d) {
@@ -762,13 +752,11 @@ export default function trait() {
                         graphTransformations.getTooltip(tooltipContent, e);
                     }
                 } else {
-                    // Check for chromosome hover (only in full view)
                     if (self.displayFilters.view === "full" || self.displayFilters.chr === null) {
                         const chr = getChromosomeAt(mousePos.x, mousePos.y);
                         if (chr) {
                             canvas.style.cursor = "grab";
                             if (hoveredChromosome?.CHR !== chr.CHR) {
-                                // Reset previous hover
                                 if (hoveredChromosome !== null && chromosomeRects) {
                                     chromosomeRects.each(function (d) {
                                         if (d.CHR === hoveredChromosome.CHR) {
@@ -782,7 +770,6 @@ export default function trait() {
                                         }
                                     });
                                 }
-                                // Set new hover
                                 hoveredChromosome = chr;
                                 if (chromosomeRects) {
                                     const chrHoverColor = constants.darkMode ? "#4a5a6a" : "#e6f3ff";
@@ -795,7 +782,6 @@ export default function trait() {
                             }
                         } else {
                             canvas.style.cursor = "default";
-                            // Reset chromosome hover
                             if (hoveredChromosome !== null) {
                                 if (chromosomeRects) {
                                     chromosomeRects.each(function (d) {
@@ -849,7 +835,6 @@ export default function trait() {
                     graphTransformations.handleColocGroupClick.bind(self)(circle.display_snp, variantType);
                     d3.selectAll(".tooltip").remove();
                 } else {
-                    // Only check for chromosome click when in full view (not when zoomed in on a chromosome)
                     if (self.displayFilters.view === "full" || self.displayFilters.chr === null) {
                         const chr = getChromosomeAt(mousePos.x, mousePos.y);
                         if (chr) {
@@ -862,7 +847,6 @@ export default function trait() {
             });
 
             function renderResetDisplayButton() {
-                // Clear any existing reset button
                 interactivePlotGroup.selectAll(".reset-button-group").remove();
 
                 if (
@@ -874,11 +858,9 @@ export default function trait() {
                     const btnY = height + 25;
                     const btnWidth = 90;
                     const btnHeight = 22;
-                    // Use adaptive colors for button background
                     const buttonBgColor = constants.darkMode ? "#2d2d2d" : "#ffffff";
                     const buttonBorderColor = constants.darkMode ? "#666666" : "#b5b5b5";
 
-                    // Create a separate interactive group for the button (above canvas)
                     const resetButtonGroup = interactivePlotGroup
                         .append("g")
                         .attr("class", "reset-button-group")
@@ -918,7 +900,6 @@ export default function trait() {
                 const svgDoc = parser.parseFromString(specificSvg, "image/svg+xml");
                 const importedSvg = svgDoc.documentElement;
 
-                // Remove width/height attributes to allow scaling
                 importedSvg.removeAttribute("width");
                 importedSvg.removeAttribute("height");
                 importedSvg.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -926,25 +907,20 @@ export default function trait() {
                     "viewBox",
                     `0 0 ${self.svgs.metadata.svg_width} ${self.svgs.metadata.svg_height}`
                 );
-                importedSvg.style.pointerEvents = "none"; // Make the SVG non-interactive
+                importedSvg.style.pointerEvents = "none";
 
-                // Append the SVG to foreignObject
                 foreignObject.node().appendChild(importedSvg);
             }
 
             function calculateDynamicCircleRadius(groupSize) {
-                // Safety check: if radiusInfo not initialized, return default
                 if (radiusInfo.maxGroupSize === 0 || radiusInfo.minRadius === 0) {
                     return 5;
                 }
                 if (radiusInfo.maxGroupSize === radiusInfo.minGroupSize) {
-                    // All groups are the same size, use average radius
                     return (radiusInfo.minRadius + radiusInfo.maxRadius) / 2;
                 }
-                // Normalize groupSize between minGroupSize and maxGroupSize
                 const normalizedSize =
                     (groupSize - radiusInfo.minGroupSize) / (radiusInfo.maxGroupSize - radiusInfo.minGroupSize);
-                // Map to radius range and ensure it's capped at maxRadius
                 const radius = radiusInfo.minRadius + normalizedSize * (radiusInfo.maxRadius - radiusInfo.minRadius);
                 return Math.min(Math.max(radius, radiusInfo.minRadius), radiusInfo.maxRadius);
             }
@@ -976,28 +952,24 @@ export default function trait() {
                     .duration(500)
                     .attr("opacity", 0);
 
-                // Clear chromosome backgrounds when zoomed in (they should only be interactive in full view)
                 chrBackgrounds.selectAll("rect").remove();
                 hoveredChromosome = null;
 
                 renderResetDisplayButton();
 
-                // Prepare circle data for Canvas rendering
                 const chrCircleData = circleData.filter(study => study.chr == self.displayFilters.chr);
                 canvasCircles = chrCircleData.map(d => {
                     const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
                     const bpPosition = d.bp / (chrMeta.bp_end - chrMeta.bp_start);
                     const x = bpPosition * width;
                     const yValue = -Math.log10(d.min_p);
-                    // Clip yValue to y-axis domain to prevent circles from being drawn outside canvas
                     const clippedYValue = Math.max(
                         self.svgs.metadata.y_axis.min_lp,
                         Math.min(self.svgs.metadata.y_axis.max_lp, yValue)
                     );
                     let y = yScale(clippedYValue);
-                    // If circle was clipped at the top, offset it slightly downward for visibility
                     if (yValue > self.svgs.metadata.y_axis.max_lp) {
-                        y = y + 8; // Add 8 pixels downward offset
+                        y = y + 8;
                     }
                     const radius = calculateDynamicCircleRadius(d._group.length);
 
@@ -1014,13 +986,12 @@ export default function trait() {
                         ...d,
                         x,
                         y,
-                        yValue, // Store original yValue for debugging
+                        yValue,
                         radius,
                         fillColor,
                     };
                 });
 
-                // Render everything on Canvas
                 renderCanvas();
                 renderCircles();
                 renderLegend();
@@ -1036,7 +1007,6 @@ export default function trait() {
                 const xAxis = d3.axisBottom(xScale).ticks(0).tickSize(0);
                 const xAxisGroup = plotGroup.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
                 xAxisGroup.selectAll("line, path").style("stroke", textColor);
-                // X-axis label
                 plotGroup
                     .append("text")
                     .attr("x", width / 2)
@@ -1048,11 +1018,8 @@ export default function trait() {
 
                 renderResetDisplayButton();
 
-                // Clear existing chromosome backgrounds before adding new ones
                 chrBackgrounds.selectAll("rect").remove();
 
-                // Add chromosome backgrounds to main SVG (behind canvas)
-                // Use adaptive colors for dark/light mode with original opacity
                 const chrBgColor1 = constants.darkMode ? "#3a3a3a" : "#e5e5e5";
                 const chrBgColor2 = constants.darkMode ? "#2d2d2d" : "#ffffff";
 
@@ -1075,7 +1042,6 @@ export default function trait() {
                     .attr("fill", (_, i) => (i % 2 === 0 ? chrBgColor1 : chrBgColor2))
                     .attr("opacity", 0.5);
 
-                // Add chromosome labels to SVG
                 self.svgs.metadata.x_axis.forEach(chr => {
                     const xPos = ((chr.pixel_start + chr.pixel_end) / 2 / self.svgs.metadata.svg_width) * width;
                     const label = chrLabels
@@ -1089,7 +1055,6 @@ export default function trait() {
                     label.transition().duration(500).attr("opacity", 1);
                 });
                 if (self.filteredData.groupedColocs || self.filteredData.groupedRare) {
-                    // Prepare circle data for Canvas rendering
                     canvasCircles = circleData.map(d => {
                         const chrMeta = self.svgs.metadata.x_axis.find(chr => chr.CHR == d.chr);
                         const chrLength = chrMeta.bp_end - chrMeta.bp_start;
@@ -1099,13 +1064,11 @@ export default function trait() {
                                 self.svgs.metadata.svg_width) *
                             width;
                         const yValue = -Math.log10(d.min_p);
-                        // Clip yValue to y-axis domain to prevent circles from being drawn outside canvas
                         const clippedYValue = Math.max(
                             self.svgs.metadata.y_axis.min_lp,
                             Math.min(self.svgs.metadata.y_axis.max_lp, yValue)
                         );
                         let y = yScale(clippedYValue);
-                        // If circle was clipped at the top, offset it slightly downward for visibility
                         if (yValue > self.svgs.metadata.y_axis.max_lp) {
                             y = y + 8;
                         }
@@ -1124,7 +1087,7 @@ export default function trait() {
                             ...d,
                             x,
                             y,
-                            yValue, // Store original yValue for debugging
+                            yValue,
                             radius,
                             fillColor,
                         };

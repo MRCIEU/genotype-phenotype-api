@@ -8,6 +8,7 @@ client = TestClient(app)
 def test_get_ld_matrix_with_snp_ids(variants_in_ld_db):
     snp_ids = list(variants_in_ld_db.keys())
     response = client.get(f"v1/ld/matrix?snp_ids={snp_ids[0]}&snp_ids={snp_ids[1]}")
+    print(response.json())
     assert response.status_code == 200
 
     ld_matrix = response.json()
@@ -23,6 +24,7 @@ def test_get_ld_matrix_with_snp_ids(variants_in_ld_db):
 def test_get_ld_matrix_with_variants(variants_in_ld_db):
     variants = list(variants_in_ld_db.values())
     response = client.get(f"v1/ld/matrix?variants={variants[0]}&variants={variants[1]}")
+    print(response.json())
     assert response.status_code == 200
 
     ld_matrix = response.json()
@@ -38,6 +40,7 @@ def test_get_ld_matrix_with_variants(variants_in_ld_db):
 def test_get_ld_proxy_with_snp_ids(variants_in_ld_db):
     snp_ids = list(variants_in_ld_db.keys())
     response = client.get(f"v1/ld/proxies?snp_ids={snp_ids[0]}&snp_ids={snp_ids[1]}")
+    print(response.json())
     assert response.status_code == 200
     ld_proxy = response.json()
     assert len(ld_proxy["lds"]) > 0
@@ -49,9 +52,35 @@ def test_get_ld_proxy_with_snp_ids(variants_in_ld_db):
         assert row.ld_block_id is not None
 
 
+def test_get_ld_proxies_with_rsquared_threshold(variants_in_ld_db):
+    variants = list(variants_in_ld_db.values())
+
+    # Test with default threshold (0.8)
+    response_default = client.get(f"v1/ld/proxies?variants={variants[0]}&variants={variants[1]}")
+    print(response_default.json())
+    assert response_default.status_code == 200
+    proxies_default = response_default.json()["lds"]
+
+    # Test with higher threshold (0.9)
+    response_high = client.get(f"v1/ld/proxies?variants={variants[0]}&variants={variants[1]}&rsquared_threshold=0.9")
+    print(response_high.json())
+    assert response_high.status_code == 200
+    proxies_high = response_high.json()["lds"]
+
+    assert len(proxies_high) <= len(proxies_default)
+    for proxy in proxies_high:
+        assert proxy["r"] ** 2 >= 0.9
+
+    # Test invalid threshold
+    response_invalid = client.get(f"v1/ld/proxies?variants={variants[0]}&rsquared_threshold=0.5")
+    assert response_invalid.status_code == 400
+    assert "R squared threshold must be between 0.8 and 1" in response_invalid.json()["detail"]
+
+
 def test_get_ld_proxy_with_variants(variants_in_ld_db):
     variants = list(variants_in_ld_db.values())
     response = client.get(f"v1/ld/proxies?variants={variants[0]}&variants={variants[1]}")
+    print(response.json())
     assert response.status_code == 200
     ld_proxy = response.json()
     assert len(ld_proxy["lds"]) > 0

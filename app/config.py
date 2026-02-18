@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     GWAS_DIR: str
     SENTRY_DSN: str
     EMAIL_FROM: str = "gpmap@opengwas.io"
+    EMAIL_TO: str = "gpmap-project@bristol.ac.uk"
     EMAIL_SERVER: str = "smtp.email.uk-london-1.oci.oraclecloud.com"
     EMAIL_PORT: int = 587
     EMAIL_TLS: bool = True

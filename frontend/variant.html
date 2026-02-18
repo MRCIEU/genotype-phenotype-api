@@ -178,6 +178,7 @@
                             @close="closeRPackageModal()"
                         ></r-package-modal>
                         <table
+                            id="variant-table"
                             class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth is-size-7 mr-0 is-compact"
                         >
                             <thead>
@@ -197,7 +198,7 @@
                                     <tr
                                         @click.stop="setHighlightedStudy(item); highlightLock = true; selectedRowId = item.study_extraction_id"
                                         :class="{ 'has-background-success-light': selectedRowId === item.study_extraction_id }"
-                                        :style="{ backgroundColor: selectedRowId === item.study_extraction_id ? '' : getColocGroupColor(item.coloc_group_id), cursor: 'pointer' }"
+                                        :style="{ backgroundColor: selectedRowId === item.study_extraction_id ? '' : getColocGroupColor(item), cursor: 'pointer' }"
                                     >
                                         <td
                                             class="py-1 px-2 has-text-ellipsis"

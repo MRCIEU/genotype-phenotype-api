@@ -54,8 +54,12 @@ async def get_proxies(
     request: Request,
     variants: List[str] = Query(None, description="List of variants to filter results"),
     snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
+    rsquared_threshold: float = Query(0.8, description="R squared threshold for LD proxies"),
 ):
     try:
+        if rsquared_threshold < 0.8 or rsquared_threshold > 1:
+            raise HTTPException(status_code=400, detail="R squared threshold must be between 0.8 and 1")
+
         ld_db = LdDBClient()
         studies_db = StudiesDBClient()
         if variants:
@@ -66,8 +70,8 @@ async def get_proxies(
         if not snp_ids:
             raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
 
-        ld_proxies = ld_db.get_ld_proxies(snp_ids)
-        if ld_proxies is None:
+        ld_proxies = ld_db.get_ld_proxies(snp_ids, rsquared_threshold)
+        if ld_proxies is None or len(ld_proxies) == 0:
             raise HTTPException(status_code=404, detail=f"LD proxies for snp_ids {snp_ids} not found")
 
         response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
