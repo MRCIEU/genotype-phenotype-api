@@ -54,6 +54,9 @@ async def get_trait(
         studies_db = StudiesDBClient()
         associations_service = AssociationsService()
 
+        if not trait_id.isdigit():
+            trait_id = trait_id.replace("_", "-")
+
         trait = studies_db.get_trait(trait_id)
         if trait is None:
             raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
