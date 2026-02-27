@@ -7,8 +7,10 @@ from app.models.schemas import (
     SearchTerm,
     SearchTerms,
     Singleton,
+    Study,
     StudyDataType,
     VariantType,
+    convert_duckdb_to_pydantic_model
 )
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
@@ -269,3 +271,48 @@ class StudiesService(metaclass=Singleton):
                 logger.info("No cache keys found to clear")
         except Exception as e:
             logger.error(f"Failed to clear studies Redis cache: {e}")
+    
+    def get_studies_by_trait_id(self, trait_id: str) -> List[Study]:
+        """
+        Retrieve studies by trait ID from DuckDB.
+        Returns:
+            List of Study instances
+        """
+        return self.get_studies_by_trait_ids([trait_id])
+
+    def get_studies_by_trait_ids(self, trait_ids: List[int | str]) -> List[Study]:
+        """
+        Retrieve studies by trait IDs from DuckDB.
+        Returns:
+            List of Study instances
+        """
+        studies = self.db.get_studies_by_trait_ids(trait_ids)
+        
+        study_models = convert_duckdb_to_pydantic_model(Study, studies)
+        if not isinstance(study_models, list):
+            study_models = [study_models] if study_models else []
+
+        for study in study_models:
+            if study and study.url and study.url.startswith("https://opengwas.io"):
+                # Concat url with /datasets/ and the study_name
+                full_url = f"{study.url.rstrip('/')}/datasets/{study.study_name}"
+                study.url = self._replace_first_two_dashes_with_underscores(full_url)
+
+        return study_models
+
+    def _replace_first_two_dashes_with_underscores(self, x: str):
+        if not x:
+            return x
+        dash_positions = [i for i, char in enumerate(x) if char == "-"]
+
+        if len(dash_positions) <= 2:
+            return x
+
+        # Keep the first two dashes, replace the rest with '_'
+        result = list(x)
+        for i in range(2, len(dash_positions)):
+            pos = dash_positions[i]
+            result[pos] = "_"
+            
+        return "".join(result)
+        

@@ -30,11 +30,120 @@ settings = get_settings()
 @router.get("", response_model=GetTraitsResponse)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
-async def get_traits(request: Request) -> GetTraitsResponse:
+async def get_traits(
+    request: Request,
+    ids: List[str] = Query(None, description="List of trait IDs or names to filter results"),
+    include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
+) -> GetTraitsResponse:
     try:
         studies_service = StudiesService()
-        traits = studies_service.get_traits()
-        return traits
+        if not ids:
+            traits = studies_service.get_traits()
+            return traits
+        
+        maximum_num_traits = 5
+        if len(ids) > maximum_num_traits:
+            raise HTTPException(status_code=400, detail=f"Can not request more than {maximum_num_traits} in one request")
+        
+        studies_db = StudiesDBClient()
+        associations_service = AssociationsService()
+
+        # 1. Get basic trait info for all requested traits
+        trait_data = studies_db.get_traits_by_ids(ids)
+        if not trait_data:
+            return GetTraitsResponse(traits=[])
+
+        traits = convert_duckdb_to_pydantic_model(Trait, trait_data)
+        if not isinstance(traits, list):
+            traits = [traits]
+        
+        trait_map = {t.id: t for t in traits}
+        trait_ids_numeric = list(trait_map.keys())
+
+        # 2. Get all studies for these traits
+        all_studies = studies_service.get_studies_by_trait_ids(trait_ids_numeric)
+        
+        # Group studies by trait_id
+        studies_by_trait = {}
+        for study in all_studies:
+            if study.trait_id not in studies_by_trait:
+                studies_by_trait[study.trait_id] = []
+            studies_by_trait[study.trait_id].append(study)
+        
+        # Populate traits with their studies
+        for tid, t in trait_map.items():
+            populate_trait_studies(t, studies_by_trait.get(tid, []))
+
+        # 3. Get rare results, study extractions, and colocs for all relevant studies
+        all_study_ids = []
+        for t in traits:
+            if t.common_study:
+                all_study_ids.append(t.common_study.id)
+            if t.rare_study:
+                all_study_ids.append(t.rare_study.id)
+        
+        rare_results_map = {}
+        study_extractions_map = {}
+        colocs_map = {}
+
+        if all_study_ids:
+            # Batch fetch
+            all_rare_data = studies_db.get_rare_results_for_study_ids(all_study_ids)
+            all_extractions_data = studies_db.get_study_extractions_for_studies(all_study_ids)
+            all_colocs_data = studies_db.get_all_colocs_for_study_ids(all_study_ids)
+
+            # Convert and group
+            if all_rare_data:
+                rare_results = convert_duckdb_to_pydantic_model(RareResult, all_rare_data)
+                for r in rare_results:
+                    if r.study_id not in rare_results_map:
+                        rare_results_map[r.study_id] = []
+                    rare_results_map[r.study_id].append(r)
+            
+            if all_extractions_data:
+                extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, all_extractions_data)
+                for e in extractions:
+                    if e.study_id not in study_extractions_map:
+                        study_extractions_map[e.study_id] = []
+                    study_extractions_map[e.study_id].append(e)
+            
+            if all_colocs_data:
+                colocs = convert_duckdb_to_pydantic_model(ColocGroup, all_colocs_data)
+                for c in colocs:
+                    if c.study_id not in colocs_map:
+                        colocs_map[c.study_id] = []
+                    colocs_map[c.study_id].append(c)
+
+        # 4. Construct final responses
+        trait_responses = []
+        for t in traits:
+            t_rare = []
+            if t.rare_study and t.rare_study.id in rare_results_map:
+                t_rare = rare_results_map[t.rare_study.id]
+            
+            t_extractions = []
+            if t.common_study and t.common_study.id in study_extractions_map:
+                t_extractions.extend(study_extractions_map[t.common_study.id])
+            if t.rare_study and t.rare_study.id in study_extractions_map:
+                t_extractions.extend(study_extractions_map[t.rare_study.id])
+            
+            t_colocs = []
+            if t.common_study and t.common_study.id in colocs_map:
+                t_colocs = colocs_map[t.common_study.id]
+
+            associations = None
+            if include_associations:
+                associations = associations_service.get_associations(t_colocs, t_rare, t_extractions)
+
+            trait_responses.append(TraitResponse(
+                trait=t,
+                coloc_groups=t_colocs,
+                rare_results=t_rare,
+                study_extractions=t_extractions,
+                associations=associations,
+            ))
+
+        return GetTraitsResponse(traits=trait_responses)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -62,8 +171,8 @@ async def get_trait(
             raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
 
         trait = convert_duckdb_to_pydantic_model(Trait, trait)
-        studies = studies_db.get_studies_by_trait_id(trait.id)
-        studies = convert_duckdb_to_pydantic_model(Study, studies)
+        studies_service = StudiesService()
+        studies = studies_service.get_studies_by_trait_id(trait.id)
         trait = populate_trait_studies(trait, studies)
         rare_results = []
         study_extractions = []
@@ -123,8 +232,8 @@ async def get_trait_coloc_pairs(
             raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
 
         trait = convert_duckdb_to_pydantic_model(Trait, trait)
-        studies = studies_db.get_studies_by_trait_id(trait.id)
-        studies = convert_duckdb_to_pydantic_model(Study, studies)
+        studies_service = StudiesService()
+        studies = studies_service.get_studies_by_trait_id(trait.id)
         trait = populate_trait_studies(trait, studies)
 
         colocs = studies_db.get_all_colocs_for_study(trait.common_study.id)

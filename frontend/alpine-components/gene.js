@@ -39,7 +39,7 @@ export default function gene() {
 
         async loadData() {
             const geneId = new URLSearchParams(location.search).get("id");
-            document.title = "GP Map: " + geneId;
+            document.title = "GPMap: " + geneId;
             try {
                 const response = await fetch(constants.apiUrl + "/genes/" + geneId + "?include_trans=false");
                 if (!response.ok) {

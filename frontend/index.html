@@ -5,6 +5,30 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
         <title>The Genotype-Phenotype Map</title>
+        <meta
+            name="description"
+            content="A comprehensive map of genetic associations, colocalizations, and rare variant analysis across thousands of traits and molecular measurements."
+        />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://gpmap.opengwas.io/" />
+        <meta property="og:title" content="The Genotype-Phenotype Map" />
+        <meta
+            property="og:description"
+            content="A comprehensive map of genetic associations, colocalizations, and rare variant analysis across thousands of traits and molecular measurements."
+        />
+        <meta property="og:image" content="https://gpmap.opengwas.io/assets/images/logo.svg" />
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://gpmap.opengwas.io/" />
+        <meta property="twitter:title" content="The Genotype-Phenotype Map" />
+        <meta
+            property="twitter:description"
+            content="A comprehensive map of genetic associations, colocalizations, and rare variant analysis across thousands of traits and molecular measurements."
+        />
+        <meta property="twitter:image" content="https://gpmap.opengwas.io/assets/images/logo.svg" />
         <script type="module" src="/main.js" async blocking="render"></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
         <script>
@@ -578,7 +602,7 @@
                         <!-- R Package Modal -->
                         <r-package-modal
                             :show="rPackageModalOpen"
-                            snippet="gpmapr::search_gpmapr('Haemoglobin'); gpmapr::gene('TREM2')"
+                            :snippet="'#to search for a trait, gene, or variant:\ngpmapr::search_gpmapr(\'Haemoglobin\')\n#get data for a gene:\ngpmapr::gene(\'TREM2\')'"
                             @close="closeRPackageModal()"
                         ></r-package-modal>
 
@@ -592,18 +616,23 @@
                             </button>
                         </div>
                         <div class="block mt-6" x-init="loadGPMapMetadata" x-show="getGPMapMetadata">
-                            GWAS studies: <strong x-text="getGPMapMetadata.num_common_studies.toLocaleString()"></strong
-                            ><br />
-                            Rare variant studies:
+                            Number of GWAS traits:
+                            <strong x-text="getGPMapMetadata.num_common_studies.toLocaleString()"></strong><br />
+                            Number of Rare variant traits:
                             <strong x-text="getGPMapMetadata.num_rare_studies.toLocaleString()"></strong><br />
-                            Molecular measurements:
+                            Number of Molecular traits:
                             <strong x-text="getGPMapMetadata.num_molecular_studies.toLocaleString()"></strong><br />
-                            <!-- Colocalised Pairs: <strong x-text="getGPMapMetadata.num_coloc_groups"></strong><br /> -->
-                            Candidate variants:
-                            <strong x-text="getGPMapMetadata.num_causal_variants.toLocaleString()"></strong><br />
-                            Mistakes: <strong>many</strong><br />
+                            Distinct Colocalization Groups:
+                            <strong x-text="getGPMapMetadata.num_coloc_groups.toLocaleString()"></strong><br />
                         </div>
-                        <div class="block">Citation: <strong>DOI here</strong></div>
+                        <div class="block">
+                            Citation:
+                            <strong
+                                ><a target="_blank" href="https://doi.org/10.64898/2026.02.19.26346618"
+                                    >DOI here</a
+                                ></strong
+                            >
+                        </div>
                     </div>
                 </div>
                 <div class="footer py-2">

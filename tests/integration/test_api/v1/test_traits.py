@@ -97,6 +97,39 @@ def test_get_trait_by_id_with_associations():
         assert association["se"] is not None
 
 
+def test_get_traits_batch_by_ids():
+    trait_ids = [5020, 1993]
+    query_params = "&".join([f"ids={tid}" for tid in trait_ids])
+    response = client.get(f"/v1/traits?{query_params}")
+    assert response.status_code == 200
+    data = response.json()
+    assert "traits" in data
+    traits = data["traits"]
+    assert len(traits) > 0
+    for trait_resp in traits:
+        assert "trait" in trait_resp
+        assert trait_resp["trait"]["id"] in trait_ids
+
+
+def test_get_traits_batch_with_associations():
+    trait_ids = [5020]
+    response = client.get(f"/v1/traits?ids=5020&include_associations=true")
+    assert response.status_code == 200
+    data = response.json()
+    traits = data["traits"]
+    assert len(traits) > 0
+    assert traits[0]["associations"] is not None
+    assert len(traits[0]["associations"]) > 0
+
+
+def test_get_traits_batch_too_many():
+    trait_ids = [1, 2, 3, 4, 5, 6]
+    query_params = "&".join([f"ids={tid}" for tid in trait_ids])
+    response = client.get(f"/v1/traits?{query_params}")
+    assert response.status_code == 400
+    assert "Can not request more than 5" in response.json()["detail"]
+
+
 def test_get_trait_coloc_pairs():
     response = client.get("/v1/traits/5020/coloc-pairs")
     print(response.json())

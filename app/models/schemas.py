@@ -187,7 +187,7 @@ class BasicTraitResponse(BaseModel):
 
 
 class GetTraitsResponse(BaseModel):
-    traits: List[BasicTraitResponse]
+    traits: List[BasicTraitResponse | TraitResponse]
 
 
 class GenePleiotropy(BaseModel):
@@ -235,6 +235,7 @@ class Study(BaseModel):
     ensg: Optional[str] = None
     heritability: Optional[float] = None
     heritability_se: Optional[float] = None
+    url: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -377,7 +378,7 @@ class ExtendedVariant(Variant):
 
 
 class GetGenesResponse(BaseModel):
-    genes: List[ExtendedGene]
+    genes: List[ExtendedGene | GeneResponse]
 
 
 class GeneResponse(BaseModel):
@@ -409,6 +410,10 @@ class VariantResponse(BaseModel):
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
+class GetVariantsResponse(BaseModel):
+    variants: List[Variant | VariantResponse]
+
+
 class VariantSummaryStatsResponse(BaseModel):
     variant: Variant
 
@@ -436,6 +441,7 @@ class UploadTraitResponse(BaseModel):
     rare_results: Optional[List[RareResult]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
     queue_position: Optional[int] = None
+    queue_status: Optional[str] = None  # "in_progress" | "queued" | None
 
 
 class GwasStatus(Enum):

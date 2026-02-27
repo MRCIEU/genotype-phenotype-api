@@ -28,14 +28,53 @@ class StudiesDBClient:
         ]
 
     @log_performance
-    def get_traits(self):
+    def get_traits(self, trait_ids: List[int] = None):
         query = f"""
             SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry, studies.heritability, studies.heritability_se
             FROM traits
             JOIN studies ON traits.id = studies.trait_id
             WHERE traits.data_type IN ({",".join(self.common_data_types)})
         """
-        return self.studies_conn.execute(query).fetchall()
+        params = []
+        if trait_ids:
+            placeholders = ",".join(["?" for _ in trait_ids])
+            query += f" AND traits.id IN ({placeholders})"
+            params.extend(trait_ids)
+        
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_traits_by_ids(self, trait_ids: List[int | str]):
+        if not trait_ids:
+            return []
+        
+        # Split into numeric IDs and string names
+        ids = []
+        names = []
+        for tid in trait_ids:
+            if isinstance(tid, int) or (isinstance(tid, str) and tid.isdigit()):
+                ids.append(int(tid))
+            else:
+                names.append(tid)
+        
+        conditions = []
+        params = []
+        
+        if ids:
+            placeholders = ",".join(["?" for _ in ids])
+            conditions.append(f"id IN ({placeholders})")
+            params.extend(ids)
+        
+        if names:
+            placeholders = ",".join(["?" for _ in names])
+            conditions.append(f"trait IN ({placeholders})")
+            params.extend(names)
+            
+        if not conditions:
+            return []
+            
+        query = f"SELECT * FROM traits WHERE {" OR ".join(conditions)}"
+        return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
     def get_trait(self, trait_id: str | int):
@@ -72,9 +111,27 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, [study_id]).fetchone()
 
     @log_performance
-    def get_studies_by_trait_id(self, trait_id: str):
-        query = "SELECT * FROM studies WHERE trait_id = ?"
-        return self.studies_conn.execute(query, [trait_id]).fetchall()
+    def get_studies_by_trait_ids(self, trait_ids: List[int]):
+        if not trait_ids:
+            return []
+        placeholders = ",".join(["?" for _ in trait_ids])
+        query = f"""SELECT studies.*, study_sources.url FROM studies
+          JOIN study_sources ON studies.source_id = study_sources.id WHERE trait_id IN ({placeholders})"""
+        return self.studies_conn.execute(query, trait_ids).fetchall()
+
+    @log_performance
+    def get_rare_results_for_study_ids(self, study_ids: List[int]):
+        if not study_ids:
+            return []
+        placeholders = ",".join(["?" for _ in study_ids])
+        return self._fetch_rare_results(f"study_id IN ({placeholders})", study_ids)
+
+    @log_performance
+    def get_all_colocs_for_study_ids(self, study_ids: List[int]):
+        if not study_ids:
+            return []
+        placeholders = ",".join(["?" for _ in study_ids])
+        return self._fetch_colocs(f"study_id IN ({placeholders})", study_ids)
 
     @log_performance
     def get_studies_by_id(self, study_ids: List[int]):
@@ -292,6 +349,92 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, gene_ids).fetchall()
 
     @log_performance
+    def get_genes_by_ids(self, gene_ids: List[str | int]):
+        """Fetch genes by ID or symbol. Returns full gene with pleiotropy joined."""
+        if not gene_ids:
+            return []
+
+        ids = []
+        symbols = []
+        for gid in gene_ids:
+            if isinstance(gid, int) or (isinstance(gid, str) and gid.isdigit()):
+                ids.append(int(gid))
+            else:
+                symbols.append(str(gid))
+
+        conditions = []
+        params = []
+        if ids:
+            placeholders = ",".join(["?" for _ in ids])
+            conditions.append(f"gene_annotations.id IN ({placeholders})")
+            params.extend(ids)
+        if symbols:
+            placeholders = ",".join(["?" for _ in symbols])
+            conditions.append(f"gene_annotations.gene IN ({placeholders})")
+            params.extend(symbols)
+        if not conditions:
+            return []
+
+        query = f"""
+            SELECT gene_annotations.*,
+                gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+            FROM gene_annotations
+            LEFT JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id
+            WHERE {" OR ".join(conditions)}
+        """
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_all_colocs_for_genes(self, gene_ids: List[int], include_trans: bool = False):
+        if not gene_ids:
+            return []
+        placeholders = ",".join(["?" for _ in gene_ids])
+        query = f"gene_id IN ({placeholders})"
+        params = list(gene_ids)
+        if not include_trans:
+            query += " AND cis_trans = ?"
+            params.append(CisTrans.cis.value)
+        return self._fetch_colocs(query, params)
+
+    @log_performance
+    def get_rare_results_for_genes(self, gene_ids: List[int], include_trans: bool = False):
+        if not gene_ids:
+            return []
+        placeholders = ",".join(["?" for _ in gene_ids])
+        query = f"(gene_id IN ({placeholders}) OR situated_gene_id IN ({placeholders}))"
+        params = list(gene_ids) + list(gene_ids)
+        if not include_trans:
+            query += " AND (cis_trans = ? OR cis_trans IS NULL)"
+            params.append(CisTrans.cis.value)
+        return self._fetch_rare_results(query, params)
+
+    @log_performance
+    def get_study_extractions_for_genes(self, gene_ids: List[int], include_trans: bool = False):
+        if not gene_ids:
+            return []
+        placeholders = ",".join(["?" for _ in gene_ids])
+        query = f"(gene_id IN ({placeholders}) OR situated_gene_id IN ({placeholders}))"
+        params = list(gene_ids) + list(gene_ids)
+        if not include_trans:
+            query += " AND cis_trans = ?"
+            params.append(CisTrans.cis.value)
+        return self._fetch_study_extractions(query, params)
+
+    @log_performance
+    def get_study_extractions_in_gene_regions(self, regions: List[tuple]):
+        """regions: list of (chr, start, stop) tuples"""
+        if not regions:
+            return []
+        conditions = []
+        params = []
+        for chr_val, start, stop in regions:
+            conditions.append("(chr = ? AND bp BETWEEN ? AND ?)")
+            params.extend([chr_val, start, stop])
+        query = "(" + " OR ".join(conditions) + ") AND cis_trans = ?"
+        params.append(CisTrans.cis.value)
+        return self._fetch_study_extractions(query, params)
+
+    @log_performance
     def get_variants(
         self,
         snp_ids: List[int] = None,
@@ -409,6 +552,13 @@ class StudiesDBClient:
             return []
 
         return self._fetch_study_extractions("snp_id = ?", [snp_id])
+
+    @log_performance
+    def get_study_extractions_for_variants(self, snp_ids: List[int]):
+        if not snp_ids:
+            return []
+        placeholders = ",".join(["?" for _ in snp_ids])
+        return self._fetch_study_extractions(f"snp_id IN ({placeholders})", snp_ids)
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):

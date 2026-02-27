@@ -63,11 +63,13 @@ def create_app() -> FastAPI:
 
         peeked_queue = redis_client.peek_queue(redis_client.process_gwas_queue)
         dead_letter_queue = redis_client.peek_queue(redis_client.process_gwas_dlq)
+        in_progress_queue = redis_client.peek_queue(redis_client.process_gwas_in_progress)
 
         return {
             "status": "healthy",
             "queue_size": len(peeked_queue),
             "queue": peeked_queue,
+            "in_progress_queue_size": len(in_progress_queue),
             "dead_letter_queue": len(dead_letter_queue),
         }
 

@@ -13,7 +13,6 @@ from app.models.schemas import (
 )
 from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
-import sentry_sdk
 
 logger = get_logger(__name__)
 
@@ -25,7 +24,6 @@ class GwasUploadService:
 
     def update_gwas_success(self, gwas: GwasUpload, update_gwas_request: UpdateGwasRequest):
         gwas.status = GwasStatus.COMPLETED.value
-        # gwas.updated_at = datetime.now()
         ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
 
         existing_ld_blocks = self.studies_db.get_ld_blocks_by_ld_block(ld_blocks)
@@ -151,18 +149,22 @@ class GwasUploadService:
             "user_email": gwas.email if hasattr(gwas, "email") else "unknown",
         }
 
-        logger.error(
-            "GWAS processing failed for {guid}: {reason}",
-            guid=gwas.guid,
-            reason=update_gwas_request.failure_reason,
-            extra=error_context,
-        )
+        failure_reason = update_gwas_request.failure_reason or ""
+        is_expected_error = "Caught error" in failure_reason
 
-        if "Caught error" not in update_gwas_request.failure_reason:
-            sentry_sdk.set_context("gwas_upload", error_context)
-            sentry_sdk.capture_message(
-                f"GWAS processing failed: {update_gwas_request.failure_reason}",
-                level="error",
+        if is_expected_error:
+            logger.warning(
+                "GWAS processing failed for {guid}: {reason}",
+                guid=gwas.guid,
+                reason=failure_reason,
+                extra=error_context,
+            )
+        else:
+            logger.error(
+                "GWAS processing failed for {guid}: {reason}",
+                guid=gwas.guid,
+                reason=failure_reason,
+                extra=error_context,
             )
 
         gwas.status = GwasStatus.FAILED.value

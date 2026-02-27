@@ -88,16 +88,41 @@ def test_get_gwas_not_found():
     assert response.status_code == 404
 
 
-def test_get_gwas_processing(test_guid, mock_redis):
-    mock_redis.lrange.return_value = [json.dumps({"metadata": {"guid": test_guid}})]
+def test_get_gwas_processing_queued(test_guid, mock_redis):
+    # GUID in main queue (waiting), not in in_progress - use side_effect for 2 lrange calls
+    mock_redis.lrange.side_effect = [
+        [],  # process_gwas_in_progress: empty
+        [json.dumps({"metadata": {"guid": test_guid}})],  # process_gwas: has guid
+    ]
 
     response = client.get(f"/v1/gwas/{test_guid}")
     assert response.status_code == 200
     print(response.json())
 
     gwas_model = UploadTraitResponse(**response.json())
-    mock_redis.lrange.return_value = []
+    assert gwas_model.queue_status == "queued"
     assert gwas_model.queue_position == 1
+
+    mock_redis.lrange.side_effect = None
+    mock_redis.lrange.return_value = []
+
+
+def test_get_gwas_processing_in_progress(test_guid, mock_redis):
+    # GUID in in_progress queue (being processed)
+    mock_redis.lrange.side_effect = [
+        [json.dumps({"metadata": {"guid": test_guid}})],  # process_gwas_in_progress: has guid
+    ]
+
+    response = client.get(f"/v1/gwas/{test_guid}")
+    assert response.status_code == 200
+    print(response.json())
+
+    gwas_model = UploadTraitResponse(**response.json())
+    assert gwas_model.queue_status == "in_progress"
+    assert gwas_model.queue_position is None
+
+    mock_redis.lrange.side_effect = None
+    mock_redis.lrange.return_value = []
 
 
 def test_put_gwas_failure(test_guid, mock_email_service):

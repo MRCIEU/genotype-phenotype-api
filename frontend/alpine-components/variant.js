@@ -72,7 +72,7 @@ export default function variant() {
                 }
                 this.data = await response.json();
 
-                document.title = "GP Map: " + this.getSNPName();
+                document.title = "GPMap: " + this.getSNPName();
 
                 this.data.coloc_groups = this.data.coloc_groups.map(coloc => ({
                     ...coloc,

@@ -16,7 +16,8 @@ def test_get_variants_by_variants(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
     response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}")
     assert response.status_code == 200
-    variants = response.json()
+    data = response.json()
+    variants = data["variants"]
     assert len(variants) > 0
 
     for row in variants:
@@ -36,7 +37,8 @@ def test_get_variants_by_rsids(variants_in_studies_db):
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
     response = client.get(f"/v1/variants?rsids={rsids[0]}&rsids={rsids[1]}")
     assert response.status_code == 200
-    variants = response.json()
+    data = response.json()
+    variants = data["variants"]
     assert len(variants) > 0
     for row in variants:
         variant_model = Variant(**row)
@@ -54,7 +56,8 @@ def test_get_variants_by_rsids(variants_in_studies_db):
 def test_get_variants_by_grange(variants_in_grange):
     response = client.get(f"/v1/variants?grange={variants_in_grange}")
     assert response.status_code == 200
-    variants = response.json()
+    data = response.json()
+    variants = data["variants"]
     assert len(variants) > 0
     for row in variants:
         variant_model = Variant(**row)
@@ -68,6 +71,29 @@ def test_get_variants_by_grange(variants_in_grange):
             ]
             if field not in optional_fields:
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
+
+
+def test_get_variants_expand_not_allowed_with_grange(variants_in_grange):
+    response = client.get(f"/v1/variants?grange={variants_in_grange}&expand=true")
+    assert response.status_code == 400
+    assert "expand" in response.json()["detail"].lower()
+
+
+def test_get_variants_expand_with_associations(variants_in_studies_db):
+    snp_ids = list(variants_in_studies_db.keys())
+    response = client.get(
+        f"/v1/variants?snp_ids={snp_ids[0]}&expand=true&include_associations=true"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    variants = data["variants"]
+    assert len(variants) > 0
+    for row in variants:
+        variant_response = VariantResponse(**row)
+        assert variant_response.variant is not None
+        assert variant_response.coloc_groups is not None
+        assert variant_response.rare_results is not None
+        assert variant_response.study_extractions is not None
 
 
 def test_get_variant_by_id(variants_in_studies_db):

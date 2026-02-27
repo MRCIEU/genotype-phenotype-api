@@ -4,7 +4,31 @@
         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="/assets/images/small_logo.svg" />
-        <title>GP Map Phenotype</title>
+        <title>GPMap: Trait</title>
+        <meta
+            name="description"
+            content="Explore genetic associations, colocalizations, and rare variant results for this phenotype in the Genotype-Phenotype Map."
+        />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://gpmap.opengwas.io/trait.html" />
+        <meta property="og:title" content="GPMap: Trait">
+        <meta
+            property="og:description"
+            content="Explore genetic associations, colocalizations, and rare variant results for this phenotype in the Genotype-Phenotype Map."
+        />
+        <meta property="og:image" content="https://gpmap.opengwas.io/assets/images/logo.svg" />
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary" />
+        <meta property="twitter:url" content="https://gpmap.opengwas.io/trait.html" />
+        <meta property="twitter:title" content="GPMap: Trait">
+        <meta
+            property="twitter:description"
+            content="Explore genetic associations, colocalizations, and rare variant results for this phenotype in the Genotype-Phenotype Map."
+        />
+        <meta property="twitter:image" content="https://gpmap.opengwas.io/assets/images/logo.svg" />
         <script type="module" src="/main.js"></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRYWRJTDBP"></script>
         <script>
@@ -49,10 +73,22 @@
                         </div>
                         <div
                             class="columns mt-0 is-centered"
-                            x-show="userUpload && data && data.trait.status === 'processing'"
+                            x-show="userUpload && data && data.trait.status === 'processing' && data.queue_status === 'in_progress'"
+                        >
+                            Your GWAS is currently being processed.
+                        </div>
+                        <div
+                            class="columns mt-0 is-centered"
+                            x-show="userUpload && data && data.trait.status === 'processing' && data.queue_status === 'queued'"
                         >
                             You are currently in position <span x-text="data ? data.queue_position : ' 0 '"></span> in
                             the queue.
+                        </div>
+                        <div
+                            class="columns mt-0 is-centered"
+                            x-show="userUpload && data && data.trait.status === 'processing' && !data.queue_status"
+                        >
+                            Your GWAS is being processed.
                         </div>
 
                         <div x-show="showResults" class="mb-0">
@@ -202,7 +238,7 @@
                 <!-- R Package Modal -->
                 <r-package-modal
                     :show="rPackageModalOpen"
-                    :snippet="`gpmapr::trait(${new URLSearchParams(location.search).get('id')})`"
+                    :snippet="`gpmapr::trait('${new URLSearchParams(location.search).get('id')}')`"
                     @close="closeRPackageModal()"
                 ></r-package-modal>
 
