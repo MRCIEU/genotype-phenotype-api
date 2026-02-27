@@ -112,8 +112,9 @@ def test_get_traits_batch_by_ids():
 
 
 def test_get_traits_batch_with_associations():
-    trait_ids = [5020]
-    response = client.get(f"/v1/traits?ids=5020&include_associations=true")
+    trait_ids = [5020, 1993]
+    query_params = "&".join([f"ids={tid}" for tid in trait_ids])
+    response = client.get(f"/v1/traits?{query_params}&include_associations=true")
     assert response.status_code == 200
     data = response.json()
     traits = data["traits"]

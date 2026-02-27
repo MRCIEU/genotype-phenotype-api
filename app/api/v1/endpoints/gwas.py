@@ -170,9 +170,7 @@ async def get_gwas(
                 redis_client = RedisClient()
                 queue_status, queue_position = redis_client.get_gwas_queue_status(guid)
 
-            return UploadTraitResponse(
-                trait=gwas, queue_status=queue_status, queue_position=queue_position
-            )
+            return UploadTraitResponse(trait=gwas, queue_status=queue_status, queue_position=queue_position)
 
         coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
         coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)

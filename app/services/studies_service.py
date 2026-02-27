@@ -10,7 +10,7 @@ from app.models.schemas import (
     Study,
     StudyDataType,
     VariantType,
-    convert_duckdb_to_pydantic_model
+    convert_duckdb_to_pydantic_model,
 )
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
@@ -271,7 +271,7 @@ class StudiesService(metaclass=Singleton):
                 logger.info("No cache keys found to clear")
         except Exception as e:
             logger.error(f"Failed to clear studies Redis cache: {e}")
-    
+
     def get_studies_by_trait_id(self, trait_id: str) -> List[Study]:
         """
         Retrieve studies by trait ID from DuckDB.
@@ -287,7 +287,7 @@ class StudiesService(metaclass=Singleton):
             List of Study instances
         """
         studies = self.db.get_studies_by_trait_ids(trait_ids)
-        
+
         study_models = convert_duckdb_to_pydantic_model(Study, studies)
         if not isinstance(study_models, list):
             study_models = [study_models] if study_models else []
@@ -313,6 +313,5 @@ class StudiesService(metaclass=Singleton):
         for i in range(2, len(dash_positions)):
             pos = dash_positions[i]
             result[pos] = "_"
-            
+
         return "".join(result)
-        

@@ -81,9 +81,7 @@ def test_get_variants_expand_not_allowed_with_grange(variants_in_grange):
 
 def test_get_variants_expand_with_associations(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(
-        f"/v1/variants?snp_ids={snp_ids[0]}&expand=true&include_associations=true"
-    )
+    response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}&expand=true&include_associations=true")
     assert response.status_code == 200
     data = response.json()
     variants = data["variants"]

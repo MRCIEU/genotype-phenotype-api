@@ -40,11 +40,13 @@ async def get_traits(
         if not ids:
             traits = studies_service.get_traits()
             return traits
-        
+
         maximum_num_traits = 5
         if len(ids) > maximum_num_traits:
-            raise HTTPException(status_code=400, detail=f"Can not request more than {maximum_num_traits} in one request")
-        
+            raise HTTPException(
+                status_code=400, detail=f"Can not request more than {maximum_num_traits} in one request"
+            )
+
         studies_db = StudiesDBClient()
         associations_service = AssociationsService()
 
@@ -56,20 +58,20 @@ async def get_traits(
         traits = convert_duckdb_to_pydantic_model(Trait, trait_data)
         if not isinstance(traits, list):
             traits = [traits]
-        
+
         trait_map = {t.id: t for t in traits}
         trait_ids_numeric = list(trait_map.keys())
 
         # 2. Get all studies for these traits
         all_studies = studies_service.get_studies_by_trait_ids(trait_ids_numeric)
-        
+
         # Group studies by trait_id
         studies_by_trait = {}
         for study in all_studies:
             if study.trait_id not in studies_by_trait:
                 studies_by_trait[study.trait_id] = []
             studies_by_trait[study.trait_id].append(study)
-        
+
         # Populate traits with their studies
         for tid, t in trait_map.items():
             populate_trait_studies(t, studies_by_trait.get(tid, []))
@@ -81,7 +83,7 @@ async def get_traits(
                 all_study_ids.append(t.common_study.id)
             if t.rare_study:
                 all_study_ids.append(t.rare_study.id)
-        
+
         rare_results_map = {}
         study_extractions_map = {}
         colocs_map = {}
@@ -99,14 +101,14 @@ async def get_traits(
                     if r.study_id not in rare_results_map:
                         rare_results_map[r.study_id] = []
                     rare_results_map[r.study_id].append(r)
-            
+
             if all_extractions_data:
                 extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, all_extractions_data)
                 for e in extractions:
                     if e.study_id not in study_extractions_map:
                         study_extractions_map[e.study_id] = []
                     study_extractions_map[e.study_id].append(e)
-            
+
             if all_colocs_data:
                 colocs = convert_duckdb_to_pydantic_model(ColocGroup, all_colocs_data)
                 for c in colocs:
@@ -120,13 +122,13 @@ async def get_traits(
             t_rare = []
             if t.rare_study and t.rare_study.id in rare_results_map:
                 t_rare = rare_results_map[t.rare_study.id]
-            
+
             t_extractions = []
             if t.common_study and t.common_study.id in study_extractions_map:
                 t_extractions.extend(study_extractions_map[t.common_study.id])
             if t.rare_study and t.rare_study.id in study_extractions_map:
                 t_extractions.extend(study_extractions_map[t.rare_study.id])
-            
+
             t_colocs = []
             if t.common_study and t.common_study.id in colocs_map:
                 t_colocs = colocs_map[t.common_study.id]
@@ -135,13 +137,15 @@ async def get_traits(
             if include_associations:
                 associations = associations_service.get_associations(t_colocs, t_rare, t_extractions)
 
-            trait_responses.append(TraitResponse(
-                trait=t,
-                coloc_groups=t_colocs,
-                rare_results=t_rare,
-                study_extractions=t_extractions,
-                associations=associations,
-            ))
+            trait_responses.append(
+                TraitResponse(
+                    trait=t,
+                    coloc_groups=t_colocs,
+                    rare_results=t_rare,
+                    study_extractions=t_extractions,
+                    associations=associations,
+                )
+            )
 
         return GetTraitsResponse(traits=trait_responses)
     except HTTPException as e:

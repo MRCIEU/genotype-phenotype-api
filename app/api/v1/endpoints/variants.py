@@ -35,9 +35,15 @@ async def get_variants(
     variants: List[str] = Query(None, description="List of variants to filter results"),
     rsids: List[str] = Query(None, description="List of rsids to filter results"),
     grange: str = Query(None, description="grange to filter results"),
-    expand: bool = Query(False, description="Return full VariantResponse for each variant (max 10, not available with grange)"),
-    include_associations: bool = Query(False, description="Whether to include associations for SNPs (only when expand=True)"),
-    include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs (only when expand=True)"),
+    expand: bool = Query(
+        False, description="Return full VariantResponse for each variant (max 10, not available with grange)"
+    ),
+    include_associations: bool = Query(
+        False, description="Whether to include associations for SNPs (only when expand=True)"
+    ),
+    include_coloc_pairs: bool = Query(
+        False, description="Whether to include coloc pairs for SNPs (only when expand=True)"
+    ),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
 ) -> GetVariantsResponse:
     try:
@@ -58,9 +64,7 @@ async def get_variants(
             )
 
         studies_db = StudiesDBClient()
-        variant_rows = studies_db.get_variants(
-            snp_ids=snp_ids, variant_prefixes=variants, rsids=rsids, grange=grange
-        )
+        variant_rows = studies_db.get_variants(snp_ids=snp_ids, variant_prefixes=variants, rsids=rsids, grange=grange)
         variant_rows = convert_duckdb_to_pydantic_model(Variant, variant_rows)
 
         if not variant_rows:
@@ -87,24 +91,18 @@ async def get_variants(
             colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs) if colocs else []
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results) if rare_results else []
             study_extractions_direct = (
-                convert_duckdb_to_pydantic_model(
-                    ExtendedStudyExtraction, study_extractions_direct
-                )
+                convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions_direct)
                 if study_extractions_direct
                 else []
             )
 
-            study_extraction_ids_from_colocs = list(
-                {c.study_extraction_id for c in colocs}
-            )
+            study_extraction_ids_from_colocs = list({c.study_extraction_id for c in colocs})
             existing_ids = {e.id for e in study_extractions_direct}
             extra_ids = [eid for eid in study_extraction_ids_from_colocs if eid not in existing_ids]
             study_extractions = list(study_extractions_direct)
             if extra_ids:
                 extra_data = studies_db.get_study_extractions_by_id(extra_ids)
-                extra_extractions = convert_duckdb_to_pydantic_model(
-                    ExtendedStudyExtraction, extra_data
-                )
+                extra_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, extra_data)
                 study_extractions = study_extractions + (
                     extra_extractions if isinstance(extra_extractions, list) else [extra_extractions]
                 )
@@ -155,9 +153,7 @@ async def get_variants(
                     continue
 
                 associations = (
-                    associations_service.get_associations(
-                        v_colocs, v_rare, v_extractions
-                    )
+                    associations_service.get_associations(v_colocs, v_rare, v_extractions)
                     if include_associations
                     else []
                 )
@@ -165,18 +161,14 @@ async def get_variants(
                 coloc_pairs = None
                 if include_coloc_pairs:
                     v_snp_ids = (
-                        [c.snp_id for c in v_colocs]
-                        + [r.snp_id for r in v_rare]
-                        + [e.snp_id for e in v_extractions]
+                        [c.snp_id for c in v_colocs] + [r.snp_id for r in v_rare] + [e.snp_id for e in v_extractions]
                     )
                     v_snp_ids = list(set(v_snp_ids))
                     if v_snp_ids:
                         pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
                             v_snp_ids, h4_threshold=h4_threshold
                         )
-                        coloc_pairs = convert_duckdb_tuples_to_dicts(
-                            pair_rows, pair_columns
-                        )
+                        coloc_pairs = convert_duckdb_tuples_to_dicts(pair_rows, pair_columns)
 
                 extended_colocs = [
                     ExtendedColocGroup(
@@ -192,11 +184,7 @@ async def get_variants(
                     ExtendedRareResult(
                         **rare_result.model_dump(),
                         association=next(
-                            (
-                                u
-                                for u in associations
-                                if u["study_id"] == rare_result.study_id
-                            ),
+                            (u for u in associations if u["study_id"] == rare_result.study_id),
                             None,
                         ),
                     )

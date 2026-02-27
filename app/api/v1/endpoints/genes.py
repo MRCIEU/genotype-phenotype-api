@@ -80,12 +80,10 @@ async def get_genes(
 
         study_extractions_by_gene = {}
         for g in genes:
-            region_for_gene = [
-                e for e in region_extractions
-                if e.chr == g.chr and g.start <= e.bp <= g.stop
-            ]
+            region_for_gene = [e for e in region_extractions if e.chr == g.chr and g.start <= e.bp <= g.stop]
             gene_for_gene = [
-                e for e in gene_extractions
+                e
+                for e in gene_extractions
                 if (e.gene_id == g.id if e.gene_id else False)
                 or (e.situated_gene_id == g.id if e.situated_gene_id else False)
             ]
@@ -107,26 +105,10 @@ async def get_genes(
         study_rare_data = studies_db.get_rare_results_for_study_extraction_ids(all_study_extraction_ids)
         gene_rare_data = studies_db.get_rare_results_for_genes(gene_ids_numeric, include_trans)
 
-        region_colocs = (
-            convert_duckdb_to_pydantic_model(ColocGroup, region_colocs_data)
-            if region_colocs_data
-            else []
-        )
-        gene_colocs = (
-            convert_duckdb_to_pydantic_model(ColocGroup, gene_colocs_data)
-            if gene_colocs_data
-            else []
-        )
-        study_rare = (
-            convert_duckdb_to_pydantic_model(RareResult, study_rare_data)
-            if study_rare_data
-            else []
-        )
-        gene_rare = (
-            convert_duckdb_to_pydantic_model(RareResult, gene_rare_data)
-            if gene_rare_data
-            else []
-        )
+        region_colocs = convert_duckdb_to_pydantic_model(ColocGroup, region_colocs_data) if region_colocs_data else []
+        gene_colocs = convert_duckdb_to_pydantic_model(ColocGroup, gene_colocs_data) if gene_colocs_data else []
+        study_rare = convert_duckdb_to_pydantic_model(RareResult, study_rare_data) if study_rare_data else []
+        gene_rare = convert_duckdb_to_pydantic_model(RareResult, gene_rare_data) if gene_rare_data else []
 
         # Build coloc_groups and rare_results per gene
         coloc_groups_by_gene = {}
@@ -134,9 +116,9 @@ async def get_genes(
             ext_ids = {e.id for e in study_extractions_by_gene[g.id]}
             from_region = [c for c in region_colocs if c.study_extraction_id in ext_ids]
             from_gene = [
-                c for c in gene_colocs
-                if (c.gene_id == g.id if c.gene_id else False)
-                or (getattr(c, "situated_gene_id", None) == g.id)
+                c
+                for c in gene_colocs
+                if (c.gene_id == g.id if c.gene_id else False) or (getattr(c, "situated_gene_id", None) == g.id)
             ]
             seen_cg = {}
             combined_colocs = []
@@ -158,7 +140,12 @@ async def get_genes(
             from_study = []
             for eid in ext_ids:
                 from_study.extend(rare_by_extraction.get(eid, []))
-            from_gene = [r for r in gene_rare if (r.gene_id == g.id if r.gene_id else False) or (r.situated_gene_id == g.id if r.situated_gene_id else False)]
+            from_gene = [
+                r
+                for r in gene_rare
+                if (r.gene_id == g.id if r.gene_id else False)
+                or (r.situated_gene_id == g.id if r.situated_gene_id else False)
+            ]
             seen_rr = {}
             combined_rare = []
             for r in from_study + from_gene:
@@ -179,9 +166,7 @@ async def get_genes(
 
             associations = None
             if include_associations:
-                associations = associations_service.get_associations(
-                    coloc_groups, rare_results, study_extractions
-                )
+                associations = associations_service.get_associations(coloc_groups, rare_results, study_extractions)
 
             coloc_pairs = None
             if include_coloc_pairs:

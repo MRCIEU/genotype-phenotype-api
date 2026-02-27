@@ -40,14 +40,14 @@ class StudiesDBClient:
             placeholders = ",".join(["?" for _ in trait_ids])
             query += f" AND traits.id IN ({placeholders})"
             params.extend(trait_ids)
-        
+
         return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
     def get_traits_by_ids(self, trait_ids: List[int | str]):
         if not trait_ids:
             return []
-        
+
         # Split into numeric IDs and string names
         ids = []
         names = []
@@ -56,24 +56,24 @@ class StudiesDBClient:
                 ids.append(int(tid))
             else:
                 names.append(tid)
-        
+
         conditions = []
         params = []
-        
+
         if ids:
             placeholders = ",".join(["?" for _ in ids])
             conditions.append(f"id IN ({placeholders})")
             params.extend(ids)
-        
+
         if names:
             placeholders = ",".join(["?" for _ in names])
             conditions.append(f"trait IN ({placeholders})")
             params.extend(names)
-            
+
         if not conditions:
             return []
-            
-        query = f"SELECT * FROM traits WHERE {" OR ".join(conditions)}"
+
+        query = f"SELECT * FROM traits WHERE {' OR '.join(conditions)}"
         return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
