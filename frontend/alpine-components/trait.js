@@ -276,17 +276,27 @@ export default function trait() {
             return text + this.data.trait.status;
         },
 
-        get getSampleSizes() {
-            if (this.data === null) return "...";
+        get getTraitInfo() {
+            if (this.data === null) return { common: null, rare: null };
             if (this.userUpload) {
                 return {
-                    common: this.data.trait.sample_size.toLocaleString(),
+                    common: { sampleSize: this.data.trait.sample_size.toLocaleString(), url: null },
                     rare: null,
                 };
             }
             return {
-                common: this.data.trait.common_study.sample_size.toLocaleString(),
-                rare: this.data.trait.rare_study ? this.data.trait.rare_study.sample_size.toLocaleString() : null,
+                common: this.data.trait.common_study
+                    ? {
+                          sampleSize: this.data.trait.common_study.sample_size.toLocaleString(),
+                          url: this.data.trait.common_study.url,
+                      }
+                    : null,
+                rare: this.data.trait.rare_study
+                    ? {
+                          sampleSize: this.data.trait.rare_study.sample_size.toLocaleString(),
+                          url: this.data.trait.rare_study.url,
+                      }
+                    : null,
             };
         },
 
