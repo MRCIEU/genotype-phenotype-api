@@ -1,6 +1,6 @@
 import traceback
 from fastapi import APIRouter, HTTPException, Path, Query, Request
-from app.db.coloc_pairs_db import ColocPairsDBClient
+from app.services.coloc_pairs_service import ColocPairsService
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     ColocGroup,
@@ -132,6 +132,8 @@ async def get_traits(
             t_colocs = []
             if t.common_study and t.common_study.id in colocs_map:
                 t_colocs = colocs_map[t.common_study.id]
+            elif t.rare_study and t.rare_study.id in colocs_map:
+                t_colocs = colocs_map[t.rare_study.id]
 
             associations = None
             if include_associations:
@@ -176,7 +178,7 @@ async def get_trait(
 
         trait = convert_duckdb_to_pydantic_model(Trait, trait)
         studies_service = StudiesService()
-        studies = studies_service.get_studies_by_trait_id(trait.id)
+        studies = studies_service.get_studies_by_trait_ids([trait.id])
         trait = populate_trait_studies(trait, studies)
         rare_results = []
         study_extractions = []
@@ -195,8 +197,7 @@ async def get_trait(
                 else []
             )
 
-        if trait.common_study is not None:
-            colocs_data = studies_db.get_all_colocs_for_study(trait.common_study.id)
+            colocs_data = studies_db.get_all_colocs_for_study_ids(study_ids)
             if colocs_data:
                 colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs_data)
 
@@ -229,7 +230,7 @@ async def get_trait_coloc_pairs(
 ) -> dict:
     try:
         studies_db = StudiesDBClient()
-        coloc_pairs_db = ColocPairsDBClient()
+        coloc_pairs_service = ColocPairsService()
 
         trait = studies_db.get_trait(trait_id)
         if trait is None:
@@ -237,17 +238,26 @@ async def get_trait_coloc_pairs(
 
         trait = convert_duckdb_to_pydantic_model(Trait, trait)
         studies_service = StudiesService()
-        studies = studies_service.get_studies_by_trait_id(trait.id)
+        studies = studies_service.get_studies_by_trait_ids([trait.id])
         trait = populate_trait_studies(trait, studies)
 
-        colocs = studies_db.get_all_colocs_for_study(trait.common_study.id)
-        if colocs is not None:
-            colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
+        study_ids = [study.id for study in [trait.common_study, trait.rare_study] if study is not None]
+        colocs_data = studies_db.get_all_colocs_for_study_ids(study_ids) if study_ids else []
+        if colocs_data:
+            colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs_data)
         else:
             colocs = []
 
         snp_ids = sorted([coloc.snp_id for coloc in colocs])
-        pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold, h4_threshold)
+        coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
+            snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+        )
+        if coloc_pairs:
+            pair_columns = list(coloc_pairs[0].keys())
+            pair_rows = [[d[col] for col in pair_columns] for d in coloc_pairs]
+        else:
+            pair_columns = []
+            pair_rows = []
         return {"coloc_pair_column_names": pair_columns, "coloc_pair_rows": pair_rows}
 
     except HTTPException as e:

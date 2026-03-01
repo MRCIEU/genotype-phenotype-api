@@ -37,9 +37,8 @@ class StudiesDBClient:
         """
         params = []
         if trait_ids:
-            placeholders = ",".join(["?" for _ in trait_ids])
-            query += f" AND traits.id IN ({placeholders})"
-            params.extend(trait_ids)
+            query += " AND traits.id IN (SELECT * FROM UNNEST(?))"
+            params.append(trait_ids)
 
         return self.studies_conn.execute(query, params).fetchall()
 
@@ -61,14 +60,12 @@ class StudiesDBClient:
         params = []
 
         if ids:
-            placeholders = ",".join(["?" for _ in ids])
-            conditions.append(f"id IN ({placeholders})")
-            params.extend(ids)
+            conditions.append("id IN (SELECT * FROM UNNEST(?))")
+            params.append(ids)
 
         if names:
-            placeholders = ",".join(["?" for _ in names])
-            conditions.append(f"trait IN ({placeholders})")
-            params.extend(names)
+            conditions.append("trait IN (SELECT * FROM UNNEST(?))")
+            params.append(names)
 
         if not conditions:
             return []
@@ -114,24 +111,24 @@ class StudiesDBClient:
     def get_studies_by_trait_ids(self, trait_ids: List[int]):
         if not trait_ids:
             return []
-        placeholders = ",".join(["?" for _ in trait_ids])
-        query = f"""SELECT studies.*, study_sources.url FROM studies
-          JOIN study_sources ON studies.source_id = study_sources.id WHERE trait_id IN ({placeholders})"""
-        return self.studies_conn.execute(query, trait_ids).fetchall()
+        logger.info(f"Trait IDs: {trait_ids}")
+        
+        query = """SELECT studies.*, study_sources.url FROM studies
+          JOIN study_sources ON studies.source_id = study_sources.id
+          WHERE trait_id IN (SELECT * FROM UNNEST(?))"""
+        return self.studies_conn.execute(query, [trait_ids]).fetchall()
 
     @log_performance
     def get_rare_results_for_study_ids(self, study_ids: List[int]):
         if not study_ids:
             return []
-        placeholders = ",".join(["?" for _ in study_ids])
-        return self._fetch_rare_results(f"study_id IN ({placeholders})", study_ids)
+        return self._fetch_rare_results("study_id IN (SELECT * FROM UNNEST(?))", [study_ids])
 
     @log_performance
     def get_all_colocs_for_study_ids(self, study_ids: List[int]):
         if not study_ids:
             return []
-        placeholders = ",".join(["?" for _ in study_ids])
-        return self._fetch_colocs(f"study_id IN ({placeholders})", study_ids)
+        return self._fetch_colocs("study_id IN (SELECT * FROM UNNEST(?))", [study_ids])
 
     @log_performance
     def get_studies_by_id(self, study_ids: List[int]):
@@ -202,9 +199,7 @@ class StudiesDBClient:
     def get_colocs_for_variants(self, snp_ids: List[int]):
         if not snp_ids:
             return []
-
-        placeholders = ",".join(["?" for _ in snp_ids])
-        return self._fetch_colocs(f"snp_id IN ({placeholders})", snp_ids)
+        return self._fetch_colocs("snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids])
 
     @log_performance
     def get_all_colocs_for_gene(self, gene_id: int, include_trans: bool = False):
@@ -228,9 +223,9 @@ class StudiesDBClient:
     def get_all_colocs_for_study_extraction_ids(self, study_extraction_ids: List[int]):
         if not study_extraction_ids:
             return []
-
-        placeholders = ",".join(["?" for _ in study_extraction_ids])
-        return self._fetch_colocs(f"study_extraction_id IN ({placeholders})", study_extraction_ids)
+        return self._fetch_colocs(
+            "study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids]
+        )
 
     def _fetch_rare_results(self, condition: str, params: List = None):
         query = f"""
@@ -272,16 +267,15 @@ class StudiesDBClient:
         if not study_extraction_ids:
             return []
 
-        placeholders = ",".join(["?" for _ in study_extraction_ids])
-        return self._fetch_rare_results(f"study_extraction_id IN ({placeholders})", study_extraction_ids)
+        return self._fetch_rare_results(
+            "study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids]
+        )
 
     @log_performance
     def get_rare_results_for_variants(self, snp_ids: List[int]):
         if not snp_ids:
             return []
-
-        placeholders = ",".join(["?" for _ in snp_ids])
-        return self._fetch_rare_results(f"snp_id IN ({placeholders})", snp_ids)
+        return self._fetch_rare_results("snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids])
 
     @log_performance
     def get_rare_results_for_study_id(self, study_id: int):
@@ -344,9 +338,8 @@ class StudiesDBClient:
         if not gene_ids:
             return []
 
-        placeholders = ",".join(["?" for _ in gene_ids])
-        query = f"SELECT * FROM gene_annotations WHERE id IN ({placeholders})"
-        return self.studies_conn.execute(query, gene_ids).fetchall()
+        query = "SELECT * FROM gene_annotations WHERE id IN (SELECT * FROM UNNEST(?))"
+        return self.studies_conn.execute(query, [gene_ids]).fetchall()
 
     @log_performance
     def get_genes_by_ids(self, gene_ids: List[str | int]):
@@ -365,13 +358,11 @@ class StudiesDBClient:
         conditions = []
         params = []
         if ids:
-            placeholders = ",".join(["?" for _ in ids])
-            conditions.append(f"gene_annotations.id IN ({placeholders})")
-            params.extend(ids)
+            conditions.append("gene_annotations.id IN (SELECT * FROM UNNEST(?))")
+            params.append(ids)
         if symbols:
-            placeholders = ",".join(["?" for _ in symbols])
-            conditions.append(f"gene_annotations.gene IN ({placeholders})")
-            params.extend(symbols)
+            conditions.append("gene_annotations.gene IN (SELECT * FROM UNNEST(?))")
+            params.append(symbols)
         if not conditions:
             return []
 
@@ -388,9 +379,8 @@ class StudiesDBClient:
     def get_all_colocs_for_genes(self, gene_ids: List[int], include_trans: bool = False):
         if not gene_ids:
             return []
-        placeholders = ",".join(["?" for _ in gene_ids])
-        query = f"gene_id IN ({placeholders})"
-        params = list(gene_ids)
+        query = "gene_id IN (SELECT * FROM UNNEST(?))"
+        params = [gene_ids]
         if not include_trans:
             query += " AND cis_trans = ?"
             params.append(CisTrans.cis.value)
@@ -400,9 +390,8 @@ class StudiesDBClient:
     def get_rare_results_for_genes(self, gene_ids: List[int], include_trans: bool = False):
         if not gene_ids:
             return []
-        placeholders = ",".join(["?" for _ in gene_ids])
-        query = f"(gene_id IN ({placeholders}) OR situated_gene_id IN ({placeholders}))"
-        params = list(gene_ids) + list(gene_ids)
+        query = "(gene_id IN (SELECT * FROM UNNEST(?)) OR situated_gene_id IN (SELECT * FROM UNNEST(?)))"
+        params = [gene_ids, gene_ids]
         if not include_trans:
             query += " AND (cis_trans = ? OR cis_trans IS NULL)"
             params.append(CisTrans.cis.value)
@@ -412,9 +401,8 @@ class StudiesDBClient:
     def get_study_extractions_for_genes(self, gene_ids: List[int], include_trans: bool = False):
         if not gene_ids:
             return []
-        placeholders = ",".join(["?" for _ in gene_ids])
-        query = f"(gene_id IN ({placeholders}) OR situated_gene_id IN ({placeholders}))"
-        params = list(gene_ids) + list(gene_ids)
+        query = "(gene_id IN (SELECT * FROM UNNEST(?)) OR situated_gene_id IN (SELECT * FROM UNNEST(?)))"
+        params = [gene_ids, gene_ids]
         if not include_trans:
             query += " AND cis_trans = ?"
             params.append(CisTrans.cis.value)
@@ -453,13 +441,11 @@ class StudiesDBClient:
         params = []
 
         if snp_ids:
-            placeholders = ",".join(["?" for _ in snp_ids])
-            query += f"id IN ({placeholders})"
-            params.extend(snp_ids)
+            query += "id IN (SELECT * FROM UNNEST(?))"
+            params.append(snp_ids)
         elif rsids:
-            placeholders = ",".join(["?" for _ in rsids])
-            query += f"rsid IN ({placeholders})"
-            params.extend(rsids)
+            query += "rsid IN (SELECT * FROM UNNEST(?))"
+            params.append(rsids)
         elif grange:
             chromosome, position = grange.split(":")
             start_bp, end_bp = position.split("-")
@@ -467,9 +453,8 @@ class StudiesDBClient:
             query += "chr = ? AND bp BETWEEN ? AND ?"
             params.extend([chromosome, start_bp, end_bp])
         elif variant_prefixes:
-            placeholders = ",".join(["?" for _ in variant_prefixes])
-            query += f"SPLIT_PART(snp, '_', 1) IN ({placeholders})"
-            params.extend(variant_prefixes)
+            query += "SPLIT_PART(snp, '_', 1) IN (SELECT * FROM UNNEST(?))"
+            params.append(variant_prefixes)
 
         return self.studies_conn.execute(query, params).fetchall()
 
@@ -504,9 +489,8 @@ class StudiesDBClient:
         if not snps:
             return []
 
-        placeholders = ",".join(["?" for _ in snps])
-        query = f"SELECT id FROM snp_annotations WHERE snp IN ({placeholders})"
-        return self.studies_conn.execute(query, snps).fetchall()
+        query = "SELECT id FROM snp_annotations WHERE snp IN (SELECT * FROM UNNEST(?))"
+        return self.studies_conn.execute(query, [snps]).fetchall()
 
     @log_performance
     def get_coloc_metadata(self):
@@ -542,9 +526,9 @@ class StudiesDBClient:
     def get_study_extractions_for_studies(self, study_ids: List[int]):
         if not study_ids:
             return []
-
-        placeholders = ",".join(["?" for _ in study_ids])
-        return self._fetch_study_extractions(f"study_id IN ({placeholders})", study_ids)
+        return self._fetch_study_extractions(
+            "study_id IN (SELECT * FROM UNNEST(?))", [study_ids]
+        )
 
     @log_performance
     def get_study_extractions_for_variant(self, snp_id: int):
@@ -557,16 +541,15 @@ class StudiesDBClient:
     def get_study_extractions_for_variants(self, snp_ids: List[int]):
         if not snp_ids:
             return []
-        placeholders = ",".join(["?" for _ in snp_ids])
-        return self._fetch_study_extractions(f"snp_id IN ({placeholders})", snp_ids)
+        return self._fetch_study_extractions(
+            "snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids]
+        )
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):
         if not ids:
             return []
-
-        placeholders = ",".join(["?" for _ in ids])
-        return self._fetch_study_extractions(f"id IN ({placeholders})", ids)
+        return self._fetch_study_extractions("id IN (SELECT * FROM UNNEST(?))", [ids])
 
     def _fetch_study_extractions(self, condition: str, params: List = None):
         if not params:

@@ -199,6 +199,10 @@ export default function trait() {
             this.svgs.metadata = await response.json();
 
             const zipResponse = await fetch(svgsUrl);
+            if (!zipResponse.ok) {
+                this.errorMessage = `Failed to load SVG data: ${zipResponse.status} ${zipResponse.statusText}`;
+                return;
+            }
             const zipBlob = await zipResponse.blob();
             const zip = await JSZip.loadAsync(zipBlob);
 

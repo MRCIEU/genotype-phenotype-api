@@ -272,14 +272,6 @@ class StudiesService(metaclass=Singleton):
         except Exception as e:
             logger.error(f"Failed to clear studies Redis cache: {e}")
 
-    def get_studies_by_trait_id(self, trait_id: str) -> List[Study]:
-        """
-        Retrieve studies by trait ID from DuckDB.
-        Returns:
-            List of Study instances
-        """
-        return self.get_studies_by_trait_ids([trait_id])
-
     def get_studies_by_trait_ids(self, trait_ids: List[int | str]) -> List[Study]:
         """
         Retrieve studies by trait IDs from DuckDB.
@@ -289,8 +281,7 @@ class StudiesService(metaclass=Singleton):
         studies = self.db.get_studies_by_trait_ids(trait_ids)
 
         study_models = convert_duckdb_to_pydantic_model(Study, studies)
-        if not isinstance(study_models, list):
-            study_models = [study_models] if study_models else []
+        logger.info(f"Studies: {study_models}")
 
         for study in study_models:
             if study and study.url and study.url.startswith("https://opengwas.io"):

@@ -2,7 +2,7 @@ import traceback
 from fastapi import APIRouter, HTTPException, Path, Query, Request
 from fastapi.responses import StreamingResponse
 
-from app.db.coloc_pairs_db import ColocPairsDBClient
+from app.services.coloc_pairs_service import ColocPairsService
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     ColocGroup,
@@ -14,7 +14,6 @@ from app.models.schemas import (
     Variant,
     VariantResponse,
     convert_duckdb_to_pydantic_model,
-    convert_duckdb_tuples_to_dicts,
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
@@ -80,7 +79,7 @@ async def get_variants(
                     status_code=400,
                     detail=f"Can not request more than {maximum_num_variants_expanded} variants when expand=True.",
                 )
-            coloc_pairs_db = ColocPairsDBClient()
+            coloc_pairs_service = ColocPairsService()
             associations_service = AssociationsService()
 
             snp_ids_to_expand = [v.id for v in variant_rows]
@@ -165,10 +164,9 @@ async def get_variants(
                     )
                     v_snp_ids = list(set(v_snp_ids))
                     if v_snp_ids:
-                        pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
+                        coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
                             v_snp_ids, h4_threshold=h4_threshold
                         )
-                        coloc_pairs = convert_duckdb_tuples_to_dicts(pair_rows, pair_columns)
 
                 extended_colocs = [
                     ExtendedColocGroup(
@@ -223,7 +221,7 @@ async def get_variant(
 ) -> VariantResponse:
     try:
         studies_db = StudiesDBClient()
-        coloc_pairs_db = ColocPairsDBClient()
+        coloc_pairs_service = ColocPairsService()
         associations_service = AssociationsService()
 
         variant = studies_db.get_variant(snp_id)
@@ -264,10 +262,11 @@ async def get_variant(
                 + [rare_result.snp_id for rare_result in rare_results]
                 + [study_extraction.snp_id for study_extraction in study_extractions]
             )
-            coloc_pair_rows, coloc_pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
-                snp_ids, h4_threshold=h4_threshold
-            )
-            coloc_pairs = convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
+            snp_ids = list(set(snp_ids))
+            if snp_ids:
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
+                    snp_ids, h4_threshold=h4_threshold
+                )
 
         extended_colocs = []
         for coloc in colocs:

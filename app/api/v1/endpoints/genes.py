@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Path, Query, Request
 import traceback
 from typing import List
 
-from app.db.coloc_pairs_db import ColocPairsDBClient
+from app.services.coloc_pairs_service import ColocPairsService
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     Gene,
@@ -13,7 +13,6 @@ from app.models.schemas import (
     Variant,
     GeneResponse,
     convert_duckdb_to_pydantic_model,
-    convert_duckdb_tuples_to_dicts,
 )
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
@@ -49,7 +48,7 @@ async def get_genes(
             )
 
         studies_db = StudiesDBClient()
-        coloc_pairs_db = ColocPairsDBClient()
+        coloc_pairs_service = ColocPairsService()
         associations_service = AssociationsService()
 
         gene_data = studies_db.get_genes_by_ids(ids)
@@ -177,10 +176,9 @@ async def get_genes(
                 )
                 snp_ids = list(set(snp_ids))
                 if snp_ids:
-                    pair_rows, pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
+                    coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
                         snp_ids, h4_threshold=h4_threshold
                     )
-                    coloc_pairs = convert_duckdb_tuples_to_dicts(pair_rows, pair_columns)
 
             variants = None
             if rare_results or coloc_groups or study_extractions:
@@ -234,7 +232,7 @@ async def get_gene(
         studies_service = StudiesService()
         tissues = studies_service.get_tissues()
         studies_db = StudiesDBClient()
-        coloc_pairs_db = ColocPairsDBClient()
+        coloc_pairs_service = ColocPairsService()
         associations_service = AssociationsService()
 
         gene_id = None
@@ -303,10 +301,11 @@ async def get_gene(
                 + [rare_result.snp_id for rare_result in rare_results]
                 + [study_extraction.snp_id for study_extraction in study_extractions]
             )
-            coloc_pair_rows, coloc_pair_columns = coloc_pairs_db.get_coloc_pairs_by_snp_ids(
-                snp_ids, h4_threshold=h4_threshold
-            )
-            coloc_pairs = convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
+            snp_ids = list(set(snp_ids))
+            if snp_ids:
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
+                    snp_ids, h4_threshold=h4_threshold
+                )
 
         variants = None
         if rare_results or coloc_groups or study_extractions:
