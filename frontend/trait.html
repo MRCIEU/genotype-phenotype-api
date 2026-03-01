@@ -58,12 +58,22 @@
                             <span x-text="getStudyToDisplay"></span>
                             <a href="faq.html#trait-view" target="_blank" class="is-size-4">ⓘ</a>
                         </h3>
-                        <p class="has-text-centered is-size-6 mt-2 mb-0" x-show="showResults && data && !userUpload && (data.trait.common_study || data.trait.rare_study)">
+                        <p
+                            class="has-text-centered is-size-6 mt-2 mb-0"
+                            x-show="showResults && data && !userUpload && (data.trait.common_study || data.trait.rare_study)"
+                        >
                             <template x-if="getTraitInfo.common">
                                 <span>
                                     Common: <span x-text="getTraitInfo.common.sampleSize"></span>
                                     <template x-if="getTraitInfo.common.url">
-                                        <span> (<a :href="getTraitInfo.common.url" target="_blank" rel="noopener noreferrer">source</a>)</span>
+                                        <span>
+                                            (<a
+                                                :href="getTraitInfo.common.url"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                >source</a
+                                            >)</span
+                                        >
                                     </template>
                                 </span>
                             </template>
@@ -74,7 +84,11 @@
                                 <span>
                                     Rare: <span x-text="getTraitInfo.rare.sampleSize"></span>
                                     <template x-if="getTraitInfo.rare.url">
-                                        <span> (<a :href="getTraitInfo.rare.url" target="_blank" rel="noopener noreferrer">source</a>)</span>
+                                        <span>
+                                            (<a :href="getTraitInfo.rare.url" target="_blank" rel="noopener noreferrer"
+                                                >source</a
+                                            >)</span
+                                        >
                                     </template>
                                 </span>
                             </template>

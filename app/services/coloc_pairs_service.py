@@ -46,9 +46,7 @@ class ColocPairsService:
         (snp_id null). Combines results and adds in_coloc_group column (True for
         coloc group pairs, False for others).
         """
-        coloc_in_group = self.get_coloc_pairs_by_snp_ids(
-            snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
-        )
+        coloc_in_group = self.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold)
         for row in coloc_in_group:
             row["in_coloc_group"] = True
 
@@ -79,9 +77,7 @@ class ColocPairsService:
         """
         if not study_extraction_ids:
             return []
-        logger.info(
-            f"Getting coloc pairs (snp_id null) for {len(study_extraction_ids)} study extraction ids"
-        )
+        logger.info(f"Getting coloc pairs (snp_id null) for {len(study_extraction_ids)} study extraction ids")
         pair_rows, pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_study_extraction_ids(
             study_extraction_ids, h4_threshold=h4_threshold
         )

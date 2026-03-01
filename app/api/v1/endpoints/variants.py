@@ -164,9 +164,7 @@ async def get_variants(
                     )
                     v_snp_ids = list(set(v_snp_ids))
                     if v_snp_ids:
-                        coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
-                            v_snp_ids, h4_threshold=h4_threshold
-                        )
+                        coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(v_snp_ids, h4_threshold=h4_threshold)
 
                 extended_colocs = [
                     ExtendedColocGroup(
@@ -264,9 +262,7 @@ async def get_variant(
             )
             snp_ids = list(set(snp_ids))
             if snp_ids:
-                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
-                    snp_ids, h4_threshold=h4_threshold
-                )
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
 
         extended_colocs = []
         for coloc in colocs:

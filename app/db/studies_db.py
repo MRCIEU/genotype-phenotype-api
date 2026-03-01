@@ -112,7 +112,7 @@ class StudiesDBClient:
         if not trait_ids:
             return []
         logger.info(f"Trait IDs: {trait_ids}")
-        
+
         query = """SELECT studies.*, study_sources.url FROM studies
           JOIN study_sources ON studies.source_id = study_sources.id
           WHERE trait_id IN (SELECT * FROM UNNEST(?))"""
@@ -223,9 +223,7 @@ class StudiesDBClient:
     def get_all_colocs_for_study_extraction_ids(self, study_extraction_ids: List[int]):
         if not study_extraction_ids:
             return []
-        return self._fetch_colocs(
-            "study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids]
-        )
+        return self._fetch_colocs("study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids])
 
     def _fetch_rare_results(self, condition: str, params: List = None):
         query = f"""
@@ -267,9 +265,7 @@ class StudiesDBClient:
         if not study_extraction_ids:
             return []
 
-        return self._fetch_rare_results(
-            "study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids]
-        )
+        return self._fetch_rare_results("study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids])
 
     @log_performance
     def get_rare_results_for_variants(self, snp_ids: List[int]):
@@ -526,9 +522,7 @@ class StudiesDBClient:
     def get_study_extractions_for_studies(self, study_ids: List[int]):
         if not study_ids:
             return []
-        return self._fetch_study_extractions(
-            "study_id IN (SELECT * FROM UNNEST(?))", [study_ids]
-        )
+        return self._fetch_study_extractions("study_id IN (SELECT * FROM UNNEST(?))", [study_ids])
 
     @log_performance
     def get_study_extractions_for_variant(self, snp_id: int):
@@ -541,9 +535,7 @@ class StudiesDBClient:
     def get_study_extractions_for_variants(self, snp_ids: List[int]):
         if not snp_ids:
             return []
-        return self._fetch_study_extractions(
-            "snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids]
-        )
+        return self._fetch_study_extractions("snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids])
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):
