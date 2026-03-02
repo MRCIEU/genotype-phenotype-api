@@ -152,14 +152,15 @@ export default function homepage() {
         },
 
         get getGPMapMetadata() {
-            return this.gpmapMetadata
-                ? this.gpmapMetadata
-                : {
-                      num_common_studies: 0,
-                      num_rare_studies: 0,
-                      num_molecular_studies: 0,
-                      num_causal_variants: 0,
-                  };
+            const fallback = {
+                num_common_studies: 0,
+                num_rare_studies: 0,
+                num_molecular_studies: 0,
+                num_coloc_groups: 0,
+                num_causal_variants: 0,
+            };
+            if (!this.gpmapMetadata) return fallback;
+            return { ...fallback, ...this.gpmapMetadata };
         },
 
         searchVariant() {
