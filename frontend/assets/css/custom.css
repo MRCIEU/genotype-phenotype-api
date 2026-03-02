@@ -81,3 +81,13 @@ div.tooltip {
 #wait-to-load {
     display: block !important;
 }
+
+/* Thicker red outline for upload form validation errors */
+.modal-card-body .input.is-danger,
+.modal-card-body .file.is-danger .file-cta {
+    border-width: 2px !important;
+}
+.modal-card-body .file.is-danger {
+    border: 2px solid #f14668;
+    border-radius: 4px;
+}

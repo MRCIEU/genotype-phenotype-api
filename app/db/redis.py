@@ -166,6 +166,31 @@ class RedisClient(metaclass=Singleton):
             logger.error(f"Error retrying messages from DLQ: {e}")
             return retried_count
 
+    def get_all_entries_from_dlq(self, queue_name: str) -> list[dict]:
+        """
+        Get all entries from the dead letter queue (read-only, does not remove).
+        Returns a list of parsed DLQ entries with original_message, error, and timestamp.
+        """
+        if queue_name not in self.accepted_queue_names:
+            raise ValueError(f"Queue name {queue_name} is not accepted")
+
+        dlq_name = f"{queue_name}_dlq"
+        entries = []
+
+        try:
+            messages = self.redis.lrange(dlq_name, 0, -1)
+            for message in messages:
+                try:
+                    dlq_entry = json.loads(message)
+                    entries.append(dlq_entry)
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Error parsing DLQ message: {e}")
+                    entries.append({"raw": message, "parse_error": str(e)})
+        except Exception as e:
+            logger.error(f"Error getting entries from DLQ: {e}")
+
+        return entries
+
     def get_all_guids_from_dlq(self, queue_name: str) -> list[str]:
         """
         Get all GUIDs from messages in the dead letter queue.

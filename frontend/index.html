@@ -571,8 +571,11 @@
                                         </div>
                                         We will send you an email once the analysis has been completed.
                                     </section>
-                                    <footer class="modal-card-foot">
-                                        <div class="buttons">
+                                    <footer
+                                        class="modal-card-foot"
+                                        style="flex-wrap: wrap; align-items: center; gap: 0.5rem"
+                                    >
+                                        <div class="buttons mb-0">
                                             <button
                                                 class="button is-success"
                                                 @click="uploadGWAS()"
@@ -593,6 +596,13 @@
                                             <div x-show="uploadMetadata.currentlyUploading">
                                                 Please wait, this may take a few minutes if the file is large.
                                             </div>
+                                        </div>
+                                        <div
+                                            x-show="Object.values(uploadMetadata.validationErrors || {}).some(v => v)"
+                                            class="has-text-danger has-text-weight-semibold"
+                                            style="margin-left: auto"
+                                        >
+                                            There are errors, please see red input fields.
                                         </div>
                                     </footer>
                                 </div>
