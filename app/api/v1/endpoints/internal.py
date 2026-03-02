@@ -57,6 +57,24 @@ async def rate_limiter(request: Request):
     return {"success": True}
 
 
+@router.get("/gwas-dlq", response_model=dict, include_in_schema=False)
+@time_endpoint
+async def get_gwas_dlq(request: Request):
+    """
+    Get all entries in the GWAS dead letter queue.
+    Returns the full list of failed messages with their error details.
+    """
+    try:
+        redis_client = RedisClient()
+        entries = redis_client.get_all_entries_from_dlq(redis_client.process_gwas_queue)
+        return {"entries": entries}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in get_gwas_dlq: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/gwas-dlq/retry/{guid}", response_model=dict, include_in_schema=False)
 @time_endpoint
 async def retry_gwas_dlq_by_guid(

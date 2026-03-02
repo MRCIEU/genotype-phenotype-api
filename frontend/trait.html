@@ -64,7 +64,7 @@
                         >
                             <template x-if="getTraitInfo.common">
                                 <span>
-                                    Common: <span x-text="getTraitInfo.common.sampleSize"></span>
+                                    Common: sample size <span x-text="getTraitInfo.common.sampleSize"></span>
                                     <template x-if="getTraitInfo.common.url">
                                         <span>
                                             (<a
@@ -82,7 +82,7 @@
                             </template>
                             <template x-if="getTraitInfo.rare">
                                 <span>
-                                    Rare: <span x-text="getTraitInfo.rare.sampleSize"></span>
+                                    Rare: sample size <span x-text="getTraitInfo.rare.sampleSize"></span>
                                     <template x-if="getTraitInfo.rare.url">
                                         <span>
                                             (<a :href="getTraitInfo.rare.url" target="_blank" rel="noopener noreferrer"
