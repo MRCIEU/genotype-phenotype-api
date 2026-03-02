@@ -47,7 +47,7 @@ export default function region() {
                     return;
                 }
                 this.data = await response.json();
-                document.title = "GP Map Region: " + this.regionName;
+                document.title = "GPMap Region: " + this.regionName;
                 this.transformDataForGraphs();
             } catch (error) {
                 console.error("Error loading data:", error);

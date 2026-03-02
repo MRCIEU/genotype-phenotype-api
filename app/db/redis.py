@@ -13,9 +13,15 @@ settings = get_settings()
 class RedisClient(metaclass=Singleton):
     def __init__(self):
         self.process_gwas_queue = "process_gwas"
+        self.process_gwas_in_progress = f"{self.process_gwas_queue}_in_progress"
         self.process_gwas_dlq = f"{self.process_gwas_queue}_dlq"
         self.delete_gwas_queue = "delete_gwas"
-        self.accepted_queue_names = [self.process_gwas_queue, self.process_gwas_dlq, self.delete_gwas_queue]
+        self.accepted_queue_names = [
+            self.process_gwas_queue,
+            self.process_gwas_in_progress,
+            self.process_gwas_dlq,
+            self.delete_gwas_queue,
+        ]
         self.scheduled_jobs_key = "scheduled_jobs"
         self.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
 
@@ -385,31 +391,55 @@ class RedisClient(metaclass=Singleton):
             logger.error(f"Error getting queue position for {guid}: {e}")
             return None
 
-    def get_processing_guids_for_user(self, email: str) -> list[str]:
+    def get_gwas_queue_status(self, guid: str) -> tuple[Optional[str], Optional[int]]:
         """
-        Find all GUIDs currently in the processing queue for a specific user email.
+        Check if a GWAS is in the in_progress queue (being processed) or the main queue (waiting).
+        Returns (queue_status, queue_position) where:
+        - queue_status: "in_progress" if being processed, "queued" if waiting in queue, None if in neither
+        - queue_position: 1-based position when queued, None when in_progress or not found
         """
-        processing_guids = []
         try:
-            # We use the standard queue name
-            queue_items = self.redis.lrange(self.process_gwas_queue, 0, -1)
+            in_progress_position = self.get_queue_position(self.process_gwas_in_progress, guid)
+            if in_progress_position is not None:
+                return ("in_progress", None)
+
+            queue_position = self.get_queue_position(self.process_gwas_queue, guid)
+            if queue_position is not None:
+                return ("queued", queue_position)
+
+            return (None, None)
+        except Exception as e:
+            logger.error(f"Error getting GWAS queue status for {guid}: {e}")
+            return (None, None)
+
+    def _get_guids_from_queue_for_user(self, queue_name: str, email: str) -> list[str]:
+        """Extract GUIDs for a user from a queue."""
+        guids = []
+        try:
+            queue_items = self.redis.lrange(queue_name, 0, -1)
             for item in queue_items:
                 try:
                     data = item
                     if isinstance(item, bytes):
                         data = item.decode("utf-8")
                     data_json = json.loads(data)
-
                     if data_json.get("metadata", {}).get("email") == email:
                         guid = data_json["metadata"].get("guid")
                         if guid:
-                            processing_guids.append(guid)
+                            guids.append(guid)
                 except Exception:
                     continue
         except Exception as e:
-            logger.error(f"Error checking processing queue for user {email}: {e}")
+            logger.error(f"Error checking queue {queue_name} for user {email}: {e}")
+        return guids
 
-        return processing_guids
+    def get_processing_guids_for_user(self, email: str) -> list[str]:
+        """
+        Find all GUIDs currently in the processing queue or in_progress queue for a specific user email.
+        """
+        guids = self._get_guids_from_queue_for_user(self.process_gwas_queue, email)
+        guids.extend(self._get_guids_from_queue_for_user(self.process_gwas_in_progress, email))
+        return list(dict.fromkeys(guids))  # deduplicate while preserving order
 
     def add_gwas_to_queue(self, file_location: str, metadata: dict) -> bool:
         """

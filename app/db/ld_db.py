@@ -23,21 +23,19 @@ class LdDBClient:
     def get_ld_proxies(self, snp_ids: List[int], rsquared_threshold: float = 0.8):
         if not snp_ids:
             return []
-        placeholders = ",".join(["?"] * len(snp_ids))
-        query = f"""
+        query = """
             SELECT * FROM ld
-            WHERE (lead_snp_id IN ({placeholders}) OR variant_snp_id IN ({placeholders})) AND r*r >= ?
+            WHERE (lead_snp_id IN (SELECT * FROM UNNEST(?)) OR variant_snp_id IN (SELECT * FROM UNNEST(?))) AND r*r >= ?
         """
-        return self.ld_conn.execute(query, snp_ids + snp_ids + [rsquared_threshold]).fetchall()
+        return self.ld_conn.execute(query, [snp_ids, snp_ids, rsquared_threshold]).fetchall()
 
     @log_performance
     def get_ld_matrix(self, snp_ids: List[int]):
         if not snp_ids:
             return []
-        placeholders = ",".join(["?"] * len(snp_ids))
-        query = f"""
-            SELECT * FROM 
-                (SELECT * FROM ld WHERE lead_snp_id IN ({placeholders}))
-                WHERE variant_snp_id IN ({placeholders})
+        query = """
+            SELECT * FROM
+                (SELECT * FROM ld WHERE lead_snp_id IN (SELECT * FROM UNNEST(?)))
+                WHERE variant_snp_id IN (SELECT * FROM UNNEST(?))
         """
-        return self.ld_conn.execute(query, snp_ids + snp_ids).fetchall()
+        return self.ld_conn.execute(query, [snp_ids, snp_ids]).fetchall()

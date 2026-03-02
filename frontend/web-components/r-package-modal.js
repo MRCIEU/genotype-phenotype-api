@@ -30,15 +30,18 @@ export class RPackageModal extends HTMLElement {
                     <section class="modal-card-body pb-0 pt-0">
                         <div class="content">
                             <div class="box mt-4">
-                                <pre><code>devtools::install_github('MRCIEU/gpmapr')\n${this.snippet}</code></pre>
+                                <pre style="white-space: pre-wrap; word-break: break-all;"><code id="snippet-code">devtools::install_github('MRCIEU/gpmapr')\n${this.snippet}</code></pre>
                             </div>
 
-                            <p class="mt-4">
-                                <strong>Note:</strong> You'll need to have the <code>devtools</code> package
-                                installed first.
-                            </p>
-                            <h4>Code and Documentation</h4>
                             <p>
+                                <a
+                                    href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
+                                    target="_blank"
+                                    class="button is-success"
+                                    >View Vignettes</a
+                                >
+                                <br />
+                                <br />
                                 <a
                                     href="https://github.com/MRCIEU/gpmapr"
                                     target="_blank"
@@ -46,14 +49,6 @@ export class RPackageModal extends HTMLElement {
                                 >
                                     <span>View on GitHub</span>
                                 </a>
-                                <br />
-                                <br />
-                                <a
-                                    href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
-                                    target="_blank"
-                                    class="button is-success"
-                                    >View Vignettes</a
-                                >
                             </p>
                         </div>
                     </section>
@@ -75,5 +70,10 @@ export class RPackageModal extends HTMLElement {
         if (closeBtnHeader) closeBtnHeader.addEventListener("click", closeHandler);
         if (closeBtnFooter) closeBtnFooter.addEventListener("click", closeHandler);
         if (modalBg) modalBg.addEventListener("click", closeHandler);
+
+        const codeElement = this.querySelector("#snippet-code");
+        if (codeElement) {
+            codeElement.textContent = `devtools::install_github('MRCIEU/gpmapr')\n${this.snippet}`;
+        }
     }
 }

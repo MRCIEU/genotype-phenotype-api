@@ -53,3 +53,23 @@ def test_get_genes_with_coloc_groups():
         assert rare_result.chr is not None
         assert rare_result.bp is not None
         assert rare_result.min_p is not None
+
+
+def test_get_genes_batch_by_ids():
+    response = client.get("/v1/genes?ids=WNT7B&ids=EPDR1")
+    print(response.json())
+    assert response.status_code == 200
+    data = response.json()
+    assert "genes" in data
+    genes = data["genes"]
+    assert len(genes) > 0
+    for gene_resp in genes:
+        assert "gene" in gene_resp
+        assert gene_resp["gene"]["id"] is not None
+        assert gene_resp["gene"]["gene"] is not None
+
+
+def test_get_genes_batch_too_many():
+    response = client.get("/v1/genes?ids=1&ids=2&ids=3&ids=4&ids=5&ids=6")
+    assert response.status_code == 400
+    assert "Can not request more than 5" in response.json()["detail"]

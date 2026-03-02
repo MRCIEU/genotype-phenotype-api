@@ -21,34 +21,64 @@ class ColocPairsService:
         metadata = convert_duckdb_to_pydantic_model(ColocPairMetadata, metadata)
         return metadata
 
-    def split_coloc_pair_query_by_metadata(self, study_extraction_ids: List[int]):
-        coloc_pairs_metadata = self.get_coloc_pairs_metadata()
-        metadata_to_pairs = {metadata.coloc_pairs_table_name: [] for metadata in coloc_pairs_metadata}
+    def get_coloc_pairs_by_snp_ids(
+        self,
+        snp_ids: List[int],
+        h3_threshold: float = 0.0,
+        h4_threshold: float = 0.8,
+    ) -> List[dict]:
+        """Get coloc pairs that have an snp_id (part of a coloc group)."""
+        if not snp_ids:
+            return []
+        pair_rows, pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_snp_ids(
+            snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+        )
+        return convert_duckdb_tuples_to_dicts(pair_rows, pair_columns)
 
-        for id in study_extraction_ids:
-            for metadata in coloc_pairs_metadata:
-                if metadata.start_id <= id <= metadata.stop_id:
-                    metadata_to_pairs[metadata.coloc_pairs_table_name].append(id)
-        return metadata_to_pairs
+    def get_coloc_pairs_full(
+        self,
+        snp_ids: List[int],
+        h3_threshold: float = 0.0,
+        h4_threshold: float = 0.8,
+    ) -> List[dict]:
+        """
+        Get coloc pairs from both coloc groups (snp_id) and non-coloc-group pairs
+        (snp_id null). Combines results and adds in_coloc_group column (True for
+        coloc group pairs, False for others).
+        """
+        coloc_in_group = self.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold)
+        for row in coloc_in_group:
+            row["in_coloc_group"] = True
 
-    def get_coloc_pairs(
+        study_extraction_ids = set()
+        for row in coloc_in_group:
+            if row.get("study_extraction_a_id") is not None:
+                study_extraction_ids.add(row["study_extraction_a_id"])
+            if row.get("study_extraction_b_id") is not None:
+                study_extraction_ids.add(row["study_extraction_b_id"])
+
+        coloc_not_in_group = []
+        if study_extraction_ids:
+            coloc_not_in_group = self.get_coloc_pairs_by_study_extraction_ids(list(study_extraction_ids))
+            for row in coloc_not_in_group:
+                row["in_coloc_group"] = False
+
+        return coloc_in_group + coloc_not_in_group
+
+    def get_coloc_pairs_by_study_extraction_ids(
         self,
         study_extraction_ids: List[int],
         h4_threshold: float = 0.8,
-        h3_threshold: float = 0.0,
-    ):
-        study_extraction_ids = study_extraction_ids or []
-
-        logger.info(f"Getting coloc pairs for {len(study_extraction_ids)} study extraction ids")
-
-        study_extraction_ids_by_table = self.split_coloc_pair_query_by_metadata(study_extraction_ids)
-        all_coloc_pairs = []
-        for table_name, ids in list(study_extraction_ids_by_table.items()):
-            if len(ids) > 0:
-                coloc_pair_rows, coloc_pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_table_name(
-                    table_name, ids, study_extraction_ids, h3_threshold, h4_threshold
-                )
-                coloc_pairs = convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
-                all_coloc_pairs.extend(coloc_pairs)
-
-        return all_coloc_pairs
+    ) -> List[dict]:
+        """
+        Get coloc pairs that are not part of a coloc group (snp_id IS NULL),
+        filtered by study extraction ids. Returns pairs where either
+        study_extraction_a_id or study_extraction_b_id is in the list.
+        """
+        if not study_extraction_ids:
+            return []
+        logger.info(f"Getting coloc pairs (snp_id null) for {len(study_extraction_ids)} study extraction ids")
+        pair_rows, pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_study_extraction_ids(
+            study_extraction_ids, h4_threshold=h4_threshold
+        )
+        return convert_duckdb_tuples_to_dicts(pair_rows, pair_columns)

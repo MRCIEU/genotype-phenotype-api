@@ -37,16 +37,14 @@ class ColocPairsDBClient:
         if not snp_ids:
             return []
 
-        snp_placeholders = ",".join(["?" for _ in snp_ids])
-
         query = f"""
             SELECT * FROM {table_name}
-            WHERE snp_id IN ({snp_placeholders})
+            WHERE snp_id IN (SELECT * FROM UNNEST(?))
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
         """
-        cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
+        cursor = self.coloc_pairs_conn.execute(query, [snp_ids, h3_threshold, h4_threshold])
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns
@@ -61,8 +59,6 @@ class ColocPairsDBClient:
         if not study_extraction_ids:
             return []
 
-        study_extraction_ids = sorted(study_extraction_ids)
-
         query = """
             SELECT * FROM coloc_pairs
             WHERE study_extraction_a_id IN (SELECT * FROM UNNEST(?))
@@ -71,7 +67,6 @@ class ColocPairsDBClient:
                 AND h3 >= ?
                 AND false_positive = FALSE
         """
-
         params = [study_extraction_ids, study_extraction_ids, h4_threshold, h3_threshold]
         return self.coloc_pairs_conn.execute(query, params).fetchall()
 
@@ -85,15 +80,42 @@ class ColocPairsDBClient:
         if not snp_ids:
             return [], []
 
-        placeholders = ",".join(["?"] * len(snp_ids))
-        query = f"""
+        query = """
             SELECT * FROM coloc_pairs
-            WHERE snp_id IN ({placeholders})
+            WHERE snp_id IN (SELECT * FROM UNNEST(?))
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
         """
-        cursor = self.coloc_pairs_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
+        cursor = self.coloc_pairs_conn.execute(query, [snp_ids, h3_threshold, h4_threshold])
+        rows = cursor.fetchall()
+        columns = [d[0] for d in cursor.description] if cursor.description else []
+        return rows, columns
+
+    @log_performance
+    def get_coloc_pairs_by_study_extraction_ids(
+        self,
+        study_extraction_ids: List[int],
+        h4_threshold: float = 0.8,
+    ):
+        """
+        Get coloc pairs that are not part of a coloc group (snp_id IS NULL),
+        filtered by study extraction ids. Returns pairs where either
+        study_extraction_a_id or study_extraction_b_id is in the list.
+        """
+        if not study_extraction_ids:
+            return [], []
+
+        query = """
+            SELECT * FROM coloc_pairs
+            WHERE snp_id IS NULL
+                AND h4 >= ?
+                AND (study_extraction_a_id IN (SELECT * FROM UNNEST(?))
+                    OR study_extraction_b_id IN (SELECT * FROM UNNEST(?)))
+                AND false_positive = FALSE
+        """
+        params = [h4_threshold, study_extraction_ids, study_extraction_ids]
+        cursor = self.coloc_pairs_conn.execute(query, params)
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns
@@ -117,17 +139,15 @@ class ColocPairsDBClient:
         if not snp_ids:
             return
 
-        placeholders = ",".join(["?"] * len(snp_ids))
-        query = f"""
+        query = """
             SELECT * FROM coloc_pairs
-            WHERE snp_id IN ({placeholders})
+            WHERE snp_id IN (SELECT * FROM UNNEST(?))
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
             ORDER BY snp_id
         """
-
-        cursor = specific_conn.execute(query, snp_ids + [h3_threshold, h4_threshold])
+        cursor = specific_conn.execute(query, [snp_ids, h3_threshold, h4_threshold])
         columns = [d[0] for d in cursor.description] if cursor.description else []
 
         try:

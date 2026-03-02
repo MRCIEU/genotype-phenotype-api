@@ -61,7 +61,7 @@ export default function trait() {
                 this.data = await response.json();
                 await this.getSvgData(this.data.trait.id);
 
-                document.title = "GP Map: " + (this.userUpload ? this.data.trait.name : this.data.trait.trait_name);
+                document.title = "GPMap: " + (this.userUpload ? this.data.trait.name : this.data.trait.trait_name);
 
                 this.transformDataForGraphs();
             } catch (error) {
@@ -199,6 +199,10 @@ export default function trait() {
             this.svgs.metadata = await response.json();
 
             const zipResponse = await fetch(svgsUrl);
+            if (!zipResponse.ok) {
+                this.errorMessage = `Failed to load SVG data: ${zipResponse.status} ${zipResponse.statusText}`;
+                return;
+            }
             const zipBlob = await zipResponse.blob();
             const zip = await JSZip.loadAsync(zipBlob);
 
@@ -272,17 +276,27 @@ export default function trait() {
             return text + this.data.trait.status;
         },
 
-        get getSampleSizes() {
-            if (this.data === null) return "...";
+        get getTraitInfo() {
+            if (this.data === null) return { common: null, rare: null };
             if (this.userUpload) {
                 return {
-                    common: this.data.trait.sample_size.toLocaleString(),
+                    common: { sampleSize: this.data.trait.sample_size.toLocaleString(), url: null },
                     rare: null,
                 };
             }
             return {
-                common: this.data.trait.common_study.sample_size.toLocaleString(),
-                rare: this.data.trait.rare_study ? this.data.trait.rare_study.sample_size.toLocaleString() : null,
+                common: this.data.trait.common_study
+                    ? {
+                          sampleSize: this.data.trait.common_study.sample_size.toLocaleString(),
+                          url: this.data.trait.common_study.url,
+                      }
+                    : null,
+                rare: this.data.trait.rare_study
+                    ? {
+                          sampleSize: this.data.trait.rare_study.sample_size.toLocaleString(),
+                          url: this.data.trait.rare_study.url,
+                      }
+                    : null,
             };
         },
 

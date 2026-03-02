@@ -72,7 +72,7 @@ export default function variant() {
                 }
                 this.data = await response.json();
 
-                document.title = "GP Map: " + this.getSNPName();
+                document.title = "GPMap: " + this.getSNPName();
 
                 this.data.coloc_groups = this.data.coloc_groups.map(coloc => ({
                     ...coloc,
@@ -251,6 +251,7 @@ export default function variant() {
                 this.filteredData.colocs.map(coloc => coloc.study_extraction_id)
             );
             this.filteredData.colocPairs = this.data.coloc_pairs.filter(colocPair => {
+                if (!colocPair.in_coloc_group || colocPair.in_coloc_group === false) return false;
                 return (
                     allRelevantStudyExtractionIds.has(colocPair.study_extraction_a_id) &&
                     allRelevantStudyExtractionIds.has(colocPair.study_extraction_b_id)
