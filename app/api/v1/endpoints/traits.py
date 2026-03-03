@@ -77,12 +77,7 @@ async def get_traits(
             populate_trait_studies(t, studies_by_trait.get(tid, []))
 
         # 3. Get rare results, study extractions, and colocs for all relevant studies
-        all_study_ids = []
-        for t in traits:
-            if t.common_study:
-                all_study_ids.append(t.common_study.id)
-            if t.rare_study:
-                all_study_ids.append(t.rare_study.id)
+        all_study_ids = list({s.id for t in traits for s in [t.common_study, t.rare_study] if s})
 
         rare_results_map = {}
         study_extractions_map = {}
@@ -116,40 +111,53 @@ async def get_traits(
                         colocs_map[c.study_id] = []
                     colocs_map[c.study_id].append(c)
 
-        # 4. Construct final responses
-        trait_responses = []
-        for t in traits:
-            t_rare = []
-            if t.rare_study and t.rare_study.id in rare_results_map:
-                t_rare = rare_results_map[t.rare_study.id]
+        # 4. Combine all coloc_groups, rare_results, study_extractions into flat lists (deduplicated)
+        seen_cg = {}
+        all_coloc_groups = []
+        for colocs in colocs_map.values():
+            for c in colocs:
+                key = (c.coloc_group_id, c.study_extraction_id, c.study_id)
+                if key not in seen_cg:
+                    seen_cg[key] = True
+                    all_coloc_groups.append(c)
 
-            t_extractions = []
-            if t.common_study and t.common_study.id in study_extractions_map:
-                t_extractions.extend(study_extractions_map[t.common_study.id])
-            if t.rare_study and t.rare_study.id in study_extractions_map:
-                t_extractions.extend(study_extractions_map[t.rare_study.id])
+        seen_rr = {}
+        all_rare_results = []
+        for rare_list in rare_results_map.values():
+            for r in rare_list:
+                key = (r.rare_result_group_id, r.study_extraction_id)
+                if key not in seen_rr:
+                    seen_rr[key] = True
+                    all_rare_results.append(r)
 
-            t_colocs = []
-            if t.common_study and t.common_study.id in colocs_map:
-                t_colocs = colocs_map[t.common_study.id]
-            elif t.rare_study and t.rare_study.id in colocs_map:
-                t_colocs = colocs_map[t.rare_study.id]
+        seen_ext = {}
+        all_study_extractions = []
+        for ext_list in study_extractions_map.values():
+            for e in ext_list:
+                if e.id not in seen_ext:
+                    seen_ext[e.id] = True
+                    all_study_extractions.append(e)
 
-            associations = None
-            if include_associations:
-                associations = associations_service.get_associations(t_colocs, t_rare, t_extractions)
-
-            trait_responses.append(
-                TraitResponse(
-                    trait=t,
-                    coloc_groups=t_colocs,
-                    rare_results=t_rare,
-                    study_extractions=t_extractions,
-                    associations=associations,
-                )
+        associations = None
+        if include_associations:
+            associations_raw = associations_service.get_associations(
+                all_coloc_groups, all_rare_results, all_study_extractions
             )
+            seen_assoc = {}
+            associations = []
+            for a in associations_raw:
+                key = (a.get("snp_id"), a.get("study_id"))
+                if key not in seen_assoc:
+                    seen_assoc[key] = True
+                    associations.append(a)
 
-        return GetTraitsResponse(traits=trait_responses)
+        return GetTraitsResponse(
+            traits=traits,
+            coloc_groups=all_coloc_groups,
+            rare_results=all_rare_results,
+            study_extractions=all_study_extractions,
+            associations=associations,
+        )
     except HTTPException as e:
         raise e
     except Exception as e:

@@ -57,16 +57,17 @@ def test_get_genes_with_coloc_groups():
 
 def test_get_genes_batch_by_ids():
     response = client.get("/v1/genes?ids=WNT7B&ids=EPDR1")
-    print(response.json())
     assert response.status_code == 200
     data = response.json()
     assert "genes" in data
     genes = data["genes"]
     assert len(genes) > 0
-    for gene_resp in genes:
-        assert "gene" in gene_resp
-        assert gene_resp["gene"]["id"] is not None
-        assert gene_resp["gene"]["gene"] is not None
+    for gene in genes:
+        assert gene["id"] is not None
+        assert gene["gene"] is not None
+    assert "coloc_groups" in data
+    assert "rare_results" in data
+    assert "study_extractions" in data
 
 
 def test_get_genes_batch_too_many():

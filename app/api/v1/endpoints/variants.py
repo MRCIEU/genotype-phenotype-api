@@ -106,98 +106,80 @@ async def get_variants(
                     extra_extractions if isinstance(extra_extractions, list) else [extra_extractions]
                 )
 
-            colocs_by_snp = {}
+            # Deduplicate coloc_groups, rare_results, study_extractions
+            seen_cg = {}
+            colocs_dedup = []
             for c in colocs:
-                if c.snp_id not in colocs_by_snp:
-                    colocs_by_snp[c.snp_id] = []
-                colocs_by_snp[c.snp_id].append(c)
+                key = (c.coloc_group_id, c.study_extraction_id, c.study_id)
+                if key not in seen_cg:
+                    seen_cg[key] = True
+                    colocs_dedup.append(c)
 
-            rare_by_snp = {}
+            seen_rr = {}
+            rare_results_dedup = []
             for r in rare_results:
-                if r.snp_id not in rare_by_snp:
-                    rare_by_snp[r.snp_id] = []
-                rare_by_snp[r.snp_id].append(r)
+                key = (r.rare_result_group_id, r.study_extraction_id)
+                if key not in seen_rr:
+                    seen_rr[key] = True
+                    rare_results_dedup.append(r)
 
-            extractions_by_snp = {}
-            extraction_by_id = {e.id: e for e in study_extractions}
+            seen_ext = {}
+            study_extractions_dedup = []
             for e in study_extractions:
-                if e.snp_id not in extractions_by_snp:
-                    extractions_by_snp[e.snp_id] = []
-                extractions_by_snp[e.snp_id].append(e)
-            for c in colocs:
-                ext = extraction_by_id.get(c.study_extraction_id)
-                if ext:
-                    if c.snp_id not in extractions_by_snp:
-                        extractions_by_snp[c.snp_id] = []
-                    if ext.id not in {e.id for e in extractions_by_snp[c.snp_id]}:
-                        extractions_by_snp[c.snp_id].append(ext)
+                if e.id not in seen_ext:
+                    seen_ext[e.id] = True
+                    study_extractions_dedup.append(e)
 
-            variant_responses = []
-            for v in variant_rows:
-                v_colocs = colocs_by_snp.get(v.id, [])
-                v_rare = rare_by_snp.get(v.id, [])
-                v_extractions = extractions_by_snp.get(v.id, [])
+            associations_raw = (
+                associations_service.get_associations(colocs_dedup, rare_results_dedup, study_extractions_dedup)
+                if include_associations
+                else []
+            )
+            seen_assoc = {}
+            associations = []
+            for a in associations_raw:
+                key = (a.get("snp_id"), a.get("study_id"))
+                if key not in seen_assoc:
+                    seen_assoc[key] = True
+                    associations.append(a)
 
-                if not v_colocs and not v_rare and not v_extractions:
-                    variant_responses.append(
-                        VariantResponse(
-                            variant=v,
-                            coloc_groups=[],
-                            rare_results=[],
-                            study_extractions=[],
-                            coloc_pairs=[],
-                            associations=[],
-                        )
-                    )
-                    continue
-
-                associations = (
-                    associations_service.get_associations(v_colocs, v_rare, v_extractions)
-                    if include_associations
-                    else []
+            coloc_pairs = None
+            if include_coloc_pairs:
+                v_snp_ids = (
+                    [c.snp_id for c in colocs_dedup]
+                    + [r.snp_id for r in rare_results_dedup]
+                    + [e.snp_id for e in study_extractions_dedup]
                 )
+                v_snp_ids = list(set(v_snp_ids))
+                if v_snp_ids:
+                    coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(v_snp_ids, h4_threshold=h4_threshold)
 
-                coloc_pairs = None
-                if include_coloc_pairs:
-                    v_snp_ids = (
-                        [c.snp_id for c in v_colocs] + [r.snp_id for r in v_rare] + [e.snp_id for e in v_extractions]
-                    )
-                    v_snp_ids = list(set(v_snp_ids))
-                    if v_snp_ids:
-                        coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(v_snp_ids, h4_threshold=h4_threshold)
-
-                extended_colocs = [
-                    ExtendedColocGroup(
-                        **coloc.model_dump(),
-                        association=next(
-                            (u for u in associations if u["study_id"] == coloc.study_id),
-                            None,
-                        ),
-                    )
-                    for coloc in v_colocs
-                ]
-                extended_rare_results = [
-                    ExtendedRareResult(
-                        **rare_result.model_dump(),
-                        association=next(
-                            (u for u in associations if u["study_id"] == rare_result.study_id),
-                            None,
-                        ),
-                    )
-                    for rare_result in v_rare
-                ]
-
-                variant_responses.append(
-                    VariantResponse(
-                        variant=v,
-                        coloc_groups=extended_colocs,
-                        rare_results=extended_rare_results,
-                        study_extractions=v_extractions,
-                        coloc_pairs=coloc_pairs,
-                        associations=associations if include_associations else None,
-                    )
+            extended_colocs = [
+                ExtendedColocGroup(
+                    **coloc.model_dump(),
+                    association=next((u for u in associations if u["study_id"] == coloc.study_id), None),
                 )
-            return GetVariantsResponse(variants=variant_responses)
+                for coloc in colocs_dedup
+            ]
+            extended_rare_results = [
+                ExtendedRareResult(
+                    **rare_result.model_dump(),
+                    association=next(
+                        (u for u in associations if u["study_id"] == rare_result.study_id),
+                        None,
+                    ),
+                )
+                for rare_result in rare_results_dedup
+            ]
+
+            return GetVariantsResponse(
+                variants=variant_rows,
+                coloc_groups=extended_colocs,
+                rare_results=extended_rare_results,
+                study_extractions=study_extractions_dedup,
+                coloc_pairs=coloc_pairs,
+                associations=associations if include_associations else None,
+            )
         else:
             return GetVariantsResponse(variants=variant_rows)
 

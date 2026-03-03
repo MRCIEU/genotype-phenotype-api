@@ -87,11 +87,12 @@ def test_get_variants_expand_with_associations(variants_in_studies_db):
     variants = data["variants"]
     assert len(variants) > 0
     for row in variants:
-        variant_response = VariantResponse(**row)
-        assert variant_response.variant is not None
-        assert variant_response.coloc_groups is not None
-        assert variant_response.rare_results is not None
-        assert variant_response.study_extractions is not None
+        variant_model = Variant(**row)
+        assert variant_model.id is not None
+    assert "coloc_groups" in data
+    assert "rare_results" in data
+    assert "study_extractions" in data
+    assert data["associations"] is not None
 
 
 def test_get_variant_by_id(variants_in_studies_db):

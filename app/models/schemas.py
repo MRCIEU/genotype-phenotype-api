@@ -187,7 +187,11 @@ class BasicTraitResponse(BaseModel):
 
 
 class GetTraitsResponse(BaseModel):
-    traits: List[BasicTraitResponse | TraitResponse]
+    traits: List[BasicTraitResponse | TraitResponse | Trait]
+    coloc_groups: Optional[List[ColocGroup]] = None
+    rare_results: Optional[List[RareResult]] = None
+    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
+    associations: Optional[List[dict]] = None
 
 
 class GenePleiotropy(BaseModel):
@@ -378,7 +382,14 @@ class ExtendedVariant(Variant):
 
 
 class GetGenesResponse(BaseModel):
-    genes: List[ExtendedGene | GeneResponse]
+    genes: List[ExtendedGene | GeneResponse | Gene]
+    coloc_groups: Optional[List[ColocGroup]] = None
+    coloc_pairs: Optional[List[dict]] = None
+    rare_results: Optional[List[RareResult]] = None
+    variants: Optional[List[Variant]] = None
+    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
+    tissues: Optional[List[str]] = None
+    associations: Optional[List[dict]] = None
 
 
 class GeneResponse(BaseModel):
@@ -412,6 +423,11 @@ class VariantResponse(BaseModel):
 
 class GetVariantsResponse(BaseModel):
     variants: List[Variant | VariantResponse]
+    coloc_groups: Optional[List[ExtendedColocGroup]] = None
+    coloc_pairs: Optional[List[dict]] = None
+    rare_results: Optional[List[ExtendedRareResult]] = None
+    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
+    associations: Optional[List[dict]] = None
 
 
 class VariantSummaryStatsResponse(BaseModel):

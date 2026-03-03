@@ -103,12 +103,17 @@ def test_get_traits_batch_by_ids():
     response = client.get(f"/v1/traits?{query_params}")
     assert response.status_code == 200
     data = response.json()
+    traits_response = GetTraitsResponse(**data)
     assert "traits" in data
-    traits = data["traits"]
-    assert len(traits) > 0
-    for trait_resp in traits:
-        assert "trait" in trait_resp
-        assert trait_resp["trait"]["id"] in trait_ids
+    assert len(traits_response.traits) > 0
+    for trait in traits_response.traits:
+        assert trait.id in trait_ids
+    assert traits_response.coloc_groups is not None
+    assert len(traits_response.coloc_groups) > 0
+    assert traits_response.rare_results is not None
+    assert len(traits_response.rare_results) > 0
+    assert traits_response.study_extractions is not None
+    assert len(traits_response.study_extractions) > 0
 
 
 def test_get_traits_batch_with_associations():
@@ -117,10 +122,10 @@ def test_get_traits_batch_with_associations():
     response = client.get(f"/v1/traits?{query_params}&include_associations=true")
     assert response.status_code == 200
     data = response.json()
-    traits = data["traits"]
-    assert len(traits) > 0
-    assert traits[0]["associations"] is not None
-    assert len(traits[0]["associations"]) > 0
+    traits_response = GetTraitsResponse(**data)
+    assert len(traits_response.traits) > 0
+    assert traits_response.associations is not None
+    assert len(traits_response.associations) > 0
 
 
 def test_get_traits_batch_too_many():
