@@ -40,7 +40,7 @@ async def get_genes(
             genes = studies_service.get_genes()
             return genes
 
-        maximum_num_genes = 5
+        maximum_num_genes = 10
         if len(ids) > maximum_num_genes:
             raise HTTPException(
                 status_code=400,

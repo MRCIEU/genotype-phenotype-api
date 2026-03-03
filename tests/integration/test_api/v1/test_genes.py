@@ -70,6 +70,8 @@ def test_get_genes_batch_by_ids():
 
 
 def test_get_genes_batch_too_many():
-    response = client.get("/v1/genes?ids=1&ids=2&ids=3&ids=4&ids=5&ids=6")
+    gene_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    query_params = "&".join([f"ids={gid}" for gid in gene_ids])
+    response = client.get(f"/v1/genes?{query_params}")
     assert response.status_code == 400
-    assert "Can not request more than 5" in response.json()["detail"]
+    assert "Can not request more than 10" in response.json()["detail"]

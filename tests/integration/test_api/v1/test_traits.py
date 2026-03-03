@@ -124,11 +124,11 @@ def test_get_traits_batch_with_associations():
 
 
 def test_get_traits_batch_too_many():
-    trait_ids = [1, 2, 3, 4, 5, 6]
+    trait_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     query_params = "&".join([f"ids={tid}" for tid in trait_ids])
     response = client.get(f"/v1/traits?{query_params}")
     assert response.status_code == 400
-    assert "Can not request more than 5" in response.json()["detail"]
+    assert "Can not request more than 10" in response.json()["detail"]
 
 
 def test_get_trait_coloc_pairs():

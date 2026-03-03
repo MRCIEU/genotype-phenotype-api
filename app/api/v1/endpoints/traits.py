@@ -41,7 +41,7 @@ async def get_traits(
             traits = studies_service.get_traits()
             return traits
 
-        maximum_num_traits = 5
+        maximum_num_traits = 10
         if len(ids) > maximum_num_traits:
             raise HTTPException(
                 status_code=400, detail=f"Can not request more than {maximum_num_traits} in one request"
