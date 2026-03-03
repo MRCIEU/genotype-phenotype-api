@@ -104,7 +104,6 @@ def test_get_traits_batch_by_ids():
     assert response.status_code == 200
     data = response.json()
     traits_response = GetTraitsResponse(**data)
-    assert "traits" in data
     assert len(traits_response.traits) > 0
     for trait in traits_response.traits:
         assert trait.id in trait_ids

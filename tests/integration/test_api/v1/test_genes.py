@@ -59,15 +59,17 @@ def test_get_genes_batch_by_ids():
     response = client.get("/v1/genes?ids=WNT7B&ids=EPDR1")
     assert response.status_code == 200
     data = response.json()
-    assert "genes" in data
-    genes = data["genes"]
-    assert len(genes) > 0
-    for gene in genes:
-        assert gene["id"] is not None
-        assert gene["gene"] is not None
-    assert "coloc_groups" in data
-    assert "rare_results" in data
-    assert "study_extractions" in data
+    genes_response = GetGenesResponse(**data)
+    assert len(genes_response.genes) > 0
+    for gene in genes_response.genes:
+        assert gene.id is not None
+        assert gene.gene is not None
+    assert genes_response.coloc_groups is not None
+    assert len(genes_response.coloc_groups) > 0
+    assert genes_response.rare_results is not None
+    assert len(genes_response.rare_results) == 0
+    assert genes_response.study_extractions is not None
+    assert len(genes_response.study_extractions) > 0
 
 
 def test_get_genes_batch_too_many():

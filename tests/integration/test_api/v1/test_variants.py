@@ -6,6 +6,7 @@ from app.models.schemas import (
     ExtendedColocGroup,
     Variant,
     VariantResponse,
+    GetVariantsResponse,
 )
 
 
@@ -84,15 +85,18 @@ def test_get_variants_expand_with_associations(variants_in_studies_db):
     response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}&expand=true&include_associations=true")
     assert response.status_code == 200
     data = response.json()
-    variants = data["variants"]
-    assert len(variants) > 0
-    for row in variants:
-        variant_model = Variant(**row)
-        assert variant_model.id is not None
-    assert "coloc_groups" in data
-    assert "rare_results" in data
-    assert "study_extractions" in data
-    assert data["associations"] is not None
+    variants_response = GetVariantsResponse(**data)
+    assert len(variants_response.variants) > 0
+    for variant in variants_response.variants:
+        assert variant.id is not None
+    assert variants_response.coloc_groups is not None
+    assert len(variants_response.coloc_groups) > 0
+    assert variants_response.rare_results is not None
+    assert len(variants_response.rare_results) == 0
+    assert variants_response.study_extractions is not None
+    assert len(variants_response.study_extractions) > 0
+    assert variants_response.associations is not None
+    assert len(variants_response.associations) > 0
 
 
 def test_get_variant_by_id(variants_in_studies_db):
