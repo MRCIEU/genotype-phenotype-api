@@ -111,7 +111,6 @@ class StudiesDBClient:
     def get_studies_by_trait_ids(self, trait_ids: List[int]):
         if not trait_ids:
             return []
-        logger.info(f"Trait IDs: {trait_ids}")
 
         query = """SELECT studies.*, study_sources.url FROM studies
           JOIN study_sources ON studies.source_id = study_sources.id

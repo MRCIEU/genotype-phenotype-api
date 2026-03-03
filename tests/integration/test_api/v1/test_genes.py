@@ -57,19 +57,24 @@ def test_get_genes_with_coloc_groups():
 
 def test_get_genes_batch_by_ids():
     response = client.get("/v1/genes?ids=WNT7B&ids=EPDR1")
-    print(response.json())
     assert response.status_code == 200
     data = response.json()
-    assert "genes" in data
-    genes = data["genes"]
-    assert len(genes) > 0
-    for gene_resp in genes:
-        assert "gene" in gene_resp
-        assert gene_resp["gene"]["id"] is not None
-        assert gene_resp["gene"]["gene"] is not None
+    genes_response = GetGenesResponse(**data)
+    assert len(genes_response.genes) > 0
+    for gene in genes_response.genes:
+        assert gene.id is not None
+        assert gene.gene is not None
+    assert genes_response.coloc_groups is not None
+    assert len(genes_response.coloc_groups) > 0
+    assert genes_response.rare_results is not None
+    assert len(genes_response.rare_results) == 0
+    assert genes_response.study_extractions is not None
+    assert len(genes_response.study_extractions) > 0
 
 
 def test_get_genes_batch_too_many():
-    response = client.get("/v1/genes?ids=1&ids=2&ids=3&ids=4&ids=5&ids=6")
+    gene_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    query_params = "&".join([f"ids={gid}" for gid in gene_ids])
+    response = client.get(f"/v1/genes?{query_params}")
     assert response.status_code == 400
-    assert "Can not request more than 5" in response.json()["detail"]
+    assert "Can not request more than 10" in response.json()["detail"]

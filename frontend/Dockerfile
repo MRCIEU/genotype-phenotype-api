@@ -25,11 +25,11 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy SVG and PNG assets to stable locations to bypass Vite hashing for OG metadata and predictable URLs
 RUN mkdir -p assets/images
-COPY --from=build /app/assets/images/*.svg ./assets/images/
+COPY --from=build /app/assets/images/*.png ./assets/images/
 
 # Set proper permissions for nginx config
 RUN chown nginx:nginx /etc/nginx/conf.d/default.conf \
     && chmod 644 /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]

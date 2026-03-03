@@ -281,7 +281,6 @@ class StudiesService(metaclass=Singleton):
         studies = self.db.get_studies_by_trait_ids(trait_ids)
 
         study_models = convert_duckdb_to_pydantic_model(Study, studies)
-        logger.info(f"Studies: {study_models}")
 
         for study in study_models:
             if study and study.url and study.url.startswith("https://opengwas.io"):

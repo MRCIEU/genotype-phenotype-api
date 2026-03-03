@@ -40,7 +40,7 @@ async def get_genes(
             genes = studies_service.get_genes()
             return genes
 
-        maximum_num_genes = 5
+        maximum_num_genes = 10
         if len(ids) > maximum_num_genes:
             raise HTTPException(
                 status_code=400,
@@ -109,105 +109,81 @@ async def get_genes(
         study_rare = convert_duckdb_to_pydantic_model(RareResult, study_rare_data) if study_rare_data else []
         gene_rare = convert_duckdb_to_pydantic_model(RareResult, gene_rare_data) if gene_rare_data else []
 
-        # Build coloc_groups and rare_results per gene
-        coloc_groups_by_gene = {}
-        for g in genes:
-            ext_ids = {e.id for e in study_extractions_by_gene[g.id]}
-            from_region = [c for c in region_colocs if c.study_extraction_id in ext_ids]
-            from_gene = [
-                c
-                for c in gene_colocs
-                if (c.gene_id == g.id if c.gene_id else False) or (getattr(c, "situated_gene_id", None) == g.id)
-            ]
-            seen_cg = {}
-            combined_colocs = []
-            for c in from_region + from_gene:
-                if c.coloc_group_id not in seen_cg:
-                    seen_cg[c.coloc_group_id] = True
-                    combined_colocs.append(c)
-            coloc_groups_by_gene[g.id] = combined_colocs
+        # Combine all coloc_groups, rare_results, study_extractions (deduplicated)
+        seen_cg = {}
+        all_coloc_groups = []
+        for c in region_colocs + gene_colocs:
+            key = (c.coloc_group_id, c.study_extraction_id, c.study_id)
+            if key not in seen_cg:
+                seen_cg[key] = True
+                all_coloc_groups.append(c)
 
-        rare_by_extraction = {}
-        for r in study_rare:
-            if r.study_extraction_id not in rare_by_extraction:
-                rare_by_extraction[r.study_extraction_id] = []
-            rare_by_extraction[r.study_extraction_id].append(r)
+        seen_rr = {}
+        all_rare_results = []
+        for r in study_rare + gene_rare:
+            key = (r.rare_result_group_id, r.study_extraction_id)
+            if key not in seen_rr:
+                seen_rr[key] = True
+                all_rare_results.append(r)
 
-        rare_results_by_gene = {}
-        for g in genes:
-            ext_ids = {e.id for e in study_extractions_by_gene[g.id]}
-            from_study = []
-            for eid in ext_ids:
-                from_study.extend(rare_by_extraction.get(eid, []))
-            from_gene = [
-                r
-                for r in gene_rare
-                if (r.gene_id == g.id if r.gene_id else False)
-                or (r.situated_gene_id == g.id if r.situated_gene_id else False)
-            ]
-            seen_rr = {}
-            combined_rare = []
-            for r in from_study + from_gene:
-                key = (r.rare_result_group_id, r.study_extraction_id)
-                if key not in seen_rr:
-                    seen_rr[key] = True
-                    combined_rare.append(r)
-            rare_results_by_gene[g.id] = combined_rare
+        seen_ext = {}
+        all_study_extractions = []
+        for ext_list in study_extractions_by_gene.values():
+            for e in ext_list:
+                if e.id not in seen_ext:
+                    seen_ext[e.id] = True
+                    all_study_extractions.append(e)
 
         tissues = studies_service.get_tissues()
 
-        # Build variants and associations per gene
-        gene_responses = []
-        for g in genes:
-            study_extractions = study_extractions_by_gene[g.id]
-            coloc_groups = coloc_groups_by_gene[g.id]
-            rare_results = rare_results_by_gene[g.id]
-
-            associations = None
-            if include_associations:
-                associations = associations_service.get_associations(coloc_groups, rare_results, study_extractions)
-
-            coloc_pairs = None
-            if include_coloc_pairs:
-                snp_ids = (
-                    [c.snp_id for c in coloc_groups]
-                    + [r.snp_id for r in rare_results]
-                    + [e.snp_id for e in study_extractions]
-                )
-                snp_ids = list(set(snp_ids))
-                if snp_ids:
-                    coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
-
-            variants = None
-            if rare_results or coloc_groups or study_extractions:
-                snp_ids = (
-                    [c.snp_id for c in coloc_groups]
-                    + [r.snp_id for r in rare_results]
-                    + [e.snp_id for e in study_extractions]
-                )
-                snp_ids = list(set(snp_ids))
-                if snp_ids:
-                    variants_data = studies_db.get_variants(snp_ids=snp_ids)
-                    variants = convert_duckdb_to_pydantic_model(Variant, variants_data)
-                else:
-                    variants = []
-            else:
-                variants = []
-
-            gene_responses.append(
-                GeneResponse(
-                    gene=g,
-                    coloc_groups=coloc_groups,
-                    coloc_pairs=coloc_pairs,
-                    rare_results=rare_results,
-                    variants=variants,
-                    study_extractions=study_extractions,
-                    tissues=tissues,
-                    associations=associations,
-                )
+        associations = None
+        if include_associations:
+            associations_raw = associations_service.get_associations(
+                all_coloc_groups, all_rare_results, all_study_extractions
             )
+            seen_assoc = {}
+            associations = []
+            for a in associations_raw:
+                key = (a.get("snp_id"), a.get("study_id"))
+                if key not in seen_assoc:
+                    seen_assoc[key] = True
+                    associations.append(a)
 
-        return GetGenesResponse(genes=gene_responses)
+        coloc_pairs = None
+        if include_coloc_pairs:
+            snp_ids = (
+                [c.snp_id for c in all_coloc_groups]
+                + [r.snp_id for r in all_rare_results]
+                + [e.snp_id for e in all_study_extractions]
+            )
+            snp_ids = list(set(snp_ids))
+            if snp_ids:
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
+
+        variants = []
+        if all_coloc_groups or all_rare_results or all_study_extractions:
+            snp_ids = (
+                [c.snp_id for c in all_coloc_groups]
+                + [r.snp_id for r in all_rare_results]
+                + [e.snp_id for e in all_study_extractions]
+            )
+            snp_ids = list(set(snp_ids))
+            if snp_ids:
+                variants_data = studies_db.get_variants(snp_ids=snp_ids)
+                variants = convert_duckdb_to_pydantic_model(Variant, variants_data)
+                if not isinstance(variants, list):
+                    variants = [variants]
+
+        return GetGenesResponse(
+            genes=genes,
+            coloc_groups=all_coloc_groups,
+            coloc_pairs=coloc_pairs,
+            rare_results=all_rare_results,
+            variants=variants,
+            study_extractions=all_study_extractions,
+            tissues=tissues,
+            associations=associations,
+        )
     except HTTPException as e:
         raise e
     except Exception as e:

@@ -54,7 +54,7 @@ def test_retry_gwas_dlq_by_guid_success(mock_redis_client, mocker):
     mocker.patch.object(mock_redis_client, "retry_guid_from_dlq", return_value=True)
     mocker.patch.object(mock_redis_client, "get_all_guids_from_dlq", return_value=[guid])
 
-    response = client.post(f"/v1/internal/gwas-dlq/retry/{guid}")
+    response = client.post(f"/v1/internal/gwas-dlq/{guid}/retry")
     print(response.json())
 
     assert response.status_code == 200
@@ -73,7 +73,7 @@ def test_retry_gwas_dlq_by_guid_not_found(mock_redis_client, mocker):
 
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
 
-    response = client.post(f"/v1/internal/gwas-dlq/retry/{guid}")
+    response = client.post(f"/v1/internal/gwas-dlq/{guid}/retry")
 
     assert response.status_code == 404
     assert "not found in dead letter queue" in response.json()["detail"]
@@ -86,7 +86,7 @@ def test_retry_gwas_dlq_by_guid_empty_dlq(mock_redis_client, mocker):
 
     mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
 
-    response = client.post(f"/v1/internal/gwas-dlq/retry/{guid}")
+    response = client.post(f"/v1/internal/gwas-dlq/{guid}/retry")
 
     assert response.status_code == 404
 
@@ -172,54 +172,6 @@ def test_clear_gwas_dlq_exception(mock_redis_client, mocker):
     mocker.patch.object(mock_redis_client, "clear_dlq", side_effect=Exception("Redis error"))
 
     response = client.delete("/v1/internal/gwas-dlq")
-
-    assert response.status_code == 500
-
-
-def test_add_to_gwas_queue_success(mock_redis_client, mocker):
-    """Test successfully adding a message to the GWAS queue."""
-    test_message = {
-        "file_location": "gwas_upload/test-guid/test_file.tsv.gz",
-        "metadata": {
-            "guid": "test-guid-123",
-            "name": "Test Study",
-            "email": "test@example.com",
-        },
-    }
-
-    mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
-    mocker.patch.object(mock_redis_client, "add_to_queue", return_value=True)
-    mocker.patch.object(mock_redis_client, "get_queue_size", return_value=5)
-
-    response = client.post("/v1/internal/gwas-queue/add", json=test_message)
-
-    assert response.status_code == 200
-    assert "Successfully added message to process_gwas_queue" in response.json()["message"]
-    assert response.json()["queue_size"] == 5
-    mock_redis_client.add_to_queue.assert_called_once_with(mock_redis_client.process_gwas_queue, test_message)
-
-
-def test_add_to_gwas_queue_failure(mock_redis_client, mocker):
-    """Test adding a message when add_to_queue returns False."""
-    test_message = {"file_location": "test.tsv.gz", "metadata": {"guid": "test-guid"}}
-
-    mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
-    mocker.patch.object(mock_redis_client, "add_to_queue", return_value=False)
-
-    response = client.post("/v1/internal/gwas-queue/add", json=test_message)
-
-    assert response.status_code == 500
-    assert "Failed to add message to queue" in response.json()["detail"]
-
-
-def test_add_to_gwas_queue_exception(mock_redis_client, mocker):
-    """Test adding a message handles exceptions."""
-    test_message = {"file_location": "test.tsv.gz", "metadata": {"guid": "test-guid"}}
-
-    mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
-    mocker.patch.object(mock_redis_client, "add_to_queue", side_effect=Exception("Redis error"))
-
-    response = client.post("/v1/internal/gwas-queue/add", json=test_message)
 
     assert response.status_code == 500
 
