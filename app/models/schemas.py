@@ -419,7 +419,7 @@ class VariantResponse(BaseModel):
     rare_results: List[ExtendedRareResult]
     study_extractions: List[ExtendedStudyExtraction]
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
-    ld_proxy_variants: Optional[List[Variant]] = None  # variants in high LD (r² >= 0.9) that have coloc/rare results
+    ld_proxy_variants: Optional[List[Variant]] = None
 
 
 class GetVariantsResponse(BaseModel):
