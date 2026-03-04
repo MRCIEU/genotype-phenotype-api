@@ -1,248 +1,88 @@
-<div id="what-has-been-ingested" class="section level3">
-    <h3>What has been ingested?</h3>
-    <p>Broken down by data source:</p>
-    <table>
-        <thead>
-            <tr class="header">
-                <th align="left">name</th>
-                <th align="left">num_studies</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">Brain Meta</td>
-                <td align="left">16,511</td>
-            </tr>
-            <tr class="even">
-                <td align="left">UK Biobank ExWAS Genebass</td>
-                <td align="left">3,229</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">EBI GWAS Catalog</td>
-                <td align="left">2,796</td>
-            </tr>
-            <tr class="even">
-                <td align="left">UK Biobank</td>
-                <td align="left">2,341</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Brain eMeta</td>
-                <td align="left">16,643</td>
-            </tr>
-            <tr class="even">
-                <td align="left">UK Biobank Proteomics</td>
-                <td align="left">2,401</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">UK Biobank ExWAS Complex Traits</td>
-                <td align="left">3,327</td>
-            </tr>
-            <tr class="even">
-                <td align="left">UK Biobank AstraZeneca PheWAS Portal v5.5</td>
-                <td align="left">7,895</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">GoDMC</td>
-                <td align="left">179,947</td>
-            </tr>
-            <tr class="even">
-                <td align="left">eQTLGen</td>
-                <td align="left">17,083</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">OneK1K</td>
-                <td align="left">13,293</td>
-            </tr>
-            <tr class="even">
-                <td align="left">GTEx Atlas</td>
-                <td align="left">2,449,657</td>
-            </tr>
-        </tbody>
-    </table>
+<div id="what-has-been-extracted" class="section level3">
+    <h3>What has been extracted?</h3>
+    <div id="study-data" class="section level4">
+        <h4>Study Data</h4>
+        <ul>
+            <li>Number distinct loci: 5,263,385</li>
+            <li>Number distinct loci with P ≤ 5e-8: 1,360,997</li>
+            <li>Number distinct loci with P ≤ 5e-8 and variant type common: 1,332,810</li>
+            <li>Number distinct loci with variant type rare: 666,255</li>
+            <li>Number distinct loci with P ≤ 5e-8 and variant type rare: 28,187</li>
+        </ul>
+    </div>
+    <div id="coloc-data" class="section level4">
+        <h4>Coloc Data</h4>
+        <ul>
+            <li>Number of coloc pairs: 49,269,276</li>
+            <li>Number of coloc groups: 97,393</li>
+            <li>Average H4 connectedness: 0.855</li>
+            <li>Sentinal variants from coloc group: 93,201</li>
+            <li>SNPs that show up in multiple coloc groups: 3,639</li>
+        </ul>
+        <p>Broken down by data source:</p>
+        <table>
+            <thead>
+                <tr class="header">
+                    <th align="left">name</th>
+                    <th align="left">num_studies</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="odd">
+                    <td align="left">UK Biobank ExWAS Genebass</td>
+                    <td align="left">3,229</td>
+                </tr>
+                <tr class="even">
+                    <td align="left">Brain eMeta</td>
+                    <td align="left">16,843</td>
+                </tr>
+                <tr class="odd">
+                    <td align="left">EBI GWAS Catalog</td>
+                    <td align="left">2,796</td>
+                </tr>
+                <tr class="even">
+                    <td align="left">eQTLGen</td>
+                    <td align="left">17,097</td>
+                </tr>
+                <tr class="odd">
+                    <td align="left">UK Biobank AstraZeneca PheWAS Portal v5.5</td>
+                    <td align="left">7,920</td>
+                </tr>
+                <tr class="even">
+                    <td align="left">GoDMC</td>
+                    <td align="left">179,947</td>
+                </tr>
+                <tr class="odd">
+                    <td align="left">UK Biobank ExWAS Complex Traits</td>
+                    <td align="left">3,327</td>
+                </tr>
+                <tr class="even">
+                    <td align="left">Brain Meta</td>
+                    <td align="left">16,516</td>
+                </tr>
+                <tr class="odd">
+                    <td align="left">UK Biobank</td>
+                    <td align="left">2,341</td>
+                </tr>
+                <tr class="even">
+                    <td align="left">GTEx Atlas</td>
+                    <td align="left">2,453,466</td>
+                </tr>
+                <tr class="odd">
+                    <td align="left">UK Biobank Proteomics</td>
+                    <td align="left">2,400</td>
+                </tr>
+                <tr class="even">
+                    <td align="left">OneK1K</td>
+                    <td align="left">7,202</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 <div id="colocalization-clustering-information" class="section level3">
     <h3>Colocalization Clustering Information:</h3>
-    <pre><code>## Average connectedness score: 0.857501168537186</code></pre>
-    <table>
-        <colgroup>
-            <col width="20%" />
-            <col width="15%" />
-            <col width="20%" />
-            <col width="23%" />
-            <col width="21%" />
-        </colgroup>
-        <thead>
-            <tr class="header">
-                <th align="left">data_type</th>
-                <th align="left">num_studies</th>
-                <th align="left">num_extractions</th>
-                <th align="left">common_extractions</th>
-                <th align="left">rare_extractions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">phenotype</td>
-                <td align="left">15,997</td>
-                <td align="left">2,144,618</td>
-                <td align="left">1,580,968</td>
-                <td align="left">563,650</td>
-            </tr>
-            <tr class="even">
-                <td align="left">methylation</td>
-                <td align="left">179,947</td>
-                <td align="left">179,946</td>
-                <td align="left">179,946</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">plasma_protein</td>
-                <td align="left">110</td>
-                <td align="left">9,926</td>
-                <td align="left">9,926</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="even">
-                <td align="left">cell_trait</td>
-                <td align="left">566</td>
-                <td align="left">134,179</td>
-                <td align="left">133,700</td>
-                <td align="left">479</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">gene_expression</td>
-                <td align="left">765,073</td>
-                <td align="left">877,696</td>
-                <td align="left">877,696</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="even">
-                <td align="left">splice_variant</td>
-                <td align="left">1,748,114</td>
-                <td align="left">1,835,321</td>
-                <td align="left">1,835,321</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">protein</td>
-                <td align="left">5,316</td>
-                <td align="left">106,781</td>
-                <td align="left">6,084</td>
-                <td align="left">100,697</td>
-            </tr>
-        </tbody>
-    </table>
-    <table>
-        <thead>
-            <tr class="header">
-                <th align="left">data_type</th>
-                <th align="left">finemap_ratio</th>
-                <th align="left">num_cis</th>
-                <th align="left">num_trans</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">protein</td>
-                <td align="left">44.49</td>
-                <td align="left">9,021</td>
-                <td align="left">97,760</td>
-            </tr>
-            <tr class="even">
-                <td align="left">gene_expression</td>
-                <td align="left">1.17</td>
-                <td align="left">876,971</td>
-                <td align="left">373</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">splice_variant</td>
-                <td align="left">1.06</td>
-                <td align="left">1,835,135</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="even">
-                <td align="left">phenotype</td>
-                <td align="left">1.51</td>
-                <td align="left">0</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">cell_trait</td>
-                <td align="left">1.02</td>
-                <td align="left">0</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="even">
-                <td align="left">plasma_protein</td>
-                <td align="left">1.05</td>
-                <td align="left">0</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">methylation</td>
-                <td align="left">1.00</td>
-                <td align="left">179,840</td>
-                <td align="left">0</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Total</td>
-                <td align="left">1.25</td>
-                <td align="left">2,900,967</td>
-                <td align="left">98,133</td>
-            </tr>
-        </tbody>
-    </table>
-    <table>
-        <thead>
-            <tr class="header">
-                <th align="left">data_type</th>
-                <th align="left">p_over_5e8</th>
-                <th align="left">p_under_5e8</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">protein</td>
-                <td align="left">86,969</td>
-                <td align="left">19,812</td>
-            </tr>
-            <tr class="even">
-                <td align="left">gene_expression</td>
-                <td align="left">433,795</td>
-                <td align="left">443,901</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">splice_variant</td>
-                <td align="left">1,335,681</td>
-                <td align="left">499,640</td>
-            </tr>
-            <tr class="even">
-                <td align="left">phenotype</td>
-                <td align="left">1,854,423</td>
-                <td align="left">290,195</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">cell_trait</td>
-                <td align="left">130,487</td>
-                <td align="left">3,692</td>
-            </tr>
-            <tr class="even">
-                <td align="left">plasma_protein</td>
-                <td align="left">9,268</td>
-                <td align="left">658</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">methylation</td>
-                <td align="left">4,824</td>
-                <td align="left">175,122</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Total</td>
-                <td align="left">3,855,447</td>
-                <td align="left">1,433,020</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- ### Study Breakdown by data type: -->
 </div>
 <div id="number-of-coloc-pairs-with-h4-0.8-per-data-type" class="section level3">
     <h3>Number of coloc pairs with H4 &gt; 0.8 per data type</h3>
@@ -251,290 +91,73 @@
             Breakdown for results for 5e-8 p-value threshold
         </caption>
         <colgroup>
-            <col width="8%" />
-            <col width="9%" />
-            <col width="6%" />
-            <col width="17%" />
+            <col width="18%" />
+            <col width="21%" />
             <col width="14%" />
-            <col width="21%" />
-            <col width="21%" />
+            <col width="45%" />
         </colgroup>
         <thead>
             <tr class="header">
                 <th align="left">data_type</th>
                 <th align="left">study_extractions</th>
                 <th align="left">coloc_pairs</th>
-                <th align="left">study_extractions_not_in_coloc</th>
-                <th align="left">study_extractions_in_coloc</th>
-                <th align="left">percent_extractions_not_in_coloc_pairs</th>
                 <th align="left">percent_coloc_pairs_not_in_coloc_group</th>
             </tr>
         </thead>
         <tbody>
             <tr class="odd">
                 <td align="left">protein</td>
-                <td align="left">5,411</td>
-                <td align="left">73,038</td>
-                <td align="left">828</td>
-                <td align="left">4,583</td>
-                <td align="left">15.30%</td>
-                <td align="left">38.45%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">gene_expression</td>
-                <td align="left">443,901</td>
-                <td align="left">19,938,225</td>
-                <td align="left">14,973</td>
-                <td align="left">428,928</td>
-                <td align="left">3.37%</td>
-                <td align="left">44.16%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">splice_variant</td>
-                <td align="left">499,640</td>
-                <td align="left">36,653,807</td>
-                <td align="left">13,703</td>
-                <td align="left">485,937</td>
-                <td align="left">2.74%</td>
-                <td align="left">50.93%</td>
+                <td align="left">5,409</td>
+                <td align="left">72,668</td>
+                <td align="left">38.98%</td>
             </tr>
             <tr class="even">
                 <td align="left">phenotype</td>
-                <td align="left">276,804</td>
-                <td align="left">8,057,766</td>
-                <td align="left">29,514</td>
-                <td align="left">247,290</td>
-                <td align="left">10.66%</td>
-                <td align="left">45.96%</td>
+                <td align="left">238,753</td>
+                <td align="left">7,932,596</td>
+                <td align="left">45.38%</td>
             </tr>
             <tr class="odd">
                 <td align="left">cell_trait</td>
-                <td align="left">3,686</td>
-                <td align="left">175,092</td>
-                <td align="left">767</td>
-                <td align="left">2,919</td>
-                <td align="left">20.81%</td>
-                <td align="left">53.24%</td>
+                <td align="left">3,676</td>
+                <td align="left">171,444</td>
+                <td align="left">53.20%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">gene_expression</td>
+                <td align="left">431,365</td>
+                <td align="left">19,403,133</td>
+                <td align="left">44.15%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">splice_variant</td>
+                <td align="left">478,074</td>
+                <td align="left">35,789,303</td>
+                <td align="left">50.98%</td>
             </tr>
             <tr class="even">
                 <td align="left">plasma_protein</td>
-                <td align="left">658</td>
-                <td align="left">16,875</td>
-                <td align="left">244</td>
-                <td align="left">414</td>
-                <td align="left">37.08%</td>
-                <td align="left">40.30%</td>
+                <td align="left">411</td>
+                <td align="left">14,709</td>
+                <td align="left">37.42%</td>
             </tr>
             <tr class="odd">
                 <td align="left">methylation</td>
                 <td align="left">175,122</td>
-                <td align="left">2,381,342</td>
-                <td align="left">17,993</td>
-                <td align="left">157,129</td>
-                <td align="left">10.27%</td>
-                <td align="left">40.13%</td>
+                <td align="left">2,376,340</td>
+                <td align="left">40.55%</td>
             </tr>
             <tr class="even">
                 <td align="left">summary</td>
-                <td align="left">1,405,222</td>
-                <td align="left">67,296,145</td>
-                <td align="left">78,022</td>
-                <td align="left">1,327,200</td>
-                <td align="left">5.55%</td>
-                <td align="left">46.26%</td>
+                <td align="left">1,332,810</td>
+                <td align="left">65,760,193</td>
+                <td align="left">46.17%</td>
             </tr>
         </tbody>
     </table>
 </div>
 <div id="breakdown-of-phenotype-coloc-rates-by-trait-category" class="section level3">
     <h3>Breakdown of phenotype coloc rates by trait category</h3>
-    <table>
-        <caption>
-            Breakdown of phenotype info by trait category
-        </caption>
-        <colgroup>
-            <col width="34%" />
-            <col width="13%" />
-            <col width="19%" />
-            <col width="18%" />
-            <col width="13%" />
-        </colgroup>
-        <thead>
-            <tr class="header">
-                <th align="left">trait_category</th>
-                <th align="left">num_study_extractions</th>
-                <th align="left">percent_without_molecular_coloc</th>
-                <th align="left">percent_with_molecular_coloc</th>
-                <th align="left">percent_with_no_coloc</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">Physiological Measures</td>
-                <td align="left">156,185</td>
-                <td align="left">24.3%</td>
-                <td align="left">64.1%</td>
-                <td align="left">11.7%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Skin And Subcutaneous Tissue</td>
-                <td align="left">4,617</td>
-                <td align="left">29.5%</td>
-                <td align="left">36.8%</td>
-                <td align="left">33.7%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Environmental Measures</td>
-                <td align="left">2,762</td>
-                <td align="left">20.0%</td>
-                <td align="left">32.8%</td>
-                <td align="left">47.1%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Metabolic Disease</td>
-                <td align="left">4,915</td>
-                <td align="left">22.0%</td>
-                <td align="left">57.0%</td>
-                <td align="left">21.0%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Eye And Adnexa</td>
-                <td align="left">2,328</td>
-                <td align="left">27.1%</td>
-                <td align="left">31.5%</td>
-                <td align="left">41.4%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Digestive System</td>
-                <td align="left">8,120</td>
-                <td align="left">22.9%</td>
-                <td align="left">27.6%</td>
-                <td align="left">49.6%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Circulatory System</td>
-                <td align="left">10,299</td>
-                <td align="left">25.4%</td>
-                <td align="left">44.2%</td>
-                <td align="left">30.3%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Blood And Blood-Forming Organs</td>
-                <td align="left">1,128</td>
-                <td align="left">29.1%</td>
-                <td align="left">31.0%</td>
-                <td align="left">39.9%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Behavioural Measures</td>
-                <td align="left">8,861</td>
-                <td align="left">22.7%</td>
-                <td align="left">42.6%</td>
-                <td align="left">34.7%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Ear And Mastoid Process</td>
-                <td align="left">1,067</td>
-                <td align="left">25.4%</td>
-                <td align="left">38.8%</td>
-                <td align="left">35.8%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Anthropometric Measures</td>
-                <td align="left">41,853</td>
-                <td align="left">32.5%</td>
-                <td align="left">61.6%</td>
-                <td align="left">5.9%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Genitourinary System</td>
-                <td align="left">4,616</td>
-                <td align="left">25.5%</td>
-                <td align="left">23.9%</td>
-                <td align="left">50.6%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Infectious Disease</td>
-                <td align="left">2,198</td>
-                <td align="left">21.5%</td>
-                <td align="left">27.1%</td>
-                <td align="left">51.4%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Neoplasm</td>
-                <td align="left">6,015</td>
-                <td align="left">27.2%</td>
-                <td align="left">32.1%</td>
-                <td align="left">40.7%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Reproductive Measures</td>
-                <td align="left">5,021</td>
-                <td align="left">25.8%</td>
-                <td align="left">33.8%</td>
-                <td align="left">40.5%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Socioeconomic Measures</td>
-                <td align="left">1,749</td>
-                <td align="left">29.8%</td>
-                <td align="left">46.0%</td>
-                <td align="left">24.2%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Psychiatric Measures</td>
-                <td align="left">3,572</td>
-                <td align="left">24.6%</td>
-                <td align="left">47.1%</td>
-                <td align="left">28.3%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Musculoskeletal System And Connective Tissue</td>
-                <td align="left">8,086</td>
-                <td align="left">25.5%</td>
-                <td align="left">25.6%</td>
-                <td align="left">48.9%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Neurological Disease</td>
-                <td align="left">739</td>
-                <td align="left">23.0%</td>
-                <td align="left">45.7%</td>
-                <td align="left">31.3%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Mental Disorder</td>
-                <td align="left">848</td>
-                <td align="left">25.4%</td>
-                <td align="left">27.2%</td>
-                <td align="left">47.4%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Nervous System Disorders</td>
-                <td align="left">1,795</td>
-                <td align="left">27.0%</td>
-                <td align="left">28.1%</td>
-                <td align="left">45.0%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Cell Trait</td>
-                <td align="left">30</td>
-                <td align="left">26.7%</td>
-                <td align="left">50.0%</td>
-                <td align="left">23.3%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Total</td>
-                <td align="left">276,804</td>
-                <td align="left">25.7%</td>
-                <td align="left">55.7%</td>
-                <td align="left">18.6%</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-<div id="number-of-ingested-loci-by-trait-category-c" class="section level3">
-    <h3>Number of Ingested Loci by Trait Category (C)</h3>
 </div>
 <div id="genome-wide-phenotype-hits-with-strong-h3h4-support" class="section level3">
     <h3>Genome-wide phenotype hits with strong H3/H4 support</h3>
@@ -543,423 +166,192 @@
             Genome-wide phenotype hits with strong colocalization support by trait category
         </caption>
         <colgroup>
-            <col width="49%" />
-            <col width="9%" />
-            <col width="7%" />
-            <col width="7%" />
-            <col width="13%" />
-            <col width="13%" />
+            <col width="57%" />
+            <col width="11%" />
+            <col width="8%" />
+            <col width="8%" />
+            <col width="15%" />
         </colgroup>
         <thead>
             <tr class="header">
                 <th align="left">trait_category</th>
                 <th align="left">total_hits</th>
                 <th align="left">hits_h4</th>
-                <th align="left">hits_h3</th>
+                <th align="right">hits_h3</th>
                 <th align="left">pct_h4_support</th>
-                <th align="left">pct_h3_support</th>
             </tr>
         </thead>
         <tbody>
             <tr class="odd">
                 <td align="left">Physiological Measures</td>
-                <td align="left">156,185</td>
-                <td align="left">89,925</td>
-                <td align="left">150,437</td>
-                <td align="left">57.6%</td>
-                <td align="left">96.3%</td>
+                <td align="left">149,095</td>
+                <td align="left">88,566</td>
+                <td align="right">142694</td>
+                <td align="left">59.4%</td>
             </tr>
             <tr class="even">
                 <td align="left">Anthropometric Measures</td>
-                <td align="left">41,853</td>
-                <td align="left">22,621</td>
-                <td align="left">39,625</td>
-                <td align="left">54.0%</td>
-                <td align="left">94.7%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Circulatory System</td>
-                <td align="left">10,299</td>
-                <td align="left">4,083</td>
-                <td align="left">8,994</td>
-                <td align="left">39.6%</td>
-                <td align="left">87.3%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Behavioural Measures</td>
-                <td align="left">8,861</td>
-                <td align="left">3,377</td>
-                <td align="left">7,070</td>
-                <td align="left">38.1%</td>
-                <td align="left">79.8%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Metabolic Disease</td>
-                <td align="left">4,915</td>
-                <td align="left">2,474</td>
-                <td align="left">4,500</td>
-                <td align="left">50.3%</td>
-                <td align="left">91.6%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Digestive System</td>
-                <td align="left">8,120</td>
-                <td align="left">2,097</td>
-                <td align="left">6,727</td>
-                <td align="left">25.8%</td>
-                <td align="left">82.8%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Musculoskeletal System And Connective Tissue</td>
-                <td align="left">8,086</td>
-                <td align="left">1,883</td>
-                <td align="left">6,651</td>
-                <td align="left">23.3%</td>
-                <td align="left">82.3%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Neoplasm</td>
-                <td align="left">6,015</td>
-                <td align="left">1,683</td>
-                <td align="left">5,129</td>
-                <td align="left">28.0%</td>
-                <td align="left">85.3%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Reproductive Measures</td>
-                <td align="left">5,021</td>
-                <td align="left">1,552</td>
-                <td align="left">4,330</td>
-                <td align="left">30.9%</td>
-                <td align="left">86.2%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Skin And Subcutaneous Tissue</td>
-                <td align="left">4,617</td>
-                <td align="left">1,531</td>
-                <td align="left">4,049</td>
-                <td align="left">33.2%</td>
-                <td align="left">87.7%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Psychiatric Measures</td>
-                <td align="left">3,572</td>
-                <td align="left">1,488</td>
-                <td align="left">3,125</td>
-                <td align="left">41.7%</td>
-                <td align="left">87.5%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Genitourinary System</td>
-                <td align="left">4,616</td>
-                <td align="left">996</td>
-                <td align="left">3,756</td>
-                <td align="left">21.6%</td>
-                <td align="left">81.4%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Environmental Measures</td>
-                <td align="left">2,762</td>
-                <td align="left">834</td>
-                <td align="left">2,347</td>
-                <td align="left">30.2%</td>
-                <td align="left">85.0%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Socioeconomic Measures</td>
-                <td align="left">1,749</td>
-                <td align="left">705</td>
-                <td align="left">1,471</td>
-                <td align="left">40.3%</td>
-                <td align="left">84.1%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Eye And Adnexa</td>
-                <td align="left">2,328</td>
-                <td align="left">671</td>
-                <td align="left">1,981</td>
-                <td align="left">28.8%</td>
-                <td align="left">85.1%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Infectious Disease</td>
-                <td align="left">2,198</td>
-                <td align="left">549</td>
-                <td align="left">1,909</td>
-                <td align="left">25.0%</td>
-                <td align="left">86.9%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Nervous System Disorders</td>
-                <td align="left">1,795</td>
-                <td align="left">449</td>
-                <td align="left">1,467</td>
-                <td align="left">25.0%</td>
-                <td align="left">81.7%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Disease Of Ear And Mastoid Process</td>
-                <td align="left">1,067</td>
-                <td align="left">367</td>
-                <td align="left">955</td>
-                <td align="left">34.4%</td>
-                <td align="left">89.5%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Blood And Blood-Forming Organs</td>
-                <td align="left">1,128</td>
-                <td align="left">325</td>
-                <td align="left">991</td>
-                <td align="left">28.8%</td>
-                <td align="left">87.9%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Neurological Disease</td>
-                <td align="left">739</td>
-                <td align="left">319</td>
-                <td align="left">654</td>
-                <td align="left">43.2%</td>
-                <td align="left">88.5%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Mental Disorder</td>
-                <td align="left">848</td>
-                <td align="left">219</td>
-                <td align="left">719</td>
-                <td align="left">25.8%</td>
-                <td align="left">84.8%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Cell Trait</td>
-                <td align="left">30</td>
-                <td align="left">13</td>
-                <td align="left">30</td>
-                <td align="left">43.3%</td>
-                <td align="left">100.0%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Total</td>
-                <td align="left">276,804</td>
-                <td align="left">138,161</td>
-                <td align="left">256,917</td>
-                <td align="left">49.9%</td>
-                <td align="left">92.8%</td>
-            </tr>
-        </tbody>
-    </table>
-    <table>
-        <caption>
-            Genome-wide phenotype hits with any H3/H4 support (full threshold) by trait category
-        </caption>
-        <colgroup>
-            <col width="49%" />
-            <col width="9%" />
-            <col width="7%" />
-            <col width="7%" />
-            <col width="13%" />
-            <col width="13%" />
-        </colgroup>
-        <thead>
-            <tr class="header">
-                <th align="left">trait_category</th>
-                <th align="left">total_hits</th>
-                <th align="left">hits_h4</th>
-                <th align="left">hits_h3</th>
-                <th align="left">pct_h4_support</th>
-                <th align="left">pct_h3_support</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="odd">
-                <td align="left">Physiological Measures</td>
-                <td align="left">156,185</td>
-                <td align="left">118,071</td>
-                <td align="left">151,985</td>
-                <td align="left">75.6%</td>
-                <td align="left">97.3%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Anthropometric Measures</td>
-                <td align="left">41,853</td>
-                <td align="left">29,672</td>
-                <td align="left">40,462</td>
-                <td align="left">70.9%</td>
-                <td align="left">96.7%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Disease Of Circulatory System</td>
-                <td align="left">10,299</td>
-                <td align="left">6,103</td>
-                <td align="left">9,168</td>
-                <td align="left">59.3%</td>
-                <td align="left">89.0%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Behavioural Measures</td>
-                <td align="left">8,861</td>
-                <td align="left">4,802</td>
-                <td align="left">7,358</td>
+                <td align="left">41,620</td>
+                <td align="left">22,571</td>
+                <td align="right">39167</td>
                 <td align="left">54.2%</td>
-                <td align="left">83.0%</td>
             </tr>
             <tr class="odd">
-                <td align="left">Disease Of Digestive System</td>
-                <td align="left">8,120</td>
-                <td align="left">3,941</td>
-                <td align="left">6,919</td>
-                <td align="left">48.5%</td>
-                <td align="left">85.2%</td>
+                <td align="left">Disease Of Circulatory System</td>
+                <td align="left">7,023</td>
+                <td align="left">3,363</td>
+                <td align="right">5645</td>
+                <td align="left">47.9%</td>
             </tr>
             <tr class="even">
-                <td align="left">Disease Of Musculoskeletal System And Connective Tissue</td>
-                <td align="left">8,086</td>
-                <td align="left">3,682</td>
-                <td align="left">6,828</td>
-                <td align="left">45.5%</td>
-                <td align="left">84.4%</td>
+                <td align="left">Behavioural Measures</td>
+                <td align="left">6,774</td>
+                <td align="left">2,566</td>
+                <td align="right">4774</td>
+                <td align="left">37.9%</td>
             </tr>
             <tr class="odd">
                 <td align="left">Metabolic Disease</td>
-                <td align="left">4,915</td>
-                <td align="left">3,456</td>
-                <td align="left">4,546</td>
-                <td align="left">70.3%</td>
-                <td align="left">92.5%</td>
+                <td align="left">4,047</td>
+                <td align="left">2,258</td>
+                <td align="right">3575</td>
+                <td align="left">55.8%</td>
             </tr>
             <tr class="even">
-                <td align="left">Neoplasm</td>
-                <td align="left">6,015</td>
-                <td align="left">3,017</td>
-                <td align="left">5,265</td>
-                <td align="left">50.2%</td>
-                <td align="left">87.5%</td>
+                <td align="left">Psychiatric Measures</td>
+                <td align="left">3,122</td>
+                <td align="left">1,462</td>
+                <td align="right">2641</td>
+                <td align="left">46.8%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">Disease Of Skin And Subcutaneous Tissue</td>
+                <td align="left">3,218</td>
+                <td align="left">1,342</td>
+                <td align="right">2653</td>
+                <td align="left">41.7%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">Disease Of Digestive System</td>
+                <td align="left">3,793</td>
+                <td align="left">1,192</td>
+                <td align="right">2406</td>
+                <td align="left">31.4%</td>
             </tr>
             <tr class="odd">
                 <td align="left">Reproductive Measures</td>
-                <td align="left">5,021</td>
-                <td align="left">2,649</td>
-                <td align="left">4,465</td>
-                <td align="left">52.8%</td>
-                <td align="left">88.9%</td>
+                <td align="left">2,743</td>
+                <td align="left">1,121</td>
+                <td align="right">2088</td>
+                <td align="left">40.9%</td>
             </tr>
             <tr class="even">
-                <td align="left">Disease Of Skin And Subcutaneous Tissue</td>
-                <td align="left">4,617</td>
-                <td align="left">2,525</td>
-                <td align="left">4,167</td>
-                <td align="left">54.7%</td>
-                <td align="left">90.3%</td>
+                <td align="left">Neoplasm</td>
+                <td align="left">3,040</td>
+                <td align="left">1,068</td>
+                <td align="right">2202</td>
+                <td align="left">35.1%</td>
             </tr>
             <tr class="odd">
-                <td align="left">Psychiatric Measures</td>
-                <td align="left">3,572</td>
-                <td align="left">2,077</td>
-                <td align="left">3,246</td>
-                <td align="left">58.1%</td>
-                <td align="left">90.9%</td>
+                <td align="left">Disease Of Musculoskeletal System And Connective Tissue</td>
+                <td align="left">3,466</td>
+                <td align="left">910</td>
+                <td align="right">2038</td>
+                <td align="left">26.3%</td>
             </tr>
             <tr class="even">
-                <td align="left">Disease Of Genitourinary System</td>
-                <td align="left">4,616</td>
-                <td align="left">2,063</td>
-                <td align="left">3,878</td>
-                <td align="left">44.7%</td>
-                <td align="left">84.0%</td>
-            </tr>
-            <tr class="odd">
                 <td align="left">Environmental Measures</td>
-                <td align="left">2,762</td>
-                <td align="left">1,411</td>
-                <td align="left">2,408</td>
-                <td align="left">51.1%</td>
-                <td align="left">87.2%</td>
+                <td align="left">2,267</td>
+                <td align="left">730</td>
+                <td align="right">1803</td>
+                <td align="left">32.2%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">Socioeconomic Measures</td>
+                <td align="left">1,571</td>
+                <td align="left">674</td>
+                <td align="right">1290</td>
+                <td align="left">42.9%</td>
             </tr>
             <tr class="even">
                 <td align="left">Disease Of Eye And Adnexa</td>
-                <td align="left">2,328</td>
-                <td align="left">1,165</td>
-                <td align="left">2,033</td>
-                <td align="left">50.0%</td>
-                <td align="left">87.3%</td>
+                <td align="left">1,490</td>
+                <td align="left">543</td>
+                <td align="right">1105</td>
+                <td align="left">36.4%</td>
             </tr>
             <tr class="odd">
-                <td align="left">Infectious Disease</td>
-                <td align="left">2,198</td>
-                <td align="left">1,113</td>
-                <td align="left">1,956</td>
-                <td align="left">50.6%</td>
-                <td align="left">89.0%</td>
+                <td align="left">Disease Of Genitourinary System</td>
+                <td align="left">1,786</td>
+                <td align="left">403</td>
+                <td align="right">956</td>
+                <td align="left">22.6%</td>
             </tr>
             <tr class="even">
-                <td align="left">Socioeconomic Measures</td>
-                <td align="left">1,749</td>
-                <td align="left">976</td>
-                <td align="left">1,556</td>
-                <td align="left">55.8%</td>
-                <td align="left">89.0%</td>
+                <td align="left">Infectious Disease</td>
+                <td align="left">951</td>
+                <td align="left">323</td>
+                <td align="right">661</td>
+                <td align="left">34.0%</td>
             </tr>
             <tr class="odd">
-                <td align="left">Nervous System Disorders</td>
-                <td align="left">1,795</td>
-                <td align="left">868</td>
-                <td align="left">1,509</td>
-                <td align="left">48.4%</td>
-                <td align="left">84.1%</td>
+                <td align="left">Neurological Disease</td>
+                <td align="left">551</td>
+                <td align="left">286</td>
+                <td align="right">450</td>
+                <td align="left">51.9%</td>
             </tr>
             <tr class="even">
                 <td align="left">Disease Of Ear And Mastoid Process</td>
-                <td align="left">1,067</td>
-                <td align="left">597</td>
-                <td align="left">978</td>
-                <td align="left">56.0%</td>
-                <td align="left">91.7%</td>
+                <td align="left">560</td>
+                <td align="left">261</td>
+                <td align="right">455</td>
+                <td align="left">46.6%</td>
+            </tr>
+            <tr class="odd">
+                <td align="left">Nervous System Disorders</td>
+                <td align="left">787</td>
+                <td align="left">213</td>
+                <td align="right">438</td>
+                <td align="left">27.1%</td>
+            </tr>
+            <tr class="even">
+                <td align="left">Mental Disorder</td>
+                <td align="left">329</td>
+                <td align="left">87</td>
+                <td align="right">205</td>
+                <td align="left">26.4%</td>
             </tr>
             <tr class="odd">
                 <td align="left">Disease Of Blood And Blood-Forming Organs</td>
-                <td align="left">1,128</td>
-                <td align="left">582</td>
-                <td align="left">1,022</td>
-                <td align="left">51.6%</td>
-                <td align="left">90.6%</td>
-            </tr>
-            <tr class="even">
-                <td align="left">Neurological Disease</td>
-                <td align="left">739</td>
-                <td align="left">472</td>
-                <td align="left">671</td>
-                <td align="left">63.9%</td>
-                <td align="left">90.8%</td>
-            </tr>
-            <tr class="odd">
-                <td align="left">Mental Disorder</td>
-                <td align="left">848</td>
-                <td align="left">434</td>
-                <td align="left">738</td>
-                <td align="left">51.2%</td>
-                <td align="left">87.0%</td>
+                <td align="left">305</td>
+                <td align="left">79</td>
+                <td align="right">182</td>
+                <td align="left">25.9%</td>
             </tr>
             <tr class="even">
                 <td align="left">Cell Trait</td>
                 <td align="left">30</td>
-                <td align="left">18</td>
-                <td align="left">30</td>
-                <td align="left">60.0%</td>
-                <td align="left">100.0%</td>
+                <td align="left">12</td>
+                <td align="right">30</td>
+                <td align="left">40.0%</td>
             </tr>
             <tr class="odd">
                 <td align="left">Total</td>
-                <td align="left">276,804</td>
-                <td align="left">189,694</td>
-                <td align="left">261,188</td>
-                <td align="left">68.5%</td>
-                <td align="left">94.4%</td>
+                <td align="left">238,568</td>
+                <td align="left">130,030</td>
+                <td align="right">NA</td>
+                <td align="left">54.5%</td>
             </tr>
         </tbody>
     </table>
-</div>
-<div id="matrix-of-coloc-results-by-data-type-and-by-cis-trans" class="section level2">
-    <h2>Matrix of coloc results by data type and by cis-trans:</h2>
-</div>
-<div id="number-of-coloc-pairs-by-h4-threshold-across-all-studies" class="section level2">
-    <h2>Number of coloc pairs by h4 threshold (across all studies)</h2>
+    <!-- ### Proximal pairs (≤ 1 kb): H3 vs H4 by pair type
+
+Restricting to colocalization pairs where the two study extractions are on the same chromosome and within 1 kilobase of each other.
+Broken down into QTL-QTL, QTL-Trait, and Trait-Trait pair types. -->
+    <!-- ### Proximal H3 vs H4 rates by trait category (≤1 kb)
+
+For proximal QTL-Trait pairs only: what percentage of phenotype GWAS hits have H4 (shared signal) vs. H3 (distinct signals) molecular support? -->
+    <!-- ## Matrix of coloc results by data type and by cis-trans: -->
+    <!-- ## Number of coloc pairs by h4 threshold (across all studies) -->
 </div>
