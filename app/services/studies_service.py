@@ -14,9 +14,12 @@ from app.models.schemas import (
 )
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
-from typing import List
+from typing import Callable, List, TypeVar
 from app.logging_config import get_logger
+
 from app.services.redis_decorator import redis_cache
+
+T = TypeVar("T")
 
 logger = get_logger(__name__)
 
@@ -27,6 +30,18 @@ class StudiesService(metaclass=Singleton):
     def __init__(self):
         self.db = StudiesDBClient()
         self.redis_client = RedisClient()
+
+    @staticmethod
+    def deduplicate_by_key(items: List[T], key_fn: Callable[[T], object]) -> List[T]:
+        """Deduplicate items by key, preserving first occurrence order."""
+        seen = {}
+        result = []
+        for item in items:
+            key = key_fn(item)
+            if key not in seen:
+                seen[key] = True
+                result.append(item)
+        return result
 
     @redis_cache(prefix=studies_db_cache_prefix, model_class=SearchTerms)
     def get_search_terms(self) -> SearchTerms:

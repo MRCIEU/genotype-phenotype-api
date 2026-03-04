@@ -137,9 +137,31 @@
                     </div>
 
                     <div class="column is-7">
-                        <h4 x-show="data && data.coloc_groups.length === 0" class="title is-3 has-text-centered">
+                        <h4
+                            x-show="data && data.coloc_groups.length === 0 && !hasLdProxyVariantsToShow()"
+                            class="title is-3 has-text-centered"
+                        >
                             No colocalization information to display for this variant.
                         </h4>
+                        <div
+                            x-show="hasLdProxyVariantsToShow()"
+                            class="notification is-info is-light has-text-centered"
+                        >
+                            <p class="title is-4 mb-3">No colocalization for this variant</p>
+                            <p class="mb-3">
+                                This variant has no colocalization or rare variant results, but the following variants
+                                in high LD (r² ≥ 0.9) do have results:
+                            </p>
+                            <div class="tags are-medium is-centered">
+                                <template x-for="proxy in data.ld_proxy_variants" :key="proxy.id">
+                                    <a
+                                        :href="`variant.html?id=${proxy.id}`"
+                                        class="tag is-info is-light"
+                                        x-text="proxy.display_snp || proxy.rsid || proxy.snp || 'Variant ' + proxy.id"
+                                    ></a>
+                                </template>
+                            </div>
+                        </div>
                         <div x-model="initGraphClusterDiagram" id="graph-cluster-diagram"></div>
                         <div id="snp-manhattan" x-data="snpManhattan" x-init="loadData">
                             <div

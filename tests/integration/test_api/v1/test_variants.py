@@ -15,7 +15,7 @@ client = TestClient(app)
 
 def test_get_variants_by_variants(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}")
+    response = client.get(f"/v1/variants?variants={snp_ids[0]}")
     assert response.status_code == 200
     data = response.json()
     variants = data["variants"]
@@ -36,11 +36,33 @@ def test_get_variants_by_variants(variants_in_studies_db):
 
 def test_get_variants_by_rsids(variants_in_studies_db):
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
-    response = client.get(f"/v1/variants?rsids={rsids[0]}&rsids={rsids[1]}")
+    response = client.get(f"/v1/variants?variants={rsids[0]}&variants={rsids[1]}")
     assert response.status_code == 200
     data = response.json()
     variants = data["variants"]
     assert len(variants) > 0
+    for row in variants:
+        variant_model = Variant(**row)
+        assert variant_model.id is not None
+        assert variant_model.snp is not None
+        assert variant_model.display_snp is not None
+        assert variant_model.chr is not None
+        assert variant_model.bp is not None
+        assert variant_model.ea is not None
+        assert variant_model.oa is not None
+        assert variant_model.ref_allele is not None
+        assert variant_model.associations is None
+
+
+def test_get_variants_mixed_snp_id_and_rsid(variants_in_studies_db):
+    """Variants param auto-detects snp_ids vs rsids - mixed list works."""
+    snp_ids = list(variants_in_studies_db.keys())
+    rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
+    response = client.get(f"/v1/variants?variants={snp_ids[0]}&variants={rsids[1]}")
+    assert response.status_code == 200
+    data = response.json()
+    variants = data["variants"]
+    assert len(variants) >= 1
     for row in variants:
         variant_model = Variant(**row)
         assert variant_model.id is not None
@@ -82,7 +104,7 @@ def test_get_variants_expand_not_allowed_with_grange(variants_in_grange):
 
 def test_get_variants_expand_with_associations(variants_in_studies_db):
     snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants?snp_ids={snp_ids[0]}&expand=true&include_associations=true")
+    response = client.get(f"/v1/variants?variants={snp_ids[0]}&expand=true&include_associations=true")
     assert response.status_code == 200
     data = response.json()
     variants_response = GetVariantsResponse(**data)
@@ -108,6 +130,7 @@ def test_get_variant_by_id(variants_in_studies_db):
     variant_response = VariantResponse(**variant)
     assert variant_response.variant is not None
     assert variant_response.coloc_groups is not None
+    assert variant_response.ld_proxy_variants is None
 
     for coloc in variant_response.coloc_groups:
         assert isinstance(coloc, ExtendedColocGroup)
@@ -118,6 +141,35 @@ def test_get_variant_by_id(variants_in_studies_db):
         assert coloc.min_p is not None
         if coloc.association is not None:
             assert isinstance(coloc.association, dict)
+
+
+def test_get_variant_by_rsid(variants_in_studies_db):
+    """get_variant accepts rsid (auto-detected like get_variants)."""
+    for snp_id, data in variants_in_studies_db.items():
+        rsid = data.get("rsid")
+        if rsid:
+            response = client.get(f"/v1/variants/{rsid}")
+            assert response.status_code == 200
+            variant_response = VariantResponse(**response.json())
+            assert variant_response.variant is not None
+            assert variant_response.variant.id == int(snp_id)
+            return
+
+
+def test_get_variant_by_id_with_ld_proxy_fallback(variants_in_studies_db):
+    """When variant has no coloc/rare, returns ld_proxy_variants (variants in high LD with results)."""
+    snp_id_no_results = list(variants_in_studies_db.keys())[1]
+    response = client.get(f"/v1/variants/{snp_id_no_results}?rsquared_threshold=0.9")
+    assert response.status_code == 200
+    data = response.json()
+    variant_response = VariantResponse(**data)
+    assert variant_response.variant is not None
+    assert variant_response.variant.id == int(snp_id_no_results)
+    print(variant_response.ld_proxy_variants)
+    assert variant_response.ld_proxy_variants is not None
+    for proxy_variant in variant_response.ld_proxy_variants:
+        assert isinstance(proxy_variant, Variant)
+        assert proxy_variant.id is not None
 
 
 def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):

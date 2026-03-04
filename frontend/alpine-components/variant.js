@@ -95,10 +95,16 @@ export default function variant() {
                 snpGraphStore.colocs = this.data.coloc_groups;
                 snpGraphStore.variant = this.data.variant;
 
-                const ld_block = this.data.coloc_groups[0].ld_block;
-                const ld_info = ld_block.split(/[/-]/);
-                this.data.variant.min_bp = ld_info[2];
-                this.data.variant.max_bp = ld_info[3];
+                if (this.data.coloc_groups?.length > 0 && this.data.coloc_groups[0].ld_block) {
+                    const ld_block = this.data.coloc_groups[0].ld_block;
+                    const ld_info = ld_block.split(/[/-]/);
+                    this.data.variant.min_bp = ld_info[2];
+                    this.data.variant.max_bp = ld_info[3];
+                } else if (this.data.variant.bp != null) {
+                    const windowBp = 500000;
+                    this.data.variant.min_bp = this.data.variant.bp - windowBp;
+                    this.data.variant.max_bp = this.data.variant.bp + windowBp;
+                }
             } catch (error) {
                 console.error("Error loading data:", error);
             }
@@ -106,6 +112,14 @@ export default function variant() {
 
         getSNPName() {
             return this.data ? this.data.variant.rsid.split(",")[0] : "...";
+        },
+
+        hasLdProxyVariantsToShow() {
+            if (!this.data) return false;
+            const noColoc = !this.data.coloc_groups || this.data.coloc_groups.length === 0;
+            const noRare = !this.data.rare_results || this.data.rare_results.length === 0;
+            const hasProxies = this.data.ld_proxy_variants && this.data.ld_proxy_variants.length > 0;
+            return noColoc && noRare && hasProxies;
         },
 
         getVariantData() {

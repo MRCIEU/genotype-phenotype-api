@@ -18,8 +18,8 @@ settings = get_settings()
 
 class GwasDBClient:
     @retry(
-        stop=stop_after_attempt(5),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
+        stop=stop_after_attempt(10),
+        wait=wait_exponential(multiplier=1, min=4, max=20),
         reraise=True,
     )
     def connect(self) -> duckdb.DuckDBPyConnection:

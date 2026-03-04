@@ -7,7 +7,7 @@
         <title>GPMap: About</title>
         <meta
             name="description"
-            content="Learn about the Genotype-Phenotype Map, its data processing pipeline, and the team behind it."
+            content="The Human Genotype-Phenotype Map (GPMap) bridges GWAS discovery and functional follow-up through fine-mapping and colocalization across thousands of traits and molecular layers."
         />
 
         <!-- Open Graph / Facebook -->
@@ -16,7 +16,7 @@
         <meta property="og:title" content="GPMap: About" />
         <meta
             property="og:description"
-            content="Learn about the Genotype-Phenotype Map, its data processing pipeline, and the team behind it."
+            content="The Human Genotype-Phenotype Map (GPMap) bridges GWAS discovery and functional follow-up through fine-mapping and colocalization across thousands of traits and molecular layers."
         />
         <meta property="og:image" content="https://gpmap.opengwas.io/assets/images/logo.png" />
 
@@ -26,7 +26,7 @@
         <meta property="twitter:title" content="GPMap: About" />
         <meta
             property="twitter:description"
-            content="Learn about the Genotype-Phenotype Map, its data processing pipeline, and the team behind it."
+            content="The Human Genotype-Phenotype Map (GPMap) bridges GWAS discovery and functional follow-up through fine-mapping and colocalization across thousands of traits and molecular layers."
         />
         <meta property="twitter:image" content="https://gpmap.opengwas.io/assets/images/logo.png" />
         <script type="module" src="/main.js"></script>
@@ -48,9 +48,74 @@
                 <navigation-bar></navigation-bar>
 
                 <div class="content columns mt-2 is-centered">
-                    <div class="column is-11">
-                        <h1>About</h1>
-                        <p>The Genotype-Phenotype Map is comprised of 3 distinct efforts</p>
+                    <div class="column is-8">
+                        <h1>About the Genotype-Phenotype Map (GPMap)</h1>
+                        <p>
+                            Developed at the
+                            <a href="https://www.bristol.ac.uk/integrative-epidemiology/"
+                                >MRC Integrative Epidemiology Unit (IEU)</a
+                            >
+                            at the University of Bristol, The Human Genotype-Phenotype Map (GPMap) is an integrated
+                            discovery engine designed to bridge the gap between GWAS discovery and functional follow-up.
+                            While standard browsers identify genes in proximity to lead SNPs, the GPMap uses rigorous
+                            fine-mapping and colocalization to identify causal links between thousands of complex traits
+                            and molecular layers (eQTL, pQTL, sQTL, and methQTL).
+                        </p>
+                        <p>
+                            For licensing, privacy, and service terms, please see our
+                            <a href="terms.html">Terms of Use</a>.
+                        </p>
+                        <div class="columns mt-6 is-centered">
+                            <img :src="pipeline" class="pipeline" width="900" alt="Data Processing Diagram" />
+                        </div>
+
+                        <h2>Core Capabilities</h2>
+                        <ul>
+                            <li>
+                                <b>Causal Locus Resolution:</b> Transition from "nearest gene" heuristics to empirical
+                                evidence. By scanning Colocalization Groups (CGs), you can identify the specific
+                                phenotypes and molecular mechanisms sharing a genetic architecture at a single locus.
+                            </li>
+                            <li>
+                                <b>Systemic Pleiotropy &amp; Comorbidity:</b> Instantly visualize "pleiotropic
+                                neighbors." The GPMap allows you to deconvolve whether a variant affects multiple traits
+                                independently (horizontal pleiotropy) or acts through a molecular mediator like a
+                                protein (vertical pleiotropy).
+                            </li>
+                            <li>
+                                <b>Precision MR Instruments:</b> Streamline Mendelian Randomization by selecting
+                                instruments backed by high colocalization posterior probabilities (H4&gt;0.8). This
+                                minimizes "LD-contamination" and ensures your IVs are functionally relevant.
+                            </li>
+                            <li>
+                                <b>User-Led Extensibility:</b> Beyond our library of 4,500+ traits, you can upload your
+                                own GWAS summary statistics. The platform will automatically run fine-mapping and
+                                colocalization against our entire multi-omic database to identify supported mechanisms
+                                for your novel hits.
+                            </li>
+                        </ul>
+
+                        <h2>Accessing the Map</h2>
+                        <p>
+                            The GPMap is an open-access resource available via our web interface or the
+                            <a href="https://github.com/MRCIEU/gpmapr">gpmapr</a> R package for programmatic analysis.
+                        </p>
+
+                        <h2>Quick Start with gpmapr</h2>
+                        <pre><code># Install the package
+devtools::install_github('MRCIEU/gpmapr')
+
+# Search for traits, genes, or variants
+gpmapr::search_gpmapr('Haemoglobin')
+
+# Retrieve high-resolution data for a specific target
+gpmapr::gene('TREM2')
+
+# Project your own results against the map
+gpmapr::upload_gwas(file = 'my_gwas.tsv.gz', name = 'Discovery Study', ...)</code></pre>
+
+                        <h2>Project Components</h2>
+                        <p>The Genotype-Phenotype Map is comprised of 3 distinct efforts:</p>
                         <ul>
                             <li>
                                 <a href="https://github.com/MRCIEU/genotype-phenotype-map"
@@ -62,66 +127,152 @@
                         </ul>
 
                         <h2>Nomenclature</h2>
-                        <p>We have defined these words as follows:</p>
+                        <p>We have defined these terms as follows:</p>
                         <ul>
-                            <li><b>Study</b>: Summary statistics related to a single trait or QTL measurement.</li>
                             <li>
-                                <b>Trait</b>: A collection of studies that are related to a single measurement. For
-                                example, a trait may have a rare variant study and a common variant study associated
-                                with it.
-                            </li>
-                            <li>
-                                <b>Trait Category</b>: A manually curated map between a phenotypic trait and a higher
-                                level category. For example, "Height" would be mapped to "Anthropometric".
-                            </li>
-                            <li>
-                                <b>Study Extraction</b>: A finemapped subset of a study that has a p-value below the
-                                cutoff of 1.5e-4 associated with it.
-                            </li>
-                            <li>
-                                <b>LD Block / Region</b>: A region of the genome that has been segmented into smaller
-                                regions based on LD (using LDetect).
-                            </li>
-                            <li>
-                                <b>Colocalization</b>: A statistical test that determines if a SNP is associated with a
-                                trait.
+                                <b>Traits</b>: A trait denotes the outcome variable assessed in any of the GWAS from
+                                which we have taken summary statistics for the GPMap. The trait names remain as defined
+                                in the original study. Other commonly used names for trait might be 'phenotype' or
+                                'study'.
                                 <ul>
-                                    <li><b>Coloc Pair</b>: A pair of SNPs that are associated with a trait.</li>
                                     <li>
-                                        <b>Coloc Group</b>: A group of SNPs that are clustered based on coloc pairs.
+                                        <b>Complex Trait</b>: represent polygenic organismal phenotypes and clinical
+                                        disease states. All complex traits that have genome wide associations with them.
                                     </li>
                                     <li>
-                                        <b>Strong Coloc</b>: A coloc group that includes coloc pairs with a posterior
-                                        probability greater than 0.8.
+                                        <b>Molecular Trait</b>: representing discrete cellular processes such as mRNA
+                                        expression or protein abundance. Molecular traits do not typically have genome
+                                        wide data associated with them, but rather have significant cis (and sometimes
+                                        trans) signals extracted in specific genomic regions, and are associated with a
+                                        gene and tissue.
                                     </li>
                                     <li>
-                                        <b>Moderate Coloc</b>: A coloc group that includes coloc pairs with a posterior
-                                        probability greater than 0.6.
+                                        <b>Trait Category</b>: Traits were categorized into 23 categories. This was
+                                        achieved by generating a prompt for OpenAI model gpt-5-nano for each complex
+                                        trait analyzed (excluding molecular phenotypes) requesting the best matching
+                                        category for each trait name along with a confidence score for the match. Trait
+                                        to category mapping was manually inspected. A number of traits had a low
+                                        category match confidence score but were retained for completeness. Some traits
+                                        were too broad and therefore were manually set to undefined
+                                    </li>
+                                    <li>
+                                        A third category of trait, which falls in between these, are ultra-specific
+                                        measurements which have genome-wide associations, as opposed to cis- and trans-
+                                        windows. These have been denoted as 'Cell Traits' (e.g. 'IgD- CD27- B cell %B
+                                        cell') and 'Targeted Protein Measure' (e.g. 'VDBP plasma levels') are neither
+                                        considered a complex trait nor a molecular trait.
                                     </li>
                                 </ul>
                             </li>
                             <li>
-                                <b>Rare Variant Analysis</b>: A statistical test that determines if a SNP is associated
-                                with a trait.
+                                <b>Pleiotropy score</b>: There are two pleiotropy scores calculated on both the variant
+                                and gene level. The first is the number of distinct trait categories, and the second is
+                                the number of distinct protein coding genes, that fall in colocalization groups tagged
+                                by the variant (variant level) or containing gene-specific QTLs (gene level). Rare
+                                variant results are not included in the calculation.
                             </li>
                             <li>
-                                <b>Association</b>: A statistical test that determines if a SNP is associated with a
-                                trait.
+                                <b>Coverage</b>: dense vs. sparse. Summary statistics that only published results of
+                                SNPs that reached a specific p-value threshold are considered sparsely populated, all
+                                others are considered densely populated. Sparsely populated summary statistics had their
+                                missing values 0-padded and both imputation and fine-mapping steps were skipped.
+                            </li>
+                            <li>
+                                <b>Cell Type</b>: Some QTLs were derived from 'single cell' expression assays which
+                                derive gene expression measurements from specific cell subsets following single-cell
+                                transcriptional profiling. A list of cell types currently in the map are in
+                                Supplementary Table 11.
+                            </li>
+                            <li>
+                                <b>Gene Annotation</b>: There are two different types of gene annotation that occur for
+                                QTLs, 'gene' and 'situated gene'. 'Gene' refers to the gene that was assayed and is
+                                annotated by the QTL resource itself (e.g. GTEx gene expression of TREML2 in blood is
+                                annotated as 'TREML2'). 'Situated gene' is currently only applicable for rare variants
+                                studies conducted using whole-exome sequencing data and denotes the gene in which the
+                                variant is physically situated. Common variant QTL studies have a 'Gene', most rare
+                                variant phenotypic studies have a 'Situated Gene', and rare variant QTL studies have
+                                both a 'Gene' and a 'Situated Gene', which may differ. Genes have been assigned to
+                                methQTLs based on the proximity of the assayed CpG site to a gene. These were taken from
+                                the Illumina Methylation EPICv2 manifest(1), tagging CpGs by their proximity to gene
+                                bodies and promoter regions.
+                            </li>
+                            <li>
+                                <b>Colocalization definitions</b>:
+                                <ul>
+                                    <li>
+                                        <b>Colocalizing Pair</b>: A colocalization pair is a single colocalization test
+                                        run between two traits using coloc(2). Two traits are considered to be a pair if
+                                        H4 ≥ 0.8.
+                                    </li>
+                                    <li>
+                                        <b>Colocalization Group</b>: A set of traits that have been grouped together by
+                                        a graph-based clustering and pruning methods from the results of pairwise
+                                        colocalization analysis. A detailed explanation of the clustering and pruning
+                                        methods can be found in Supplementary Notes 2-3.
+                                    </li>
+                                    <li>
+                                        <b>Group Connectedness Percentage</b>: The connectedness of the colocalization
+                                        group is calculated as the total count of the H4≥0.8 across all colocalization
+                                        pairs (edges) in the group, divided by the total number of possible edges in the
+                                        colocalization group with n nodes, n(n-1)/2. A higher connectedness means that
+                                        the colocalization group is more strongly connected.
+                                    </li>
+                                    <li>
+                                        <b>Candidate Variant</b>: Each colocalization group is assigned a SNP. The SNP
+                                        is chosen as the variant with the highest cumulative sum of the log bayes factor
+                                        (LBF), calculated by SuSiE(3), across every trait in the colocalization group.
+                                        In some situations, the candidate variant may not be the variant with the
+                                        highest LBF for a given study in the colocalization group, or, if the variant
+                                        was not genotyped or imputed for that study, may be missing. This variant should
+                                        not be interpreted as the causal variant for traits in the group, it is instead
+                                        tagging a shared colocalizing signal in the region.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <b>P-value thresholds</b>:
+                                <ul>
+                                    <li>
+                                        <b>Genome wide significance (GWS)</b>: We utilize the standard European
+                                        genome-wide significant p-value threshold of 5e-8 for most calculations in the
+                                        results.
+                                    </li>
+                                    <li>
+                                        <b>Suggestive Significance</b>: We have extracted and analyzed all loci above a
+                                        'suggestive significance' of 1.5e-4. As there are approximately 1 million
+                                        independent loci across the genome (0.05 / 1m = 5e-8), across 3 billion base
+                                        pairs. Meaning there are approximately 333 independent regions across every 1Mb,
+                                        0.05/333 ~= 1.5e-4. For the resource, both colocalization group and
+                                        colocalization pair data is available. Users should be aware of their own
+                                        p-value threshold for multiple testing correction.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <b>Cis and Trans</b>: For common variant QTLs, the cis window includes any finemapped
+                                loci within ±1 Mb of the SNP tagging the QTL, and trans is defined as any region outside
+                                of that window. For rare QTLs, any SNP falling directly within the gene that was assayed
+                                is considered cis (i.e. the 'gene' and the 'situated gene' match). If this is not the
+                                case, the variant is considered to be a trans signal for the assayed gene measure.
                             </li>
                         </ul>
-                        <h2>Data Processing Pipeline</h2>
-                        <div class="columns mt-6 is-centered">
-                            <img :src="pipeline" class="pipeline" width="400" alt="Data Processing Diagram" />
-                        </div>
 
                         <h2>Acknowledgements</h2>
-                        <p>
-                            Lorem ipsum<sup><a>[1]</a></sup> dolor sit amet, consectetur adipiscing elit. Nulla
-                            accumsan, metus ultrices eleifend gravida, nulla nunc varius lectus, nec rutrum justo nibh
-                            eu lectus. Ut vulputate semper dui. Fusce erat odio, sollicitudin vel erat vel, interdum
-                            mattis neque. Sub<sub>script</sub>
-                            works as well!
-                        </p>
+                        <div class="column">
+                            <p>
+                                We express our sincere gratitude to the research participants and the investigators of
+                                the various studies and consortia whose data contributed to the development of the
+                                GPMap. This work would not have been possible without the altruistic contribution of
+                                hundreds of thousands of individuals to genetic research.
+                            </p>
+                            <p>
+                                We specifically acknowledge the following biobanks and consortia for providing the GWAS
+                                summary statistics and functional genomic data: UK Biobank, The GTEx Consortium,
+                                FinnGen, and the NHGRI-EBI GWAS Catalog. We also thank the IEU OpenGWAS project for
+                                providing the computational infrastructure and data standardization that facilitated
+                                this large-scale integration.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
