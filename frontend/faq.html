@@ -45,9 +45,9 @@
     <body>
         <navigation-bar></navigation-bar>
         <div class="content columns mt-2 is-centered">
-            <div x-data="faq" class="column is-11">
+            <div x-data="faq" class="column is-8">
                 <h1>FAQ</h1>
-                <h2 id="r-package-view">R Package</h2>
+                <h2 id="r-package-view">How do I use the R package?</h2>
 
                 <p>
                     <a href="https://github.com/MRCIEU/gpmapr">The R package</a> is used to download the data from the
@@ -55,19 +55,38 @@
                 </p>
                 <ul>
                     <li>
-                        <b>Installation and Usage</b><br />
-                        <code
-                            >devtools::install_github('MRCIEU/gpmapr')<br />library(gpmapr)<br />search_gpmapr('haemoglobin')</code
-                        >
+                        <b>Installation and usage</b>:
+                        <pre><code>devtools::install_github('MRCIEU/gpmapr')
+library(gpmapr)
+search_gpmapr('haemoglobin')</code></pre>
                     </li>
                     <li>
                         <b>Usage</b>: There are a series of vignettes available.
                         <a href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
-                            >Please start with the intorudctory vignette.</a
+                            >Please start with the introductory vignette.</a
                         >
                     </li>
                 </ul>
-                <h2 id="gwas-upload-pipeline-view">GWAS Upload Pipeline</h2>
+                <h2 id="upload-data-view">How do I upload my own data?</h2>
+                <p>
+                    You can upload your own GWAS summary statistics to run colocalization and rare variant analysis
+                    against the GPMap database.
+                    <li>
+                        Use the <a href="index.html?showUpload=true">Upload GWAS for Comparison</a> form on the
+                        homepage.
+                    </li>
+                    <li>
+                        Use the <a href="https://github.com/MRCIEU/gpmapr">gpmapr</a> R package:
+                        <pre><code>gpmapr::upload_gwas(
+  file = 'gwas.tsv.gz',
+  name = 'My new GWAS',
+  email = 'me@example.com',
+  column_names = list(...),
+  ...
+)</code></pre>
+                    </li>
+                </p>
+                <h2 id="gwas-upload-pipeline-view">How does the GWAS upload pipeline work?</h2>
                 <img :src="gwasUploadPipeline" alt="GWAS Upload Pipeline" />
                 <p>
                     The GWAS upload pipeline is a process that allows you to upload a GWAS and perform the
@@ -106,7 +125,8 @@
                         missing LBF values in the results.
                     </li>
                 </ul>
-                <h2 id="graph-options-view">Graph Options</h2>
+                <h2 id="explain-graph-view">How do I interpret this graph?</h2>
+                <h3 id="graph-options-view">Graph options</h3>
                 <ul>
                     <li><b>Study P-value:</b> The p-value threshold for the traits to be displayed in the legend.</li>
                     <li><b>Include Trans Markers:</b> Whether to include trans markers in the graph.</li>
@@ -120,10 +140,12 @@
                         are selected, all traits will be displayed.
                     </li>
                 </ul>
-                <h2 id="trait-view">Trait View</h2>
-                Displays colocalised results of the study in question, and shows all studies which colocalise with it,
-                overlayed on top of the the Manhattan plot of the phenotype. Also displays significant rare and
-                non-colocalising results. To compare 2 specific traits, please use the 'Filter Results By' dropdown
+                <h3 id="trait-view">Trait view</h3>
+                <p>
+                    Displays colocalised results of the study in question, and shows all studies which colocalise with
+                    it, overlayed on top of the the Manhattan plot of the phenotype. Also displays significant rare and
+                    non-colocalising results. To compare 2 specific traits, please use the 'Filter Results By' dropdown.
+                </p>
                 <ul>
                     <li>
                         <b>Colocalised Results:</b> Displays colocalised results of phenotype in question, and shows all
@@ -142,9 +164,11 @@
                         dropdown, this will filter the results to only show the traits that are selected.
                     </li>
                 </ul>
-                <h2 id="variant-view">Variant View</h2>
-                SNP view displays the colocalisation results for a single SNP. Each circle represents a trait that is in
-                the colocalisation group.
+                <h3 id="variant-view">Variant view</h3>
+                <p>
+                    SNP view displays the colocalisation results for a single SNP. Each circle represents a trait that
+                    is in the colocalisation group.
+                </p>
                 <ul>
                     <li>
                         <b>How the SNP is chosen:</b> The SNP is chosen as the cumulative sum of the log bayes factor,
@@ -183,10 +207,12 @@
                         >
                     </li>
                 </ul>
-                <h2 id="gene-region-view">Gene and Region View</h2>
-                Displays the colocalisation results for a gene or region. Each circle represents a result that has a
-                study marked with that gene. Results may not align with the exonic region of the gene, as some studies
-                may have QTLs which are in the regulatory region of the gene.
+                <h3 id="gene-region-view">Gene and region view</h3>
+                <p>
+                    Displays the colocalisation results for a gene or region. Each circle represents a result that has a
+                    study marked with that gene. Results may not align with the exonic region of the gene, as some
+                    studies may have QTLs which are in the regulatory region of the gene.
+                </p>
                 <ul>
                     <li>
                         <b>Colocalised Results:</b> Displays colocalised results of phenotype in question, and shows all

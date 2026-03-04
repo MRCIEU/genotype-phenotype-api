@@ -423,34 +423,40 @@ class StudiesDBClient:
         snp_ids: List[int] = None,
         variant_prefixes: List[str] = None,
         rsids: List[str] = None,
-        grange: List[str] = None,
+        grange: str = None,
+        variant_strings: List[str] = None,
     ):
-        if not snp_ids and not variant_prefixes and not rsids and not grange:
+        """Fetch variants by one or more criteria. Supports OR across snp_ids, rsids, variant_prefixes, variant_strings."""
+        if not snp_ids and not variant_prefixes and not rsids and not grange and not variant_strings:
             return []
 
         query = """SELECT snp_annotations.*, snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
             FROM snp_annotations
             LEFT JOIN snp_pleiotropy ON snp_annotations.id = snp_pleiotropy.snp_id
-            WHERE 
-        """
+            WHERE """
         params = []
+        conditions = []
 
         if snp_ids:
-            query += "id IN (SELECT * FROM UNNEST(?))"
+            conditions.append("id IN (SELECT * FROM UNNEST(?))")
             params.append(snp_ids)
-        elif rsids:
-            query += "rsid IN (SELECT * FROM UNNEST(?))"
+        if rsids:
+            conditions.append("rsid IN (SELECT * FROM UNNEST(?))")
             params.append(rsids)
-        elif grange:
+        if grange:
             chromosome, position = grange.split(":")
             start_bp, end_bp = position.split("-")
             start_bp, end_bp = int(start_bp), int(end_bp)
-            query += "chr = ? AND bp BETWEEN ? AND ?"
+            conditions.append("(chr = ? AND bp BETWEEN ? AND ?)")
             params.extend([chromosome, start_bp, end_bp])
-        elif variant_prefixes:
-            query += "SPLIT_PART(snp, '_', 1) IN (SELECT * FROM UNNEST(?))"
+        if variant_prefixes:
+            conditions.append("SPLIT_PART(snp, '_', 1) IN (SELECT * FROM UNNEST(?))")
             params.append(variant_prefixes)
+        if variant_strings:
+            conditions.append("snp IN (SELECT * FROM UNNEST(?))")
+            params.append(variant_strings)
 
+        query += "(" + ") OR (".join(conditions) + ")"
         return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance

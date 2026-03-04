@@ -110,29 +110,18 @@ async def get_genes(
         gene_rare = convert_duckdb_to_pydantic_model(RareResult, gene_rare_data) if gene_rare_data else []
 
         # Combine all coloc_groups, rare_results, study_extractions (deduplicated)
-        seen_cg = {}
-        all_coloc_groups = []
-        for c in region_colocs + gene_colocs:
-            key = (c.coloc_group_id, c.study_extraction_id, c.study_id)
-            if key not in seen_cg:
-                seen_cg[key] = True
-                all_coloc_groups.append(c)
-
-        seen_rr = {}
-        all_rare_results = []
-        for r in study_rare + gene_rare:
-            key = (r.rare_result_group_id, r.study_extraction_id)
-            if key not in seen_rr:
-                seen_rr[key] = True
-                all_rare_results.append(r)
-
-        seen_ext = {}
+        all_coloc_groups = StudiesService.deduplicate_by_key(
+            region_colocs + gene_colocs,
+            lambda c: (c.coloc_group_id, c.study_extraction_id, c.study_id),
+        )
+        all_rare_results = StudiesService.deduplicate_by_key(
+            study_rare + gene_rare,
+            lambda r: (r.rare_result_group_id, r.study_extraction_id),
+        )
         all_study_extractions = []
         for ext_list in study_extractions_by_gene.values():
-            for e in ext_list:
-                if e.id not in seen_ext:
-                    seen_ext[e.id] = True
-                    all_study_extractions.append(e)
+            all_study_extractions.extend(ext_list)
+        all_study_extractions = StudiesService.deduplicate_by_key(all_study_extractions, lambda e: e.id)
 
         tissues = studies_service.get_tissues()
 
@@ -141,13 +130,10 @@ async def get_genes(
             associations_raw = associations_service.get_associations(
                 all_coloc_groups, all_rare_results, all_study_extractions
             )
-            seen_assoc = {}
-            associations = []
-            for a in associations_raw:
-                key = (a.get("snp_id"), a.get("study_id"))
-                if key not in seen_assoc:
-                    seen_assoc[key] = True
-                    associations.append(a)
+            associations = StudiesService.deduplicate_by_key(
+                associations_raw,
+                lambda a: (a.get("snp_id"), a.get("study_id")),
+            )
 
         coloc_pairs = None
         if include_coloc_pairs:

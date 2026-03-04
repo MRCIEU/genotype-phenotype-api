@@ -1,4 +1,4 @@
-import pipeline from "../assets/images/pipeline.png";
+import pipeline from "../assets/images/pipeline.jpg";
 
 export default function about() {
     return {

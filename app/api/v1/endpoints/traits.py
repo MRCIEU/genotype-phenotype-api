@@ -112,44 +112,28 @@ async def get_traits(
                     colocs_map[c.study_id].append(c)
 
         # 4. Combine all coloc_groups, rare_results, study_extractions into flat lists (deduplicated)
-        seen_cg = {}
-        all_coloc_groups = []
-        for colocs in colocs_map.values():
-            for c in colocs:
-                key = (c.coloc_group_id, c.study_extraction_id, c.study_id)
-                if key not in seen_cg:
-                    seen_cg[key] = True
-                    all_coloc_groups.append(c)
-
-        seen_rr = {}
-        all_rare_results = []
-        for rare_list in rare_results_map.values():
-            for r in rare_list:
-                key = (r.rare_result_group_id, r.study_extraction_id)
-                if key not in seen_rr:
-                    seen_rr[key] = True
-                    all_rare_results.append(r)
-
-        seen_ext = {}
-        all_study_extractions = []
-        for ext_list in study_extractions_map.values():
-            for e in ext_list:
-                if e.id not in seen_ext:
-                    seen_ext[e.id] = True
-                    all_study_extractions.append(e)
+        all_coloc_groups = StudiesService.deduplicate_by_key(
+            [c for colocs in colocs_map.values() for c in colocs],
+            lambda c: (c.coloc_group_id, c.study_extraction_id, c.study_id),
+        )
+        all_rare_results = StudiesService.deduplicate_by_key(
+            [r for rare_list in rare_results_map.values() for r in rare_list],
+            lambda r: (r.rare_result_group_id, r.study_extraction_id),
+        )
+        all_study_extractions = StudiesService.deduplicate_by_key(
+            [e for ext_list in study_extractions_map.values() for e in ext_list],
+            lambda e: e.id,
+        )
 
         associations = None
         if include_associations:
             associations_raw = associations_service.get_associations(
                 all_coloc_groups, all_rare_results, all_study_extractions
             )
-            seen_assoc = {}
-            associations = []
-            for a in associations_raw:
-                key = (a.get("snp_id"), a.get("study_id"))
-                if key not in seen_assoc:
-                    seen_assoc[key] = True
-                    associations.append(a)
+            associations = StudiesService.deduplicate_by_key(
+                associations_raw,
+                lambda a: (a.get("snp_id"), a.get("study_id")),
+            )
 
         return GetTraitsResponse(
             traits=traits,
