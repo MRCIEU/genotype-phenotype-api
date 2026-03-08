@@ -70,7 +70,10 @@ search_gpmapr('haemoglobin')</code></pre>
                 <h2 id="upload-data-view">How do I upload my own data?</h2>
                 <p>
                     You can upload your own GWAS summary statistics to run colocalization and rare variant analysis
-                    against the GPMap database.
+                    against the GPMap database. You can optionally specify one or more existing GWAS upload GUIDs to
+                    also compare your upload against those (in addition to the main database).
+                </p>
+                <ul>
                     <li>
                         Use the <a href="index.html?showUpload=true">Upload GWAS for Comparison</a> form on the
                         homepage.
@@ -85,7 +88,7 @@ search_gpmapr('haemoglobin')</code></pre>
   ...
 )</code></pre>
                     </li>
-                </p>
+                </ul>
                 <h2 id="gwas-upload-pipeline-view">How does the GWAS upload pipeline work?</h2>
                 <img :src="gwasUploadPipeline" alt="GWAS Upload Pipeline" />
                 <p>
@@ -245,5 +248,6 @@ search_gpmapr('haemoglobin')</code></pre>
                 </ul>
             </div>
         </div>
+        <app-footer></app-footer>
     </body>
 </html>

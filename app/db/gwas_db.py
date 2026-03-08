@@ -7,6 +7,7 @@ from app.config import get_settings
 from app.models.schemas import (
     GwasStatus,
     ProcessGwasRequest,
+    UploadAssociation,
     UploadColocGroup,
     UploadColocPair,
     UploadStudyExtraction,
@@ -151,6 +152,40 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
+    def get_associations_by_gwas_upload_id(self, gwas_upload_id: int):
+        conn = self.connect()
+        try:
+            cursor = conn.execute(
+                f"SELECT * FROM associations WHERE gwas_upload_id = {gwas_upload_id}"
+            )
+            rows = cursor.fetchall()
+            columns = [d[0] for d in cursor.description]
+            return rows, columns
+        finally:
+            conn.close()
+
+    @log_performance
+    def populate_associations(self, associations: List[UploadAssociation]):
+        conn = self.connect()
+        try:
+            assoc_fields = list(UploadAssociation.model_fields.keys())
+            assoc_fields_str = ", ".join(assoc_fields)
+            assoc_placeholders = ", ".join(["?" for _ in assoc_fields])
+
+            for assoc in associations:
+                values = [getattr(assoc, field) for field in assoc_fields]
+                conn.execute(
+                    f"""
+                    INSERT INTO associations ({assoc_fields_str})
+                    VALUES ({assoc_placeholders})
+                """,
+                    values,
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    @log_performance
     def create_gwas_upload(self, gwas_request: ProcessGwasRequest):
         upload_metadata = json.dumps(gwas_request.model_dump(mode="json"))
         conn = self.connect()
@@ -189,6 +224,14 @@ class GwasDBClient:
     def delete_gwas_upload(self, guid: str):
         conn = self.connect()
         try:
+            tables = conn.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='main' AND table_name='associations'"
+            ).fetchall()
+            if tables:
+                conn.execute(
+                    "DELETE FROM associations WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = ?)",
+                    [guid],
+                )
             conn.execute(
                 "DELETE FROM coloc_groups WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = ?)", [guid]
             )

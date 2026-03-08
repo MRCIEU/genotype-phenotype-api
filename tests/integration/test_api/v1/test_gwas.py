@@ -171,3 +171,17 @@ def test_get_gwas(test_guid):
     assert len(gwas_model.coloc_pairs) == len(update_gwas_payload["coloc_pairs"])
     assert len(gwas_model.study_extractions) >= 1
     assert len(gwas_model.upload_study_extractions) >= 1
+
+
+def test_get_gwas_with_associations(test_guid):
+    response = client.get(f"/v1/gwas/{test_guid}?include_associations=true")
+    assert response.status_code == 200
+    gwas_model = UploadTraitResponse(**response.json())
+    assert gwas_model.associations is not None
+    if gwas_model.associations:
+        for assoc in gwas_model.associations:
+            assert "snp_id" in assoc
+            assert "beta" in assoc
+            assert "se" in assoc
+            assert "p" in assoc
+            assert "study_id" in assoc or "existing_study_id" in assoc
