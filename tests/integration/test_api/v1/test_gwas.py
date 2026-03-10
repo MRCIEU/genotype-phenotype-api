@@ -178,6 +178,7 @@ def test_get_gwas_with_associations(test_guid):
     assert response.status_code == 200
     gwas_model = UploadTraitResponse(**response.json())
     assert gwas_model.associations is not None
+    assert len(gwas_model.associations) >= 1
     if gwas_model.associations:
         for assoc in gwas_model.associations:
             assert "snp_id" in assoc
