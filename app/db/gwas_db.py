@@ -155,9 +155,7 @@ class GwasDBClient:
     def get_associations_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
-            cursor = conn.execute(
-                f"SELECT * FROM associations WHERE gwas_upload_id = {gwas_upload_id}"
-            )
+            cursor = conn.execute(f"SELECT * FROM associations WHERE gwas_upload_id = {gwas_upload_id}")
             rows = cursor.fetchall()
             columns = [d[0] for d in cursor.description]
             return rows, columns

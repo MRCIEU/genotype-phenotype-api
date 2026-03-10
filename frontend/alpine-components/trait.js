@@ -273,7 +273,11 @@ export default function trait() {
         get getUploadStatus() {
             let text = "Status: ";
             if (this.data === null) return text + "...";
-            return text + this.data.trait.status;
+            text += this.data.trait.status;
+            if (this.data.trait.status === "completed") {
+                text += ". For the best user experience, use this data via the R package.";
+            }
+            return text;
         },
 
         get getTraitInfo() {

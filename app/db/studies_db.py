@@ -110,9 +110,7 @@ class StudiesDBClient:
     @log_performance
     def get_study_id_by_study_name(self, study_name: str):
         """Get studies.id for an existing study by its study_name (e.g. 'ukb-b-6027')."""
-        result = self.studies_conn.execute(
-            "SELECT id FROM studies WHERE study_name = ?", [study_name]
-        ).fetchone()
+        result = self.studies_conn.execute("SELECT id FROM studies WHERE study_name = ?", [study_name]).fetchone()
         return result[0] if result else None
 
     @log_performance
