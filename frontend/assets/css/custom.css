@@ -78,8 +78,28 @@ div.tooltip {
     }
 }
 
+/* Sticky footer: keep footer at bottom when content is short */
+html,
+body {
+    min-height: 100vh;
+    margin: 0;
+}
+body {
+    display: flex;
+    flex-direction: column;
+}
 #wait-to-load {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+}
+#wait-to-load > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+app-footer {
+    margin-top: auto;
 }
 
 /* Thicker red outline for upload form validation errors */

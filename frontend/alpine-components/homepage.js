@@ -192,7 +192,6 @@ export default function homepage() {
                 "ea",
                 "oa",
                 "p",
-                "eaf",
             ];
 
             // Check base required fields
