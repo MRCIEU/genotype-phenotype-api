@@ -2,13 +2,14 @@ from app.db.gwas_db import GwasDBClient
 from app.models.schemas import (
     GwasUpload,
     UpdateGwasRequest,
-    GwasStatus,
-    LdBlock,
-    Variant,
+    UploadAssociation,
     UploadStudyExtraction,
     UploadColocGroup,
     UploadColocPair,
     StudyExtraction,
+    GwasStatus,
+    LdBlock,
+    Variant,
     convert_duckdb_to_pydantic_model,
 )
 from app.db.studies_db import StudiesDBClient
@@ -138,6 +139,37 @@ class GwasUploadService:
 
         self.gwas_upload_db.populate_coloc_groups(upload_coloc_groups)
         self.gwas_upload_db.populate_coloc_pairs(upload_coloc_pairs)
+
+        if update_gwas_request.associations:
+            upload_associations = []
+            for assoc in update_gwas_request.associations:
+                snp = snp_map.get(assoc.snp)
+                if snp is None:
+                    continue
+                study_id = None
+                existing_study_id = None
+                if assoc.study_name == gwas.guid:
+                    existing_study_id = gwas.id
+                else:
+                    study_id = self.studies_db.get_study_id_by_study_name(assoc.study_name)
+                    if study_id is None:
+                        continue
+                upload_associations.append(
+                    UploadAssociation(
+                        gwas_upload_id=gwas.id,
+                        snp_id=snp.id,
+                        study_id=study_id,
+                        existing_study_id=existing_study_id,
+                        beta=assoc.beta,
+                        se=assoc.se,
+                        p=assoc.p,
+                        eaf=assoc.eaf,
+                        imputed=assoc.imputed,
+                    )
+                )
+            if upload_associations:
+                self.gwas_upload_db.populate_associations(upload_associations)
+
         updated_gwas = self.gwas_upload_db.update_gwas_status(gwas.guid, GwasStatus.COMPLETED)
         updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
         return updated_gwas

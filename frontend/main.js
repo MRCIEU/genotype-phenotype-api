@@ -19,12 +19,14 @@ import contact from "./alpine-components/contact.js";
 window.Alpine = Alpine;
 
 import { NavigationBar } from "./web-components/navigation-bar.js";
+import { Footer } from "./web-components/footer.js";
 import { ResultsTable } from "./web-components/results-table.js";
 import { GraphOptions } from "./web-components/graph-options.js";
 import { PipelineSummary } from "./web-components/pipeline-summary.js";
 import { RPackageModal } from "./web-components/r-package-modal.js";
 
 customElements.define("navigation-bar", NavigationBar);
+customElements.define("app-footer", Footer);
 customElements.define("graph-options", GraphOptions);
 customElements.define("pipeline-summary", PipelineSummary);
 customElements.define("results-table", ResultsTable);

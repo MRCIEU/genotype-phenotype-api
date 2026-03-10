@@ -487,6 +487,7 @@ class ProcessGwasRequest(BaseModel):
     p_value_threshold: float
     column_names: GwasColumnNames
     status: Optional[GwasStatus] = None
+    compare_with_upload_guids: Optional[List[str]] = None  # GWAS upload GUIDs to also compare against
 
     @model_validator(mode="before")
     @classmethod
@@ -500,6 +501,7 @@ class UpdateGwasRequest(BaseModel):
     coloc_pairs: Optional[List[UpdateGwasColocPair]] = None
     coloc_groups: Optional[List[UpdateGwasColocGroup]] = None
     study_extractions: Optional[List[UpdateGwasStudyExtraction]] = None
+    associations: Optional[List[UpdateGwasAssociation]] = None
 
 
 class UpdateGwasColocPair(BaseModel):
@@ -531,6 +533,16 @@ class UpdateGwasStudyExtraction(BaseModel):
     bp: int
     min_p: float
     ld_block: str
+
+
+class UpdateGwasAssociation(BaseModel):
+    study_name: str
+    snp: str
+    beta: float
+    se: float
+    p: float
+    eaf: float
+    imputed: bool
 
 
 class GwasColumnNames(BaseModel):
@@ -602,6 +614,20 @@ class UploadColocGroup(BaseModel):
     ld_block_id: int
     h4_connectedness: float
     h3_connectedness: float
+
+    model_config = {"from_attributes": True}
+
+
+class UploadAssociation(BaseModel):
+    gwas_upload_id: int
+    snp_id: int
+    study_id: Optional[int] = None
+    existing_study_id: Optional[int] = None
+    beta: float
+    se: float
+    p: float
+    eaf: float
+    imputed: bool
 
     model_config = {"from_attributes": True}
 

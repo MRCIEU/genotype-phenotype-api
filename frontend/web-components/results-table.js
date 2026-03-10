@@ -6,23 +6,32 @@ export class ResultsTable extends HTMLElement {
         this.attachShadow({ mode: "open" });
         this.data = null;
         this.show = true;
+        this.hideVariantLink = false;
     }
 
     static get observedAttributes() {
-        return ["data", "show"];
+        return ["data", "show", "hide-variant-link"];
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-        if (!newValue) return;
         switch (name) {
             case "data":
+                if (!newValue) return;
                 this.data = parse(newValue);
                 break;
             case "show":
                 this.show = newValue;
                 break;
+            case "hide-variant-link":
+                this.hideVariantLink = newValue !== null && newValue !== "false";
+                break;
         }
         this.render();
+    }
+
+    connectedCallback() {
+        const val = this.getAttribute("hide-variant-link");
+        this.hideVariantLink = val !== null && val !== "false";
     }
 
     render() {
@@ -63,8 +72,13 @@ export class ResultsTable extends HTMLElement {
                                 ${columns
                                     .map(col => {
                                         if (col.key === "display_snp" && i === 0) {
+                                            const variantContent = row.display_snp
+                                                ? this.hideVariantLink
+                                                    ? `Candidate Variant: ${row.display_snp}<br>`
+                                                    : `Candidate Variant: <a href="variant.html?id=${row.snp_id}">${row.display_snp}</a><br>`
+                                                : "";
                                             return `<td rowspan="${rows.length}">
-                                            ${row.display_snp ? `Candidate Variant: <a href="variant.html?id=${row.snp_id}">${row.display_snp}</a><br>` : ""}
+                                            ${variantContent}
                                             ${row.ld_block_id ? `LD Region: <a href="region.html?id=${row.ld_block_id}">${row.ld_block || ""}</a><br>` : ""}
                                             ${
                                                 row.posterior_prob !== undefined && row.posterior_prob !== null

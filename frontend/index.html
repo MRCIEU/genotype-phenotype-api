@@ -558,6 +558,22 @@
                                         </template>
                                         <br />
                                         <div class="field">
+                                            <label class="label">Compare with uploads (optional)</label>
+                                            <div class="control">
+                                                <input
+                                                    class="input"
+                                                    type="text"
+                                                    placeholder="12345678-90ab-cdef-1234-567890abcdef"
+                                                    x-model="uploadMetadata.formData.compareWithUploadGuids"
+                                                />
+                                            </div>
+                                            <p class="is-size-7">
+                                                Enter one or more GWAS upload GUIDs to also compare your upload against
+                                                these (in addition to the main GPMap database). Comma- or
+                                                space-separated.
+                                            </p>
+                                        </div>
+                                        <div class="field">
                                             <label class="label">Email</label>
                                             <div class="control">
                                                 <input
@@ -636,24 +652,20 @@
                             <strong x-text="getGPMapMetadata.num_coloc_groups.toLocaleString()"></strong><br />
                         </div>
                         <div class="block">
-                            Citation:
                             <strong
-                                ><a target="_blank" href="https://doi.org/10.64898/2026.02.19.26346618"
-                                    >DOI here</a
+                                >Paper:
+                                <a target="_blank" href="https://doi.org/10.64898/2026.02.19.26346618"
+                                    >Building The Human Genotype-Phenotype Map to Harness Pleiotropy and Refine Disease
+                                    Mechanisms</a
                                 ></strong
                             >
+                            <br />
+                            Andrew R. Elmore, Aimee L. Hanson, Genevieve M. Leyden, James Johnson, George Davey Smith,
+                            Lavinia Paternoster, Tom R Gaunt, Gibran Hemani
                         </div>
                     </div>
                 </div>
-                <div class="footer py-2">
-                    <div class="content">
-                        <img :src="mrc_logo" class="logo" width="400" alt="MRC Integrative Epidemiology Unit" />
-                        <span class="ml-2"
-                            >© <span x-text="new Date().getFullYear()"></span> University of Bristol. All rights
-                            reserved.</span
-                        >
-                    </div>
-                </div>
+                <app-footer></app-footer>
             </div>
         </div>
     </body>

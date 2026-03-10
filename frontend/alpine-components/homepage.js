@@ -21,6 +21,7 @@ export default function homepage() {
             message: "",
             guid: null,
             formData: {
+                compareWithUploadGuids: "",
                 studyType: "continuous",
                 ancestry: "EUR",
                 pValueIndex: 5,
@@ -234,6 +235,11 @@ export default function homepage() {
 
             this.uploadMetadata.currentlyUploading = true;
 
+            const compareGuids = (this.uploadMetadata.formData.compareWithUploadGuids || "")
+                .split(/[\s,]+/)
+                .map(g => g.trim())
+                .filter(g => g.length > 0);
+
             const gwasRequest = {
                 name: this.uploadMetadata.formData.traitName,
                 reference_build: this.uploadMetadata.formData.genomeBuild,
@@ -245,6 +251,7 @@ export default function homepage() {
                 sample_size: this.uploadMetadata.formData.sampleSize,
                 ancestry: this.uploadMetadata.formData.ancestry,
                 p_value_threshold: this.uploadMetadata.formData.pValueThreshold,
+                ...(compareGuids.length > 0 && { compare_with_upload_guids: compareGuids }),
                 column_names: {
                     CHR: this.uploadMetadata.formData.chr,
                     BP: this.uploadMetadata.formData.bp,
@@ -273,7 +280,14 @@ export default function homepage() {
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error("Upload failed:", response.status, errorText);
-                    this.openPostUploadModal(false, null, response.status);
+                    let errorDetail = null;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorDetail = errorJson.detail || errorText;
+                    } catch {
+                        errorDetail = errorText || null;
+                    }
+                    this.openPostUploadModal(false, null, response.status, errorDetail);
                 } else {
                     const result = await response.json();
                     this.openPostUploadModal(true, result);
@@ -286,7 +300,7 @@ export default function homepage() {
             }
         },
 
-        openPostUploadModal(isSuccess, result, status = null) {
+        openPostUploadModal(isSuccess, result, status = null, errorDetail = null) {
             this.uploadMetadata.currentlyUploading = false;
             this.uploadMetadata.modalOpen = false;
             this.uploadMetadata.postUploadModalOpen = true;
@@ -304,6 +318,8 @@ export default function homepage() {
                 if (status === 429) {
                     this.uploadMetadata.message =
                         "You already have a GWAS upload in the queue. Please wait for it to complete before uploading another.";
+                } else if (errorDetail) {
+                    this.uploadMetadata.message = errorDetail;
                 } else {
                     this.uploadMetadata.message = "There was an error uploading your file. Please try again later.";
                 }

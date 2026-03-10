@@ -59,6 +59,26 @@
       "h3_connectedness": 0.00
     }
   ],
+  "associations": [
+    {
+      "study_name": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b",
+      "snp": "1:22365104_A_C",
+      "beta": 0.15,
+      "se": 0.02,
+      "p": 3.0203e-22,
+      "eaf": 0.45,
+      "imputed": false
+    },
+    {
+      "study_name": "ebi-a-GCST90002369",
+      "snp": "1:22365104_A_C",
+      "beta": 0.12,
+      "se": 0.03,
+      "p": 1.5e-18,
+      "eaf": 0.44,
+      "imputed": true
+    }
+  ],
   "study_extractions": [
     {
       "study": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b",

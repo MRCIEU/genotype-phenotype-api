@@ -110,4 +110,4 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 
 ## License
 
-This project is licensed under the [GPL3 License](LICENSE).
+We have released the GPMap under the [AGPLv3 licence](LICENCE).  However, if you wish to use the GPMap commercially, please [reach out to us](https://gpmap.opengwas.io/contact.html)

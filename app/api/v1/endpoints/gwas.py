@@ -22,6 +22,7 @@ from app.models.schemas import (
     UploadStudyExtraction,
     UploadColocPair,
     convert_duckdb_to_pydantic_model,
+    convert_duckdb_tuples_to_dicts,
 )
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
@@ -43,12 +44,33 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         request_body = ProcessGwasRequest.model_validate(request_body_str)
         processing_guids = redis.get_processing_guids_for_user(request_body.email)
 
-        print(processing_guids)
         if processing_guids:
             raise HTTPException(
                 status_code=429,
                 detail=f"You already have an upload processing (GUIDs: {', '.join(processing_guids)}). Please wait until it finishes.",
             )
+
+        if request_body.compare_with_upload_guids:
+            db = GwasDBClient()
+            invalid_guids = []
+            if len(request_body.compare_with_upload_guids) > 10:
+                raise HTTPException(
+                    status_code=400,
+                    detail="You can only compare with up to 10 uploads at a time.  If you wish to compare with more, please get in touch directly.",
+                )
+            for guid in request_body.compare_with_upload_guids:
+                gwas = db.get_gwas_by_guid(guid)
+                if gwas is None:
+                    invalid_guids.append(guid)
+                else:
+                    gwas_model = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+                    if gwas_model.status != GwasStatus.COMPLETED:
+                        invalid_guids.append(f"{guid} (not completed)")
+            if invalid_guids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid or incomplete upload GUIDs to compare with: {', '.join(invalid_guids)}. GUIDs must exist and be completed.",
+                )
 
         sha256_hash = hashlib.sha256()
         file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
@@ -180,6 +202,11 @@ async def get_gwas(
         upload_study_extractions = gwas_upload_db.get_study_extractions_by_gwas_upload_id(gwas.id)
         upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
 
+        associations = None
+        if include_associations:
+            assoc_rows, assoc_columns = gwas_upload_db.get_associations_by_gwas_upload_id(gwas.id)
+            associations = convert_duckdb_tuples_to_dicts(assoc_rows, assoc_columns)
+
         existing_study_extraction_ids = [
             coloc.existing_study_extraction_id
             for coloc in coloc_groups
@@ -197,6 +224,7 @@ async def get_gwas(
             coloc_groups=coloc_groups,
             coloc_pairs=coloc_pairs,
             rare_results=[],
+            associations=associations,
         )
 
     except HTTPException as e:

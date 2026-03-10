@@ -117,13 +117,8 @@
                             x-show="userUpload && data && data.trait.status === 'processing' && data.queue_status === 'queued'"
                         >
                             You are currently in position <span x-text="data ? data.queue_position : ' 0 '"></span> in
-                            the queue.
-                        </div>
-                        <div
-                            class="columns mt-0 is-centered"
-                            x-show="userUpload && data && data.trait.status === 'processing' && !data.queue_status"
-                        >
-                            Your GWAS is being processed.
+                            the queue. A GWAS typically takes 1-2 minutes per finemapped loci below the p-value
+                            threshold.
                         </div>
 
                         <div x-show="showResults" class="mb-0">
@@ -291,6 +286,7 @@
                         <results-table
                             id="coloc-table"
                             :data="getDataForColocTable"
+                            :hide-variant-link="userUpload"
                             x-show="showTables.coloc"
                         ></results-table>
                         <div
@@ -314,11 +310,13 @@
                             <results-table
                                 id="rare-table"
                                 :data="getDataForRareTable"
+                                :hide-variant-link="userUpload"
                                 x-show="showTables.rare"
                             ></results-table>
                         </div>
                     </div>
                 </div>
+                <app-footer></app-footer>
             </div>
         </div>
     </body>
