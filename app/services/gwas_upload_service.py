@@ -145,15 +145,15 @@ class GwasUploadService:
             for assoc in update_gwas_request.associations:
                 snp = snp_map.get(assoc.snp)
                 if snp is None:
-                    continue
-                study_id = None
+                    raise ValueError(f"SNP not found for SNP: {assoc.snp}")
+                study_id = self.studies_db.get_study_id_by_study_name(assoc.study_name)
                 existing_study_id = None
-                if assoc.study_name == gwas.guid:
+                if study_id is not None:
+                    pass
+                elif assoc.study_name == gwas.guid:
                     existing_study_id = gwas.id
                 else:
-                    study_id = self.studies_db.get_study_id_by_study_name(assoc.study_name)
-                    if study_id is None:
-                        continue
+                    raise ValueError(f"Study not found for study name: {assoc.study_name}")
                 upload_associations.append(
                     UploadAssociation(
                         gwas_upload_id=gwas.id,
