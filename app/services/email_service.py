@@ -82,7 +82,7 @@ class EmailService:
         <body>
             <p>Thanks for using the Genotype-Phenotype Map!</p>
             <p>Your job has been successfully submitted. You can track its progress <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>here</a>.</p>
-            <p>You are currently <b>#{queue_position}</b> in the queue.</p>
+            <p>You are currently <b>#{queue_position}</b> in the queue. A GWAS typically takes 1-2 minutes per finemapped loci below the p-value threshold.</p>
             <p>We will send you another email once the analysis is complete.</p>
             {self.footer}
         </body>

@@ -25,10 +25,16 @@ class GwasUploadService:
 
     def update_gwas_success(self, gwas: GwasUpload, update_gwas_request: UpdateGwasRequest):
         gwas.status = GwasStatus.COMPLETED.value
-        ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
+        ld_blocks = (
+            [study.ld_block for study in update_gwas_request.study_extractions]
+            + [coloc.ld_block for coloc in update_gwas_request.coloc_groups or []]
+            + [pair.ld_block for pair in update_gwas_request.coloc_pairs or []]
+        )
+        ld_blocks = list(dict.fromkeys(ld_blocks))
 
         existing_ld_blocks = self.studies_db.get_ld_blocks_by_ld_block(ld_blocks)
         existing_ld_blocks = convert_duckdb_to_pydantic_model(LdBlock, existing_ld_blocks)
+        ld_block_map = {ld_block.ld_block: ld_block.id for ld_block in existing_ld_blocks if ld_block}
 
         known_snps = [coloc.snp for coloc in update_gwas_request.coloc_groups] + [
             study.snp for study in update_gwas_request.study_extractions
@@ -55,7 +61,7 @@ class GwasUploadService:
                     min_p=study.min_p,
                     ld_block=study.ld_block,
                     snp_id=study_extractions_snps[i].id if study_extractions_snps[i] else None,
-                    ld_block_id=existing_ld_blocks[i].id if existing_ld_blocks[i] else None,
+                    ld_block_id=ld_block_map.get(study.ld_block),
                 )
             )
 
@@ -74,7 +80,6 @@ class GwasUploadService:
         upload_study_id_map = {study.unique_study_id: study for study in upload_study_extractions}
         existing_study_id_map = {study.unique_study_id: study for study in existing_study_extractions}
         snp_map = {snp.snp: snp for snp in known_snps}
-        ld_block_map = {ld_block.ld_block: ld_block.id for ld_block in existing_ld_blocks}
 
         upload_coloc_groups = []
         for i, coloc in enumerate(update_gwas_request.coloc_groups):
