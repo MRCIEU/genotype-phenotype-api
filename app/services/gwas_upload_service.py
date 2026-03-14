@@ -25,10 +25,16 @@ class GwasUploadService:
 
     def update_gwas_success(self, gwas: GwasUpload, update_gwas_request: UpdateGwasRequest):
         gwas.status = GwasStatus.COMPLETED.value
-        ld_blocks = [study.ld_block for study in update_gwas_request.study_extractions]
+        ld_blocks = (
+            [study.ld_block for study in update_gwas_request.study_extractions]
+            + [coloc.ld_block for coloc in update_gwas_request.coloc_groups or []]
+            + [pair.ld_block for pair in update_gwas_request.coloc_pairs or []]
+        )
+        ld_blocks = list(dict.fromkeys(ld_blocks))
 
         existing_ld_blocks = self.studies_db.get_ld_blocks_by_ld_block(ld_blocks)
         existing_ld_blocks = convert_duckdb_to_pydantic_model(LdBlock, existing_ld_blocks)
+        ld_block_map = {ld_block.ld_block: ld_block.id for ld_block in existing_ld_blocks if ld_block}
 
         known_snps = [coloc.snp for coloc in update_gwas_request.coloc_groups] + [
             study.snp for study in update_gwas_request.study_extractions
@@ -55,26 +61,38 @@ class GwasUploadService:
                     min_p=study.min_p,
                     ld_block=study.ld_block,
                     snp_id=study_extractions_snps[i].id if study_extractions_snps[i] else None,
-                    ld_block_id=existing_ld_blocks[i].id if existing_ld_blocks[i] else None,
+                    ld_block_id=ld_block_map.get(study.ld_block),
                 )
             )
 
         inserted_study_extractions = self.gwas_upload_db.populate_study_extractions(upload_study_extractions)
         upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, inserted_study_extractions)
 
-        unique_study_ids = [coloc_pair.unique_study_id_a for coloc_pair in update_gwas_request.coloc_pairs] + [
-            coloc_pair.unique_study_id_b for coloc_pair in update_gwas_request.coloc_pairs
-        ]
+        unique_study_ids = (
+            [coloc.unique_study_id for coloc in update_gwas_request.coloc_groups or []]
+            + [coloc_pair.unique_study_id_a for coloc_pair in update_gwas_request.coloc_pairs]
+            + [coloc_pair.unique_study_id_b for coloc_pair in update_gwas_request.coloc_pairs]
+        )
         unique_study_ids = list(set(unique_study_ids))
 
-        existing_study_extractions = self.studies_db.get_study_extractions_by_unique_study_id(unique_study_ids)
-        existing_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, existing_study_extractions)
-        existing_study_extractions = [study for study in existing_study_extractions if study is not None]
+        # Studies from main studies DB (published/canonical)
+        studies_study_extractions = self.studies_db.get_study_extractions_by_unique_study_id(unique_study_ids)
+        studies_study_extractions = convert_duckdb_to_pydantic_model(StudyExtraction, studies_study_extractions)
+        studies_study_extractions = [s for s in studies_study_extractions if s is not None]
+
+        # Studies from other gwas uploads (compare_with)
+        gwas_upload_study_extractions = self.gwas_upload_db.get_study_extractions_by_unique_study_id(
+            unique_study_ids, exclude_gwas_upload_id=gwas.id
+        )
+        gwas_upload_study_extractions = convert_duckdb_to_pydantic_model(
+            UploadStudyExtraction, gwas_upload_study_extractions
+        )
+        gwas_upload_study_extractions = [s for s in gwas_upload_study_extractions if s is not None]
 
         upload_study_id_map = {study.unique_study_id: study for study in upload_study_extractions}
-        existing_study_id_map = {study.unique_study_id: study for study in existing_study_extractions}
+        gwas_upload_study_id_map = {s.unique_study_id: s for s in gwas_upload_study_extractions}
+        existing_study_id_map = {study.unique_study_id: study for study in studies_study_extractions}
         snp_map = {snp.snp: snp for snp in known_snps}
-        ld_block_map = {ld_block.ld_block: ld_block.id for ld_block in existing_ld_blocks}
 
         upload_coloc_groups = []
         for i, coloc in enumerate(update_gwas_request.coloc_groups):
@@ -91,6 +109,9 @@ class GwasUploadService:
 
             if coloc.unique_study_id in upload_study_id_map:
                 mapped_study_extraction = upload_study_id_map.get(coloc.unique_study_id)
+                upload_coloc_group.study_extraction_id = mapped_study_extraction.id
+            elif coloc.unique_study_id in gwas_upload_study_id_map:
+                mapped_study_extraction = gwas_upload_study_id_map.get(coloc.unique_study_id)
                 upload_coloc_group.study_extraction_id = mapped_study_extraction.id
             elif coloc.unique_study_id in existing_study_id_map:
                 mapped_study_extraction = existing_study_id_map.get(coloc.unique_study_id)
@@ -119,6 +140,8 @@ class GwasUploadService:
 
             if coloc_pair.unique_study_id_a in upload_study_id_map:
                 upload_coloc_pair.study_extraction_id_a = upload_study_id_map.get(coloc_pair.unique_study_id_a).id
+            elif coloc_pair.unique_study_id_a in gwas_upload_study_id_map:
+                upload_coloc_pair.study_extraction_id_a = gwas_upload_study_id_map.get(coloc_pair.unique_study_id_a).id
             elif coloc_pair.unique_study_id_a in existing_study_id_map:
                 upload_coloc_pair.existing_study_extraction_id_a = existing_study_id_map.get(
                     coloc_pair.unique_study_id_a
@@ -128,6 +151,8 @@ class GwasUploadService:
 
             if coloc_pair.unique_study_id_b in upload_study_id_map:
                 upload_coloc_pair.study_extraction_id_b = upload_study_id_map.get(coloc_pair.unique_study_id_b).id
+            elif coloc_pair.unique_study_id_b in gwas_upload_study_id_map:
+                upload_coloc_pair.study_extraction_id_b = gwas_upload_study_id_map.get(coloc_pair.unique_study_id_b).id
             elif coloc_pair.unique_study_id_b in existing_study_id_map:
                 upload_coloc_pair.existing_study_extraction_id_b = existing_study_id_map.get(
                     coloc_pair.unique_study_id_b
@@ -153,7 +178,13 @@ class GwasUploadService:
                 elif assoc.study_name == gwas.guid:
                     existing_study_id = gwas.id
                 else:
-                    raise ValueError(f"Study not found for study name: {assoc.study_name}")
+                    # Check if study_name is another gwas upload (compare_with)
+                    other_gwas_row = self.gwas_upload_db.get_gwas_by_guid(assoc.study_name)
+                    if other_gwas_row is not None:
+                        other_gwas = convert_duckdb_to_pydantic_model(GwasUpload, other_gwas_row)
+                        existing_study_id = other_gwas.id
+                    else:
+                        raise ValueError(f"Study not found for study name: {assoc.study_name}")
                 upload_associations.append(
                     UploadAssociation(
                         gwas_upload_id=gwas.id,

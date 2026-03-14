@@ -76,11 +76,11 @@ if not is_running_tests():
 
 if not settings.DEBUG:
     logger.add(
-        str(log_dir / "fastapi.log"),
+        str(log_dir / "fastapi_{time:YYYYMM}.log"),
         format=Formatter().format,
         filter=path_filter,
-        rotation="10 MB",
-        retention="1 month",
+        rotation="1 month",
+        retention="1 year",
         level="INFO",
         backtrace=True,
         diagnose=True,
