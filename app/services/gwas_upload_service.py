@@ -178,7 +178,13 @@ class GwasUploadService:
                 elif assoc.study_name == gwas.guid:
                     existing_study_id = gwas.id
                 else:
-                    raise ValueError(f"Study not found for study name: {assoc.study_name}")
+                    # Check if study_name is another gwas upload (compare_with)
+                    other_gwas_row = self.gwas_upload_db.get_gwas_by_guid(assoc.study_name)
+                    if other_gwas_row is not None:
+                        other_gwas = convert_duckdb_to_pydantic_model(GwasUpload, other_gwas_row)
+                        existing_study_id = other_gwas.id
+                    else:
+                        raise ValueError(f"Study not found for study name: {assoc.study_name}")
                 upload_associations.append(
                     UploadAssociation(
                         gwas_upload_id=gwas.id,
