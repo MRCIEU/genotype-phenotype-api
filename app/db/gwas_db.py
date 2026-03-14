@@ -152,6 +152,22 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
+    def get_study_extractions_by_ids(self, study_extraction_ids: List[int]):
+        """Get study extractions from gwas_upload DB by ids (for any upload)."""
+        if not study_extraction_ids:
+            return []
+        conn = self.connect()
+        try:
+            placeholders = ",".join(["?" for _ in study_extraction_ids])
+            result = conn.execute(
+                f"SELECT * FROM study_extractions WHERE id IN ({placeholders})",
+                study_extraction_ids,
+            ).fetchall()
+            return result
+        finally:
+            conn.close()
+
+    @log_performance
     def get_study_extractions_by_unique_study_id(
         self, unique_study_ids: List[str], exclude_gwas_upload_id: Optional[int] = None
     ):
