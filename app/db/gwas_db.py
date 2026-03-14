@@ -152,6 +152,26 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
+    def get_study_extractions_by_unique_study_id(
+        self, unique_study_ids: List[str], exclude_gwas_upload_id: Optional[int] = None
+    ):
+        """Get study extractions from gwas_upload DB (for compare_with uploads)."""
+        if not unique_study_ids:
+            return []
+        conn = self.connect()
+        try:
+            placeholders = ",".join(["?" for _ in unique_study_ids])
+            query = f"SELECT * FROM study_extractions WHERE unique_study_id IN ({placeholders})"
+            params: list = list(unique_study_ids)
+            if exclude_gwas_upload_id is not None:
+                query += " AND gwas_upload_id != ?"
+                params.append(exclude_gwas_upload_id)
+            result = conn.execute(query, params).fetchall()
+            return result
+        finally:
+            conn.close()
+
+    @log_performance
     def get_associations_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect()
         try:
