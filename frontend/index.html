@@ -64,6 +64,7 @@
                                 placeholder="Search for a trait (haemoglobin), gene (DRD2), or variant (rs6589381, 11:113508230)"
                                 x-model="searchText"
                             />
+
                             <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
                                 <div class="dropdown-content" style="max-height: 320px; overflow-y: auto">
                                     <template
@@ -221,7 +222,7 @@
                         </div>
 
                         <br />
-                        <div class="is-divider" data-content="OR"></div>
+                        <div class="is-divider mt-0 mb-0" data-content="OR"></div>
                         <div class="columns mt-6 is-centered">
                             <button class="button is-success" data-target="modal-js-example" @click="openModal()">
                                 Upload GWAS for Comparison
@@ -558,7 +559,7 @@
                                         </template>
                                         <br />
                                         <div class="field">
-                                            <label class="label">Compare with uploads (optional)</label>
+                                            <label class="label">Compare with other GWAS uploads (optional)</label>
                                             <div class="control">
                                                 <input
                                                     class="input"
@@ -640,6 +641,17 @@
                             >
                                 Use R Package
                             </button>
+                        </div>
+
+                        <div class="block">
+                            Please
+                            <a
+                                target="_blank"
+                                href="https://www.bristol.ac.uk/ieugwasr/blog/2026/03/11/gpmap-blog-post/"
+                            >
+                                read this blog post
+                            </a>
+                            to learn more about the GPMap.
                         </div>
                         <div class="block mt-6" x-init="loadGPMapMetadata" x-show="getGPMapMetadata">
                             Number of GWAS traits:

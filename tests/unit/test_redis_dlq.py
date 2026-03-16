@@ -77,6 +77,42 @@ class TestRedisDLQ:
 
         assert guids == []
 
+    def test_get_all_guids_from_dlq_original_message_as_json_string(self, redis_client, mock_redis):
+        """Test getting GUIDs when original_message is stored as a JSON string (double-encoded)."""
+        original_as_string = json.dumps(
+            {
+                "file_location": "gwas_upload/94c8ac95/file.gz",
+                "metadata": {"guid": "94c8ac95-24d6-2060-c49a-960401866e85"},
+            }
+        )
+        message = {"original_message": original_as_string, "error": "Failed", "timestamp": "2024-01-01T00:00:00Z"}
+        mock_redis.lrange.return_value = [json.dumps(message)]
+
+        guids = redis_client.get_all_guids_from_dlq(redis_client.process_gwas_queue)
+
+        assert guids == ["94c8ac95-24d6-2060-c49a-960401866e85"]
+
+    def test_retry_guid_from_dlq_original_message_as_json_string(self, redis_client, mock_redis, mocker):
+        """Test retrying when original_message is stored as a JSON string."""
+        original_as_string = json.dumps(
+            {
+                "file_location": "gwas_upload/94c8ac95/file.gz",
+                "metadata": {"guid": "94c8ac95-24d6-2060-c49a-960401866e85"},
+            }
+        )
+        message = {"original_message": original_as_string, "error": "Failed", "timestamp": "2024-01-01T00:00:00Z"}
+        serialized_msg = json.dumps(message)
+        guid = "94c8ac95-24d6-2060-c49a-960401866e85"
+
+        mock_redis.lrange.return_value = [serialized_msg]
+        mock_redis.lrem.return_value = 1
+        mocker.patch.object(redis_client, "add_to_queue", return_value=True)
+
+        result = redis_client.retry_guid_from_dlq("process_gwas", guid)
+
+        assert result is True
+        redis_client.add_to_queue.assert_called_once_with("process_gwas", original_as_string)
+
     def test_retry_guid_from_dlq_success(self, redis_client, mock_redis, sample_dlq_message, mocker):
         """Test successfully retrying a GUID from DLQ using new lrem logic."""
         queue_name = "process_gwas"

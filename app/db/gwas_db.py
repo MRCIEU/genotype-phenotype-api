@@ -73,11 +73,11 @@ class GwasDBClient:
                     NULL as gene,
                     NULL as gene_id,
                     NULL as trait_id,
-                    gwas_upload.name as trait_name,
+                    study_gwas.name as trait_name,
                     NULL as trait_category,
-                    gwas_upload.sample_size as sample_size,
-                    gwas_upload.category as category,
-                    gwas_upload.ancestry as ancestry,
+                    study_gwas.sample_size as sample_size,
+                    study_gwas.category as category,
+                    study_gwas.ancestry as ancestry,
                     NULL as heritability,
                     NULL as heritability_se,
                     NULL as data_type,
@@ -88,8 +88,8 @@ class GwasDBClient:
                     NULL as source_url
                 FROM coloc_groups
                 LEFT JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
+                LEFT JOIN gwas_upload as study_gwas ON study_extractions.gwas_upload_id = study_gwas.id
                 LEFT JOIN studies_db.snp_annotations on coloc_groups.snp_id = studies_db.snp_annotations.id 
-                LEFT JOIN gwas_upload on coloc_groups.gwas_upload_id = gwas_upload.id
                 WHERE coloc_groups.gwas_upload_id = {gwas_upload_id} and coloc_groups.study_extraction_id is not null""").fetchall()
 
             existing_result = conn.execute(f"""SELECT cg.*,
@@ -147,6 +147,42 @@ class GwasDBClient:
         conn = self.connect()
         try:
             result = conn.execute(f"SELECT * FROM study_extractions WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
+            return result
+        finally:
+            conn.close()
+
+    @log_performance
+    def get_study_extractions_by_ids(self, study_extraction_ids: List[int]):
+        """Get study extractions from gwas_upload DB by ids (for any upload)."""
+        if not study_extraction_ids:
+            return []
+        conn = self.connect()
+        try:
+            placeholders = ",".join(["?" for _ in study_extraction_ids])
+            result = conn.execute(
+                f"SELECT * FROM study_extractions WHERE id IN ({placeholders})",
+                study_extraction_ids,
+            ).fetchall()
+            return result
+        finally:
+            conn.close()
+
+    @log_performance
+    def get_study_extractions_by_unique_study_id(
+        self, unique_study_ids: List[str], exclude_gwas_upload_id: Optional[int] = None
+    ):
+        """Get study extractions from gwas_upload DB (for compare_with uploads)."""
+        if not unique_study_ids:
+            return []
+        conn = self.connect()
+        try:
+            placeholders = ",".join(["?" for _ in unique_study_ids])
+            query = f"SELECT * FROM study_extractions WHERE unique_study_id IN ({placeholders})"
+            params: list = list(unique_study_ids)
+            if exclude_gwas_upload_id is not None:
+                query += " AND gwas_upload_id != ?"
+                params.append(exclude_gwas_upload_id)
+            result = conn.execute(query, params).fetchall()
             return result
         finally:
             conn.close()
