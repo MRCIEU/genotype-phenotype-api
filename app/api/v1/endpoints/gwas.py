@@ -200,13 +200,11 @@ async def get_gwas(
         coloc_pairs = convert_duckdb_to_pydantic_model(UploadColocPair, coloc_pairs)
 
         # Collect study_extraction_ids from coloc_groups and coloc_pairs (covers current + compare_with uploads)
-        upload_study_extraction_ids = [
-            c.study_extraction_id for c in coloc_groups if c.study_extraction_id is not None
-        ] + [
-            p.study_extraction_id_a for p in coloc_pairs if p.study_extraction_id_a is not None
-        ] + [
-            p.study_extraction_id_b for p in coloc_pairs if p.study_extraction_id_b is not None
-        ]
+        upload_study_extraction_ids = (
+            [c.study_extraction_id for c in coloc_groups if c.study_extraction_id is not None]
+            + [p.study_extraction_id_a for p in coloc_pairs if p.study_extraction_id_a is not None]
+            + [p.study_extraction_id_b for p in coloc_pairs if p.study_extraction_id_b is not None]
+        )
         upload_study_extraction_ids = list(set(upload_study_extraction_ids))
         upload_study_extractions = gwas_upload_db.get_study_extractions_by_ids(upload_study_extraction_ids)
         upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
@@ -217,19 +215,11 @@ async def get_gwas(
             associations = convert_duckdb_tuples_to_dicts(assoc_rows, assoc_columns)
 
         # Collect existing_study_extraction_ids from coloc_groups and coloc_pairs (studies DB)
-        existing_study_extraction_ids = [
-            c.existing_study_extraction_id
-            for c in coloc_groups
-            if c.existing_study_extraction_id is not None
-        ] + [
-            p.existing_study_extraction_id_a
-            for p in coloc_pairs
-            if p.existing_study_extraction_id_a is not None
-        ] + [
-            p.existing_study_extraction_id_b
-            for p in coloc_pairs
-            if p.existing_study_extraction_id_b is not None
-        ]
+        existing_study_extraction_ids = (
+            [c.existing_study_extraction_id for c in coloc_groups if c.existing_study_extraction_id is not None]
+            + [p.existing_study_extraction_id_a for p in coloc_pairs if p.existing_study_extraction_id_a is not None]
+            + [p.existing_study_extraction_id_b for p in coloc_pairs if p.existing_study_extraction_id_b is not None]
+        )
         existing_study_extraction_ids = list(set(existing_study_extraction_ids))
         existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
         existing_study_extractions = convert_duckdb_to_pydantic_model(

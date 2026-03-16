@@ -3,12 +3,12 @@
 # Manage the GWAS dead letter queue and internal API endpoints.
 #
 # Usage:
-#   ./manage_dlq.sh list
-#   ./manage_dlq.sh retry <guid>
-#   ./manage_dlq.sh retry-all
-#   ./manage_dlq.sh rerun <guid>
-#   ./manage_dlq.sh delete-all
-#   ./manage_dlq.sh delete <guid>
+#   ./manage_queue.sh list
+#   ./manage_queue.sh retry-dlq <guid>
+#   ./manage_queue.sh retry-all-dql
+#   ./manage_queue.sh delete-all-dlq
+#   ./manage_queue.sh delete-gwas <guid>
+#   ./manage_queue.sh rerun-gwas <guid>
 #
 # Options:
 #   --api-url URL    API base URL (default: http://127.0.0.1:8000 or GPMAP_API_URL)
@@ -25,11 +25,11 @@ usage() {
     echo ""
     echo "Usage:"
     echo "  $0 list"
-    echo "  $0 retry <guid>"
-    echo "  $0 retry-all"
-    echo "  $0 rerun <guid>"
-    echo "  $0 delete-all"
-    echo "  $0 delete <guid>"
+    echo "  $0 retry-dlq <guid>"
+    echo "  $0 retry-all-dlq"
+    echo "  $0 rerun-gwas <guid>"
+    echo "  $0 delete-all-dlq"
+    echo "  $0 delete-gwas <guid>"
     echo ""
     echo "Options:"
     echo "  --api-url URL    API base URL (default: http://127.0.0.1:8000 or GPMAP_API_URL)"
@@ -60,17 +60,17 @@ fi
 
 if [[ "$CMD" == "list" ]]; then
     curl -sS "${BASE}/gwas-dlq" | jq .entries
-elif [[ "$CMD" == "retry" ]]; then
+elif [[ "$CMD" == "retry-dlq" ]]; then
     GUID="${1:?Error: GUID required for retry}"
     curl -sS -X POST "${BASE}/gwas-dlq/${GUID}/retry"
-elif [[ "$CMD" == "retry-all" ]]; then
+elif [[ "$CMD" == "retry-all-dlq" ]]; then
     curl -sS -X POST "${BASE}/gwas-dlq/retry"
-elif [[ "$CMD" == "rerun" ]]; then
+elif [[ "$CMD" == "rerun-gwas" ]]; then
     GUID="${1:?Error: GUID required for rerun}"
     curl -sS -X POST "${BASE}/gwas/${GUID}/rerun"
-elif [[ "$CMD" == "delete-all" ]]; then
+elif [[ "$CMD" == "delete-all-dlq" ]]; then
     curl -sS -X DELETE "${BASE}/gwas-dlq"
-elif [[ "$CMD" == "delete" ]]; then
+elif [[ "$CMD" == "delete-gwas" ]]; then
     GUID="${1:?Error: GUID required for delete}"
     curl -sS -X DELETE "${BASE}/gwas/${GUID}"
 else

@@ -207,8 +207,7 @@ class RedisClient(metaclass=Singleton):
             for message in messages:
                 try:
                     dlq_entry = json.loads(message)
-                    original_message = dlq_entry.get("original_message", {})
-                    guid = original_message.get("metadata", {}).get("guid")
+                    guid = self._extract_guid_from_dlq_entry(dlq_entry)
                     if guid:
                         guids.append(guid)
                 except (json.JSONDecodeError, KeyError, TypeError) as e:
@@ -236,6 +235,20 @@ class RedisClient(metaclass=Singleton):
             logger.error(f"Error clearing DLQ: {e}")
             return False
 
+    def _extract_guid_from_dlq_entry(self, dlq_entry: dict) -> Optional[str]:
+        """Extract GUID from a DLQ entry, handling original_message as dict or JSON string."""
+        original_message = dlq_entry.get("original_message")
+        if original_message is None:
+            return None
+        if isinstance(original_message, str):
+            try:
+                original_message = json.loads(original_message)
+            except json.JSONDecodeError:
+                return None
+        if not isinstance(original_message, dict):
+            return None
+        return original_message.get("metadata", {}).get("guid")
+
     def _find_and_remove_from_dlq(self, queue_name: str, guid: str) -> Optional[dict]:
         """
         Find and remove a message from the dead letter queue by GUID.
@@ -249,9 +262,9 @@ class RedisClient(metaclass=Singleton):
             for message in messages:
                 try:
                     dlq_entry = json.loads(message)
-                    original_message = dlq_entry.get("original_message", {})
+                    entry_guid = self._extract_guid_from_dlq_entry(dlq_entry)
 
-                    if original_message.get("metadata", {}).get("guid") == guid:
+                    if entry_guid == guid:
                         # Found the message with the matching GUID, now remove it
                         if self.redis.lrem(dlq_name, 1, message) > 0:
                             return dlq_entry
