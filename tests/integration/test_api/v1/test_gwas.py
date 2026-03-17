@@ -179,17 +179,16 @@ def test_get_gwas_with_associations(test_guid):
     gwas_model = UploadTraitResponse(**response.json())
     assert gwas_model.associations is not None
     assert len(gwas_model.associations) == 2
+    update_gwas_payload = json.load(open("tests/test_data/update_gwas_success_payload.json"))
 
     assoc = gwas_model.associations[0]
     assert "snp_id" in assoc
-    assert "beta" in assoc
-    assert "se" in assoc
-    assert "p" in assoc
-    assert "study_id" in assoc
+    assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][0]["beta"])
+    assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][0]["se"])
+    assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][0]["p"])
 
     assoc = gwas_model.associations[1]
     assert "snp_id" in assoc
-    assert "beta" in assoc
-    assert "se" in assoc
-    assert "p" in assoc
-    assert "existing_study_id" in assoc
+    assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][1]["beta"])
+    assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][1]["se"])
+    assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][1]["p"])

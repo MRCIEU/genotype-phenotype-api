@@ -171,18 +171,20 @@ class GwasUploadService:
                 snp = snp_map.get(assoc.snp)
                 if snp is None:
                     raise ValueError(f"SNP not found for SNP: {assoc.snp}")
-                study_id = self.studies_db.get_study_id_by_study_name(assoc.study_name)
-                existing_study_id = None
-                if study_id is not None:
-                    pass
+                # existing_study_id = studies.db study id (when association is from a published study)
+                # study_id = gwas_upload_id (when association is from current gwas or another gwas upload)
+                existing_study_id = self.studies_db.get_study_id_by_study_name(assoc.study_name)
+                study_id = None
+                if existing_study_id is not None:
+                    pass  # Association from studies.db - use existing_study_id
                 elif assoc.study_name == gwas.guid:
-                    existing_study_id = gwas.id
+                    study_id = gwas.id  # Association from current gwas upload
                 else:
                     # Check if study_name is another gwas upload (compare_with)
                     other_gwas_row = self.gwas_upload_db.get_gwas_by_guid(assoc.study_name)
                     if other_gwas_row is not None:
                         other_gwas = convert_duckdb_to_pydantic_model(GwasUpload, other_gwas_row)
-                        existing_study_id = other_gwas.id
+                        study_id = other_gwas.id  # Association from another gwas upload
                     else:
                         raise ValueError(f"Study not found for study name: {assoc.study_name}")
                 upload_associations.append(

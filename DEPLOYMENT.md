@@ -4,44 +4,34 @@ There are 2 sides to gpmap deployment, code, and data
 
 ## Code Deployment
 
-### Docker Swarm
-
-To add another server to production, there is a guide in the wiki in how to deploy and configure the Oracle server.
-
-Here are the steps after the server is available:
-
-*Leave and Join A Docker Swarm*
-
-To create a swarm, you must choose a server node to be a 'manager', and initalise the swarm
-
-```
-sudo docker swarm init --advertise-addr <private-ip-address-of-server>
-sudo docker swarm update --task-history-limit 2
-```
-
-
-You will also need to manually create the network
-
-```docker network create --driver=overlay --attachable gpmap_network```
-
-This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node.  You can get that join command again by `sudo docker swarm join-token worker`
-
-```sudo docker node update --label-add type=<api|upload> <name_of_node>```
-
-We currently have two types of nodes, one to run the api/nginx/redis, and the other to run the upload worker.  Add the new box to one of these.
-
-* Check membership of swarm `sudo docker node ls`
-* List what is running on the stack: `sudo docker stack ps gpmap`
-* Run to leave a docker swarm: `sudo docker swarm leave`
-* Destroy the docker stack and start again: `sudo docker stack rm gpmap`
-
 ### Deploy Code Changes
 
-There is a helper script that will update the code and restart: `./update_code_and_restart.sh`
+Once you have merged in your changes to `main`, and the CI pipeline has been run, you are ready to deploy your code.  We use Docker Swarm to deploy our changes, docker swarm has a 'Leader' node.  This is the server that you have to run all the commands from.  It is currently the server which is called `ORACLE_SERVER` in the GitHub actions environment variables.
 
-Essentially
+There are a series of scripts that help with managing deployment.  All of these scripts are copied over to the "main" oracle server
 
-sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune
+Docker swarm 
+
+* `update_code_and_restart.sh`: this will run the docker swarm deployment script which will deploy the latest docker containers
+* `update_data_update_code_restart.sh`: this is used when you have update the database files ([see this wiki](https://github.com/MRCIEU/genotype-phenotype-map/wiki/Pipeline-Output:-Sync-and-Backup)).  Copies over database files, updates containers, refreshes the redis cache.
+* `rollback_data_update_code_restart.sh`: Takes old db files, and recopies them, updates containers
+
+
+### Managing the GWAS Upload Queue
+
+The 'process GWAS' pipeline allows users to upload their own data, there are a series of API endpoints that allow us to control this pipeline
+
+* `./manage_queue.sh retry-dlq <guid>`: Retries a specific GWAS upload that failed
+* `./manage_queue.sh delete-gwas <guid>`: Deletes GWAS from database, oracle bucket, and upload server
+* `./manage_queue.sh delete-all-dlq`: Delete all messages from the DLQ
+
+
+### Renewing the SSL certificate
+
+If you deploy new code, the SSL cert will automatically be done.  However, if it isn't, there is a script `./refresh_ssl_certs.sh`
+
+This will run certbot, and restart the docker instances.  Importantly, the nginx frontend, which will pick up the new cert.
+
 
 ### Docker swarm errors
 
@@ -69,18 +59,32 @@ sudo mkswap /extraswap
 sudo swapon /extraswap
 ```
 
-## Data and Code Deployment
+## Docker Swarm Configuration
 
-All of the data for this project gets created on ieu-p1
+To add another server to production, there is a [guide in the wiki](https://github.com/MRCIEU/genotype-phenotype-api/wiki/Public-Website-and-Oracle-Cloud) on how to deploy and configure an Oracle server.
 
-There is a script in `genotype-phenotype-map` that allows you to move data from the pipeline onto the servers, please look at this file
+Here are the steps after the server is available:
 
-```Rscript sync_to_servers.R --different-options```
+*Leave and Join A Docker Swarm*
 
-This moves the data, and you can choose just to move what has changed.  Afterwards, there is a script on the manager server to update the data on the servers and restart the containers.
+To create a swarm, you must choose a server node to be a 'manager', and initalise the swarm
 
-`./update_data_update_code_restart.sh`
+```
+sudo docker swarm init --advertise-addr <private-ip-address-of-server>
+sudo docker swarm update --task-history-limit 2
+```
 
-Similarly, if there was a problem with the data, you can rollback (only the db files) and restart
+You will also need to manually create the network
 
-`./rollback_data_update_code_restart.sh`
+```docker network create --driver=overlay --attachable gpmap_network```
+
+This will create a `sudo docker swarm join` command, for you to copy, and run on the node you want to join the swarm.  You will also want to create a label for the new node.  You can get that join command again by `sudo docker swarm join-token worker`
+
+```sudo docker node update --label-add type=<api|upload> <name_of_node>```
+
+We currently have two types of nodes, one to run the api/nginx/redis, and the other to run the upload worker.  Add the new box to one of these.
+
+* Check membership of swarm `sudo docker node ls`
+* List what is running on the stack: `sudo docker stack ps gpmap`
+* Run to leave a docker swarm: `sudo docker swarm leave`
+* Destroy the docker stack and start again: `sudo docker stack rm gpmap`
