@@ -100,6 +100,8 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 2. Build a Docker image
 3. Push the image to Docker Hub
 
+For more information around deployment and data management, please [see the deployment page](DEPLOYMENT.md), and read up on the [oracle server hosting](https://github.com/MRCIEU/genotype-phenotype-api/wiki/Public-Website-and-Oracle-Cloud).
+
 ## Contributing
 
 1. Fork the repository
