@@ -555,8 +555,8 @@ class GwasColumnNames(BaseModel):
     P: Optional[str] = None
     BETA: Optional[str] = None
     OR: Optional[str] = None
-    LB: Optional[str] = None
-    UB: Optional[str] = None
+    OR_LB: Optional[str] = None
+    OR_UB: Optional[str] = None
     SE: Optional[str] = None
     EAF: Optional[str] = None
 
