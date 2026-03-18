@@ -223,10 +223,26 @@
 
                         <br />
                         <div class="is-divider mt-0 mb-0" data-content="OR"></div>
-                        <div class="columns mt-6 is-centered">
-                            <button class="button is-success" data-target="modal-js-example" @click="openModal()">
-                                Upload GWAS for Comparison
-                            </button>
+                        <div class="is-flex is-justify-content-center mt-6">
+                            <div class="has-text-centered">
+                                <button class="button is-success" data-target="modal-js-example" @click="openModal()">
+                                    Upload GWAS for Comparison
+                                </button>
+                                <div class="mt-2">
+                                    <div class="box has-background-success-light has-text-centered py-4 px-5">
+                                        <p class="mb-3 has-text-weight-semibold is-size-6">
+                                            Analyze data programmatically with our R package
+                                        </p>
+                                        <button
+                                            class="button is-success is-medium is-size-6"
+                                            data-target="r-package-modal"
+                                            @click="openRPackageModal()"
+                                        >
+                                            Get started with gpmapr
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <div
                                 x-show="uploadMetadata.postUploadModalOpen"
                                 x-cloak
@@ -633,21 +649,11 @@
                             @close="closeRPackageModal()"
                         ></r-package-modal>
 
-                        <div class="columns mt-2 is-centered">
-                            <button
-                                class="button is-success"
-                                data-target="r-package-modal"
-                                @click="openRPackageModal()"
-                            >
-                                Use R Package
-                            </button>
-                        </div>
-
                         <div class="block">
                             Please
                             <a
                                 target="_blank"
-                                href="https://www.bristol.ac.uk/ieugwasr/blog/2026/03/11/gpmap-blog-post/"
+                                href="https://ieureka.blogs.bristol.ac.uk/2026/03/11/genotype-phenotype-map/"
                             >
                                 read this blog post
                             </a>

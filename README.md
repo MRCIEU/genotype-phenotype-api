@@ -88,11 +88,9 @@ strconv.Atoi: parsing "": invalid syntax: If you are getting this error, try run
 
 ## Production
 
-Fill me in later.  There is some instructions in the [wiki](https://github.com/MRCIEU/genotype-phenotype-api/wiki/Public-Website-and-Oracle-Cloud).
 
-* [Frontend README can be found here](frontend/README.md)
 
-## CI/CD
+## Continuous Integration and Deployment
 
 The project includes a GitHub Actions workflow for Continuous Integration and Deployment. On each push to the main branch, it will:
 
@@ -101,6 +99,8 @@ The project includes a GitHub Actions workflow for Continuous Integration and De
 3. Push the image to Docker Hub
 
 For more information around deployment and data management, please [see the deployment page](DEPLOYMENT.md), and read up on the [oracle server hosting](https://github.com/MRCIEU/genotype-phenotype-api/wiki/Public-Website-and-Oracle-Cloud).
+
+Specific README for the [frontend can be found here](frontend/README.md)
 
 ## Contributing
 
