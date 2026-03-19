@@ -654,6 +654,8 @@ class ExtendedUploadColocGroup(UploadColocGroup):
     ld_block: Optional[str] = None
     unique_study_id: Optional[str] = None
     study: Optional[str] = None
+    study_id: Optional[int] = None
+    existing_study_id: Optional[int] = None
     file: Optional[str] = None
     svg_file: Optional[str] = None
     file_with_lbfs: Optional[str] = None
