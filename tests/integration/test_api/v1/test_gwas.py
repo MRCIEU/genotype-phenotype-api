@@ -181,6 +181,12 @@ def test_get_gwas_with_associations(test_guid):
     assert len(gwas_model.associations) == 2
     update_gwas_payload = json.load(open("tests/test_data/update_gwas_success_payload.json"))
 
+    coloc_groups = gwas_model.coloc_groups
+    assert len(coloc_groups) == len(update_gwas_payload["coloc_groups"])
+    for coloc_group in coloc_groups:
+        print(coloc_group.study_id, coloc_group.existing_study_id)
+        assert (coloc_group.study_id is not None) ^ (coloc_group.existing_study_id is not None)
+
     assoc = gwas_model.associations[0]
     assert "snp_id" in assoc
     assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][0]["beta"])
