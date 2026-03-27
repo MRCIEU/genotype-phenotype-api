@@ -2,15 +2,49 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from app.models.schemas import Singleton
 
+# Variant snp_id (string key in variant_data) used for coloc_pairs → study_extraction merge tests.
+variant_snp_id_key_for_coloc_pair_merge = "5553693"
+
 variant_data = {
     "80732": {"rsid": "rs7524102", "variant": "1:22371954", "num_studies": 55},
     "80717": {"rsid": "rs11810751", "variant": "1:22365104", "num_studies": 0},
+    # Curated for merge tests (studies_small + coloc_pairs_small; pair h4 below default API threshold).
+    variant_snp_id_key_for_coloc_pair_merge: {
+        "rsid": "rs28971325",
+        "variant": "22:45971264 G/A",
+        "num_studies": 0,
+        "coloc_pair_merge_partner_study_extraction_id": 4935290,
+        "coloc_pair_merge_h4_threshold": 0.75,
+    },
 }
+
+# Gene whose region includes that SNP in studies_small.
+gene_symbol_for_coloc_pair_merge = "WNT7B"
 
 
 @pytest.fixture(scope="session")
 def variants_in_studies_db():
     return variant_data
+
+
+@pytest.fixture(scope="session")
+def variant_coloc_pair_merge(variants_in_studies_db):
+    key = variant_snp_id_key_for_coloc_pair_merge
+    row = variants_in_studies_db[key]
+    return {
+        "snp_id": int(key),
+        "partner_study_extraction_id": row["coloc_pair_merge_partner_study_extraction_id"],
+        "h4_threshold": row["coloc_pair_merge_h4_threshold"],
+    }
+
+
+@pytest.fixture(scope="session")
+def gene_coloc_pair_merge(variant_coloc_pair_merge):
+    return {
+        "symbol": gene_symbol_for_coloc_pair_merge,
+        "partner_study_extraction_id": variant_coloc_pair_merge["partner_study_extraction_id"],
+        "h4_threshold": variant_coloc_pair_merge["h4_threshold"],
+    }
 
 
 @pytest.fixture(scope="session")

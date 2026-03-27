@@ -24,6 +24,9 @@ class GwasUploadService:
         self.studies_db = StudiesDBClient()
 
     def update_gwas_success(self, gwas: GwasUpload, update_gwas_request: UpdateGwasRequest):
+        # First, delete any existing uploaded data for the gwas upload
+        self.gwas_upload_db.delete_uploaded_data_for_gwas_upload_id(gwas.id)
+
         gwas.status = GwasStatus.COMPLETED.value
         ld_blocks = (
             [study.ld_block for study in update_gwas_request.study_extractions]

@@ -89,6 +89,7 @@ async def get_variants(
                 )
             coloc_pairs_service = ColocPairsService()
             associations_service = AssociationsService()
+            studies_service = StudiesService()
 
             snp_ids_to_expand = [v.id for v in variant_rows]
             colocs = studies_db.get_colocs_for_variants(snp_ids_to_expand)
@@ -145,6 +146,11 @@ async def get_variants(
                 v_snp_ids = list(set(v_snp_ids))
                 if v_snp_ids:
                     coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(v_snp_ids, h4_threshold=h4_threshold)
+
+            if include_coloc_pairs and coloc_pairs is not None:
+                study_extractions_dedup = studies_service.merge_study_extractions_for_coloc_pairs(
+                    study_extractions_dedup, coloc_pairs
+                )
 
             extended_colocs = [
                 ExtendedColocGroup(
@@ -235,7 +241,7 @@ async def get_variant(
     variant_id: str = Path(
         ..., description="Variant identifier (snp_id, rsid, chr:pos, or chr:pos_ref_alt - auto-detected)"
     ),
-    include_coloc_pairs: bool = Query(False, description="Whether to include coloc pairs for SNPs"),
+    include_coloc_pairs: bool = Query(True, description="Whether to include coloc pairs for SNPs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
     rsquared_threshold: float = Query(0.9, description="R² threshold for LD proxy fallback when no coloc/rare"),
 ) -> VariantResponse:
@@ -247,6 +253,7 @@ async def get_variant(
             raise HTTPException(status_code=400, detail="R² threshold must be between 0.8 and 1")
 
         studies_db = StudiesDBClient()
+        studies_service = StudiesService()
         coloc_pairs_service = ColocPairsService()
         associations_service = AssociationsService()
 
@@ -317,6 +324,9 @@ async def get_variant(
             snp_ids = list(set(snp_ids))
             if snp_ids:
                 coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
+
+        if include_coloc_pairs and coloc_pairs is not None:
+            study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(study_extractions, coloc_pairs)
 
         extended_colocs = []
         for coloc in colocs:

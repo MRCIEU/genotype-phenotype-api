@@ -172,6 +172,17 @@ def test_get_gwas(test_guid):
     assert len(gwas_model.study_extractions) >= 1
     assert len(gwas_model.upload_study_extractions) >= 1
 
+    pair_existing_ids = set()
+    for p in gwas_model.coloc_pairs:
+        for attr in ("existing_study_extraction_id_a", "existing_study_extraction_id_b"):
+            v = getattr(p, attr, None)
+            if v is not None:
+                pair_existing_ids.add(v)
+    study_extraction_ids = {se.id for se in gwas_model.study_extractions}
+    assert pair_existing_ids <= study_extraction_ids, (
+        "Every studies-DB study_extraction referenced by upload coloc_pairs must be in study_extractions"
+    )
+
 
 def test_get_gwas_with_associations(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}?include_associations=true")

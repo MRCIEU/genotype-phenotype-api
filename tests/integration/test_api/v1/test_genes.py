@@ -22,8 +22,11 @@ def test_get_genes():
         assert gene.num_rare_results is not None
 
 
-def test_get_genes_with_coloc_groups():
-    response = client.get("/v1/genes/WNT7B")
+def test_get_genes_with_coloc_groups(gene_coloc_pair_merge):
+    m = gene_coloc_pair_merge
+    response = client.get(
+        f"/v1/genes/{m['symbol']}?include_coloc_pairs=true&h4_threshold={m['h4_threshold']}",
+    )
     assert response.status_code == 200
     genes = response.json()
     assert genes is not None
@@ -53,6 +56,11 @@ def test_get_genes_with_coloc_groups():
         assert rare_result.chr is not None
         assert rare_result.bp is not None
         assert rare_result.min_p is not None
+
+    se_ids = {s.id for s in gene_response.study_extractions}
+    assert m["partner_study_extraction_id"] in se_ids
+    assert gene_response.coloc_pairs is not None
+    assert len(gene_response.coloc_pairs) > 0
 
 
 def test_get_genes_batch_by_ids():

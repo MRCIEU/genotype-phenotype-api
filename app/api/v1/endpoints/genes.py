@@ -146,6 +146,11 @@ async def get_genes(
             if snp_ids:
                 coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
 
+        if include_coloc_pairs and coloc_pairs is not None:
+            all_study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(
+                all_study_extractions, coloc_pairs
+            )
+
         variants = []
         if all_coloc_groups or all_rare_results or all_study_extractions:
             snp_ids = (
@@ -264,6 +269,11 @@ async def get_gene(
             snp_ids = list(set(snp_ids))
             if snp_ids:
                 coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
+
+        if include_coloc_pairs and coloc_pairs is not None and study_extractions is not None:
+            study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(
+                list(study_extractions), coloc_pairs
+            )
 
         variants = None
         if rare_results or coloc_groups or study_extractions:

@@ -292,7 +292,7 @@ class StudiesDBClient:
     @log_performance
     def get_trait_names_for_search(self):
         return self.studies_conn.execute(f"""
-            SELECT traits.id, traits.trait_name, studies.sample_size
+            SELECT traits.id, traits.trait_name, studies.sample_size, studies.ancestry
             FROM traits
             JOIN studies ON traits.id = studies.trait_id 
             WHERE traits.data_type IN ({",".join(self.common_data_types)}) AND studies.variant_type = '{VariantType.common.name}'

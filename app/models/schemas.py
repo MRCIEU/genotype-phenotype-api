@@ -291,6 +291,7 @@ class SearchTerm(BaseModel):
     alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
     sample_size: Optional[int] = None
+    ancestry: Optional[str] = None
     num_study_extractions: Optional[int] = None
     num_coloc_groups: Optional[int] = None
     num_coloc_studies: Optional[int] = None
@@ -487,7 +488,7 @@ class ProcessGwasRequest(BaseModel):
     p_value_threshold: float
     column_names: GwasColumnNames
     status: Optional[GwasStatus] = None
-    compare_with_upload_guids: Optional[List[str]] = None  # GWAS upload GUIDs to also compare against
+    compare_with_upload_guids: Optional[List[str]] = None
 
     @model_validator(mode="before")
     @classmethod
