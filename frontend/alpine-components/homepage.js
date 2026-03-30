@@ -236,8 +236,8 @@ export default function homepage() {
                 .split(/[\s,]+/)
                 .map(g => g.trim())
                 .filter(g => g.length > 0);
-            
-            const sampleSize = this.uploadMetadata.formData.sampleSize.replace(/[,\.]/g, "");
+
+            const sampleSize = this.uploadMetadata.formData.sampleSize.replace(/[,.]/g, "");
 
             const gwasRequest = {
                 name: this.uploadMetadata.formData.traitName,
