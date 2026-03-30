@@ -1,6 +1,7 @@
 from app.models.schemas import (
     BasicTraitResponse,
     ExtendedGene,
+    ExtendedStudyExtraction,
     GetTraitsResponse,
     GPMapMetadata,
     GetGenesResponse,
@@ -9,12 +10,13 @@ from app.models.schemas import (
     Singleton,
     Study,
     StudyDataType,
+    UploadColocPair,
     VariantType,
     convert_duckdb_to_pydantic_model,
 )
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
-from typing import Callable, List, TypeVar
+from typing import Callable, List, Optional, TypeVar
 from app.logging_config import get_logger
 
 from app.services.redis_decorator import redis_cache
@@ -42,6 +44,83 @@ class StudiesService(metaclass=Singleton):
                 seen[key] = True
                 result.append(item)
         return result
+
+    @staticmethod
+    def study_extraction_ids_from_coloc_pairs(coloc_pairs: Optional[List[dict]]) -> List[int]:
+        if not coloc_pairs:
+            return []
+        ids: set[int] = set()
+        for row in coloc_pairs:
+            for key in ("study_extraction_a_id", "study_extraction_b_id"):
+                v = row.get(key)
+                if v is not None:
+                    ids.add(int(v))
+        return list(ids)
+
+    def merge_study_extractions_for_coloc_pairs(
+        self,
+        study_extractions: List[ExtendedStudyExtraction],
+        coloc_pairs: Optional[List[dict]],
+    ) -> List[ExtendedStudyExtraction]:
+        """
+        Append study_extractions referenced by coloc pair rows but missing from study_extractions.
+        Deduplicates ids before querying studies DB.
+        """
+        if not coloc_pairs:
+            return study_extractions
+        pair_ids = self.study_extraction_ids_from_coloc_pairs(coloc_pairs)
+        if not pair_ids:
+            return study_extractions
+        have = {e.id for e in study_extractions}
+        missing = list({i for i in pair_ids if i not in have})
+        if not missing:
+            return study_extractions
+        rows = self.db.get_study_extractions_by_id(missing)
+        if not rows:
+            return study_extractions
+        extra = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, rows)
+        if not isinstance(extra, list):
+            extra = [extra]
+        merged = list(study_extractions) + extra
+        return StudiesService.deduplicate_by_key(merged, lambda e: e.id)
+
+    @staticmethod
+    def existing_study_extraction_ids_from_upload_coloc_pairs(
+        coloc_pairs: Optional[List[UploadColocPair]],
+    ) -> List[int]:
+        if not coloc_pairs:
+            return []
+        ids: set[int] = set()
+        for p in coloc_pairs:
+            for eid in (p.existing_study_extraction_id_a, p.existing_study_extraction_id_b):
+                if eid is not None:
+                    ids.add(int(eid))
+        return list(ids)
+
+    def merge_study_extractions_for_upload_coloc_pairs(
+        self,
+        study_extractions: Optional[List[ExtendedStudyExtraction]],
+        coloc_pairs: Optional[List[UploadColocPair]],
+    ) -> List[ExtendedStudyExtraction]:
+        """Like merge_study_extractions_for_coloc_pairs, for GWAS upload pair rows (studies DB ids)."""
+        if not coloc_pairs:
+            base: list[ExtendedStudyExtraction] = list(study_extractions or [])
+            return base
+        pair_ids = self.existing_study_extraction_ids_from_upload_coloc_pairs(coloc_pairs)
+        if not pair_ids:
+            return list(study_extractions or [])
+        have = {e.id for e in (study_extractions or [])}
+        missing = list({i for i in pair_ids if i not in have})
+        if not missing:
+            return list(study_extractions or [])
+        rows = self.db.get_study_extractions_by_id(missing)
+        if not rows:
+            return list(study_extractions or [])
+        extra = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, rows)
+        if not isinstance(extra, list):
+            extra = [extra]
+        merged = list(study_extractions or []) + extra
+        return StudiesService.deduplicate_by_key(merged, lambda e: e.id)
 
     @redis_cache(prefix=studies_db_cache_prefix, model_class=SearchTerms)
     def get_search_terms(self) -> SearchTerms:
@@ -77,6 +156,7 @@ class StudiesService(metaclass=Singleton):
                 alt_name=gene[1],
                 type_id=gene[0],
                 sample_size=None,
+                ancestry=None,
                 num_study_extractions=num_extractions_per_gene.get(gene[0], 0),
                 num_coloc_groups=num_coloc_groups_per_gene.get(gene[0], 0),
                 num_coloc_studies=num_coloc_studies_per_gene.get(gene[0], 0),
@@ -113,6 +193,7 @@ class StudiesService(metaclass=Singleton):
                 alt_name=None,
                 type_id=term[0],
                 sample_size=term[2],
+                ancestry=term[3],
                 num_study_extractions=num_extractions_per_study.get(term[0], 0),
                 num_coloc_groups=num_coloc_groups_per_trait.get(term[0], 0),
                 num_coloc_studies=num_coloc_studies_per_trait.get(term[0], 0),

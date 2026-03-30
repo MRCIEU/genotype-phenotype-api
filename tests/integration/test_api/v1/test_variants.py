@@ -172,9 +172,11 @@ def test_get_variant_by_id_with_ld_proxy_fallback(variants_in_studies_db):
         assert proxy_variant.id is not None
 
 
-def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
-    snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants/{snp_ids[0]}?include_coloc_pairs=true")
+def test_get_variant_by_id_with_coloc_pairs(variant_coloc_pair_merge):
+    mid = variant_coloc_pair_merge
+    response = client.get(
+        f"/v1/variants/{mid['snp_id']}?include_coloc_pairs=true&h4_threshold={mid['h4_threshold']}",
+    )
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None
@@ -190,6 +192,16 @@ def test_get_variant_by_id_with_coloc_pairs(variants_in_studies_db):
     assert len(variant_response.coloc_pairs) > 0
     for coloc_pair in variant_response.coloc_pairs:
         assert isinstance(coloc_pair, dict)
+
+    se_ids = {e.id for e in variant_response.study_extractions}
+    assert mid["partner_study_extraction_id"] in se_ids
+    pair_ids = set()
+    for row in variant_response.coloc_pairs:
+        for k in ("study_extraction_a_id", "study_extraction_b_id"):
+            v = row.get(k)
+            if v is not None:
+                pair_ids.add(v)
+    assert mid["partner_study_extraction_id"] in pair_ids
 
 
 def test_get_variant_summary_stats(variants_in_studies_db, mock_oci_service):

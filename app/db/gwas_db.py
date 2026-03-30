@@ -286,6 +286,20 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
+    def delete_uploaded_data_for_gwas_upload_id(self, gwas_upload_id: int) -> None:
+        """
+        Remove child rows for a GWAS upload (associations, coloc_groups, coloc_pairs,
+        study_extractions). Does not delete the gwas_upload row. Used after a failed
+        PUT success handler or to recover from a partially applied update.
+        """
+        with self.connect() as conn:
+            conn.execute("DELETE FROM associations WHERE gwas_upload_id = ?", [gwas_upload_id])
+            conn.execute("DELETE FROM coloc_groups WHERE gwas_upload_id = ?", [gwas_upload_id])
+            conn.execute("DELETE FROM coloc_pairs WHERE gwas_upload_id = ?", [gwas_upload_id])
+            conn.execute("DELETE FROM study_extractions WHERE gwas_upload_id = ?", [gwas_upload_id])
+            conn.commit()
+
+    @log_performance
     def populate_study_extractions(self, study_extractions: List[UploadStudyExtraction]):
         conn = self.connect()
         results = []

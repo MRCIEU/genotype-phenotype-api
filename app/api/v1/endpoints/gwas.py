@@ -27,6 +27,7 @@ from app.models.schemas import (
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
 from app.services.oci_service import OCIService
+from app.services.studies_service import StudiesService
 
 settings = get_settings()
 router = APIRouter()
@@ -224,6 +225,13 @@ async def get_gwas(
         existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
         existing_study_extractions = convert_duckdb_to_pydantic_model(
             ExtendedStudyExtraction, existing_study_extractions
+        )
+        studies_service = StudiesService()
+        if existing_study_extractions is not None and not isinstance(existing_study_extractions, list):
+            existing_study_extractions = [existing_study_extractions]
+        existing_study_extractions = studies_service.merge_study_extractions_for_upload_coloc_pairs(
+            list(existing_study_extractions or []),
+            coloc_pairs,
         )
 
         return UploadTraitResponse(

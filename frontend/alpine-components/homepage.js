@@ -237,6 +237,8 @@ export default function homepage() {
                 .map(g => g.trim())
                 .filter(g => g.length > 0);
 
+            const sampleSize = this.uploadMetadata.formData.sampleSize.replace(/[,.]/g, "");
+
             const gwasRequest = {
                 name: this.uploadMetadata.formData.traitName,
                 reference_build: this.uploadMetadata.formData.genomeBuild,
@@ -245,7 +247,7 @@ export default function homepage() {
                 is_published: !!this.uploadMetadata.formData.isPublished,
                 doi: this.uploadMetadata.formData.doi,
                 should_be_added: !!this.uploadMetadata.formData.shouldBeAdded,
-                sample_size: this.uploadMetadata.formData.sampleSize,
+                sample_size: sampleSize,
                 ancestry: this.uploadMetadata.formData.ancestry,
                 p_value_threshold: this.uploadMetadata.formData.pValueThreshold,
                 ...(compareGuids.length > 0 && { compare_with_upload_guids: compareGuids }),
