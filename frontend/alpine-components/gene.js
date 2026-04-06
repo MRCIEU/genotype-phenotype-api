@@ -237,7 +237,8 @@ export default function gene() {
 
         async downloadData() {
             this.downloadClicked = true;
-            await downloads.downloadDataToZip(this.data, this.data.gene.gene);
+            const geneId = new URLSearchParams(location.search).get("id");
+            await downloads.downloadGeneData(geneId);
         },
 
         get getDataForColocTable() {

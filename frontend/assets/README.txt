@@ -3,18 +3,17 @@ Data Export
 
 Files may include:
 - coloc_groups.tsv: Clustered colocalization results
-- coloc_pairs.tsv: Pairwise colocalization results
+- coloc_pairs.tsv: Pairwise colocalization results (except for region download)
+- associations.tsv: SNP-level association statistics (beta, se, p, eaf)
 - rare.tsv: Rare variant results  
 - trait.tsv: High level information about the trait
 - gene.tsv: High level information about the gene
 - study_extractions.tsv: Study extraction data
-- upload_study_extractions.tsv: additional upload specific study extraction data
+- upload_study_extractions.tsv: Additional upload-specific study extraction data
 - README.txt: This file
 
 Column descriptions:
-- coloc.csv: Contains posterior probabilities, candidate SNPs, and trait associations
-- rare.csv: Contains rare variant associations and significance data
-- study_extractions.csv: Contains study-level extraction data
+You can find detailed descriptions of the columns for each tsv in the "details" section of the documentation in the R package: https://mrcieu.r-universe.dev/gpmapr/doc/manual.html#trait
 
 For more information, visit: https://gpmap.opengwas.io
 

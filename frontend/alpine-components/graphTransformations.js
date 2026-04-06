@@ -564,6 +564,46 @@ export default {
         const genes = genesInRegion.filter(gene => gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp);
 
         assignGeneLevels(genes);
+        // Recede non-focus genes on the gene page (`focus` set in gene.js). Region view has no focus — keep full palette.
+        const hasFocusGene = genes.some(g => g.focus);
+        const otherGeneFill = "#c6c6cc";
+        const otherGeneStroke = "#a8aab0";
+        const paletteLen = constants.colors.palette.length;
+
+        function geneFill(d, i) {
+            if (!hasFocusGene || d.focus) return constants.colors.palette[i % paletteLen];
+            if (self.displayFilters.gene === d.gene) return constants.colors.palette[i % paletteLen];
+            return otherGeneFill;
+        }
+        function geneStroke(d) {
+            if (!hasFocusGene) return d.focus ? textColor : null;
+            if (d.focus) return textColor;
+            if (self.displayFilters.gene === d.gene) return textColor;
+            return otherGeneStroke;
+        }
+        function geneStrokeWidth(d) {
+            if (!hasFocusGene) return 3;
+            if (d.focus) return 3;
+            if (self.displayFilters.gene === d.gene) return 2;
+            return 1;
+        }
+        function geneOpacity(d) {
+            if (!hasFocusGene) return 0.7;
+            if (d.focus) return 0.92;
+            if (self.displayFilters.gene === d.gene) return 0.88;
+            return 0.62;
+        }
+        function applyGeneRectAttrs(rectSel) {
+            rectSel.each(function (d) {
+                const i = genes.indexOf(d);
+                d3.select(this)
+                    .attr("fill", geneFill(d, i))
+                    .attr("stroke", geneStroke(d))
+                    .attr("stroke-width", geneStrokeWidth(d))
+                    .attr("opacity", geneOpacity(d));
+            });
+        }
+
         // Gene rectangles need to be interactive, so put them in a separate interactive SVG layer above canvas
         const interactivePlotGroup = interactiveSvg
             .append("g")
@@ -581,22 +621,29 @@ export default {
             .attr("y", d => geneTrackY + d.level * (graphConstants.geneTrackMargin.height + 5))
             .attr("width", d => xScale(d.stop / 1000000) - xScale(d.start / 1000000))
             .attr("height", graphConstants.geneTrackMargin.height)
-            .attr("fill", (d, i) => constants.colors.palette[i % constants.colors.palette.length])
-            .attr("stroke", d => (d.focus ? textColor : null))
-            .attr("stroke-width", 3)
-            .attr("opacity", 0.7)
+            .each(function () {
+                applyGeneRectAttrs(d3.select(this));
+            })
             .on("mouseover", (event, d) => {
+                const i = genes.indexOf(d);
                 graphTransformations.getTooltip(`Gene: ${d.gene}`, event);
-                d3.select(event.target).style("cursor", "pointer").style("stroke", "#808080").style("stroke-width", 3);
+                const el = d3.select(event.target);
+                el.style("cursor", "pointer").attr("stroke", "#808080").attr("stroke-width", 3);
+                if (hasFocusGene && !d.focus) {
+                    el.attr("fill", constants.colors.palette[i % paletteLen]).attr("opacity", 0.9);
+                }
             })
-            .on("click", (event, d) => {
+            .on("click", (_, d) => {
                 self.displayFilters.gene = d.gene;
+                applyGeneRectAttrs(geneGroup.selectAll(".gene-rect"));
             })
-            .on("mouseout", event => {
+            .on("mouseout", function () {
                 d3.selectAll(".tooltip").remove();
-                d3.select(event.target)
-                    .style("stroke", d => (d.focus ? textColor : null))
-                    .style("stroke-width", d => (d.focus ? 3 : null));
+                const rect = d3.select(this);
+                const d = rect.datum();
+                rect.attr("stroke", geneStroke(d)).attr("stroke-width", geneStrokeWidth(d));
+                const i = genes.indexOf(d);
+                rect.attr("fill", geneFill(d, i)).attr("opacity", geneOpacity(d));
             });
 
         // Initial render

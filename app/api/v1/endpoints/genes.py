@@ -275,7 +275,7 @@ async def get_gene(
                 list(study_extractions), coloc_pairs
             )
 
-        variants = None
+        variants: List[Variant] = []
         if rare_results or coloc_groups or study_extractions:
             snp_ids = (
                 [coloc.snp_id for coloc in (coloc_groups or [])]
@@ -284,6 +284,8 @@ async def get_gene(
             )
             variants = studies_db.get_variants(snp_ids=snp_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)
+            if not isinstance(variants, list):
+                variants = [variants]
 
         return GeneResponse(
             tissues=tissues,

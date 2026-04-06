@@ -230,7 +230,8 @@ export default function trait() {
         },
 
         async downloadDataOnly() {
-            await downloads.downloadDataToZip(this.data, this.data.trait.trait_name || this.data.trait.name);
+            const traitId = new URLSearchParams(location.search).get("id");
+            await downloads.downloadTraitData(traitId, this.userUpload);
             this.downloadClicked = true;
         },
 

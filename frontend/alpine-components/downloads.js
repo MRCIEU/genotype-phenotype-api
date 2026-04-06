@@ -1,7 +1,48 @@
 import JSZip from "jszip";
 import readme from "../assets/README.txt?raw";
+import constants from "./constants.js";
 
 export default {
+    async downloadTraitData(traitId, isUserUpload) {
+        const baseUrl = constants.apiUrl;
+        const traitUrl = isUserUpload
+            ? `${baseUrl}/gwas/${traitId}?include_associations=true`
+            : `${baseUrl}/traits/${traitId}?include_associations=true`;
+        const traitResp = await fetch(traitUrl);
+        if (!traitResp.ok) throw new Error(`Failed to fetch trait data: ${traitResp.status}`);
+        const data = await traitResp.json();
+
+        if (!isUserUpload) {
+            try {
+                const pairsResp = await fetch(`${baseUrl}/traits/${traitId}/coloc-pairs`);
+                if (pairsResp.ok) {
+                    const pairsBody = await pairsResp.json();
+                    data.coloc_pairs = this._colocPairRowsToObjects(
+                        pairsBody.coloc_pair_column_names,
+                        pairsBody.coloc_pair_rows
+                    );
+                }
+            } catch (e) {
+                console.warn("Could not fetch coloc pairs for download", e);
+            }
+        }
+
+        await this.downloadDataToZip(data, data.trait.trait_name || data.trait.name);
+    },
+
+    async downloadGeneData(geneId) {
+        const url = `${constants.apiUrl}/genes/${geneId}?include_trans=false&include_coloc_pairs=true&include_associations=true`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Failed to fetch gene data: ${resp.status}`);
+        const data = await resp.json();
+        await this.downloadDataToZip(data, data.gene.gene);
+    },
+
+    _colocPairRowsToObjects(columns, rows) {
+        if (!columns || !columns.length || !rows || !rows.length) return [];
+        return rows.map(row => Object.fromEntries(columns.map((col, i) => [col, row[i]])));
+    },
+
     async downloadDataToZip(data, name, zipBlob = null) {
         let zip;
         if (zipBlob) {
@@ -63,6 +104,11 @@ export default {
         if (data.study_extractions && data.study_extractions.length > 0) {
             const studyTSV = this.arrayToTSV(data.study_extractions);
             zip.file("study_extractions.tsv", studyTSV);
+        }
+
+        if (data.associations && data.associations.length > 0) {
+            const assocTSV = this.arrayToTSV(data.associations);
+            zip.file("associations.tsv", assocTSV);
         }
 
         const newZipBlob = await zip.generateAsync({ type: "blob" });
