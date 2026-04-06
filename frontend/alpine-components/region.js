@@ -188,19 +188,37 @@ export default function region() {
             await downloads.downloadDataToZip(this.data, this.data.region.ld_block);
         },
 
+        get hasActiveDisplayFilter() {
+            return (
+                this.displayFilters.candidateSnp !== null ||
+                this.displayFilters.traitName !== null ||
+                this.displayFilters.gene !== null
+            );
+        },
+
         get getDataForColocTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) return [];
 
-            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedColocs));
+            let entries = Object.entries(this.filteredData.groupedColocs);
 
-            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.traitName) {
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(r => r.trait_name === this.displayFilters.traitName),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
+            }
+
+            let tableData = Object.fromEntries(entries);
+
             if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(tableData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
+                const idx = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (idx > 0) {
+                    const selected = entries[idx];
+                    entries.splice(idx, 1);
+                    entries.unshift(selected);
                     tableData = Object.fromEntries(entries);
                 }
             }
@@ -209,18 +227,28 @@ export default function region() {
         },
 
         get getDataForRareTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
 
-            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedRare));
+            let entries = Object.entries(this.filteredData.groupedRare);
 
-            // If a SNP is selected, reorder so that its group appears first
+            if (this.displayFilters.traitName) {
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(r => r.trait_name === this.displayFilters.traitName),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
+            }
+
+            let tableData = Object.fromEntries(entries);
+
             if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(tableData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
+                const idx = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
+                if (idx > 0) {
+                    const selected = entries[idx];
+                    entries.splice(idx, 1);
+                    entries.unshift(selected);
                     tableData = Object.fromEntries(entries);
                 }
             }

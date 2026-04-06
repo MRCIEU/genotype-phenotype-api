@@ -57,14 +57,14 @@ export default {
         this.showTables.coloc = isColoc;
         this.showTables.rare = !isColoc;
 
-        const scrollToHeader = () => {
+        const scrollToHeader = (retries = 3) => {
             const headerElement = document.getElementById(headerId);
             if (headerElement && headerElement.offsetParent !== null) {
                 const y = headerElement.getBoundingClientRect().top + window.pageYOffset - 80;
                 window.scrollTo(0, y);
-                return true;
+                return;
             }
-            return false;
+            if (retries > 0) requestAnimationFrame(() => scrollToHeader(retries - 1));
         };
 
         this.$nextTick(() => scrollToHeader());

@@ -273,47 +273,49 @@
                 <div class="columns mt-0 mb-0 is-centered" x-show="showResults">
                     <div class="column is-11">
                         <div
-                            id="coloc-table"
-                            style="display: flex; align-items: center; cursor: pointer"
-                            @click="showTables.coloc = !showTables.coloc"
+                            x-show="!hasActiveDisplayFilter"
+                            class="notification is-info is-light has-text-centered"
+                            style="padding: 0.75rem 1rem; margin-top: 0.5rem"
                         >
-                            <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
-                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Coloc Results</h4>
-                            <h6 class="subtitle is-6 mb-2" style="margin-bottom: 0; font-size: 10px">
-                                (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
-                            </h6>
+                            Click on a SNP, chromosome, or use the 'Filter Results By' input above to display the results table.
                         </div>
-                        <results-table
-                            id="coloc-table"
-                            :data="getDataForColocTable"
-                            :hide-variant-link="userUpload"
-                            x-show="showTables.coloc"
-                        ></results-table>
-                        <div
-                            id="rare-table"
-                            x-show="doRareResultsExist"
-                            style="display: flex; align-items: center; cursor: pointer"
-                            @click="showTables.rare = !showTables.rare"
-                        >
+                        <template x-if="hasActiveDisplayFilter">
                             <div>
-                                <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
-                                <h4 class="title is-4" style="margin-bottom: 0; display: inline; margin-right: 10px">
-                                    Rare Results
-                                </h4>
-                                <span
-                                    class="subtitle is-6"
-                                    style="font-size: 10px; display: inline; white-space: nowrap"
+                                <div
+                                    id="coloc-table"
+                                    style="display: flex; align-items: center; cursor: pointer"
+                                    @click="showTables.coloc = !showTables.coloc"
                                 >
-                                    (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
-                                </span>
+                                    <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
+                                    <h4 class="title is-4 mb-2" style="margin-bottom: 0">Colocalization Results</h4>
+                                </div>
+                                <results-table
+                                    id="coloc-table"
+                                    :data="getDataForColocTable"
+                                    :hide-variant-link="userUpload"
+                                    x-show="showTables.coloc"
+                                ></results-table>
+                                <div
+                                    id="rare-table"
+                                    x-show="doRareResultsExist"
+                                    style="display: flex; align-items: center; cursor: pointer"
+                                    @click="showTables.rare = !showTables.rare"
+                                >
+                                    <div>
+                                        <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
+                                        <h4 class="title is-4" style="margin-bottom: 0; display: inline; margin-right: 10px">
+                                            Rare Variant Results
+                                        </h4>
+                                    </div>
+                                    <results-table
+                                        id="rare-table"
+                                        :data="getDataForRareTable"
+                                        :hide-variant-link="userUpload"
+                                        x-show="showTables.rare"
+                                    ></results-table>
+                                </div>
                             </div>
-                            <results-table
-                                id="rare-table"
-                                :data="getDataForRareTable"
-                                :hide-variant-link="userUpload"
-                                x-show="showTables.rare"
-                            ></results-table>
-                        </div>
+                        </template>
                     </div>
                 </div>
                 <app-footer></app-footer>

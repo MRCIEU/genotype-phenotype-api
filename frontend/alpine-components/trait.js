@@ -339,14 +339,29 @@ export default function trait() {
             this.traitSearch.text = "";
         },
 
+        get hasActiveDisplayFilter() {
+            return (
+                this.displayFilters.candidateSnp !== null ||
+                this.displayFilters.chr !== null ||
+                this.displayFilters.traitName !== null
+            );
+        },
+
         get getDataForColocTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.filteredData.coloc_groups || this.filteredData.coloc_groups.length === 0) return [];
 
-            // Keep chromosome filtering, but do not drop other SNPs when one is selected
             let tableData = this.filteredData.coloc_groups.filter(coloc => {
                 if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr;
-                else return true;
+                return true;
             });
+
+            if (this.displayFilters.traitName) {
+                const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
+                tableData = tableData.filter(
+                    c => c.trait_name === this.displayFilters.traitName || c.trait_name === pageTrait,
+                );
+            }
 
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
@@ -357,7 +372,6 @@ export default function trait() {
                 this.userUpload
             );
 
-            // If a SNP is selected, reorder so that its group appears first
             if (this.displayFilters.candidateSnp) {
                 const candidateSnpKey = this.displayFilters.candidateSnp;
                 const selectedEntryValue = groupedData[candidateSnpKey];
@@ -376,13 +390,20 @@ export default function trait() {
         },
 
         get getDataForRareTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
 
-            // Only filter by chromosome if specified, not by SNP (we'll reorder instead)
             let tableData = this.filteredData.rare.filter(rare => {
                 if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr;
-                else return true;
+                return true;
             });
+
+            if (this.displayFilters.traitName) {
+                const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
+                tableData = tableData.filter(
+                    r => r.trait_name === this.displayFilters.traitName || r.trait_name === pageTrait,
+                );
+            }
 
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
@@ -393,7 +414,6 @@ export default function trait() {
                 this.userUpload
             );
 
-            // If a SNP is selected, reorder so that its group appears first
             if (this.displayFilters.candidateSnp) {
                 const candidateSnpKey = this.displayFilters.candidateSnp;
                 const selectedEntryValue = groupedData[candidateSnpKey];
