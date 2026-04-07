@@ -174,15 +174,24 @@ export default function trait() {
 
             const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
             const dropdownColocs = graphTransformations.groupBySnp(
-                this.filteredData.coloc_groups, "trait", this.data.trait.id, {}, this.userUpload
+                this.filteredData.coloc_groups,
+                "trait",
+                this.data.trait.id,
+                {},
+                this.userUpload
             );
             const dropdownRare = graphTransformations.groupBySnp(
-                this.filteredData.rare, "trait", this.data.trait.id, {}, this.userUpload
+                this.filteredData.rare,
+                "trait",
+                this.data.trait.id,
+                {},
+                this.userUpload
             );
             this.totalColocGroups = Object.keys(dropdownColocs).length;
             this.totalRareGroups = Object.keys(dropdownRare).length;
             this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
-                { ...dropdownColocs, ...dropdownRare }, { excludeTrait: pageTrait }
+                { ...dropdownColocs, ...dropdownRare },
+                { excludeTrait: pageTrait }
             );
         },
 
@@ -378,7 +387,7 @@ export default function trait() {
             if (this.displayFilters.traitName) {
                 const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
                 tableData = tableData.filter(
-                    c => c.trait_name === this.displayFilters.traitName || c.trait_name === pageTrait,
+                    c => c.trait_name === this.displayFilters.traitName || c.trait_name === pageTrait
                 );
             }
 
@@ -386,7 +395,7 @@ export default function trait() {
                 const filterGene = this.displayFilters.gene;
                 const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
                 tableData = tableData.filter(
-                    c => c.gene === filterGene || c.situated_gene === filterGene || c.trait_name === pageTrait,
+                    c => c.gene === filterGene || c.situated_gene === filterGene || c.trait_name === pageTrait
                 );
             }
 
@@ -426,7 +435,7 @@ export default function trait() {
             if (this.displayFilters.traitName) {
                 const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
                 tableData = tableData.filter(
-                    r => r.trait_name === this.displayFilters.traitName || r.trait_name === pageTrait,
+                    r => r.trait_name === this.displayFilters.traitName || r.trait_name === pageTrait
                 );
             }
 
@@ -434,7 +443,7 @@ export default function trait() {
                 const filterGene = this.displayFilters.gene;
                 const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
                 tableData = tableData.filter(
-                    r => r.gene === filterGene || r.situated_gene === filterGene || r.trait_name === pageTrait,
+                    r => r.gene === filterGene || r.situated_gene === filterGene || r.trait_name === pageTrait
                 );
             }
 

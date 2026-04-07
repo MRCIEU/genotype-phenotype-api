@@ -133,7 +133,10 @@
                                             white-space: nowrap;
                                         "
                                     >
-                                        <template x-for="item in getTraitsToFilterBy()" :key="item.type + ':' + item.label">
+                                        <template
+                                            x-for="item in getTraitsToFilterBy()"
+                                            :key="item.type + ':' + item.label"
+                                        >
                                             <a
                                                 class="dropdown-item"
                                                 @click="filterByTrait(item)"

@@ -127,8 +127,12 @@ export default {
                 if (r.gene && r.gene !== "NA") genesInGroup.add(r.gene);
                 if (r.situated_gene && r.situated_gene !== "NA") genesInGroup.add(r.situated_gene);
             });
-            traitsInGroup.forEach(t => { traitGroupCount[t] = (traitGroupCount[t] || 0) + 1; });
-            genesInGroup.forEach(g => { geneGroupCount[g] = (geneGroupCount[g] || 0) + 1; });
+            traitsInGroup.forEach(t => {
+                traitGroupCount[t] = (traitGroupCount[t] || 0) + 1;
+            });
+            genesInGroup.forEach(g => {
+                geneGroupCount[g] = (geneGroupCount[g] || 0) + 1;
+            });
         }
 
         const items = [];

@@ -133,17 +133,14 @@ export default function region() {
             );
             this.filteredData.groupedResults = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
 
-            const dropdownColocs = graphTransformations.groupBySnp(
-                this.filteredData.colocs, null, null, {}
-            );
-            const dropdownRare = graphTransformations.groupBySnp(
-                this.filteredData.rare, null, null, {}
-            );
+            const dropdownColocs = graphTransformations.groupBySnp(this.filteredData.colocs, null, null, {});
+            const dropdownRare = graphTransformations.groupBySnp(this.filteredData.rare, null, null, {});
             this.totalColocGroups = Object.keys(dropdownColocs).length;
             this.totalRareGroups = Object.keys(dropdownRare).length;
-            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
-                { ...dropdownColocs, ...dropdownRare }
-            );
+            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits({
+                ...dropdownColocs,
+                ...dropdownRare,
+            });
         },
 
         get regionName() {
@@ -219,10 +216,7 @@ export default function region() {
 
             if (this.displayFilters.traitName) {
                 entries = entries
-                    .map(([snp, rows]) => [
-                        snp,
-                        rows.filter(r => r.trait_name === this.displayFilters.traitName),
-                    ])
+                    .map(([snp, rows]) => [snp, rows.filter(r => r.trait_name === this.displayFilters.traitName)])
                     .filter(([_, rows]) => rows.length > 0);
             }
 
@@ -251,10 +245,7 @@ export default function region() {
 
             if (this.displayFilters.traitName) {
                 entries = entries
-                    .map(([snp, rows]) => [
-                        snp,
-                        rows.filter(r => r.trait_name === this.displayFilters.traitName),
-                    ])
+                    .map(([snp, rows]) => [snp, rows.filter(r => r.trait_name === this.displayFilters.traitName)])
                     .filter(([_, rows]) => rows.length > 0);
             }
 

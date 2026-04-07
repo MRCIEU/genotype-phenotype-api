@@ -202,7 +202,10 @@
                                             white-space: nowrap;
                                         "
                                     >
-                                        <template x-for="item in getTraitsToFilterBy()" :key="item.type + ':' + item.label">
+                                        <template
+                                            x-for="item in getTraitsToFilterBy()"
+                                            :key="item.type + ':' + item.label"
+                                        >
                                             <a
                                                 class="dropdown-item"
                                                 @click="filterByTrait(item)"
@@ -282,7 +285,8 @@
                             class="has-text-centered has-text-grey"
                             style="padding: 0.75rem 1rem"
                         >
-                            Click on a SNP, chromosome, or use the 'Filter Results By' input above to display the specific results.
+                            Click on a SNP, chromosome, or use the 'Filter Results By' input above to display the
+                            specific results.
                         </p>
                         <div
                             id="coloc-table"

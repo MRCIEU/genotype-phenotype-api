@@ -179,16 +179,22 @@ export default function gene() {
 
             this.filteredData.studies = [];
             const dropdownColocs = graphTransformations.groupBySnp(
-                this.filteredData.coloc_groups, "gene", this.data.gene.id, {}
+                this.filteredData.coloc_groups,
+                "gene",
+                this.data.gene.id,
+                {}
             );
             const dropdownRare = graphTransformations.groupBySnp(
-                this.filteredData.rare, "situated_gene", this.data.gene.situated_gene_id, {}
+                this.filteredData.rare,
+                "situated_gene",
+                this.data.gene.situated_gene_id,
+                {}
             );
             this.totalColocGroups = Object.keys(dropdownColocs).length;
             this.totalRareGroups = Object.keys(dropdownRare).length;
             this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
                 { ...dropdownColocs, ...dropdownRare },
-                { excludeGene: this.data.gene.gene },
+                { excludeGene: this.data.gene.gene }
             );
         },
 
@@ -275,7 +281,12 @@ export default function gene() {
                 entries = entries
                     .map(([snp, rows]) => [
                         snp,
-                        rows.filter(r => r.trait_name === this.displayFilters.traitName || r.gene === pageGene || r.situated_gene === pageGene),
+                        rows.filter(
+                            r =>
+                                r.trait_name === this.displayFilters.traitName ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
+                        ),
                     ])
                     .filter(([_, rows]) => rows.length > 0);
             }
@@ -285,9 +296,12 @@ export default function gene() {
                 entries = entries
                     .map(([snp, rows]) => [
                         snp,
-                        rows.filter(r =>
-                            r.gene === filterGene || r.situated_gene === filterGene ||
-                            r.gene === pageGene || r.situated_gene === pageGene
+                        rows.filter(
+                            r =>
+                                r.gene === filterGene ||
+                                r.situated_gene === filterGene ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
                         ),
                     ])
                     .filter(([_, rows]) => rows.length > 0);
@@ -311,7 +325,12 @@ export default function gene() {
                 entries = entries
                     .map(([snp, rows]) => [
                         snp,
-                        rows.filter(r => r.trait_name === this.displayFilters.traitName || r.gene === pageGene || r.situated_gene === pageGene),
+                        rows.filter(
+                            r =>
+                                r.trait_name === this.displayFilters.traitName ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
+                        ),
                     ])
                     .filter(([_, rows]) => rows.length > 0);
             }
@@ -321,9 +340,12 @@ export default function gene() {
                 entries = entries
                     .map(([snp, rows]) => [
                         snp,
-                        rows.filter(r =>
-                            r.gene === filterGene || r.situated_gene === filterGene ||
-                            r.gene === pageGene || r.situated_gene === pageGene
+                        rows.filter(
+                            r =>
+                                r.gene === filterGene ||
+                                r.situated_gene === filterGene ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
                         ),
                     ])
                     .filter(([_, rows]) => rows.length > 0);
