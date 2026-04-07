@@ -34,6 +34,8 @@ export default function region() {
         },
         minMbp: null,
         maxMbp: null,
+        totalColocGroups: 0,
+        totalRareGroups: 0,
         errorMessage: null,
         rPackageModalOpen: false,
 
@@ -131,7 +133,17 @@ export default function region() {
             );
             this.filteredData.groupedResults = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
 
-            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(this.filteredData.groupedResults);
+            const dropdownColocs = graphTransformations.groupBySnp(
+                this.filteredData.colocs, null, null, {}
+            );
+            const dropdownRare = graphTransformations.groupBySnp(
+                this.filteredData.rare, null, null, {}
+            );
+            this.totalColocGroups = Object.keys(dropdownColocs).length;
+            this.totalRareGroups = Object.keys(dropdownRare).length;
+            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
+                { ...dropdownColocs, ...dropdownRare }
+            );
         },
 
         get regionName() {
@@ -148,10 +160,7 @@ export default function region() {
         },
 
         getTraitsToFilterBy() {
-            if (this.traitSearch.orderedTraits === null) return [];
-            return this.traitSearch.orderedTraits.filter(
-                text => !this.traitSearch.text || text.toLowerCase().includes(this.traitSearch.text.toLowerCase())
-            );
+            return graphTransformations.buildFilterDropdownItems(this.traitSearch.orderedTraits, this.traitSearch.text);
         },
 
         removeDisplayFilters() {
@@ -164,9 +173,14 @@ export default function region() {
             this.traitSearch.text = "";
         },
 
-        filterByTrait(trait) {
-            if (trait !== null) {
-                this.displayFilters.traitName = trait;
+        filterByTrait(item) {
+            if (!item) return;
+            if (item.type === "trait") {
+                this.displayFilters.traitName = item.label;
+                this.displayFilters.gene = null;
+            } else if (item.type === "gene") {
+                this.displayFilters.gene = item.label;
+                this.displayFilters.traitName = null;
             }
         },
 
@@ -189,6 +203,7 @@ export default function region() {
         },
 
         get hasActiveDisplayFilter() {
+            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
             return (
                 this.displayFilters.candidateSnp !== null ||
                 this.displayFilters.traitName !== null ||
@@ -211,19 +226,21 @@ export default function region() {
                     .filter(([_, rows]) => rows.length > 0);
             }
 
-            let tableData = Object.fromEntries(entries);
-
-            if (this.displayFilters.candidateSnp) {
-                const idx = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (idx > 0) {
-                    const selected = entries[idx];
-                    entries.splice(idx, 1);
-                    entries.unshift(selected);
-                    tableData = Object.fromEntries(entries);
-                }
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(r => r.gene === filterGene || r.situated_gene === filterGene),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
             }
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            if (this.displayFilters.candidateSnp) {
+                entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
+            }
+
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get getDataForRareTable() {
@@ -241,19 +258,21 @@ export default function region() {
                     .filter(([_, rows]) => rows.length > 0);
             }
 
-            let tableData = Object.fromEntries(entries);
-
-            if (this.displayFilters.candidateSnp) {
-                const idx = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (idx > 0) {
-                    const selected = entries[idx];
-                    entries.splice(idx, 1);
-                    entries.unshift(selected);
-                    tableData = Object.fromEntries(entries);
-                }
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(r => r.gene === filterGene || r.situated_gene === filterGene),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
             }
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            if (this.displayFilters.candidateSnp) {
+                entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
+            }
+
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         initColocByPositionGraph() {

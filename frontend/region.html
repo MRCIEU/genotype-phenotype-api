@@ -111,7 +111,7 @@
                                     <input
                                         type="text"
                                         class="input is-small"
-                                        :placeholder="displayFilters.trait_name ? displayFilters.trait_name : 'Filter Results By...'"
+                                        :placeholder="displayFilters.traitName || displayFilters.gene ? (displayFilters.traitName || 'Gene: ' + displayFilters.gene) : 'Filter Results By...'"
                                         x-model="traitSearch.text"
                                         @focus="traitSearch.showDropDown = true"
                                         @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
@@ -133,8 +133,12 @@
                                             white-space: nowrap;
                                         "
                                     >
-                                        <template x-for="trait in getTraitsToFilterBy()" :key="trait">
-                                            <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
+                                        <template x-for="item in getTraitsToFilterBy()" :key="item.type + ':' + item.label">
+                                            <a
+                                                class="dropdown-item"
+                                                @click="filterByTrait(item)"
+                                                x-text="item.type === 'gene' ? 'Gene: ' + item.label : item.label"
+                                            ></a>
                                         </template>
                                     </div>
                                 </div>
@@ -192,42 +196,38 @@
                 <!-- Data tables -->
                 <div class="columns mt-0 mb-0 is-centered">
                     <div class="column is-11">
-                        <div
+                        <p
                             x-show="!hasActiveDisplayFilter"
-                            class="notification is-info is-light has-text-centered"
-                            style="padding: 0.75rem 1rem; margin-top: 0.5rem"
+                            class="has-text-centered has-text-grey"
+                            style="padding: 0.75rem 1rem"
                         >
                             Click on a SNP or use the 'Filter Results By' input above to display the results table.
+                        </p>
+                        <div
+                            style="display: flex; align-items: center; cursor: pointer"
+                            @click="showTables.coloc = !showTables.coloc"
+                        >
+                            <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
+                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Colocalization Results</h4>
                         </div>
-                        <template x-if="hasActiveDisplayFilter">
-                            <div>
-                                <div
-                                    style="display: flex; align-items: center; cursor: pointer"
-                                    @click="showTables.coloc = !showTables.coloc"
-                                >
-                                    <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
-                                    <h4 class="title is-4 mb-2" style="margin-bottom: 0">Colocalization Results</h4>
-                                </div>
-                                <results-table
-                                    id="coloc-table"
-                                    :data="getDataForColocTable"
-                                    x-show="showTables.coloc"
-                                ></results-table>
+                        <results-table
+                            id="coloc-table"
+                            :data="getDataForColocTable"
+                            x-show="hasActiveDisplayFilter && showTables.coloc"
+                        ></results-table>
 
-                                <div
-                                    style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
-                                    @click="showTables.rare = !showTables.rare"
-                                >
-                                    <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
-                                    <h4 class="title is-4 mb-2" style="margin-bottom: 0">Rare Variant Results</h4>
-                                </div>
-                                <results-table
-                                    id="rare-table"
-                                    :data="getDataForRareTable"
-                                    x-show="showTables.rare"
-                                ></results-table>
-                            </div>
-                        </template>
+                        <div
+                            style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
+                            @click="showTables.rare = !showTables.rare"
+                        >
+                            <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
+                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Rare Variant Results</h4>
+                        </div>
+                        <results-table
+                            id="rare-table"
+                            :data="getDataForRareTable"
+                            x-show="hasActiveDisplayFilter && showTables.rare"
+                        ></results-table>
                     </div>
                 </div>
                 <app-footer></app-footer>

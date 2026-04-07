@@ -31,12 +31,15 @@ export default function trait() {
             chr: null,
             candidateSnp: null,
             traitName: null,
+            gene: null,
         },
         traitSearch: {
             text: "",
             showDropDown: false,
             orderedTraits: null,
         },
+        totalColocGroups: 0,
+        totalRareGroups: 0,
         errorMessage: null,
         downloadClicked: false,
         rPackageModalOpen: false,
@@ -169,8 +172,18 @@ export default function trait() {
                 this.userUpload
             );
 
-            const allFilteredData = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
-            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(allFilteredData);
+            const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
+            const dropdownColocs = graphTransformations.groupBySnp(
+                this.filteredData.coloc_groups, "trait", this.data.trait.id, {}, this.userUpload
+            );
+            const dropdownRare = graphTransformations.groupBySnp(
+                this.filteredData.rare, "trait", this.data.trait.id, {}, this.userUpload
+            );
+            this.totalColocGroups = Object.keys(dropdownColocs).length;
+            this.totalRareGroups = Object.keys(dropdownRare).length;
+            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
+                { ...dropdownColocs, ...dropdownRare }, { excludeTrait: pageTrait }
+            );
         },
 
         async getSvgData(traitId) {
@@ -316,15 +329,17 @@ export default function trait() {
         },
 
         getTraitsToFilterBy() {
-            if (this.traitSearch.orderedTraits === null) return [];
-            return this.traitSearch.orderedTraits.filter(
-                t => !this.traitSearch.text || t.toLowerCase().includes(this.traitSearch.text.toLowerCase())
-            );
+            return graphTransformations.buildFilterDropdownItems(this.traitSearch.orderedTraits, this.traitSearch.text);
         },
 
-        filterByTrait(trait) {
-            if (trait !== null) {
-                this.displayFilters.traitName = trait;
+        filterByTrait(item) {
+            if (!item) return;
+            if (item.type === "trait") {
+                this.displayFilters.traitName = item.label;
+                this.displayFilters.gene = null;
+            } else if (item.type === "gene") {
+                this.displayFilters.gene = item.label;
+                this.displayFilters.traitName = null;
             }
         },
 
@@ -335,15 +350,19 @@ export default function trait() {
                 chr: null,
                 candidateSnp: null,
                 traitName: null,
+                gene: null,
             };
             this.traitSearch.text = "";
         },
 
         get hasActiveDisplayFilter() {
+            if (this.userUpload) return true;
+            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
             return (
                 this.displayFilters.candidateSnp !== null ||
                 this.displayFilters.chr !== null ||
-                this.displayFilters.traitName !== null
+                this.displayFilters.traitName !== null ||
+                this.displayFilters.gene !== null
             );
         },
 
@@ -363,6 +382,14 @@ export default function trait() {
                 );
             }
 
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
+                tableData = tableData.filter(
+                    c => c.gene === filterGene || c.situated_gene === filterGene || c.trait_name === pageTrait,
+                );
+            }
+
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
                 tableData,
@@ -373,10 +400,8 @@ export default function trait() {
             );
 
             if (this.displayFilters.candidateSnp) {
-                const candidateSnpKey = this.displayFilters.candidateSnp;
-                const selectedEntryValue = groupedData[candidateSnpKey];
-                delete groupedData[candidateSnpKey];
-                groupedData = { [candidateSnpKey]: selectedEntryValue, ...groupedData };
+                const key = this.displayFilters.candidateSnp;
+                groupedData = groupedData[key] ? { [key]: groupedData[key] } : {};
             }
 
             const truncatedData = Object.fromEntries(
@@ -405,6 +430,14 @@ export default function trait() {
                 );
             }
 
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
+                tableData = tableData.filter(
+                    r => r.gene === filterGene || r.situated_gene === filterGene || r.trait_name === pageTrait,
+                );
+            }
+
             tableData = graphTransformations.addColorForSNPs(tableData);
             let groupedData = graphTransformations.groupBySnp(
                 tableData,
@@ -415,10 +448,8 @@ export default function trait() {
             );
 
             if (this.displayFilters.candidateSnp) {
-                const candidateSnpKey = this.displayFilters.candidateSnp;
-                const selectedEntryValue = groupedData[candidateSnpKey];
-                delete groupedData[candidateSnpKey];
-                groupedData = { [candidateSnpKey]: selectedEntryValue, ...groupedData };
+                const key = this.displayFilters.candidateSnp;
+                groupedData = groupedData[key] ? { [key]: groupedData[key] } : {};
             }
 
             const truncatedData = Object.fromEntries(

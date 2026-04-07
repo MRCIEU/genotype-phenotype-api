@@ -113,20 +113,40 @@ export default {
         return selectedCategories;
     },
 
-    getOrderedTraits(groupedData, excludeTrait) {
-        let allTraits = Object.values(groupedData).flatMap(c => c.map(c => c.trait_name));
+    getOrderedTraits(groupedData, options = {}) {
+        const { excludeTrait, excludeGene } = options;
 
-        let frequency = {};
-        allTraits.forEach(item => {
-            frequency[item] = (frequency[item] || 0) + 1;
-        });
+        const traitGroupCount = {};
+        const geneGroupCount = {};
 
-        let uniqueTraits = [...new Set(allTraits)];
-        uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
+        for (const rows of Object.values(groupedData)) {
+            const traitsInGroup = new Set();
+            const genesInGroup = new Set();
+            rows.forEach(r => {
+                if (r.data_type === "Phenotype" && r.trait_name) traitsInGroup.add(r.trait_name);
+                if (r.gene && r.gene !== "NA") genesInGroup.add(r.gene);
+                if (r.situated_gene && r.situated_gene !== "NA") genesInGroup.add(r.situated_gene);
+            });
+            traitsInGroup.forEach(t => { traitGroupCount[t] = (traitGroupCount[t] || 0) + 1; });
+            genesInGroup.forEach(g => { geneGroupCount[g] = (geneGroupCount[g] || 0) + 1; });
+        }
 
-        if (excludeTrait) uniqueTraits = uniqueTraits.filter(t => t !== excludeTrait);
+        const items = [];
+        for (const [name, count] of Object.entries(traitGroupCount)) {
+            if (name !== excludeTrait) items.push({ label: name, type: "trait", count });
+        }
+        for (const [name, count] of Object.entries(geneGroupCount)) {
+            if (name !== excludeGene) items.push({ label: name, type: "gene", count });
+        }
+        items.sort((a, b) => b.count - a.count);
+        return items;
+    },
 
-        return uniqueTraits;
+    buildFilterDropdownItems(orderedItems, searchText) {
+        if (!orderedItems) return [];
+        const text = searchText?.toLowerCase() || "";
+        if (!text) return orderedItems;
+        return orderedItems.filter(item => item.label.toLowerCase().includes(text));
     },
 
     getTraitListHTML(content) {
