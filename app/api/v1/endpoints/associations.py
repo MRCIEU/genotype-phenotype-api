@@ -17,5 +17,7 @@ async def get_associations(
     if study_ids is None or study_ids == [] or variant_ids is None or variant_ids == []:
         raise HTTPException(status_code=400, detail="Need at least one study_id and one variant_id to get associations")
 
-    associations = association_service.get_associations_by_variant_ids_and_study_ids(variant_ids=variant_ids, study_ids=study_ids)
+    associations = association_service.get_associations_by_variant_ids_and_study_ids(
+        variant_ids=variant_ids, study_ids=study_ids
+    )
     return {"associations": associations}

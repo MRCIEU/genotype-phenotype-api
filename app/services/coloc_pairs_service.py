@@ -46,7 +46,9 @@ class ColocPairsService:
         (variant_id null). Combines results and adds in_coloc_group column (True for
         coloc group pairs, False for others).
         """
-        coloc_in_group = self.get_coloc_pairs_by_variant_ids(variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold)
+        coloc_in_group = self.get_coloc_pairs_by_variant_ids(
+            variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+        )
         for row in coloc_in_group:
             row["in_coloc_group"] = True
 

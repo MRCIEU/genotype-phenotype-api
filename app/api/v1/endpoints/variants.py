@@ -295,7 +295,9 @@ async def get_variant(
                     if not isinstance(proxy_variants, list):
                         proxy_variants = [proxy_variants]
 
-                    proxy_ids_with_results = set(c.variant_id for c in proxy_colocs) | set(r.variant_id for r in proxy_rare)
+                    proxy_ids_with_results = set(c.variant_id for c in proxy_colocs) | set(
+                        r.variant_id for r in proxy_rare
+                    )
                     ld_proxy_variants = [pv for pv in proxy_variants if pv.id in proxy_ids_with_results]
 
             return VariantResponse(

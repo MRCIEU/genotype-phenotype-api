@@ -68,7 +68,7 @@ export class NavigationBar extends HTMLElement {
                 const data = await response.json();
                 this.searchOptions = data.search_terms || [];
             }
-        } catch (e) {
+        } catch {
             // silently fail — search just won't have typeahead
         }
     }
@@ -88,7 +88,7 @@ export class NavigationBar extends HTMLElement {
                 .filter(
                     item =>
                         item.name.toLowerCase().includes(text) ||
-                        (item.alt_name && item.alt_name.toLowerCase().includes(text)),
+                        (item.alt_name && item.alt_name.toLowerCase().includes(text))
                 )
                 .sort((a, b) => b.num_rare_results + b.num_coloc_groups - (a.num_rare_results + a.num_coloc_groups))
                 .slice(0, 20);
@@ -116,9 +116,7 @@ export class NavigationBar extends HTMLElement {
     async searchVariant(query) {
         this.renderMessage("Searching...");
         try {
-            const response = await fetch(
-                constants.apiUrl + "/search/variant/" + encodeURIComponent(query),
-            );
+            const response = await fetch(constants.apiUrl + "/search/variant/" + encodeURIComponent(query));
             if (!response.ok) {
                 this.renderMessage("No variants found");
                 return;
@@ -169,10 +167,7 @@ export class NavigationBar extends HTMLElement {
                 (counts.length > 0
                     ? `<div class="nav-search-subtitle">${typeLabel} · ${counts.join(", ")}</div>`
                     : `<div class="nav-search-subtitle">${typeLabel}</div>`);
-            a.href =
-                item.type === "trait"
-                    ? "trait.html?id=" + item.type_id
-                    : "gene.html?id=" + item.type_id;
+            a.href = item.type === "trait" ? "trait.html?id=" + item.type_id : "gene.html?id=" + item.type_id;
             this.searchDropdown.appendChild(a);
         });
 
