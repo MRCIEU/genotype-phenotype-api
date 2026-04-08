@@ -199,13 +199,13 @@ def test_get_gwas_with_associations(test_guid):
         assert (coloc_group.study_id is not None) ^ (coloc_group.existing_study_id is not None)
 
     assoc = gwas_model.associations[0]
-    assert "snp_id" in assoc
+    assert "variant_id" in assoc
     assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][0]["beta"])
     assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][0]["se"])
     assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][0]["p"])
 
     assoc = gwas_model.associations[1]
-    assert "snp_id" in assoc
+    assert "variant_id" in assoc
     assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][1]["beta"])
     assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][1]["se"])
     assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][1]["p"])

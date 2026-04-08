@@ -28,7 +28,7 @@ def test_get_snps_pleiotropy():
     assert len(snps_pleiotropy.snps) > 0
 
     for snp in snps_pleiotropy.snps:
-        assert snp.snp_id is not None
+        assert snp.variant_id is not None
         assert snp.display_snp is not None
         assert snp.distinct_trait_categories is not None
         assert snp.distinct_protein_coding_genes is not None

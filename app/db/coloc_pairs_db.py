@@ -30,21 +30,21 @@ class ColocPairsDBClient:
     def get_coloc_pairs_by_table_name(
         self,
         table_name: str,
-        snp_ids: List[int],
+        variant_ids: List[int],
         h3_threshold: float = 0.0,
         h4_threshold: float = 0.8,
     ):
-        if not snp_ids:
+        if not variant_ids:
             return []
 
         query = f"""
             SELECT * FROM {table_name}
-            WHERE snp_id IN (SELECT * FROM UNNEST(?))
+            WHERE variant_id IN (SELECT * FROM UNNEST(?))
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
         """
-        cursor = self.coloc_pairs_conn.execute(query, [snp_ids, h3_threshold, h4_threshold])
+        cursor = self.coloc_pairs_conn.execute(query, [variant_ids, h3_threshold, h4_threshold])
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns
@@ -71,23 +71,23 @@ class ColocPairsDBClient:
         return self.coloc_pairs_conn.execute(query, params).fetchall()
 
     @log_performance
-    def get_coloc_pairs_by_snp_ids(
+    def get_coloc_pairs_by_variant_ids(
         self,
-        snp_ids: List[int],
+        variant_ids: List[int],
         h3_threshold: float = 0.0,
         h4_threshold: float = 0.8,
     ):
-        if not snp_ids:
+        if not variant_ids:
             return [], []
 
         query = """
             SELECT * FROM coloc_pairs
-            WHERE snp_id IN (SELECT * FROM UNNEST(?))
+            WHERE variant_id IN (SELECT * FROM UNNEST(?))
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
         """
-        cursor = self.coloc_pairs_conn.execute(query, [snp_ids, h3_threshold, h4_threshold])
+        cursor = self.coloc_pairs_conn.execute(query, [variant_ids, h3_threshold, h4_threshold])
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns
@@ -99,7 +99,7 @@ class ColocPairsDBClient:
         h4_threshold: float = 0.8,
     ):
         """
-        Get coloc pairs that are not part of a coloc group (snp_id IS NULL),
+        Get coloc pairs that are not part of a coloc group (variant_id IS NULL),
         filtered by study extraction ids. Returns pairs where either
         study_extraction_a_id or study_extraction_b_id is in the list.
         """
@@ -108,7 +108,7 @@ class ColocPairsDBClient:
 
         query = """
             SELECT * FROM coloc_pairs
-            WHERE snp_id IS NULL
+            WHERE variant_id IS NULL
                 AND h4 >= ?
                 AND (study_extraction_a_id IN (SELECT * FROM UNNEST(?))
                     OR study_extraction_b_id IN (SELECT * FROM UNNEST(?)))
@@ -121,14 +121,14 @@ class ColocPairsDBClient:
         return rows, columns
 
     @log_performance
-    def get_coloc_pairs_by_snp_ids_stream(
-        self, snp_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 10000000
+    def get_coloc_pairs_by_variant_ids_stream(
+        self, variant_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 10000000
     ):
         """
         Stream coloc pairs in batches to avoid memory issues with large datasets.
 
         Args:
-            snp_ids: List of SNP IDs to query
+            variant_ids: List of SNP IDs to query
             batch_size: Number of rows to yield at a time
 
         Yields:
@@ -136,18 +136,18 @@ class ColocPairsDBClient:
         """
         specific_conn = duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
         specific_conn.execute("PRAGMA memory_limit='4GB'")
-        if not snp_ids:
+        if not variant_ids:
             return
 
         query = """
             SELECT * FROM coloc_pairs
-            WHERE snp_id IN (SELECT * FROM UNNEST(?))
+            WHERE variant_id IN (SELECT * FROM UNNEST(?))
                 AND h3 >= ?
                 AND h4 >= ?
                 AND false_positive = FALSE
-            ORDER BY snp_id
+            ORDER BY variant_id
         """
-        cursor = specific_conn.execute(query, [snp_ids, h3_threshold, h4_threshold])
+        cursor = specific_conn.execute(query, [variant_ids, h3_threshold, h4_threshold])
         columns = [d[0] for d in cursor.description] if cursor.description else []
 
         try:

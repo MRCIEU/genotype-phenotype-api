@@ -37,7 +37,7 @@ async def get_genes_pleiotropy(request: Request) -> GenePleiotropyResponse:
 async def get_snps_pleiotropy(request: Request) -> SnpPleiotropyResponse:
     try:
         studies_db = StudiesDBClient()
-        snps_pleiotropy = studies_db.get_snp_pleiotropy_scores()
+        snps_pleiotropy = studies_db.get_variant_pleiotropy_scores()
         snps_pleiotropy = convert_duckdb_to_pydantic_model(SnpPleiotropy, snps_pleiotropy)
         return SnpPleiotropyResponse(snps=snps_pleiotropy)
     except HTTPException as e:

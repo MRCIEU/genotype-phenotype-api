@@ -197,14 +197,14 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_colocs_for_variant(self, snp_id: int):
-        return self._fetch_colocs("snp_id = ?", [snp_id])
+    def get_colocs_for_variant(self, variant_id: int):
+        return self._fetch_colocs("variant_id = ?", [variant_id])
 
     @log_performance
-    def get_colocs_for_variants(self, snp_ids: List[int]):
-        if not snp_ids:
+    def get_colocs_for_variants(self, variant_ids: List[int]):
+        if not variant_ids:
             return []
-        return self._fetch_colocs("snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids])
+        return self._fetch_colocs("variant_id IN (SELECT * FROM UNNEST(?))", [variant_ids])
 
     @log_performance
     def get_all_colocs_for_gene(self, gene_id: int, include_trans: bool = False):
@@ -273,10 +273,10 @@ class StudiesDBClient:
         return self._fetch_rare_results("study_extraction_id IN (SELECT * FROM UNNEST(?))", [study_extraction_ids])
 
     @log_performance
-    def get_rare_results_for_variants(self, snp_ids: List[int]):
-        if not snp_ids:
+    def get_rare_results_for_variants(self, variant_ids: List[int]):
+        if not variant_ids:
             return []
-        return self._fetch_rare_results("snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids])
+        return self._fetch_rare_results("variant_id IN (SELECT * FROM UNNEST(?))", [variant_ids])
 
     @log_performance
     def get_rare_results_for_study_id(self, study_id: int):
@@ -316,15 +316,15 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, data).fetchone()
 
     @log_performance
-    def get_variant(self, snp_id: int):
+    def get_variant(self, variant_id: int):
         query = """SELECT
-            snp_annotations.*,
-            snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
-            FROM snp_annotations
-            LEFT JOIN snp_pleiotropy ON snp_annotations.id = snp_pleiotropy.snp_id
-            WHERE snp_annotations.id = ?
+            variant_annotations.*,
+            variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
+            FROM variant_annotations
+            LEFT JOIN variant_pleiotropy ON variant_annotations.id = variant_pleiotropy.variant_id
+            WHERE variant_annotations.id = ?
         """
-        return self.studies_conn.execute(query, [snp_id]).fetchone()
+        return self.studies_conn.execute(query, [variant_id]).fetchone()
 
     @log_performance
     def get_genes(self):
@@ -426,26 +426,26 @@ class StudiesDBClient:
     @log_performance
     def get_variants(
         self,
-        snp_ids: List[int] = None,
+        variant_ids: List[int] = None,
         variant_prefixes: List[str] = None,
         rsids: List[str] = None,
         grange: str = None,
         variant_strings: List[str] = None,
     ):
-        """Fetch variants by one or more criteria. Supports OR across snp_ids, rsids, variant_prefixes, variant_strings."""
-        if not snp_ids and not variant_prefixes and not rsids and not grange and not variant_strings:
+        """Fetch variants by one or more criteria. Supports OR across variant_ids, rsids, variant_prefixes, variant_strings."""
+        if not variant_ids and not variant_prefixes and not rsids and not grange and not variant_strings:
             return []
 
-        query = """SELECT snp_annotations.*, snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
-            FROM snp_annotations
-            LEFT JOIN snp_pleiotropy ON snp_annotations.id = snp_pleiotropy.snp_id
+        query = """SELECT variant_annotations.*, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
+            FROM variant_annotations
+            LEFT JOIN variant_pleiotropy ON variant_annotations.id = variant_pleiotropy.variant_id
             WHERE """
         params = []
         conditions = []
 
-        if snp_ids:
+        if variant_ids:
             conditions.append("id IN (SELECT * FROM UNNEST(?))")
-            params.append(snp_ids)
+            params.append(variant_ids)
         if rsids:
             conditions.append("rsid IN (SELECT * FROM UNNEST(?))")
             params.append(rsids)
@@ -479,9 +479,9 @@ class StudiesDBClient:
             WITH input_variants AS (
                 SELECT * FROM (VALUES {placeholders}) as t(row_num, variant)
             )
-            SELECT snp_annotations.* 
+            SELECT variant_annotations.* 
             FROM input_variants 
-            LEFT JOIN snp_annotations ON input_variants.variant = snp_annotations.snp 
+            LEFT JOIN variant_annotations ON input_variants.variant = variant_annotations.snp 
             ORDER BY input_variants.row_num
         """
 
@@ -492,11 +492,11 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
-    def get_snp_ids_by_snps(self, snps: List[str]):
+    def get_variant_ids_by_snps(self, snps: List[str]):
         if not snps:
             return []
 
-        query = "SELECT id FROM snp_annotations WHERE snp IN (SELECT * FROM UNNEST(?))"
+        query = "SELECT id FROM variant_annotations WHERE snp IN (SELECT * FROM UNNEST(?))"
         return self.studies_conn.execute(query, [snps]).fetchall()
 
     @log_performance
@@ -507,7 +507,7 @@ class StudiesDBClient:
         coloc_groups = self.studies_conn.execute(query).fetchone()
 
         query = """
-            SELECT COUNT(DISTINCT snp_id) as count
+            SELECT COUNT(DISTINCT variant_id) as count
             FROM coloc_groups
         """
         unique_snps = self.studies_conn.execute(query).fetchone()
@@ -536,17 +536,17 @@ class StudiesDBClient:
         return self._fetch_study_extractions("study_id IN (SELECT * FROM UNNEST(?))", [study_ids])
 
     @log_performance
-    def get_study_extractions_for_variant(self, snp_id: int):
-        if not snp_id:
+    def get_study_extractions_for_variant(self, variant_id: int):
+        if not variant_id:
             return []
 
-        return self._fetch_study_extractions("snp_id = ?", [snp_id])
+        return self._fetch_study_extractions("variant_id = ?", [variant_id])
 
     @log_performance
-    def get_study_extractions_for_variants(self, snp_ids: List[int]):
-        if not snp_ids:
+    def get_study_extractions_for_variants(self, variant_ids: List[int]):
+        if not variant_ids:
             return []
-        return self._fetch_study_extractions("snp_id IN (SELECT * FROM UNNEST(?))", [snp_ids])
+        return self._fetch_study_extractions("variant_id IN (SELECT * FROM UNNEST(?))", [variant_ids])
 
     @log_performance
     def get_study_extractions_by_id(self, ids: List[int]):
@@ -692,10 +692,10 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
-    def get_snp_pleiotropy_scores(self):
+    def get_variant_pleiotropy_scores(self):
         query = """SELECT
-            snp_pleiotropy.snp_id, snp_annotations.display_snp, snp_pleiotropy.distinct_trait_categories, snp_pleiotropy.distinct_protein_coding_genes
-            FROM snp_pleiotropy
-            JOIN snp_annotations ON snp_pleiotropy.snp_id = snp_annotations.id
+            variant_pleiotropy.variant_id, variant_annotations.display_snp, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
+            FROM variant_pleiotropy
+            JOIN variant_annotations ON variant_pleiotropy.variant_id = variant_annotations.id
         """
         return self.studies_conn.execute(query).fetchall()

@@ -75,7 +75,7 @@ export class ResultsTable extends HTMLElement {
                                             const variantContent = row.display_snp
                                                 ? this.hideVariantLink
                                                     ? `Candidate Variant: ${row.display_snp}<br>`
-                                                    : `Candidate Variant: <a href="variant.html?id=${row.snp_id}">${row.display_snp}</a><br>`
+                                                    : `Candidate Variant: <a href="variant.html?id=${row.variant_id}">${row.display_snp}</a><br>`
                                                 : "";
                                             return `<td rowspan="${rows.length}">
                                             ${variantContent}

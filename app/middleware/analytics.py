@@ -120,7 +120,7 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
         path_params = {}
         if request.path_params:
             # Only include specific IDs we care about
-            for key in ["trait_id", "variant_id", "gene_id", "region_id", "snp_id"]:
+            for key in ["trait_id", "variant_id", "gene_id", "region_id", "variant_id"]:
                 if key in request.path_params:
                     path_params[key] = str(request.path_params[key])
 

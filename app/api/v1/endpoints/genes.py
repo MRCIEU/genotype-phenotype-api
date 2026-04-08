@@ -132,19 +132,19 @@ async def get_genes(
             )
             associations = StudiesService.deduplicate_by_key(
                 associations_raw,
-                lambda a: (a.get("snp_id"), a.get("study_id")),
+                lambda a: (a.get("variant_id"), a.get("study_id")),
             )
 
         coloc_pairs = None
         if include_coloc_pairs:
-            snp_ids = (
-                [c.snp_id for c in all_coloc_groups]
-                + [r.snp_id for r in all_rare_results]
-                + [e.snp_id for e in all_study_extractions]
+            variant_ids = (
+                [c.variant_id for c in all_coloc_groups]
+                + [r.variant_id for r in all_rare_results]
+                + [e.variant_id for e in all_study_extractions]
             )
-            snp_ids = list(set(snp_ids))
-            if snp_ids:
-                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
+            variant_ids = list(set(variant_ids))
+            if variant_ids:
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(variant_ids, h4_threshold=h4_threshold)
 
         if include_coloc_pairs and coloc_pairs is not None:
             all_study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(
@@ -153,14 +153,14 @@ async def get_genes(
 
         variants = []
         if all_coloc_groups or all_rare_results or all_study_extractions:
-            snp_ids = (
-                [c.snp_id for c in all_coloc_groups]
-                + [r.snp_id for r in all_rare_results]
-                + [e.snp_id for e in all_study_extractions]
+            variant_ids = (
+                [c.variant_id for c in all_coloc_groups]
+                + [r.variant_id for r in all_rare_results]
+                + [e.variant_id for e in all_study_extractions]
             )
-            snp_ids = list(set(snp_ids))
-            if snp_ids:
-                variants_data = studies_db.get_variants(snp_ids=snp_ids)
+            variant_ids = list(set(variant_ids))
+            if variant_ids:
+                variants_data = studies_db.get_variants(variant_ids=variant_ids)
                 variants = convert_duckdb_to_pydantic_model(Variant, variants_data)
                 if not isinstance(variants, list):
                     variants = [variants]
@@ -261,14 +261,14 @@ async def get_gene(
 
         coloc_pairs = None
         if include_coloc_pairs:
-            snp_ids = (
-                [coloc.snp_id for coloc in coloc_groups]
-                + [rare_result.snp_id for rare_result in rare_results]
-                + [study_extraction.snp_id for study_extraction in study_extractions]
+            variant_ids = (
+                [coloc.variant_id for coloc in coloc_groups]
+                + [rare_result.variant_id for rare_result in rare_results]
+                + [study_extraction.variant_id for study_extraction in study_extractions]
             )
-            snp_ids = list(set(snp_ids))
-            if snp_ids:
-                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
+            variant_ids = list(set(variant_ids))
+            if variant_ids:
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(variant_ids, h4_threshold=h4_threshold)
 
         if include_coloc_pairs and coloc_pairs is not None and study_extractions is not None:
             study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(
@@ -277,12 +277,12 @@ async def get_gene(
 
         variants: List[Variant] = []
         if rare_results or coloc_groups or study_extractions:
-            snp_ids = (
-                [coloc.snp_id for coloc in (coloc_groups or [])]
-                + [rare_result.snp_id for rare_result in (rare_results or [])]
-                + [study_extraction.snp_id for study_extraction in (study_extractions or [])]
+            variant_ids = (
+                [coloc.variant_id for coloc in (coloc_groups or [])]
+                + [rare_result.variant_id for rare_result in (rare_results or [])]
+                + [study_extraction.variant_id for study_extraction in (study_extractions or [])]
             )
-            variants = studies_db.get_variants(snp_ids=snp_ids)
+            variants = studies_db.get_variants(variant_ids=variant_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)
             if not isinstance(variants, list):
                 variants = [variants]

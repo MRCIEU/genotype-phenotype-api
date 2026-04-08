@@ -58,8 +58,8 @@ class GwasDBClient:
 
         try:
             upload_result = conn.execute(f"""SELECT coloc_groups.*,
-                    studies_db.snp_annotations.chr as chr,
-                    studies_db.snp_annotations.bp as bp,
+                    studies_db.variant_annotations.chr as chr,
+                    studies_db.variant_annotations.bp as bp,
                     study_extractions.min_p as min_p,
                     NULL as cis_trans,
                     study_extractions.ld_block as ld_block,
@@ -70,8 +70,8 @@ class GwasDBClient:
                     study_extractions.file as file,
                     NULL as svg_file,
                     NULL as file_with_lbfs,
-                    studies_db.snp_annotations.display_snp,
-                    studies_db.snp_annotations.rsid,
+                    studies_db.variant_annotations.display_snp,
+                    studies_db.variant_annotations.rsid,
                     NULL as gene,
                     NULL as gene_id,
                     NULL as trait_id,
@@ -91,12 +91,12 @@ class GwasDBClient:
                 FROM coloc_groups
                 LEFT JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
                 LEFT JOIN gwas_upload as study_gwas ON study_extractions.gwas_upload_id = study_gwas.id
-                LEFT JOIN studies_db.snp_annotations on coloc_groups.snp_id = studies_db.snp_annotations.id 
+                LEFT JOIN studies_db.variant_annotations on coloc_groups.variant_id = studies_db.variant_annotations.id 
                 WHERE coloc_groups.gwas_upload_id = {gwas_upload_id} and coloc_groups.study_extraction_id is not null""").fetchall()
 
             existing_result = conn.execute(f"""SELECT cg.*,
-                    studies_db.snp_annotations.chr,
-                    studies_db.snp_annotations.bp,
+                    studies_db.variant_annotations.chr,
+                    studies_db.variant_annotations.bp,
                     studies_db.study_extractions.min_p,
                     studies_db.study_extractions.cis_trans,
                     studies_db.study_extractions.ld_block,
@@ -107,8 +107,8 @@ class GwasDBClient:
                     studies_db.study_extractions.file,
                     studies_db.study_extractions.svg_file,
                     studies_db.study_extractions.file_with_lbfs,
-                    studies_db.snp_annotations.display_snp,
-                    studies_db.snp_annotations.rsid,
+                    studies_db.variant_annotations.display_snp,
+                    studies_db.variant_annotations.rsid,
                     studies_db.gene_annotations.gene,
                     studies_db.gene_annotations.id as gene_id,
                     studies_db.traits.id as trait_id,
@@ -128,7 +128,7 @@ class GwasDBClient:
                 FROM coloc_groups as cg
                 LEFT JOIN studies_db.study_extractions ON cg.existing_study_extraction_id = studies_db.study_extractions.id
                 LEFT JOIN studies_db.studies ON studies_db.study_extractions.study_id = studies_db.studies.id
-                LEFT JOIN studies_db.snp_annotations on cg.snp_id = studies_db.snp_annotations.id 
+                LEFT JOIN studies_db.variant_annotations on cg.variant_id = studies_db.variant_annotations.id 
                 LEFT JOIN studies_db.gene_annotations on studies_db.studies.gene_id = studies_db.gene_annotations.id
                 LEFT JOIN studies_db.traits ON studies_db.studies.trait_id = studies_db.traits.id
                 LEFT JOIN studies_db.study_sources ON studies_db.studies.source_id = studies_db.study_sources.id
