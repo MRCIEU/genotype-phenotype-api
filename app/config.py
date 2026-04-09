@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     EMAIL_USERNAME: str
     EMAIL_PASSWORD: str
     WEBSITE_URL: str = "https://gpmap.opengwas.io"
-    VERSION: str = "1.0.0"
+    VERSION: str = "1.0.1"
     GA4_MEASUREMENT_ID: str = ""
     GA4_API_SECRET: str = ""
     OCI_BUCKET_NAME: str = ""
