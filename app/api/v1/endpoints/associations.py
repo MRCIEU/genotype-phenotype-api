@@ -11,11 +11,13 @@ router = APIRouter()
 @time_endpoint
 async def get_associations(
     study_ids: List[int] = Query(None, description="List of study_ids to filter results"),
-    snp_ids: List[int] = Query(None, description="List of snp_ids to filter results"),
+    variant_ids: List[int] = Query(None, description="List of variant_ids to filter results"),
 ) -> dict:
     association_service = AssociationsService()
-    if study_ids is None or study_ids == [] or snp_ids is None or snp_ids == []:
-        raise HTTPException(status_code=400, detail="Need at least one study_id and one snp_id to get associations")
+    if study_ids is None or study_ids == [] or variant_ids is None or variant_ids == []:
+        raise HTTPException(status_code=400, detail="Need at least one study_id and one variant_id to get associations")
 
-    associations = association_service.get_associations_by_snp_ids_and_study_ids(snp_ids=snp_ids, study_ids=study_ids)
+    associations = association_service.get_associations_by_variant_ids_and_study_ids(
+        variant_ids=variant_ids, study_ids=study_ids
+    )
     return {"associations": associations}

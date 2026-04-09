@@ -49,8 +49,8 @@ class StudySource(BaseModel):
 
 
 class AssociationMetadata(BaseModel):
-    start_snp_id: int
-    stop_snp_id: int
+    start_variant_id: int
+    stop_variant_id: int
     associations_table_name: str
 
 
@@ -64,7 +64,7 @@ class ColocGroup(BaseModel):
     coloc_group_id: int
     study_id: int
     study_extraction_id: int
-    snp_id: int
+    variant_id: int
     ld_block_id: int
     h4_connectedness: float
     h3_connectedness: float
@@ -102,8 +102,8 @@ class LdBlock(BaseModel):
 
 
 class Ld(BaseModel):
-    lead_snp_id: int
-    variant_snp_id: int
+    lead_variant_id: int
+    proxy_variant_id: int
     ld_block_id: int
     r: float
 
@@ -202,7 +202,7 @@ class GenePleiotropy(BaseModel):
 
 
 class SnpPleiotropy(BaseModel):
-    snp_id: int
+    variant_id: int
     display_snp: str
     distinct_trait_categories: int
     distinct_protein_coding_genes: int
@@ -253,7 +253,7 @@ class Study(BaseModel):
 class StudyExtraction(BaseModel):
     id: int
     study_id: int
-    snp_id: int
+    variant_id: int
     display_snp: str
     rsid: str
     ld_block_id: int
@@ -267,6 +267,7 @@ class StudyExtraction(BaseModel):
     min_p: float
     cis_trans: Optional[str] = None
     ld_block: str
+    credible_set: Optional[int] = None
     gene_id: Optional[int] = None
     situated_gene_id: Optional[int] = None
 
@@ -306,7 +307,7 @@ class RareResult(BaseModel):
     rare_result_group_id: int
     study_id: int
     study_extraction_id: int
-    snp_id: int
+    variant_id: int
     gene_id: Optional[int] = None
     situated_gene_id: Optional[int] = None
     ld_block_id: int
@@ -340,6 +341,7 @@ class ExtendedRareResult(RareResult):
 
 class Variant(BaseModel):
     id: int
+    ld_block_id: int
     snp: str
     display_snp: str
     chr: int
@@ -592,7 +594,7 @@ GwasUpload.model_rebuild()
 class UploadStudyExtraction(BaseModel):
     id: Optional[int] = None
     gwas_upload_id: Optional[int] = None
-    snp_id: Optional[int] = None
+    variant_id: Optional[int] = None
     snp: Optional[str] = None
     ld_block_id: Optional[int] = None
     unique_study_id: Optional[str] = None
@@ -611,7 +613,7 @@ class UploadColocGroup(BaseModel):
     coloc_group_id: int
     existing_study_extraction_id: Optional[int] = None
     study_extraction_id: Optional[int] = None
-    snp_id: int
+    variant_id: int
     ld_block_id: int
     h4_connectedness: float
     h3_connectedness: float
@@ -621,7 +623,7 @@ class UploadColocGroup(BaseModel):
 
 class UploadAssociation(BaseModel):
     gwas_upload_id: int
-    snp_id: int
+    variant_id: int
     study_id: Optional[int] = None
     existing_study_id: Optional[int] = None
     beta: float

@@ -33,7 +33,7 @@ router = APIRouter()
 async def get_variants(
     request: Request,
     variants: List[str] = Query(
-        None, description="List of variants (snp_ids, rsids, or variant strings - auto-detected)"
+        None, description="List of variants (variant_ids, rsids, or variant strings - auto-detected)"
     ),
     grange: str = Query(None, description="Genomic range (e.g. chr:start-end)"),
     expand: bool = Query(
@@ -60,9 +60,9 @@ async def get_variants(
             )
 
         studies_db = StudiesDBClient()
-        snp_ids, rsids, variant_prefixes, variant_strings = _classify_variants(variants or [])
+        variant_ids, rsids, variant_prefixes, variant_strings = _classify_variants(variants or [])
         variant_rows = studies_db.get_variants(
-            snp_ids=snp_ids if snp_ids else None,
+            variant_ids=variant_ids if variant_ids else None,
             rsids=rsids if rsids else None,
             variant_prefixes=variant_prefixes if variant_prefixes else None,
             variant_strings=variant_strings if variant_strings else None,
@@ -91,10 +91,10 @@ async def get_variants(
             associations_service = AssociationsService()
             studies_service = StudiesService()
 
-            snp_ids_to_expand = [v.id for v in variant_rows]
-            colocs = studies_db.get_colocs_for_variants(snp_ids_to_expand)
-            rare_results = studies_db.get_rare_results_for_variants(snp_ids_to_expand)
-            study_extractions_direct = studies_db.get_study_extractions_for_variants(snp_ids_to_expand)
+            variant_ids_to_expand = [v.id for v in variant_rows]
+            colocs = studies_db.get_colocs_for_variants(variant_ids_to_expand)
+            rare_results = studies_db.get_rare_results_for_variants(variant_ids_to_expand)
+            study_extractions_direct = studies_db.get_study_extractions_for_variants(variant_ids_to_expand)
 
             colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs) if colocs else []
             rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results) if rare_results else []
@@ -133,19 +133,19 @@ async def get_variants(
             )
             associations = StudiesService.deduplicate_by_key(
                 associations_raw,
-                lambda a: (a.get("snp_id"), a.get("study_id")),
+                lambda a: (a.get("variant_id"), a.get("study_id")),
             )
 
             coloc_pairs = None
             if include_coloc_pairs:
-                v_snp_ids = (
-                    [c.snp_id for c in colocs_dedup]
-                    + [r.snp_id for r in rare_results_dedup]
-                    + [e.snp_id for e in study_extractions_dedup]
+                v_variant_ids = (
+                    [c.variant_id for c in colocs_dedup]
+                    + [r.variant_id for r in rare_results_dedup]
+                    + [e.variant_id for e in study_extractions_dedup]
                 )
-                v_snp_ids = list(set(v_snp_ids))
-                if v_snp_ids:
-                    coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(v_snp_ids, h4_threshold=h4_threshold)
+                v_variant_ids = list(set(v_variant_ids))
+                if v_variant_ids:
+                    coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(v_variant_ids, h4_threshold=h4_threshold)
 
             if include_coloc_pairs and coloc_pairs is not None:
                 study_extractions_dedup = studies_service.merge_study_extractions_for_coloc_pairs(
@@ -188,21 +188,21 @@ async def get_variants(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{snp_id}/summary-stats")
+@router.get("/{variant_id}/summary-stats")
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variant_with_summary_stats(
     request: Request,
-    snp_id: int = Path(..., description="Variant ID (snp_id)"),
+    variant_id: int = Path(..., description="Variant ID (variant_id)"),
 ):
     try:
         studies_db = StudiesDBClient()
-        variant = studies_db.get_variant(snp_id)
+        variant = studies_db.get_variant(variant_id)
         if variant is None:
             raise HTTPException(status_code=404, detail="Variant not found")
-        colocs = studies_db.get_colocs_for_variants([snp_id])
-        rare_results = studies_db.get_rare_results_for_variants([snp_id])
-        study_extractions = studies_db.get_study_extractions_for_variant(snp_id)
+        colocs = studies_db.get_colocs_for_variants([variant_id])
+        rare_results = studies_db.get_rare_results_for_variants([variant_id])
+        study_extractions = studies_db.get_study_extractions_for_variant(variant_id)
 
         colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
@@ -223,7 +223,7 @@ async def get_variant_with_summary_stats(
         return StreamingResponse(
             zip_buffer,
             media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename=variant_{snp_id}_summary_stats.zip"},
+            headers={"Content-Disposition": f"attachment; filename=variant_{variant_id}_summary_stats.zip"},
         )
 
     except HTTPException as e:
@@ -239,15 +239,15 @@ async def get_variant_with_summary_stats(
 async def get_variant(
     request: Request,
     variant_id: str = Path(
-        ..., description="Variant identifier (snp_id, rsid, chr:pos, or chr:pos_ref_alt - auto-detected)"
+        ..., description="Variant identifier (variant_id, rsid, chr:pos, or chr:pos_ref_alt - auto-detected)"
     ),
     include_coloc_pairs: bool = Query(True, description="Whether to include coloc pairs for SNPs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
     rsquared_threshold: float = Query(0.9, description="R² threshold for LD proxy fallback when no coloc/rare"),
 ) -> VariantResponse:
     try:
-        snp_id, variant_row = _resolve_variant_id(variant_id)
-        if snp_id is None or variant_row is None:
+        variant_id, variant_row = _resolve_variant_id(variant_id)
+        if variant_id is None or variant_row is None:
             raise HTTPException(status_code=404, detail="Variant not found")
         if rsquared_threshold < 0.8 or rsquared_threshold > 1:
             raise HTTPException(status_code=400, detail="R² threshold must be between 0.8 and 1")
@@ -258,12 +258,12 @@ async def get_variant(
         associations_service = AssociationsService()
 
         variant = variant_row
-        colocs = studies_db.get_colocs_for_variants([snp_id])
+        colocs = studies_db.get_colocs_for_variants([variant_id])
         if colocs:
             colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
 
-        rare_results = studies_db.get_rare_results_for_variants([snp_id])
-        study_extractions_variant = studies_db.get_study_extractions_for_variant(snp_id)
+        rare_results = studies_db.get_rare_results_for_variants([variant_id])
+        study_extractions_variant = studies_db.get_study_extractions_for_variant(variant_id)
         study_extractions_from_colocs = studies_db.get_study_extractions_by_id(
             [coloc.study_extraction_id for coloc in colocs]
         )
@@ -273,29 +273,31 @@ async def get_variant(
             variant = convert_duckdb_to_pydantic_model(Variant, variant)
             ld_proxy_variants = []
             ld_db = LdDBClient()
-            proxies = ld_db.get_ld_proxies(snp_ids=[snp_id], rsquared_threshold=rsquared_threshold)
+            proxies = ld_db.get_ld_proxies(variant_ids=[variant_id], rsquared_threshold=rsquared_threshold)
             if proxies:
-                proxy_snp_ids = []
+                proxy_variant_ids = []
 
                 for p in proxies:
-                    lead_snp_id, variant_snp_id = p[0], p[1]
-                    other = variant_snp_id if lead_snp_id == snp_id else lead_snp_id
-                    if other != snp_id:
-                        proxy_snp_ids.append(other)
-                proxy_snp_ids = list(set(proxy_snp_ids))
+                    lead_variant_id, proxy_variant_id = p[0], p[1]
+                    other = proxy_variant_id if lead_variant_id == variant_id else lead_variant_id
+                    if other != variant_id:
+                        proxy_variant_ids.append(other)
+                proxy_variant_ids = list(set(proxy_variant_ids))
 
-                if proxy_snp_ids:
-                    proxy_colocs = studies_db.get_colocs_for_variants(snp_ids=proxy_snp_ids)
-                    proxy_rare = studies_db.get_rare_results_for_variants(snp_ids=proxy_snp_ids)
+                if proxy_variant_ids:
+                    proxy_colocs = studies_db.get_colocs_for_variants(variant_ids=proxy_variant_ids)
+                    proxy_rare = studies_db.get_rare_results_for_variants(variant_ids=proxy_variant_ids)
                     proxy_colocs = convert_duckdb_to_pydantic_model(ColocGroup, proxy_colocs)
                     proxy_rare = convert_duckdb_to_pydantic_model(RareResult, proxy_rare)
-                    proxy_variant_rows = studies_db.get_variants(snp_ids=proxy_snp_ids)
+                    proxy_variant_rows = studies_db.get_variants(variant_ids=proxy_variant_ids)
                     proxy_variants = convert_duckdb_to_pydantic_model(Variant, proxy_variant_rows)
 
                     if not isinstance(proxy_variants, list):
                         proxy_variants = [proxy_variants]
 
-                    proxy_ids_with_results = set(c.snp_id for c in proxy_colocs) | set(r.snp_id for r in proxy_rare)
+                    proxy_ids_with_results = set(c.variant_id for c in proxy_colocs) | set(
+                        r.variant_id for r in proxy_rare
+                    )
                     ld_proxy_variants = [pv for pv in proxy_variants if pv.id in proxy_ids_with_results]
 
             return VariantResponse(
@@ -316,14 +318,14 @@ async def get_variant(
 
         coloc_pairs = None
         if include_coloc_pairs:
-            snp_ids = (
-                [coloc.snp_id for coloc in colocs]
-                + [rare_result.snp_id for rare_result in rare_results]
-                + [study_extraction.snp_id for study_extraction in study_extractions]
+            variant_ids = (
+                [coloc.variant_id for coloc in colocs]
+                + [rare_result.variant_id for rare_result in rare_results]
+                + [study_extraction.variant_id for study_extraction in study_extractions]
             )
-            snp_ids = list(set(snp_ids))
-            if snp_ids:
-                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(snp_ids, h4_threshold=h4_threshold)
+            variant_ids = list(set(variant_ids))
+            if variant_ids:
+                coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(variant_ids, h4_threshold=h4_threshold)
 
         if include_coloc_pairs and coloc_pairs is not None:
             study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(study_extractions, coloc_pairs)
@@ -332,13 +334,13 @@ async def get_variant(
         for coloc in colocs:
             association = next((u for u in associations if u["study_id"] == coloc.study_id), None)
             if association is None:
-                logger.warning(f"Association not found for variant {snp_id} and study {coloc.study_id}")
+                logger.warning(f"Association not found for variant {variant_id} and study {coloc.study_id}")
             extended_colocs.append(ExtendedColocGroup(**coloc.model_dump(), association=association))
         extended_rare_results = []
         for rare_result in rare_results:
             association = next((u for u in associations if u["study_id"] == rare_result.study_id), None)
             if association is None:
-                logger.warning(f"Association not found for variant {snp_id} and study {rare_result.study_id}")
+                logger.warning(f"Association not found for variant {variant_id} and study {rare_result.study_id}")
             extended_rare_results.append(ExtendedRareResult(**rare_result.model_dump(), association=association))
 
         return VariantResponse(
@@ -358,8 +360,8 @@ async def get_variant(
 
 
 def _classify_variants(variants: List[str]) -> Tuple[List[int], List[str], List[str], List[str]]:
-    """Classify variant strings into snp_ids, rsids, variant_prefixes, variant_strings."""
-    snp_ids = []
+    """Classify variant strings into variant_ids, rsids, variant_prefixes, variant_strings."""
+    variant_ids = []
     rsids = []
     variant_prefixes = []
     variant_strings = []
@@ -373,18 +375,18 @@ def _classify_variants(variants: List[str]) -> Tuple[List[int], List[str], List[
         if s.lower().startswith("rs"):
             rsids.append(s)
         elif s.isdigit():
-            snp_ids.append(int(s))
+            variant_ids.append(int(s))
         elif "_" in s and ":" in s:
             variant_strings.append(s)
         elif ":" in s:
             variant_prefixes.append(s)
 
-    return snp_ids, rsids, variant_prefixes, variant_strings
+    return variant_ids, rsids, variant_prefixes, variant_strings
 
 
 def _resolve_variant_id(variant_id: str) -> Tuple[Optional[int], Optional[dict]]:
     """
-    Resolve a variant identifier (snp_id, rsid, chr:pos, or chr:pos_ref_alt) to (snp_id, variant_row).
+    Resolve a variant identifier (variant_id, rsid, chr:pos, or chr:pos_ref_alt) to (variant_id, variant_row).
     Returns (None, None) if not found.
     """
     if not variant_id or not isinstance(variant_id, str):
@@ -394,9 +396,9 @@ def _resolve_variant_id(variant_id: str) -> Tuple[Optional[int], Optional[dict]]
         return None, None
 
     studies_db = StudiesDBClient()
-    snp_ids, rsids, variant_prefixes, variant_strings = _classify_variants([s])
+    variant_ids, rsids, variant_prefixes, variant_strings = _classify_variants([s])
     variant_rows = studies_db.get_variants(
-        snp_ids=snp_ids if snp_ids else None,
+        variant_ids=variant_ids if variant_ids else None,
         rsids=rsids if rsids else None,
         variant_prefixes=variant_prefixes if variant_prefixes else None,
         variant_strings=variant_strings if variant_strings else None,

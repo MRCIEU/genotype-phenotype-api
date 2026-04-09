@@ -21,32 +21,34 @@ class ColocPairsService:
         metadata = convert_duckdb_to_pydantic_model(ColocPairMetadata, metadata)
         return metadata
 
-    def get_coloc_pairs_by_snp_ids(
+    def get_coloc_pairs_by_variant_ids(
         self,
-        snp_ids: List[int],
+        variant_ids: List[int],
         h3_threshold: float = 0.0,
         h4_threshold: float = 0.8,
     ) -> List[dict]:
-        """Get coloc pairs that have an snp_id (part of a coloc group)."""
-        if not snp_ids:
+        """Get coloc pairs that have an variant_id (part of a coloc group)."""
+        if not variant_ids:
             return []
-        pair_rows, pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_snp_ids(
-            snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+        pair_rows, pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_variant_ids(
+            variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
         )
         return convert_duckdb_tuples_to_dicts(pair_rows, pair_columns)
 
     def get_coloc_pairs_full(
         self,
-        snp_ids: List[int],
+        variant_ids: List[int],
         h3_threshold: float = 0.0,
         h4_threshold: float = 0.8,
     ) -> List[dict]:
         """
-        Get coloc pairs from both coloc groups (snp_id) and non-coloc-group pairs
-        (snp_id null). Combines results and adds in_coloc_group column (True for
+        Get coloc pairs from both coloc groups (variant_id) and non-coloc-group pairs
+        (variant_id null). Combines results and adds in_coloc_group column (True for
         coloc group pairs, False for others).
         """
-        coloc_in_group = self.get_coloc_pairs_by_snp_ids(snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold)
+        coloc_in_group = self.get_coloc_pairs_by_variant_ids(
+            variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+        )
         for row in coloc_in_group:
             row["in_coloc_group"] = True
 
@@ -71,13 +73,13 @@ class ColocPairsService:
         h4_threshold: float = 0.8,
     ) -> List[dict]:
         """
-        Get coloc pairs that are not part of a coloc group (snp_id IS NULL),
+        Get coloc pairs that are not part of a coloc group (variant_id IS NULL),
         filtered by study extraction ids. Returns pairs where either
         study_extraction_a_id or study_extraction_b_id is in the list.
         """
         if not study_extraction_ids:
             return []
-        logger.info(f"Getting coloc pairs (snp_id null) for {len(study_extraction_ids)} study extraction ids")
+        logger.info(f"Getting coloc pairs (variant_id null) for {len(study_extraction_ids)} study extraction ids")
         pair_rows, pair_columns = self.coloc_pairs_db.get_coloc_pairs_by_study_extraction_ids(
             study_extraction_ids, h4_threshold=h4_threshold
         )

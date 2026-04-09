@@ -35,13 +35,13 @@ class AssociationsFullDBClient:
         if not snp_study_pairs:
             return [], []
 
-        all_snp_ids = [pair[0] for pair in snp_study_pairs]
+        all_variant_ids = [pair[0] for pair in snp_study_pairs]
         all_study_ids = [pair[1] for pair in snp_study_pairs]
 
         query = f"""
-            SELECT * FROM {table_name} WHERE snp_id IN (SELECT * FROM UNNEST(?)) AND study_id IN (SELECT * FROM UNNEST(?))
+            SELECT * FROM {table_name} WHERE variant_id IN (SELECT * FROM UNNEST(?)) AND study_id IN (SELECT * FROM UNNEST(?))
         """
-        cursor = self.associations_conn.execute(query, [all_snp_ids, all_study_ids])
+        cursor = self.associations_conn.execute(query, [all_variant_ids, all_study_ids])
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description]
         return rows, columns

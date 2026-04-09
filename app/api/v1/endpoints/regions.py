@@ -42,24 +42,24 @@ async def get_region(
             g for g in genes if g.chr == ld_block.chr and g.start >= ld_block.start and g.stop <= ld_block.stop
         ]
 
-        coloc_snp_ids = rare_result_snp_ids = []
+        coloc_variant_ids = rare_result_variant_ids = []
         region_colocs = db.get_all_colocs_for_ld_block(ld_block_id)
         if region_colocs:
             region_colocs = convert_duckdb_to_pydantic_model(ColocGroup, region_colocs)
-            coloc_snp_ids = [coloc.snp_id for coloc in region_colocs]
+            coloc_variant_ids = [coloc.variant_id for coloc in region_colocs]
 
         region_rare_results = db.get_rare_results_for_ld_block(ld_block_id)
         # TODO: Remove this once we have fixed the rare results in the pipeline
         region_rare_results = [r for r in region_rare_results if r[2] is not None]
         if region_rare_results:
             region_rare_results = convert_duckdb_to_pydantic_model(RareResult, region_rare_results)
-            rare_result_snp_ids = [rare_result.snp_id for rare_result in region_rare_results]
+            rare_result_variant_ids = [rare_result.variant_id for rare_result in region_rare_results]
 
-        snp_ids = coloc_snp_ids + rare_result_snp_ids
+        variant_ids = coloc_variant_ids + rare_result_variant_ids
 
         variants = []
-        if snp_ids:
-            variants = db.get_variants(snp_ids=snp_ids)
+        if variant_ids:
+            variants = db.get_variants(variant_ids=variant_ids)
             variants = convert_duckdb_to_pydantic_model(Variant, variants)
 
         return RegionResponse(

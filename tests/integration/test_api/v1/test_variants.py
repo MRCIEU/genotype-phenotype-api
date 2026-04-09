@@ -14,8 +14,8 @@ client = TestClient(app)
 
 
 def test_get_variants_by_variants(variants_in_studies_db):
-    snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants?variants={snp_ids[0]}")
+    variant_ids = list(variants_in_studies_db.keys())
+    response = client.get(f"/v1/variants?variants={variant_ids[0]}")
     assert response.status_code == 200
     data = response.json()
     variants = data["variants"]
@@ -54,11 +54,11 @@ def test_get_variants_by_rsids(variants_in_studies_db):
         assert variant_model.associations is None
 
 
-def test_get_variants_mixed_snp_id_and_rsid(variants_in_studies_db):
-    """Variants param auto-detects snp_ids vs rsids - mixed list works."""
-    snp_ids = list(variants_in_studies_db.keys())
+def test_get_variants_mixed_variant_id_and_rsid(variants_in_studies_db):
+    """Variants param auto-detects variant_ids vs rsids - mixed list works."""
+    variant_ids = list(variants_in_studies_db.keys())
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]
-    response = client.get(f"/v1/variants?variants={snp_ids[0]}&variants={rsids[1]}")
+    response = client.get(f"/v1/variants?variants={variant_ids[0]}&variants={rsids[1]}")
     assert response.status_code == 200
     data = response.json()
     variants = data["variants"]
@@ -103,8 +103,8 @@ def test_get_variants_expand_not_allowed_with_grange(variants_in_grange):
 
 
 def test_get_variants_expand_with_associations(variants_in_studies_db):
-    snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants?variants={snp_ids[0]}&expand=true&include_associations=true")
+    variant_ids = list(variants_in_studies_db.keys())
+    response = client.get(f"/v1/variants?variants={variant_ids[0]}&expand=true&include_associations=true")
     assert response.status_code == 200
     data = response.json()
     variants_response = GetVariantsResponse(**data)
@@ -122,8 +122,8 @@ def test_get_variants_expand_with_associations(variants_in_studies_db):
 
 
 def test_get_variant_by_id(variants_in_studies_db):
-    snp_ids = list(variants_in_studies_db.keys())
-    response = client.get(f"/v1/variants/{snp_ids[0]}")
+    variant_ids = list(variants_in_studies_db.keys())
+    response = client.get(f"/v1/variants/{variant_ids[0]}")
     assert response.status_code == 200
     variant = response.json()
     assert variant is not None
@@ -145,26 +145,26 @@ def test_get_variant_by_id(variants_in_studies_db):
 
 def test_get_variant_by_rsid(variants_in_studies_db):
     """get_variant accepts rsid (auto-detected like get_variants)."""
-    for snp_id, data in variants_in_studies_db.items():
+    for variant_id, data in variants_in_studies_db.items():
         rsid = data.get("rsid")
         if rsid:
             response = client.get(f"/v1/variants/{rsid}")
             assert response.status_code == 200
             variant_response = VariantResponse(**response.json())
             assert variant_response.variant is not None
-            assert variant_response.variant.id == int(snp_id)
+            assert variant_response.variant.id == int(variant_id)
             return
 
 
 def test_get_variant_by_id_with_ld_proxy_fallback(variants_in_studies_db):
     """When variant has no coloc/rare, returns ld_proxy_variants (variants in high LD with results)."""
-    snp_id_no_results = list(variants_in_studies_db.keys())[1]
-    response = client.get(f"/v1/variants/{snp_id_no_results}?rsquared_threshold=0.9")
+    variant_id_no_results = list(variants_in_studies_db.keys())[1]
+    response = client.get(f"/v1/variants/{variant_id_no_results}?rsquared_threshold=0.9")
     assert response.status_code == 200
     data = response.json()
     variant_response = VariantResponse(**data)
     assert variant_response.variant is not None
-    assert variant_response.variant.id == int(snp_id_no_results)
+    assert variant_response.variant.id == int(variant_id_no_results)
     print(variant_response.ld_proxy_variants)
     assert variant_response.ld_proxy_variants is not None
     for proxy_variant in variant_response.ld_proxy_variants:
@@ -175,7 +175,7 @@ def test_get_variant_by_id_with_ld_proxy_fallback(variants_in_studies_db):
 def test_get_variant_by_id_with_coloc_pairs(variant_coloc_pair_merge):
     mid = variant_coloc_pair_merge
     response = client.get(
-        f"/v1/variants/{mid['snp_id']}?include_coloc_pairs=true&h4_threshold={mid['h4_threshold']}",
+        f"/v1/variants/{mid['variant_id']}?include_coloc_pairs=true&h4_threshold={mid['h4_threshold']}",
     )
     assert response.status_code == 200
     variant = response.json()
@@ -205,18 +205,18 @@ def test_get_variant_by_id_with_coloc_pairs(variant_coloc_pair_merge):
 
 
 def test_get_variant_summary_stats(variants_in_studies_db, mock_oci_service):
-    snp_ids = list(variants_in_studies_db.keys())
+    variant_ids = list(variants_in_studies_db.keys())
 
-    response = client.get(f"/v1/variants/{snp_ids[0]}/summary-stats")
+    response = client.get(f"/v1/variants/{variant_ids[0]}/summary-stats")
 
     assert response.status_code == 200
-    assert mock_oci_service.get_file.call_count == variants_in_studies_db[snp_ids[0]]["num_studies"]
+    assert mock_oci_service.get_file.call_count == variants_in_studies_db[variant_ids[0]]["num_studies"]
     assert response.headers["Content-Type"] == "application/zip"
-    assert response.headers["Content-Disposition"] == f"attachment; filename=variant_{snp_ids[0]}_summary_stats.zip"
+    assert response.headers["Content-Disposition"] == f"attachment; filename=variant_{variant_ids[0]}_summary_stats.zip"
 
     zip_data = io.BytesIO(response.content)
     with zipfile.ZipFile(zip_data, "r") as zf:
         namelist = zf.namelist()
-        assert len(namelist) == variants_in_studies_db[snp_ids[0]]["num_studies"]
+        assert len(namelist) == variants_in_studies_db[variant_ids[0]]["num_studies"]
         file_content = zf.read(namelist[0])
         assert file_content

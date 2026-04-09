@@ -91,7 +91,7 @@ def test_get_trait_by_id_with_associations():
     assert trait_response.associations is not None
     assert len(trait_response.associations) > 0
     for association in trait_response.associations:
-        assert association["snp_id"] is not None
+        assert association["variant_id"] is not None
         assert association["study_id"] is not None
         assert association["beta"] is not None
         assert association["se"] is not None

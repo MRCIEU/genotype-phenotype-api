@@ -1,3 +1,26 @@
+<style>
+    #nav-search-dropdown a {
+        display: block;
+        padding: 0.4rem 0.75rem;
+        color: #363636;
+        font-size: 0.9em;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    #nav-search-dropdown a:hover {
+        background-color: #f5f5f5;
+    }
+    #nav-search-dropdown .nav-search-subtitle {
+        color: #7a7a7a;
+        font-size: 0.8em;
+    }
+    #nav-search-dropdown .nav-search-message {
+        padding: 0.5rem 0.75rem;
+        color: #7a7a7a;
+        font-size: 0.9em;
+        font-style: italic;
+    }
+</style>
 <nav class="navbar is-dark has-text-primary-light" role="navigation" aria-label="main navigation">
     <div class="navbar-brand">
         <a class="navbar-item" href="index.html">
@@ -14,6 +37,39 @@
     </div>
 
     <div id="navbarBasicExample" class="navbar-menu">
+        <div
+            class="navbar-start is-hidden-touch"
+            id="nav-search-container"
+            style="flex-grow: 1; display: flex; align-items: center; padding: 0 1rem"
+        >
+            <div style="position: relative; width: 100%; max-width: 500px">
+                <input
+                    class="input is-small"
+                    type="text"
+                    id="nav-search-input"
+                    placeholder="Search for a trait, gene, or variant..."
+                    autocomplete="off"
+                />
+                <div
+                    id="nav-search-dropdown"
+                    style="
+                        display: none;
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
+                        z-index: 40;
+                        max-height: 350px;
+                        overflow-y: auto;
+                        background: white;
+                        border: 1px solid #dbdbdb;
+                        border-radius: 0 0 4px 4px;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        margin-top: 2px;
+                    "
+                ></div>
+            </div>
+        </div>
         <div class="navbar-end">
             <a class="navbar-item" href="/"> Home </a>
             <a class="navbar-item" href="/about.html"> About </a>

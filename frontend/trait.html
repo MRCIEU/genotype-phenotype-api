@@ -180,7 +180,7 @@
                                     <input
                                         type="text"
                                         class="input is-small"
-                                        :placeholder="displayFilters.traitName ? displayFilters.traitName : 'Filter Results By...'"
+                                        :placeholder="displayFilters.traitName || displayFilters.gene ? (displayFilters.traitName || 'Gene: ' + displayFilters.gene) : 'Filter Results By...'"
                                         x-model="traitSearch.text"
                                         @focus="traitSearch.showDropDown = true"
                                         @blur="setTimeout(() => traitSearch.showDropDown = false, 200)"
@@ -202,17 +202,25 @@
                                             white-space: nowrap;
                                         "
                                     >
-                                        <template x-for="trait in getTraitsToFilterBy()" :key="trait">
-                                            <a class="dropdown-item" x-text="trait" @click="filterByTrait(trait)"></a>
+                                        <template
+                                            x-for="item in getTraitsToFilterBy()"
+                                            :key="item.type + ':' + item.label"
+                                        >
+                                            <a
+                                                class="dropdown-item"
+                                                @click="filterByTrait(item)"
+                                                x-text="item.type === 'gene' ? 'Gene: ' + item.label : item.label"
+                                            ></a>
                                         </template>
                                     </div>
                                 </div>
                                 <span
-                                    x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp"
+                                    x-show="displayFilters.traitName || displayFilters.chr || displayFilters.candidateSnp || displayFilters.gene"
                                     class="tag is-light"
                                     style="margin-left: 0.5rem"
                                 >
                                     Filtered by: <b x-text="displayFilters.traitName"></b>&nbsp;
+                                    <b x-show="displayFilters.gene" x-text="'Gene: ' + displayFilters.gene"></b>&nbsp;
                                     <b x-show="displayFilters.chr" x-text="'CHR: ' + displayFilters.chr"></b>&nbsp;
                                     <b
                                         x-show="displayFilters.candidateSnp"
@@ -272,23 +280,28 @@
                 <!-- Data tables -->
                 <div class="columns mt-0 mb-0 is-centered" x-show="showResults">
                     <div class="column is-11">
+                        <p
+                            x-show="!hasActiveDisplayFilter"
+                            class="has-text-centered has-text-grey"
+                            style="padding: 0.75rem 1rem"
+                        >
+                            Click on a SNP, chromosome, or use the 'Filter Results By' input above to display the
+                            specific results.
+                        </p>
                         <div
                             id="coloc-table"
                             style="display: flex; align-items: center; cursor: pointer"
                             @click="showTables.coloc = !showTables.coloc"
                         >
                             <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
-                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Coloc Results</h4>
-                            <h6 class="subtitle is-6 mb-2" style="margin-bottom: 0; font-size: 10px">
-                                (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
-                            </h6>
+                            <h4 class="title is-4 mb-2" style="margin-bottom: 0">Colocalization Results</h4>
                         </div>
                         <results-table
-                            id="coloc-table"
                             :data="getDataForColocTable"
                             :hide-variant-link="userUpload"
-                            x-show="showTables.coloc"
+                            x-show="hasActiveDisplayFilter && showTables.coloc"
                         ></results-table>
+
                         <div
                             id="rare-table"
                             x-show="doRareResultsExist"
@@ -298,22 +311,15 @@
                             <div>
                                 <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
                                 <h4 class="title is-4" style="margin-bottom: 0; display: inline; margin-right: 10px">
-                                    Rare Results
+                                    Rare Variant Results
                                 </h4>
-                                <span
-                                    class="subtitle is-6"
-                                    style="font-size: 10px; display: inline; white-space: nowrap"
-                                >
-                                    (Truncated at <b x-text="constants.maxSNPGroupsToDisplay"></b> groups)
-                                </span>
                             </div>
-                            <results-table
-                                id="rare-table"
-                                :data="getDataForRareTable"
-                                :hide-variant-link="userUpload"
-                                x-show="showTables.rare"
-                            ></results-table>
                         </div>
+                        <results-table
+                            :data="getDataForRareTable"
+                            :hide-variant-link="userUpload"
+                            x-show="hasActiveDisplayFilter && showTables.rare"
+                        ></results-table>
                     </div>
                 </div>
                 <app-footer></app-footer>

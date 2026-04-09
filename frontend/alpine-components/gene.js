@@ -34,6 +34,8 @@ export default function gene() {
         },
         minMbp: null,
         maxMbp: null,
+        totalColocGroups: 0,
+        totalRareGroups: 0,
         errorMessage: null,
         rPackageModalOpen: false,
 
@@ -169,7 +171,6 @@ export default function gene() {
             );
             this.filteredData.groupedResults = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
 
-            // Flatten all groupedResults arrays, then group by gene
             const allGroupedEntries = Object.values(this.filteredData.groupedResults).flat();
             this.filteredData.associatedGenes = Object.groupBy(allGroupedEntries, ({ gene }) => gene);
             delete this.filteredData.associatedGenes[null];
@@ -177,7 +178,24 @@ export default function gene() {
             delete this.filteredData.associatedGenes[this.data.gene.gene];
 
             this.filteredData.studies = [];
-            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(this.filteredData.groupedResults);
+            const dropdownColocs = graphTransformations.groupBySnp(
+                this.filteredData.coloc_groups,
+                "gene",
+                this.data.gene.id,
+                {}
+            );
+            const dropdownRare = graphTransformations.groupBySnp(
+                this.filteredData.rare,
+                "situated_gene",
+                this.data.gene.situated_gene_id,
+                {}
+            );
+            this.totalColocGroups = Object.keys(dropdownColocs).length;
+            this.totalRareGroups = Object.keys(dropdownRare).length;
+            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
+                { ...dropdownColocs, ...dropdownRare },
+                { excludeGene: this.data.gene.gene }
+            );
         },
 
         get geneName() {
@@ -205,10 +223,7 @@ export default function gene() {
         },
 
         getTraitsToFilterBy() {
-            if (this.traitSearch.orderedTraits === null) return [];
-            return this.traitSearch.orderedTraits.filter(
-                text => !this.traitSearch.text || text.toLowerCase().includes(this.traitSearch.text.toLowerCase())
-            );
+            return graphTransformations.buildFilterDropdownItems(this.traitSearch.orderedTraits, this.traitSearch.text);
         },
 
         removeDisplayFilters() {
@@ -221,9 +236,14 @@ export default function gene() {
             this.traitSearch.text = "";
         },
 
-        filterByTrait(trait) {
-            if (trait !== null) {
-                this.displayFilters.traitName = trait;
+        filterByTrait(item) {
+            if (!item) return;
+            if (item.type === "trait") {
+                this.displayFilters.traitName = item.label;
+                this.displayFilters.gene = null;
+            } else if (item.type === "gene") {
+                this.displayFilters.gene = item.label;
+                this.displayFilters.traitName = null;
             }
         },
 
@@ -237,47 +257,105 @@ export default function gene() {
 
         async downloadData() {
             this.downloadClicked = true;
-            await downloads.downloadDataToZip(this.data, this.data.gene.gene);
+            const geneId = new URLSearchParams(location.search).get("id");
+            await downloads.downloadGeneData(geneId);
+        },
+
+        get hasActiveDisplayFilter() {
+            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
+            return (
+                this.displayFilters.candidateSnp !== null ||
+                this.displayFilters.traitName !== null ||
+                this.displayFilters.gene !== null
+            );
         },
 
         get getDataForColocTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return [];
 
-            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedColocs));
+            let entries = Object.entries(this.filteredData.groupedColocs);
+            const pageGene = this.data.gene.gene;
 
-            // If a SNP is selected, reorder so that its group appears first
-            if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(tableData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
-                    tableData = Object.fromEntries(entries);
-                }
+            if (this.displayFilters.traitName) {
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(
+                            r =>
+                                r.trait_name === this.displayFilters.traitName ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
+                        ),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
             }
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(
+                            r =>
+                                r.gene === filterGene ||
+                                r.situated_gene === filterGene ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
+                        ),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
+            }
+
+            if (this.displayFilters.candidateSnp) {
+                entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
+            }
+
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get getDataForRareTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
 
-            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedRare));
+            let entries = Object.entries(this.filteredData.groupedRare);
+            const pageGene = this.data.gene.gene;
 
-            // If a SNP is selected, reorder so that its group appears first
-            if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(tableData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
-                    tableData = Object.fromEntries(entries);
-                }
+            if (this.displayFilters.traitName) {
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(
+                            r =>
+                                r.trait_name === this.displayFilters.traitName ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
+                        ),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
             }
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(
+                            r =>
+                                r.gene === filterGene ||
+                                r.situated_gene === filterGene ||
+                                r.gene === pageGene ||
+                                r.situated_gene === pageGene
+                        ),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
+            }
+
+            if (this.displayFilters.candidateSnp) {
+                entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
+            }
+
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         initColocByPositionGraph() {

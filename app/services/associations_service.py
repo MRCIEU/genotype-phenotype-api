@@ -65,16 +65,16 @@ class AssociationsService:
         study_extractions: List[ExtendedStudyExtraction] = [],
     ):
         snp_study_pairs = (
-            [(coloc.snp_id, coloc.study_id) for coloc in colocs]
-            + [(r.snp_id, r.study_id) for r in rare_results]
-            + [(se.snp_id, se.study_id) for se in study_extractions]
+            [(coloc.variant_id, coloc.study_id) for coloc in colocs]
+            + [(r.variant_id, r.study_id) for r in rare_results]
+            + [(se.variant_id, se.study_id) for se in study_extractions]
         )
         associations, columns = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
         associations = convert_duckdb_tuples_to_dicts(associations, columns)
         return associations
 
-    def get_associations_by_snp_ids_and_study_ids(self, snp_ids: List[int], study_ids: List[int]):
-        snp_study_pairs = [(snp_id, study_id) for snp_id in snp_ids for study_id in study_ids]
+    def get_associations_by_variant_ids_and_study_ids(self, variant_ids: List[int], study_ids: List[int]):
+        snp_study_pairs = [(variant_id, study_id) for variant_id in variant_ids for study_id in study_ids]
         associations, columns = self.associations_db.get_associations_by_snp_study_pairs(snp_study_pairs)
         associations = convert_duckdb_tuples_to_dicts(associations, columns)
         return associations
@@ -93,7 +93,7 @@ class AssociationsService:
 
         for pair in snp_study_pairs:
             for metadata in associations_metadata:
-                if metadata.start_snp_id <= pair[0] <= metadata.stop_snp_id:
+                if metadata.start_variant_id <= pair[0] <= metadata.stop_variant_id:
                     metadata_to_pairs[metadata.associations_table_name].append(pair)
         return metadata_to_pairs
 
@@ -103,8 +103,8 @@ class AssociationsService:
         colocs = colocs or []
         rare_results = rare_results or []
 
-        snp_study_pairs = [(coloc.snp_id, coloc.study_id) for coloc in colocs] + [
-            (r.snp_id, r.study_id) for r in rare_results
+        snp_study_pairs = [(coloc.variant_id, coloc.study_id) for coloc in colocs] + [
+            (r.variant_id, r.study_id) for r in rare_results
         ]
         logger.info(f"Getting associations for {len(snp_study_pairs)} SNP-study pairs")
 
@@ -120,16 +120,16 @@ class AssociationsService:
         filtered_associations = []
         snp_study_pairs_set = set(snp_study_pairs)
         for association in all_associations:
-            if (association["snp_id"], association["study_id"]) in snp_study_pairs_set:
+            if (association["variant_id"], association["study_id"]) in snp_study_pairs_set:
                 filtered_associations.append(association)
 
         logger.info(f"Returning {len(filtered_associations)} associations for {len(snp_study_pairs)}")
         return filtered_associations
 
-    def get_associations_full_by_study_ids(self, snp_ids: List[int], study_ids: List[int]):
+    def get_associations_full_by_study_ids(self, variant_ids: List[int], study_ids: List[int]):
         raise Exception("associations_full_db is not currently used")
 
-        snp_study_pairs = [(snp_id, study_id) for snp_id in snp_ids for study_id in study_ids]
+        snp_study_pairs = [(variant_id, study_id) for variant_id in variant_ids for study_id in study_ids]
         snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
         all_associations = []
         for table_name, pairs in list(snp_study_pairs_by_table.items()):
@@ -139,7 +139,7 @@ class AssociationsService:
                 all_associations.extend(associations)
 
         logger.info(
-            f"Returning {len(all_associations)} associations for {len(snp_ids)} SNPs and {len(study_ids)} studies"
+            f"Returning {len(all_associations)} associations for {len(variant_ids)} SNPs and {len(study_ids)} studies"
         )
         return all_associations
 

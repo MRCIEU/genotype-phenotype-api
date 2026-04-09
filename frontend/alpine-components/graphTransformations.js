@@ -57,14 +57,14 @@ export default {
         this.showTables.coloc = isColoc;
         this.showTables.rare = !isColoc;
 
-        const scrollToHeader = () => {
+        const scrollToHeader = (retries = 3) => {
             const headerElement = document.getElementById(headerId);
             if (headerElement && headerElement.offsetParent !== null) {
                 const y = headerElement.getBoundingClientRect().top + window.pageYOffset - 80;
                 window.scrollTo(0, y);
-                return true;
+                return;
             }
-            return false;
+            if (retries > 0) requestAnimationFrame(() => scrollToHeader(retries - 1));
         };
 
         this.$nextTick(() => scrollToHeader());
@@ -113,20 +113,44 @@ export default {
         return selectedCategories;
     },
 
-    getOrderedTraits(groupedData, excludeTrait) {
-        let allTraits = Object.values(groupedData).flatMap(c => c.map(c => c.trait_name));
+    getOrderedTraits(groupedData, options = {}) {
+        const { excludeTrait, excludeGene } = options;
 
-        let frequency = {};
-        allTraits.forEach(item => {
-            frequency[item] = (frequency[item] || 0) + 1;
-        });
+        const traitGroupCount = {};
+        const geneGroupCount = {};
 
-        let uniqueTraits = [...new Set(allTraits)];
-        uniqueTraits.sort((a, b) => frequency[b] - frequency[a]);
+        for (const rows of Object.values(groupedData)) {
+            const traitsInGroup = new Set();
+            const genesInGroup = new Set();
+            rows.forEach(r => {
+                if (r.data_type === "Phenotype" && r.trait_name) traitsInGroup.add(r.trait_name);
+                if (r.gene && r.gene !== "NA") genesInGroup.add(r.gene);
+                if (r.situated_gene && r.situated_gene !== "NA") genesInGroup.add(r.situated_gene);
+            });
+            traitsInGroup.forEach(t => {
+                traitGroupCount[t] = (traitGroupCount[t] || 0) + 1;
+            });
+            genesInGroup.forEach(g => {
+                geneGroupCount[g] = (geneGroupCount[g] || 0) + 1;
+            });
+        }
 
-        if (excludeTrait) uniqueTraits = uniqueTraits.filter(t => t !== excludeTrait);
+        const items = [];
+        for (const [name, count] of Object.entries(traitGroupCount)) {
+            if (name !== excludeTrait) items.push({ label: name, type: "trait", count });
+        }
+        for (const [name, count] of Object.entries(geneGroupCount)) {
+            if (name !== excludeGene) items.push({ label: name, type: "gene", count });
+        }
+        items.sort((a, b) => b.count - a.count);
+        return items;
+    },
 
-        return uniqueTraits;
+    buildFilterDropdownItems(orderedItems, searchText) {
+        if (!orderedItems) return [];
+        const text = searchText?.toLowerCase() || "";
+        if (!text) return orderedItems;
+        return orderedItems.filter(item => item.label.toLowerCase().includes(text));
     },
 
     getTraitListHTML(content) {
@@ -564,6 +588,46 @@ export default {
         const genes = genesInRegion.filter(gene => gene.minMbp <= this.maxMbp && gene.maxMbp >= this.minMbp);
 
         assignGeneLevels(genes);
+        // Recede non-focus genes on the gene page (`focus` set in gene.js). Region view has no focus — keep full palette.
+        const hasFocusGene = genes.some(g => g.focus);
+        const otherGeneFill = "#c6c6cc";
+        const otherGeneStroke = "#a8aab0";
+        const paletteLen = constants.colors.palette.length;
+
+        function geneFill(d, i) {
+            if (!hasFocusGene || d.focus) return constants.colors.palette[i % paletteLen];
+            if (self.displayFilters.gene === d.gene) return constants.colors.palette[i % paletteLen];
+            return otherGeneFill;
+        }
+        function geneStroke(d) {
+            if (!hasFocusGene) return d.focus ? textColor : null;
+            if (d.focus) return textColor;
+            if (self.displayFilters.gene === d.gene) return textColor;
+            return otherGeneStroke;
+        }
+        function geneStrokeWidth(d) {
+            if (!hasFocusGene) return 3;
+            if (d.focus) return 3;
+            if (self.displayFilters.gene === d.gene) return 2;
+            return 1;
+        }
+        function geneOpacity(d) {
+            if (!hasFocusGene) return 0.7;
+            if (d.focus) return 0.92;
+            if (self.displayFilters.gene === d.gene) return 0.88;
+            return 0.62;
+        }
+        function applyGeneRectAttrs(rectSel) {
+            rectSel.each(function (d) {
+                const i = genes.indexOf(d);
+                d3.select(this)
+                    .attr("fill", geneFill(d, i))
+                    .attr("stroke", geneStroke(d))
+                    .attr("stroke-width", geneStrokeWidth(d))
+                    .attr("opacity", geneOpacity(d));
+            });
+        }
+
         // Gene rectangles need to be interactive, so put them in a separate interactive SVG layer above canvas
         const interactivePlotGroup = interactiveSvg
             .append("g")
@@ -581,22 +645,29 @@ export default {
             .attr("y", d => geneTrackY + d.level * (graphConstants.geneTrackMargin.height + 5))
             .attr("width", d => xScale(d.stop / 1000000) - xScale(d.start / 1000000))
             .attr("height", graphConstants.geneTrackMargin.height)
-            .attr("fill", (d, i) => constants.colors.palette[i % constants.colors.palette.length])
-            .attr("stroke", d => (d.focus ? textColor : null))
-            .attr("stroke-width", 3)
-            .attr("opacity", 0.7)
+            .each(function () {
+                applyGeneRectAttrs(d3.select(this));
+            })
             .on("mouseover", (event, d) => {
+                const i = genes.indexOf(d);
                 graphTransformations.getTooltip(`Gene: ${d.gene}`, event);
-                d3.select(event.target).style("cursor", "pointer").style("stroke", "#808080").style("stroke-width", 3);
+                const el = d3.select(event.target);
+                el.style("cursor", "pointer").attr("stroke", "#808080").attr("stroke-width", 3);
+                if (hasFocusGene && !d.focus) {
+                    el.attr("fill", constants.colors.palette[i % paletteLen]).attr("opacity", 0.9);
+                }
             })
-            .on("click", (event, d) => {
+            .on("click", (_, d) => {
                 self.displayFilters.gene = d.gene;
+                applyGeneRectAttrs(geneGroup.selectAll(".gene-rect"));
             })
-            .on("mouseout", event => {
+            .on("mouseout", function () {
                 d3.selectAll(".tooltip").remove();
-                d3.select(event.target)
-                    .style("stroke", d => (d.focus ? textColor : null))
-                    .style("stroke-width", d => (d.focus ? 3 : null));
+                const rect = d3.select(this);
+                const d = rect.datum();
+                rect.attr("stroke", geneStroke(d)).attr("stroke-width", geneStrokeWidth(d));
+                const i = genes.indexOf(d);
+                rect.attr("fill", geneFill(d, i)).attr("opacity", geneOpacity(d));
             });
 
         // Initial render

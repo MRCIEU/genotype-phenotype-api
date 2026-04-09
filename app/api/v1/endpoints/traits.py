@@ -132,7 +132,7 @@ async def get_traits(
             )
             associations = StudiesService.deduplicate_by_key(
                 associations_raw,
-                lambda a: (a.get("snp_id"), a.get("study_id")),
+                lambda a: (a.get("variant_id"), a.get("study_id")),
             )
 
         return GetTraitsResponse(
@@ -240,9 +240,9 @@ async def get_trait_coloc_pairs(
         else:
             colocs = []
 
-        snp_ids = sorted([coloc.snp_id for coloc in colocs])
+        variant_ids = sorted([coloc.variant_id for coloc in colocs])
         coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
-            snp_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+            variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
         )
         if coloc_pairs:
             pair_columns = list(coloc_pairs[0].keys())

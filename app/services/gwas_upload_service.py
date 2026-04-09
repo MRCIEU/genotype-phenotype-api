@@ -63,7 +63,7 @@ class GwasUploadService:
                     bp=study.bp,
                     min_p=study.min_p,
                     ld_block=study.ld_block,
-                    snp_id=study_extractions_snps[i].id if study_extractions_snps[i] else None,
+                    variant_id=study_extractions_snps[i].id if study_extractions_snps[i] else None,
                     ld_block_id=ld_block_map.get(study.ld_block),
                 )
             )
@@ -102,7 +102,7 @@ class GwasUploadService:
             upload_coloc_group = UploadColocGroup(
                 gwas_upload_id=gwas.id,
                 coloc_group_id=coloc.coloc_group_id,
-                snp_id=snp_map.get(coloc.snp).id if snp_map.get(coloc.snp) else None,
+                variant_id=snp_map.get(coloc.snp).id if snp_map.get(coloc.snp) else None,
                 ld_block_id=ld_block_map.get(coloc.ld_block) if ld_block_map.get(coloc.ld_block) else None,
                 h4_connectedness=coloc.h4_connectedness,
                 h3_connectedness=coloc.h3_connectedness,
@@ -193,7 +193,7 @@ class GwasUploadService:
                 upload_associations.append(
                     UploadAssociation(
                         gwas_upload_id=gwas.id,
-                        snp_id=snp.id,
+                        variant_id=snp.id,
                         study_id=study_id,
                         existing_study_id=existing_study_id,
                         beta=assoc.beta,

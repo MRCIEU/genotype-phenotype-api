@@ -34,6 +34,8 @@ export default function region() {
         },
         minMbp: null,
         maxMbp: null,
+        totalColocGroups: 0,
+        totalRareGroups: 0,
         errorMessage: null,
         rPackageModalOpen: false,
 
@@ -131,7 +133,14 @@ export default function region() {
             );
             this.filteredData.groupedResults = { ...this.filteredData.groupedColocs, ...this.filteredData.groupedRare };
 
-            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(this.filteredData.groupedResults);
+            const dropdownColocs = graphTransformations.groupBySnp(this.filteredData.colocs, null, null, {});
+            const dropdownRare = graphTransformations.groupBySnp(this.filteredData.rare, null, null, {});
+            this.totalColocGroups = Object.keys(dropdownColocs).length;
+            this.totalRareGroups = Object.keys(dropdownRare).length;
+            this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits({
+                ...dropdownColocs,
+                ...dropdownRare,
+            });
         },
 
         get regionName() {
@@ -148,10 +157,7 @@ export default function region() {
         },
 
         getTraitsToFilterBy() {
-            if (this.traitSearch.orderedTraits === null) return [];
-            return this.traitSearch.orderedTraits.filter(
-                text => !this.traitSearch.text || text.toLowerCase().includes(this.traitSearch.text.toLowerCase())
-            );
+            return graphTransformations.buildFilterDropdownItems(this.traitSearch.orderedTraits, this.traitSearch.text);
         },
 
         removeDisplayFilters() {
@@ -164,9 +170,14 @@ export default function region() {
             this.traitSearch.text = "";
         },
 
-        filterByTrait(trait) {
-            if (trait !== null) {
-                this.displayFilters.traitName = trait;
+        filterByTrait(item) {
+            if (!item) return;
+            if (item.type === "trait") {
+                this.displayFilters.traitName = item.label;
+                this.displayFilters.gene = null;
+            } else if (item.type === "gene") {
+                this.displayFilters.gene = item.label;
+                this.displayFilters.traitName = null;
             }
         },
 
@@ -188,44 +199,71 @@ export default function region() {
             await downloads.downloadDataToZip(this.data, this.data.region.ld_block);
         },
 
+        get hasActiveDisplayFilter() {
+            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
+            return (
+                this.displayFilters.candidateSnp !== null ||
+                this.displayFilters.traitName !== null ||
+                this.displayFilters.gene !== null
+            );
+        },
+
         get getDataForColocTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) return [];
 
-            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedColocs));
+            let entries = Object.entries(this.filteredData.groupedColocs);
 
-            // If a SNP is selected, reorder so that its group appears first
-            if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(tableData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
-                    tableData = Object.fromEntries(entries);
-                }
+            if (this.displayFilters.traitName) {
+                entries = entries
+                    .map(([snp, rows]) => [snp, rows.filter(r => r.trait_name === this.displayFilters.traitName)])
+                    .filter(([_, rows]) => rows.length > 0);
             }
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(r => r.gene === filterGene || r.situated_gene === filterGene),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
+            }
+
+            if (this.displayFilters.candidateSnp) {
+                entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
+            }
+
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         get getDataForRareTable() {
+            if (!this.hasActiveDisplayFilter) return [];
             if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
 
-            let tableData = Object.fromEntries(Object.entries(this.filteredData.groupedRare));
+            let entries = Object.entries(this.filteredData.groupedRare);
 
-            // If a SNP is selected, reorder so that its group appears first
-            if (this.displayFilters.candidateSnp) {
-                const entries = Object.entries(tableData);
-                const selectedIndex = entries.findIndex(([snp]) => snp === this.displayFilters.candidateSnp);
-                if (selectedIndex > 0) {
-                    const selectedEntry = entries[selectedIndex];
-                    entries.splice(selectedIndex, 1);
-                    entries.unshift(selectedEntry);
-                    tableData = Object.fromEntries(entries);
-                }
+            if (this.displayFilters.traitName) {
+                entries = entries
+                    .map(([snp, rows]) => [snp, rows.filter(r => r.trait_name === this.displayFilters.traitName)])
+                    .filter(([_, rows]) => rows.length > 0);
             }
 
-            return stringify(Object.fromEntries(Object.entries(tableData).slice(0, constants.maxSNPGroupsToDisplay)));
+            if (this.displayFilters.gene) {
+                const filterGene = this.displayFilters.gene;
+                entries = entries
+                    .map(([snp, rows]) => [
+                        snp,
+                        rows.filter(r => r.gene === filterGene || r.situated_gene === filterGene),
+                    ])
+                    .filter(([_, rows]) => rows.length > 0);
+            }
+
+            if (this.displayFilters.candidateSnp) {
+                entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
+            }
+
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
         },
 
         initColocByPositionGraph() {

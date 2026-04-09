@@ -65,22 +65,22 @@ async def variant_search(
             return VariantSearchResponse(original_variants=[], proxy_variants=[])
 
         original_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, original_variants)
-        snp_ids = [variant.id for variant in original_variants]
-        proxies = ld_db.get_ld_proxies(snp_ids=snp_ids, rsquared_threshold=rsquared_threshold)
+        variant_ids = [variant.id for variant in original_variants]
+        proxies = ld_db.get_ld_proxies(variant_ids=variant_ids, rsquared_threshold=rsquared_threshold)
         proxies = convert_duckdb_to_pydantic_model(Ld, proxies)
-        proxy_snp_ids = list(
-            set([proxy.lead_snp_id for proxy in proxies] + [proxy.variant_snp_id for proxy in proxies])
+        proxy_variant_ids = list(
+            set([proxy.lead_variant_id for proxy in proxies] + [proxy.proxy_variant_id for proxy in proxies])
         )
-        proxy_snp_ids = [snp_id for snp_id in proxy_snp_ids if snp_id not in snp_ids]
+        proxy_variant_ids = [variant_id for variant_id in proxy_variant_ids if variant_id not in variant_ids]
 
-        variant_proxies = studies_db.get_variants(snp_ids=proxy_snp_ids)
+        variant_proxies = studies_db.get_variants(variant_ids=proxy_variant_ids)
         proxy_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, variant_proxies)
 
-        all_snp_ids = list(set(snp_ids + proxy_snp_ids))
-        colocs = studies_db.get_colocs_for_variants(snp_ids=all_snp_ids)
+        all_variant_ids = list(set(variant_ids + proxy_variant_ids))
+        colocs = studies_db.get_colocs_for_variants(variant_ids=all_variant_ids)
         colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
 
-        rare_results = studies_db.get_rare_results_for_variants(snp_ids=snp_ids)
+        rare_results = studies_db.get_rare_results_for_variants(variant_ids=variant_ids)
         rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
 
         for variant in original_variants:
@@ -105,14 +105,14 @@ def populate_variant_search_results(
     rare_results: List[RareResult],
     proxies: List[Ld],
 ):
-    variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.snp_id == variant.id]))
-    variant.coloc_groups = [coloc for coloc in colocs if coloc.snp_id == variant.id]
+    variant.num_colocs = len(set([coloc.coloc_group_id for coloc in colocs if coloc.variant_id == variant.id]))
+    variant.coloc_groups = [coloc for coloc in colocs if coloc.variant_id == variant.id]
 
     variant.num_rare_results = len(
-        set([rare_result.rare_result_group_id for rare_result in rare_results if rare_result.snp_id == variant.id])
+        set([rare_result.rare_result_group_id for rare_result in rare_results if rare_result.variant_id == variant.id])
     )
-    variant.rare_results = [rare_result for rare_result in rare_results if rare_result.snp_id == variant.id]
+    variant.rare_results = [rare_result for rare_result in rare_results if rare_result.variant_id == variant.id]
 
     variant.ld_proxies = [
-        proxy for proxy in proxies if proxy.lead_snp_id == variant.id or proxy.variant_snp_id == variant.id
+        proxy for proxy in proxies if proxy.lead_variant_id == variant.id or proxy.proxy_variant_id == variant.id
     ]
