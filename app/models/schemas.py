@@ -341,7 +341,6 @@ class ExtendedRareResult(RareResult):
 
 class Variant(BaseModel):
     id: int
-    ld_block_id: int
     snp: str
     display_snp: str
     chr: int

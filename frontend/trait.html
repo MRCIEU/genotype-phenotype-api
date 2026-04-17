@@ -150,6 +150,27 @@
                     </div>
                 </div>
 
+                <div class="columns is-centered mb-3 mt-2" x-show="userUpload && showResults">
+                    <div class="column is-11">
+                        <div class="notification is-info is-light mb-0">
+                            <p class="mb-2">
+                                The best way to view these results is with the
+                                <a href="#" @click.prevent="openRPackageModal()">R package</a>
+                            </p>
+                            <p class="mb-0">
+                                For a tutorial on GWAS upload and analysis in R, see the
+                                <a
+                                    href="https://mrcieu.r-universe.dev/articles/gpmapr/tutorial-gwas-upload.html"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    GPMap GWAS upload vignette
+                                </a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Display filters and Download button -->
                 <div class="columns is-centered mb-0 mt-0 pb-0 pt-0" x-show="showResults">
                     <div class="column is-11">

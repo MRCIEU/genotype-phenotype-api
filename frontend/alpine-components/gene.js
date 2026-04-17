@@ -262,7 +262,7 @@ export default function gene() {
         },
 
         get hasActiveDisplayFilter() {
-            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
+            if (this.totalColocGroups < 10 && this.totalRareGroups < 10) return true;
             return (
                 this.displayFilters.candidateSnp !== null ||
                 this.displayFilters.traitName !== null ||
