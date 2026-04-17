@@ -59,18 +59,18 @@
                             <input
                                 class="input"
                                 type="text"
-                                @input="getItemsForSearch"
+                                @input="handleSearchInput"
                                 @keyup.enter="searchVariant"
                                 placeholder="Search for a trait (haemoglobin), gene (DRD2), or variant (rs6589381, 11:113508230)"
                                 x-model="searchText"
                             />
 
-                            <div class="dropdown-menu" x-show="getItemsForSearch && getItemsForSearch.length > 0">
+                            <div class="dropdown-menu" x-show="filteredItems.length > 0">
                                 <div class="dropdown-content" style="max-height: 320px; overflow-y: auto">
                                     <template
                                         @click.outside="closeSearch"
-                                        x-for="item in getItemsForSearch"
-                                        :key="item.type_id"
+                                        x-for="(item, idx) in filteredItems"
+                                        :key="item.type + '-' + String(item.type_id) + '-' + (item.name || '') + '-' + idx"
                                     >
                                         <a class="dropdown-item" @click="goToItem(item)">
                                             <div>
