@@ -1,4 +1,5 @@
 import constants from "../alpine-components/constants.js";
+import { compareSearchTerms } from "../alpine-components/searchSort.js";
 
 export class NavigationBar extends HTMLElement {
     constructor() {
@@ -90,7 +91,7 @@ export class NavigationBar extends HTMLElement {
                         item.name.toLowerCase().includes(text) ||
                         (item.alt_name && item.alt_name.toLowerCase().includes(text))
                 )
-                .sort((a, b) => b.num_rare_results + b.num_coloc_groups - (a.num_rare_results + a.num_coloc_groups))
+                .sort(compareSearchTerms)
                 .slice(0, 20);
             this.renderItems(this.filteredItems);
         }, 200);

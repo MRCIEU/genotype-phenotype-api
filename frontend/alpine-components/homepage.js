@@ -1,6 +1,7 @@
 import logoLight from "../assets/images/logo.svg";
 import logoDark from "../assets/images/logo-dark.svg";
 import constants from "./constants";
+import { compareSearchTerms } from "./searchSort.js";
 
 export default function homepage() {
     return {
@@ -43,6 +44,8 @@ export default function homepage() {
             minSearchChars: 2,
             searchTimeout: null,
         },
+        /** Cap dropdown size — large lists (e.g. "diabetes") break Alpine x-for reconciliation and DOM perf. */
+        maxSearchDropdownItems: 50,
         filteredItems: [],
         errorMessage: null,
 
@@ -94,7 +97,8 @@ export default function homepage() {
             } else if (item.type === "gene") {
                 window.location.href = "gene.html?id=" + item.type_id;
             }
-            this.search = "";
+            this.searchText = "";
+            this.filteredItems = [];
         },
 
         openModal() {
@@ -108,36 +112,37 @@ export default function homepage() {
         },
 
         closeSearch() {
-            this.search = "";
+            this.searchText = "";
+            this.filteredItems = [];
             this.searchMetadata.searchOpen = false;
         },
 
-        get getItemsForSearch() {
+        /**
+         * Debounced client-side filter. Not a getter — Alpine was invoking the old getter multiple times
+         * per render (x-show + x-for), resetting setTimeout and breaking reconciliation on large lists.
+         */
+        handleSearchInput() {
             if (this.searchMetadata.searchTimeout) {
                 clearTimeout(this.searchMetadata.searchTimeout);
             }
 
             if (this.searchText.length < this.searchMetadata.minSearchChars) {
                 this.filteredItems = [];
-                return this.filteredItems;
+                this.searchMetadata.searchOpen = false;
+                return;
             }
 
+            const q = this.searchText.toLowerCase();
             this.searchMetadata.searchTimeout = setTimeout(() => {
-                this.filteredItems = this.searchOptionData.filter(item => {
-                    return (
-                        item.name.toLowerCase().includes(this.searchText.toLowerCase()) ||
-                        (item.alt_name && item.alt_name.toLowerCase().includes(this.searchText.toLowerCase()))
-                    );
+                let next = (this.searchOptionData || []).filter(item => {
+                    const name = item.name?.toLowerCase() ?? "";
+                    const alt = item.alt_name?.toLowerCase() ?? "";
+                    return name.includes(q) || alt.includes(q);
                 });
+                next.sort(compareSearchTerms);
+                this.filteredItems = next.slice(0, this.maxSearchDropdownItems);
                 this.searchMetadata.searchOpen = this.filteredItems.length > 0;
             }, this.searchMetadata.searchDelay);
-
-            this.filteredItems.sort((a, b) => {
-                const totalResultsA = a.num_rare_results + a.num_coloc_groups;
-                const totalResultsB = b.num_rare_results + b.num_coloc_groups;
-                return totalResultsB - totalResultsA;
-            });
-            return this.filteredItems;
         },
 
         get proxyVariants() {
