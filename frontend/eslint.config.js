@@ -5,6 +5,9 @@ import prettier from "eslint-plugin-prettier";
 
 export default defineConfig([
     {
+        ignores: ["dist/**", "node_modules/**", "build/**", "**/*.min.js"],
+    },
+    {
         languageOptions: {
             globals: {
                 ...globals.browser,
