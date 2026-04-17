@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import CisTrans, StudyDataType, VariantType
+from app.models.schemas import CisTrans, StudyDataType 
 from app.db.utils import log_performance
 from app.logging_config import get_logger
 
@@ -295,7 +295,7 @@ class StudiesDBClient:
             SELECT traits.id, traits.trait_name, studies.sample_size, studies.ancestry
             FROM traits
             JOIN studies ON traits.id = studies.trait_id 
-            WHERE traits.data_type IN ({",".join(self.common_data_types)}) AND studies.variant_type = '{VariantType.common.name}'
+            WHERE traits.data_type IN ({",".join(self.common_data_types)})
         """).fetchall()
 
     @log_performance

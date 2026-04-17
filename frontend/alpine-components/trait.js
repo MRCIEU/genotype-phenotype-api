@@ -297,9 +297,6 @@ export default function trait() {
             let text = "Status: ";
             if (this.data === null) return text + "...";
             text += this.data.trait.status;
-            if (this.data.trait.status === "completed") {
-                text += ". For the best user experience, use this data via the R package.";
-            }
             return text;
         },
 
@@ -366,7 +363,7 @@ export default function trait() {
 
         get hasActiveDisplayFilter() {
             if (this.userUpload) return true;
-            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
+            if (this.totalColocGroups < 10 && this.totalRareGroups < 5) return true;
             return (
                 this.displayFilters.candidateSnp !== null ||
                 this.displayFilters.chr !== null ||
