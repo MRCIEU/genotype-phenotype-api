@@ -5,6 +5,7 @@ import { stringify } from "flatted";
 import graphTransformations from "./graphTransformations.js";
 import constants from "./constants.js";
 import downloads from "./downloads.js";
+import defaultManhattanMetadata from "../assets/images/traits/gwas_metadata.json";
 
 export default function trait() {
     return {
@@ -40,6 +41,8 @@ export default function trait() {
         },
         totalColocGroups: 0,
         totalRareGroups: 0,
+        /** True when trait has no Manhattan SVG zip (e.g. rare-only GWAS); plot is canvas + axes only. */
+        svgAssetsMissing: false,
         errorMessage: null,
         downloadClicked: false,
         rPackageModalOpen: false,
@@ -56,12 +59,19 @@ export default function trait() {
 
             try {
                 const response = await fetch(traitUrl);
+                const bodyText = await response.text();
+                const data = this.tryParseJson(bodyText);
                 if (!response.ok) {
                     this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
                     return;
                 }
+                if (!data) {
+                    this.errorMessage =
+                        "Failed to load data: server did not return JSON (check API URL and that the backend is running).";
+                    return;
+                }
 
-                this.data = await response.json();
+                this.data = data;
                 await this.getSvgData(this.data.trait.id);
 
                 document.title = "GPMap: " + (this.userUpload ? this.data.trait.name : this.data.trait.trait_name);
@@ -195,7 +205,26 @@ export default function trait() {
             );
         },
 
+        /**
+         * Genome-wide axis layout when trait-specific _metadata.json is not published (e.g. rare GWAS only).
+         * Uses bundled gwas_metadata.json for x_axis / dimensions; y-axis max from coloc + rare p-values.
+         */
+        buildSyntheticManhattanMetadata() {
+            const meta = structuredClone(defaultManhattanMetadata);
+            const rows = [...(this.data?.coloc_groups ?? []), ...(this.data?.rare_results ?? [])];
+            let maxLp = 10;
+            for (const r of rows) {
+                if (r.min_p != null && r.min_p > 0 && Number.isFinite(r.min_p)) {
+                    maxLp = Math.max(maxLp, -Math.log10(r.min_p));
+                }
+            }
+            maxLp = Math.min(Math.max(Math.ceil(maxLp * 1.05), 10), 500);
+            meta.y_axis = { ...meta.y_axis, max_lp: maxLp, min_lp: 0 };
+            return meta;
+        },
+
         async getSvgData(traitId) {
+            this.svgAssetsMissing = false;
             if (this.userUpload) {
                 this.svgs = {
                     metadata: null,
@@ -204,43 +233,68 @@ export default function trait() {
                 };
                 return;
             }
+
+            // Dev server only ships test Manhattan assets as gwas_* / short_gwas_*; map any trait id to those.
+            // Production uses real trait id paths on the CDN.
+            let assetTraitId = traitId;
             if (constants.isLocal) {
-                const colocGroups = this.data.coloc_groups || [];
+                const colocGroups = this.data?.coloc_groups ?? [];
                 const minP = colocGroups.reduce((min, se) => Math.min(min, se.min_p), Infinity);
-                traitId = minP < 1e-10 ? "gwas" : "short_gwas";
+                assetTraitId = minP < 1e-10 ? "gwas" : "short_gwas";
             }
 
-            const metadataUrl = `${constants.assetBaseUrl}/traits/${traitId}_metadata.json`;
-            const svgsUrl = `${constants.assetBaseUrl}/traits/${traitId}_svgs.zip`;
+            const metadataUrl = `${constants.assetBaseUrl}/traits/${assetTraitId}_metadata.json`;
+            const svgsUrl = `${constants.assetBaseUrl}/traits/${assetTraitId}_svgs.zip`;
 
-            const response = await fetch(metadataUrl);
-            if (!response.ok) {
-                this.errorMessage = `Failed to load data: ${response.status} ${response.statusText}`;
+            const metaResp = await fetch(metadataUrl);
+            const metaText = await metaResp.text();
+            const metadata = this.tryParseJson(metaText);
+            const metadataLooksValid =
+                metadata &&
+                typeof metadata === "object" &&
+                Array.isArray(metadata.x_axis) &&
+                metadata.y_axis &&
+                Number.isFinite(metadata.svg_width);
+
+            if (!metaResp.ok || !metadataLooksValid) {
+                // 404, HTML SPA fallback, or invalid body: use synthetic axes (e.g. rare-only GWAS with no CDN assets).
+                this.svgs = {
+                    metadata: this.buildSyntheticManhattanMetadata(),
+                    full: null,
+                    chromosomes: {},
+                };
+                this.svgAssetsMissing = true;
                 return;
             }
-            this.svgs.metadata = await response.json();
 
-            const zipResponse = await fetch(svgsUrl);
-            if (!zipResponse.ok) {
-                this.errorMessage = `Failed to load SVG data: ${zipResponse.status} ${zipResponse.statusText}`;
+            this.svgs.metadata = metadata;
+            this.svgs.full = null;
+            this.svgs.chromosomes = {};
+
+            const zipResp = await fetch(svgsUrl);
+            if (!zipResp.ok) {
+                this.svgAssetsMissing = true;
                 return;
             }
-            const zipBlob = await zipResponse.blob();
+
+            const zipBlob = await zipResp.blob();
             const zip = await JSZip.loadAsync(zipBlob);
 
             for (const [filename, file] of Object.entries(zip.files)) {
                 if (filename.endsWith(".svg")) {
                     const svgContent = await file.async("text");
                     if (filename.includes("chr")) {
-                        // Extract chromosome number from filename
-                        const chrNum = filename.match(/chr(\d+)\.svg/)[1];
-                        this.svgs.chromosomes[`chr${chrNum}`] = svgContent;
+                        const m = filename.match(/chr(\d+)\.svg/);
+                        if (m) {
+                            this.svgs.chromosomes[`chr${m[1]}`] = svgContent;
+                        }
                     } else {
-                        // This is the full genome SVG
                         this.svgs.full = svgContent;
                     }
                 }
             }
+
+            this.svgAssetsMissing = !this.svgs.full && Object.keys(this.svgs.chromosomes).length === 0;
         },
 
         openRPackageModal() {
@@ -346,6 +400,15 @@ export default function trait() {
             } else if (item.type === "gene") {
                 this.displayFilters.gene = item.label;
                 this.displayFilters.traitName = null;
+            }
+        },
+
+        tryParseJson(text) {
+            if (text == null || text === "") return null;
+            try {
+                return JSON.parse(text);
+            } catch {
+                return null;
             }
         },
 

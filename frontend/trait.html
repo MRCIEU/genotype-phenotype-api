@@ -142,6 +142,13 @@
                 <!-- Graph and options -->
                 <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
                     <div class="column pb-0 mb-0" :class="userUpload ? 'is-12' : 'is-10'">
+                        <p
+                            class="is-size-7 has-text-grey has-text-centered mb-2"
+                            x-show="!userUpload && svgAssetsMissing"
+                        >
+                            Manhattan background images are not available for this trait (e.g. rare-variant GWAS). The
+                            plot below shows colocalisation and rare-variant points on the same genome layout
+                        </p>
                         <div x-model="initTraitGraph" id="trait-chart"></div>
                     </div>
 
