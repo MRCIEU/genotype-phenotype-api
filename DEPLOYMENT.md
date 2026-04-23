@@ -28,9 +28,21 @@ The 'process GWAS' pipeline allows users to upload their own data, there are a s
 
 ### Renewing the SSL certificate
 
-If you deploy new code, the SSL cert will automatically be done.  However, if it isn't, there is a script `./refresh_ssl_certs.sh`
+**Swarm has no built-in “run daily” scheduler**—use **`./refresh_ssl_certs.sh`** on the **Swarm manager** (same host as `docker stack deploy`). It scales **`gpmap_certbot`**, waits, then **`docker service update --force gpmap_frontend`** so nginx reloads certs from `certbot/letsencrypt`.
 
-This will run certbot, and restart the docker instances.  Importantly, the nginx frontend, which will pick up the new cert.
+#### Run the script every day (cron on the manager)
+
+Schedule **`cron`** (or a **systemd timer**) on that host. The script uses **`sudo docker`**, so use **root’s crontab** or passwordless sudo for the deploy user.
+
+Example root crontab entry (03:30 daily, log file, optional lock to avoid overlap):
+
+```bash
+sudo crontab -e
+
+30 7 * * 1 flock -n /tmp/gpmap-refresh-ssl.lock /home/opc/genotype-phenotype-api/scripts/refresh_ssl_certs.sh >> /var/log/gpmap-refresh-ssl.log 2>&1
+```
+
+Change the path to your checkout. Other options: **CI + SSH** to the manager, or a small **sidecar** image with cron—Swarm itself does not need to change.
 
 
 ### Docker swarm errors
