@@ -63,6 +63,8 @@ export default {
     ],
     orderedDataTypes: ["Splice Variant", "Gene Expression", "Methylation", "Protein", "Phenotype"],
     maxSNPGroupsToDisplay: 30,
+    /** Coloc / rare results tables: show this many groups by default (with truncation message if more). */
+    maxResultTableGroups: 10,
     findMinAndMaxValues: function (data) {
         const idFrequencies = data.reduce((acc, obj) => {
             if (obj.id) {

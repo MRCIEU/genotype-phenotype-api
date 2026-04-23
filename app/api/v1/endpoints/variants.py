@@ -126,16 +126,6 @@ async def get_variants(
             )
             study_extractions_dedup = StudiesService.deduplicate_by_key(study_extractions, lambda e: e.id)
 
-            associations_raw = (
-                associations_service.get_associations(colocs_dedup, rare_results_dedup, study_extractions_dedup)
-                if include_associations
-                else []
-            )
-            associations = StudiesService.deduplicate_by_key(
-                associations_raw,
-                lambda a: (a.get("variant_id"), a.get("study_id")),
-            )
-
             coloc_pairs = None
             if include_coloc_pairs:
                 v_variant_ids = (
@@ -150,6 +140,16 @@ async def get_variants(
             if include_coloc_pairs and coloc_pairs is not None:
                 study_extractions_dedup = studies_service.merge_study_extractions_for_coloc_pairs(
                     study_extractions_dedup, coloc_pairs
+                )
+
+            associations = []
+            if include_associations:
+                associations_raw = associations_service.get_associations(
+                    colocs_dedup, rare_results_dedup, study_extractions_dedup
+                )
+                associations = StudiesService.deduplicate_by_key(
+                    associations_raw,
+                    lambda a: (a.get("variant_id"), a.get("study_id")),
                 )
 
             extended_colocs = [
@@ -314,8 +314,6 @@ async def get_variant(
         variant = convert_duckdb_to_pydantic_model(Variant, variant)
         study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)
 
-        associations = associations_service.get_associations(colocs, rare_results, study_extractions)
-
         coloc_pairs = None
         if include_coloc_pairs:
             variant_ids = (
@@ -329,6 +327,8 @@ async def get_variant(
 
         if include_coloc_pairs and coloc_pairs is not None:
             study_extractions = studies_service.merge_study_extractions_for_coloc_pairs(study_extractions, coloc_pairs)
+
+        associations = associations_service.get_associations(colocs, rare_results, study_extractions)
 
         extended_colocs = []
         for coloc in colocs:

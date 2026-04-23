@@ -199,37 +199,42 @@
                 <!-- Data tables -->
                 <div class="columns mt-0 mb-0 is-centered">
                     <div class="column is-11">
-                        <p
-                            x-show="!hasActiveDisplayFilter"
-                            class="has-text-centered has-text-grey"
-                            style="padding: 0.75rem 1rem"
-                        >
-                            Click on a SNP or use the 'Filter Results By' input above to display the results table.
-                        </p>
                         <div
-                            style="display: flex; align-items: center; cursor: pointer"
+                            style="display: flex; align-items: center; flex-wrap: wrap; cursor: pointer"
                             @click="showTables.coloc = !showTables.coloc"
                         >
                             <span x-text="showTables.coloc ? '▼' : '►'" style="margin-right: 8px"></span>
                             <h4 class="title is-4 mb-2" style="margin-bottom: 0">Colocalization Results</h4>
+                            <span x-show="colocTableTruncated" class="is-size-7 has-text-grey ml-2" @click.stop
+                                >Truncated to 10 Groups</span
+                            >
                         </div>
                         <results-table
                             id="coloc-table"
                             :data="getDataForColocTable"
-                            x-show="hasActiveDisplayFilter && showTables.coloc"
+                            x-show="showTables.coloc"
                         ></results-table>
 
                         <div
-                            style="display: flex; align-items: center; cursor: pointer; margin-top: 1rem"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                flex-wrap: wrap;
+                                cursor: pointer;
+                                margin-top: 1rem;
+                            "
                             @click="showTables.rare = !showTables.rare"
                         >
                             <span x-text="showTables.rare ? '▼' : '►'" style="margin-right: 8px"></span>
                             <h4 class="title is-4 mb-2" style="margin-bottom: 0">Rare Variant Results</h4>
+                            <span x-show="rareTableTruncated" class="is-size-7 has-text-grey ml-2" @click.stop
+                                >Truncated to 10 Groups</span
+                            >
                         </div>
                         <results-table
                             id="rare-table"
                             :data="getDataForRareTable"
-                            x-show="hasActiveDisplayFilter && showTables.rare"
+                            x-show="showTables.rare"
                         ></results-table>
                     </div>
                 </div>

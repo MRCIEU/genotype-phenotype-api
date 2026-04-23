@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import CisTrans, StudyDataType 
+from app.models.schemas import CisTrans, StudyDataType
 from app.db.utils import log_performance
 from app.logging_config import get_logger
 

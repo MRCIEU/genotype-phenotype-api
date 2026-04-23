@@ -424,20 +424,10 @@ export default function trait() {
             this.traitSearch.text = "";
         },
 
-        get hasActiveDisplayFilter() {
-            if (this.userUpload) return true;
-            if (this.totalColocGroups < 10 && this.totalRareGroups < 5) return true;
-            return (
-                this.displayFilters.candidateSnp !== null ||
-                this.displayFilters.chr !== null ||
-                this.displayFilters.traitName !== null ||
-                this.displayFilters.gene !== null
-            );
-        },
-
-        get getDataForColocTable() {
-            if (!this.hasActiveDisplayFilter) return [];
-            if (!this.filteredData.coloc_groups || this.filteredData.coloc_groups.length === 0) return [];
+        getColocTableGroupEntries() {
+            if (!this.filteredData.coloc_groups || this.filteredData.coloc_groups.length === 0) {
+                return [];
+            }
 
             let tableData = this.filteredData.coloc_groups.filter(coloc => {
                 if (this.displayFilters.chr !== null) return coloc.chr == this.displayFilters.chr;
@@ -473,19 +463,27 @@ export default function trait() {
                 groupedData = groupedData[key] ? { [key]: groupedData[key] } : {};
             }
 
-            const truncatedData = Object.fromEntries(
-                Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)
-            );
-            return stringify(truncatedData);
+            return Object.entries(groupedData);
+        },
+
+        get getDataForColocTable() {
+            const entries = this.getColocTableGroupEntries();
+            const max = this.constants.maxResultTableGroups;
+            return stringify(Object.fromEntries(entries.slice(0, max)));
+        },
+
+        get colocTableTruncated() {
+            return this.getColocTableGroupEntries().length > this.constants.maxResultTableGroups;
         },
 
         get doRareResultsExist() {
             return this.data && this.data.trait.rare_study;
         },
 
-        get getDataForRareTable() {
-            if (!this.hasActiveDisplayFilter) return [];
-            if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
+        getRareTableGroupEntries() {
+            if (!this.filteredData.rare || this.filteredData.rare.length === 0) {
+                return [];
+            }
 
             let tableData = this.filteredData.rare.filter(rare => {
                 if (this.displayFilters.chr !== null) return rare.chr == this.displayFilters.chr;
@@ -521,10 +519,17 @@ export default function trait() {
                 groupedData = groupedData[key] ? { [key]: groupedData[key] } : {};
             }
 
-            const truncatedData = Object.fromEntries(
-                Object.entries(groupedData).slice(0, constants.maxSNPGroupsToDisplay)
-            );
-            return stringify(truncatedData);
+            return Object.entries(groupedData);
+        },
+
+        get getDataForRareTable() {
+            const entries = this.getRareTableGroupEntries();
+            const max = this.constants.maxResultTableGroups;
+            return stringify(Object.fromEntries(entries.slice(0, max)));
+        },
+
+        get rareTableTruncated() {
+            return this.getRareTableGroupEntries().length > this.constants.maxResultTableGroups;
         },
 
         initTraitGraph() {
