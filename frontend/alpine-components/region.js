@@ -199,18 +199,10 @@ export default function region() {
             await downloads.downloadDataToZip(this.data, this.data.region.ld_block);
         },
 
-        get hasActiveDisplayFilter() {
-            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
-            return (
-                this.displayFilters.candidateSnp !== null ||
-                this.displayFilters.traitName !== null ||
-                this.displayFilters.gene !== null
-            );
-        },
-
-        get getDataForColocTable() {
-            if (!this.hasActiveDisplayFilter) return [];
-            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) return [];
+        getColocTableGroupEntries() {
+            if (!this.data || !this.filteredData.colocs || this.filteredData.colocs.length === 0) {
+                return [];
+            }
 
             let entries = Object.entries(this.filteredData.groupedColocs);
 
@@ -234,12 +226,22 @@ export default function region() {
                 entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
             }
 
-            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
+            return entries;
         },
 
-        get getDataForRareTable() {
-            if (!this.hasActiveDisplayFilter) return [];
-            if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
+        get getDataForColocTable() {
+            const entries = this.getColocTableGroupEntries();
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxResultTableGroups)));
+        },
+
+        get colocTableTruncated() {
+            return this.getColocTableGroupEntries().length > constants.maxResultTableGroups;
+        },
+
+        getRareTableGroupEntries() {
+            if (!this.filteredData.rare || this.filteredData.rare.length === 0) {
+                return [];
+            }
 
             let entries = Object.entries(this.filteredData.groupedRare);
 
@@ -263,7 +265,16 @@ export default function region() {
                 entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
             }
 
-            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
+            return entries;
+        },
+
+        get getDataForRareTable() {
+            const entries = this.getRareTableGroupEntries();
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxResultTableGroups)));
+        },
+
+        get rareTableTruncated() {
+            return this.getRareTableGroupEntries().length > constants.maxResultTableGroups;
         },
 
         initColocByPositionGraph() {

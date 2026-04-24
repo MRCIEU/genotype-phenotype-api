@@ -261,18 +261,10 @@ export default function gene() {
             await downloads.downloadGeneData(geneId);
         },
 
-        get hasActiveDisplayFilter() {
-            if (this.totalColocGroups < 5 && this.totalRareGroups < 5) return true;
-            return (
-                this.displayFilters.candidateSnp !== null ||
-                this.displayFilters.traitName !== null ||
-                this.displayFilters.gene !== null
-            );
-        },
-
-        get getDataForColocTable() {
-            if (!this.hasActiveDisplayFilter) return [];
-            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) return [];
+        getColocTableGroupEntries() {
+            if (!this.data || !this.data.coloc_groups || this.data.coloc_groups.length === 0) {
+                return [];
+            }
 
             let entries = Object.entries(this.filteredData.groupedColocs);
             const pageGene = this.data.gene.gene;
@@ -311,12 +303,22 @@ export default function gene() {
                 entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
             }
 
-            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
+            return entries;
         },
 
-        get getDataForRareTable() {
-            if (!this.hasActiveDisplayFilter) return [];
-            if (!this.filteredData.rare || this.filteredData.rare.length === 0) return [];
+        get getDataForColocTable() {
+            const entries = this.getColocTableGroupEntries();
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxResultTableGroups)));
+        },
+
+        get colocTableTruncated() {
+            return this.getColocTableGroupEntries().length > constants.maxResultTableGroups;
+        },
+
+        getRareTableGroupEntries() {
+            if (!this.filteredData.rare || this.filteredData.rare.length === 0) {
+                return [];
+            }
 
             let entries = Object.entries(this.filteredData.groupedRare);
             const pageGene = this.data.gene.gene;
@@ -355,7 +357,16 @@ export default function gene() {
                 entries = entries.filter(([snp]) => snp === this.displayFilters.candidateSnp);
             }
 
-            return stringify(Object.fromEntries(entries.slice(0, constants.maxSNPGroupsToDisplay)));
+            return entries;
+        },
+
+        get getDataForRareTable() {
+            const entries = this.getRareTableGroupEntries();
+            return stringify(Object.fromEntries(entries.slice(0, constants.maxResultTableGroups)));
+        },
+
+        get rareTableTruncated() {
+            return this.getRareTableGroupEntries().length > constants.maxResultTableGroups;
         },
 
         initColocByPositionGraph() {
