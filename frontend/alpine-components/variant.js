@@ -105,6 +105,8 @@ export default function variant() {
                     this.data.variant.min_bp = this.data.variant.bp - windowBp;
                     this.data.variant.max_bp = this.data.variant.bp + windowBp;
                 }
+
+                this.filterDataForGraphs();
             } catch (error) {
                 console.error("Error loading data:", error);
             }
@@ -120,6 +122,22 @@ export default function variant() {
             const noRare = !this.data.rare_results || this.data.rare_results.length === 0;
             const hasProxies = this.data.ld_proxy_variants && this.data.ld_proxy_variants.length > 0;
             return noColoc && noRare && hasProxies;
+        },
+
+        hasRawColocOrRare() {
+            if (!this.data) return false;
+            const hasColoc = this.data.coloc_groups && this.data.coloc_groups.length > 0;
+            const hasRare = this.data.rare_results && this.data.rare_results.length > 0;
+            return hasColoc || hasRare;
+        },
+
+        /** Rows visible under current graph filters (coloc + rare + standalone extractions). */
+        filteredRowsCount() {
+            return (
+                (this.filteredData.colocs?.length || 0) +
+                (this.filteredData.rare?.length || 0) +
+                (this.filteredData.extractions?.length || 0)
+            );
         },
 
         getVariantData() {
