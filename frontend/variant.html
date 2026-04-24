@@ -138,10 +138,16 @@
 
                     <div class="column is-7">
                         <h4
-                            x-show="data && data.coloc_groups.length === 0 && !hasLdProxyVariantsToShow()"
+                            x-show="data && !hasRawColocOrRare() && !hasLdProxyVariantsToShow()"
                             class="title is-3 has-text-centered"
                         >
-                            No colocalization information to display for this variant.
+                            No information to display for this variant.
+                        </h4>
+                        <h4
+                            x-show="data && hasRawColocOrRare() && filteredRowsCount() === 0 && !hasLdProxyVariantsToShow()"
+                            class="title is-3 has-text-centered"
+                        >
+                            Please change the filters to the right to see results.
                         </h4>
                         <div
                             x-show="hasLdProxyVariantsToShow()"
@@ -195,7 +201,7 @@
                                         <button
                                             class="button is-success is-small"
                                             @click="open = !open"
-                                            :disabled="!data || data.coloc_groups.length === 0"
+                                            :disabled="!data || getDataForTable().length === 0"
                                         >
                                             <span>Download Data</span>
                                         </button>
