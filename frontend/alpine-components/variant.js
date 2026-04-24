@@ -399,7 +399,7 @@ export default function variant() {
                 .style("color", textColor)
                 .text("");
 
-            const numStudies = (this.filteredData.colocs || []).length;
+            const numStudies = (this.filteredData.colocs || []).length + (this.filteredData.rare || []).length;
             if (numStudies > 500) {
                 ctx.fillStyle = textColor;
                 ctx.font = "16px Arial";
@@ -412,9 +412,11 @@ export default function variant() {
                 return;
             }
 
-            if (!this.filteredData.colocPairs || this.filteredData.colocPairs.length === 0) return;
+            const hasColocPairs = this.filteredData.colocPairs && this.filteredData.colocPairs.length > 0;
+            const hasRare = this.filteredData.rare && this.filteredData.rare.length > 0;
+            if (!hasColocPairs && !hasRare) return;
 
-            const colocPairs = this.filteredData.colocPairs;
+            const colocPairs = this.filteredData.colocPairs || [];
 
             const studyExtractionIds = new Set();
             colocPairs.forEach(pair => {
@@ -436,9 +438,13 @@ export default function variant() {
             });
 
             const existingNodeIds = new Set(nodes.map(n => n.id));
-            const additionalNodes = (this.filteredData.extractions || [])
-                .filter(se => !existingNodeIds.has(se.id))
-                .map(se => ({
+            const standaloneExtractions = (this.filteredData.extractions || []).filter(
+                se => !existingNodeIds.has(se.id)
+            );
+
+            if (standaloneExtractions.length === 1) {
+                const se = standaloneExtractions[0];
+                nodes.push({
                     id: se.id,
                     name: se.trait_name || `Study ${se.id}`,
                     data_type: se.data_type || "Unknown",
@@ -446,9 +452,41 @@ export default function variant() {
                     association: se.association || null,
                     coloc_group_id: null,
                     type: "extraction",
-                }));
+                });
+            } else if (standaloneExtractions.length > 1) {
+                const bestP = Math.min(...standaloneExtractions.map(se => se.min_p || 1));
+                nodes.push({
+                    id: "__standalone_summary__",
+                    name: `${standaloneExtractions.length} more traits not in a colocalization group`,
+                    data_type: "Unknown",
+                    min_p: bestP,
+                    association: null,
+                    coloc_group_id: null,
+                    type: "extraction_summary",
+                    _count: standaloneExtractions.length,
+                });
+            }
 
-            nodes.push(...additionalNodes);
+            // Add rare variant groups to the graph
+            const rareResults = this.filteredData.rare || [];
+            const rareGroupMap = d3.group(rareResults, d => d.rare_result_group_id);
+            rareGroupMap.forEach((groupEntries, groupId) => {
+                if (groupId == null) return;
+                groupEntries.forEach(rare => {
+                    if (existingNodeIds.has(rare.study_extraction_id)) return;
+                    nodes.push({
+                        id: rare.study_extraction_id,
+                        name: rare.trait_name || `Rare Study ${rare.study_extraction_id}`,
+                        data_type: rare.data_type || "Rare",
+                        min_p: rare.min_p || 1,
+                        association: rare.association || null,
+                        coloc_group_id: null,
+                        rare_result_group_id: groupId,
+                        type: "rare",
+                    });
+                    existingNodeIds.add(rare.study_extraction_id);
+                });
+            });
 
             const links = colocPairs.map(pair => ({
                 source: pair.study_extraction_a_id,
@@ -457,7 +495,7 @@ export default function variant() {
                 h3: pair.h3,
             }));
 
-            const allPossibleDataTypes = [...constants.orderedDataTypes, "Unknown"];
+            const allPossibleDataTypes = [...constants.orderedDataTypes, "Unknown", "Rare"];
             const fixedColorMap = allPossibleDataTypes
                 .map((dataType, index) => ({
                     [dataType]: constants.colors.palette[index % constants.colors.palette.length],
@@ -465,6 +503,10 @@ export default function variant() {
                 .reduce((acc, obj) => ({ ...acc, ...obj }), {});
 
             const color = d3.scaleOrdinal().domain(Object.keys(fixedColorMap)).range(Object.values(fixedColorMap));
+
+            const rareGroupIds = [
+                ...new Set(nodes.filter(n => n.rare_result_group_id != null).map(n => n.rare_result_group_id)),
+            ];
 
             // Calculate appropriate parameters based on number of nodes
             const nodeCount = nodes.length;
@@ -488,6 +530,24 @@ export default function variant() {
             });
 
             const centerStrength = isLargeGraph ? 0.5 : 0.2;
+
+            // Custom clustering force that pulls rare group members toward their group centroid
+            const rareClusterForce = () => {
+                const strength = 0.15;
+                return alpha => {
+                    rareGroupIds.forEach(groupId => {
+                        const groupNodes = nodes.filter(n => n.rare_result_group_id === groupId);
+                        if (groupNodes.length < 2) return;
+                        const cx = d3.mean(groupNodes, d => d.x);
+                        const cy = d3.mean(groupNodes, d => d.y);
+                        groupNodes.forEach(node => {
+                            node.vx += (cx - node.x) * strength * alpha;
+                            node.vy += (cy - node.y) * strength * alpha;
+                        });
+                    });
+                };
+            };
+
             const simulation = d3
                 .forceSimulation(nodes)
                 .force(
@@ -503,8 +563,9 @@ export default function variant() {
                     "collision",
                     d3.forceCollide().radius(d => d.radius + 5)
                 )
-                .force("x", d3.forceX(width / 2).strength(centerStrength)) // Stronger centering force
-                .force("y", d3.forceY(height / 2).strength(centerStrength)); // Stronger centering force
+                .force("x", d3.forceX(width / 2).strength(centerStrength))
+                .force("y", d3.forceY(height / 2).strength(centerStrength))
+                .force("rareCluster", rareClusterForce());
 
             let highlightedNode = null;
             let isDragging = false;
@@ -514,44 +575,51 @@ export default function variant() {
             const renderGraph = () => {
                 ctx.clearRect(0, 0, width, height);
 
+                const drawEnclosingCircle = (groupNodes, label, groupColor) => {
+                    const xExtent = d3.extent(groupNodes, d => d.x);
+                    const yExtent = d3.extent(groupNodes, d => d.y);
+                    const centerX = (xExtent[0] + xExtent[1]) / 2;
+                    const centerY = (yExtent[0] + yExtent[1]) / 2;
+
+                    let maxDist = 0;
+                    groupNodes.forEach(node => {
+                        const dist =
+                            Math.sqrt(Math.pow(node.x - centerX, 2) + Math.pow(node.y - centerY, 2)) + node.radius;
+                        if (dist > maxDist) maxDist = dist;
+                    });
+
+                    const padding = 20;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, maxDist + padding, 0, 2 * Math.PI);
+
+                    const rgb = d3.color(groupColor);
+                    ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)`;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
+                    ctx.setLineDash([5, 5]);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
+                    ctx.font = "bold italic 14px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(label, centerX, centerY - maxDist - padding - 10);
+                };
+
                 if (numColocGroups > 1) {
                     const groups = d3.group(nodes, d => d.coloc_group_id);
-
                     groups.forEach((groupNodes, groupId) => {
                         if (groupId === null) return;
-
-                        const groupColor = self.groupColorScale(groupId);
-                        const xExtent = d3.extent(groupNodes, d => d.x);
-                        const yExtent = d3.extent(groupNodes, d => d.y);
-                        const centerX = (xExtent[0] + xExtent[1]) / 2;
-                        const centerY = (yExtent[0] + yExtent[1]) / 2;
-
-                        let maxDist = 0;
-                        groupNodes.forEach(node => {
-                            const dist =
-                                Math.sqrt(Math.pow(node.x - centerX, 2) + Math.pow(node.y - centerY, 2)) + node.radius;
-                            if (dist > maxDist) maxDist = dist;
-                        });
-
-                        const padding = numColocGroups > 1 ? 20 : 30;
-                        ctx.beginPath();
-                        ctx.arc(centerX, centerY, maxDist + padding, 0, 2 * Math.PI);
-
-                        const rgb = d3.color(groupColor);
-                        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)`;
-                        ctx.fill();
-                        ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
-                        ctx.setLineDash([5, 5]);
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-
-                        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
-                        ctx.font = "bold italic 14px Arial";
-                        ctx.textAlign = "center";
-                        ctx.fillText(`Coloc Group ${groupId}`, centerX, centerY - maxDist - padding - 10);
+                        drawEnclosingCircle(groupNodes, `Coloc Group ${groupId}`, self.groupColorScale(groupId));
                     });
                 }
+
+                rareGroupIds.forEach(groupId => {
+                    const groupNodes = nodes.filter(n => n.rare_result_group_id === groupId);
+                    if (groupNodes.length === 0) return;
+                    drawEnclosingCircle(groupNodes, `Rare Variant Group ${groupId}`, "#888888");
+                });
 
                 links.forEach(link => {
                     const sourceNode = nodes.find(n => n.id === link.source.id);
@@ -593,15 +661,24 @@ export default function variant() {
 
                 nodes.forEach(node => {
                     const isHighlighted = highlightedNode && node.id === highlightedNode.id;
+                    const isSummary = node.type === "extraction_summary";
 
                     ctx.beginPath();
                     ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
-                    ctx.fillStyle = color(node.data_type);
+                    ctx.fillStyle = isSummary ? "#ccc" : color(node.data_type);
                     ctx.fill();
 
-                    ctx.strokeStyle = isHighlighted ? textColor : "#fff";
-                    ctx.lineWidth = isHighlighted ? 3 : isLargeGraph ? 1 : 2;
-                    ctx.stroke();
+                    if (isSummary) {
+                        ctx.setLineDash([3, 3]);
+                        ctx.strokeStyle = "#888";
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    } else {
+                        ctx.strokeStyle = isHighlighted ? textColor : "#fff";
+                        ctx.lineWidth = isHighlighted ? 3 : isLargeGraph ? 1 : 2;
+                        ctx.stroke();
+                    }
                 });
 
                 drawLegend();
@@ -640,13 +717,18 @@ export default function variant() {
                         highlightedNode = node;
                         renderGraph();
 
-                        const footer = `${node.name} | p=${node.min_p.toExponential(2)}`;
+                        const footer =
+                            node.type === "extraction_summary"
+                                ? node.name
+                                : `${node.name} | p=${node.min_p.toExponential(2)}`;
                         footerText.text(footer);
 
-                        self.setHighlightedStudy({
-                            coloc_group_id: node.coloc_group_id,
-                            study_extraction_id: node.id,
-                        });
+                        if (node.type !== "extraction_summary") {
+                            self.setHighlightedStudy({
+                                coloc_group_id: node.coloc_group_id,
+                                study_extraction_id: node.id,
+                            });
+                        }
                     }
                 } else if (!node && !self.highlightLock) {
                     canvas.style.cursor = "default";
@@ -686,6 +768,10 @@ export default function variant() {
                 e.stopPropagation();
                 const node = getNodeAt(mousePos.x, mousePos.y);
                 if (node) {
+                    if (node.type === "extraction_summary") {
+                        footerText.text(node.name);
+                        return;
+                    }
                     const snpGraphStore = Alpine.store("snpGraphStore");
                     if (node.id !== self.selectedRowId && self.highlightLock) {
                         self.highlightLock = false;
@@ -742,6 +828,13 @@ export default function variant() {
                 const visited = new Set();
                 const components = [];
 
+                // Build rare-group adjacency so members stay in the same component
+                const rareGroupPeers = new Map();
+                rareGroupIds.forEach(groupId => {
+                    const ids = nodes.filter(n => n.rare_result_group_id === groupId).map(n => n.id);
+                    ids.forEach(id => rareGroupPeers.set(id, ids));
+                });
+
                 const findComponent = startNode => {
                     const component = [];
                     const queue = [startNode];
@@ -760,6 +853,16 @@ export default function variant() {
                                 queue.push(nodes.find(n => n.id === link.source.id));
                             }
                         });
+
+                        const peers = rareGroupPeers.get(node.id);
+                        if (peers) {
+                            peers.forEach(peerId => {
+                                if (!visited.has(peerId)) {
+                                    visited.add(peerId);
+                                    queue.push(nodes.find(n => n.id === peerId));
+                                }
+                            });
+                        }
                     }
                     return component;
                 };
