@@ -11,6 +11,7 @@ logger = get_logger("app.rate_limiting")
 DEFAULT_RATE_LIMIT = "60/minute"
 ENTITY_RESOURCE_RATE_LIMIT = "30/minute"
 
+
 def rate_limit_identifier(request: Request) -> str:
     """
     Returns a hash of the request headers, which will generally remain the same for a session
