@@ -15,7 +15,7 @@ from app.models.schemas import (
 )
 from typing import List
 from app.logging_config import get_logger, time_endpoint
-from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
+from app.rate_limiting import DEFAULT_RATE_LIMIT, ENTITY_RESOURCE_RATE_LIMIT, limiter
 from app.services.associations_service import AssociationsService
 from app.config import get_settings
 from app.services.studies_service import StudiesService
@@ -29,7 +29,7 @@ settings = get_settings()
 
 @router.get("", response_model=GetTraitsResponse)
 @time_endpoint
-@limiter.limit(DEFAULT_RATE_LIMIT)
+@limiter.shared_limit(ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_traits(
     request: Request,
     ids: List[str] = Query(None, description="List of trait IDs or names to filter results"),
@@ -151,7 +151,7 @@ async def get_traits(
 
 @router.get("/{trait_id}", response_model=TraitResponse)
 @time_endpoint
-@limiter.limit(DEFAULT_RATE_LIMIT)
+@limiter.shared_limit(ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_trait(
     request: Request,
     trait_id: str = Path(..., description="Trait ID or name"),

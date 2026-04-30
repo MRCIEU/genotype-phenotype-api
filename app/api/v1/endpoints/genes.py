@@ -14,7 +14,7 @@ from app.models.schemas import (
     GeneResponse,
     convert_duckdb_to_pydantic_model,
 )
-from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
+from app.rate_limiting import ENTITY_RESOURCE_RATE_LIMIT, limiter
 from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.associations_service import AssociationsService
@@ -25,7 +25,7 @@ router = APIRouter()
 
 @router.get("", response_model=GetGenesResponse)
 @time_endpoint
-@limiter.limit(DEFAULT_RATE_LIMIT)
+@limiter.shared_limit(ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_genes(
     request: Request,
     ids: List[str] = Query(None, description="List of gene IDs or symbols to filter results"),
@@ -184,7 +184,7 @@ async def get_genes(
 
 @router.get("/{gene_identifier}", response_model=GeneResponse)
 @time_endpoint
-@limiter.limit(DEFAULT_RATE_LIMIT)
+@limiter.shared_limit(ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_gene(
     request: Request,
     gene_identifier: str = Path(..., description="Gene Symbol or ID"),
