@@ -500,6 +500,7 @@ class ProcessGwasRequest(BaseModel):
 class UpdateGwasRequest(BaseModel):
     success: bool
     failure_reason: Optional[str] = None
+    message: Optional[str] = None
     coloc_pairs: Optional[List[UpdateGwasColocPair]] = None
     coloc_groups: Optional[List[UpdateGwasColocGroup]] = None
     study_extractions: Optional[List[UpdateGwasStudyExtraction]] = None

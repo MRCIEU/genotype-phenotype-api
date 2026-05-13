@@ -13,15 +13,6 @@ guid = None
 # Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
 @pytest.fixture(scope="module", autouse=True)
 def test_remove_all_data():
-    import duckdb
-
-    db_path = "tests/test_data/gwas_upload_small.db"
-    conn = duckdb.connect(db_path)
-    try:
-        conn.execute("ALTER TABLE gwas_upload ADD COLUMN IF NOT EXISTS message VARCHAR")
-        conn.commit()
-    finally:
-        conn.close()
     yield
     system("git checkout tests/test_data/gwas_upload_small.db")
 
