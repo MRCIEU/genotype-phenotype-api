@@ -206,7 +206,9 @@ class GwasUploadService:
             if upload_associations:
                 self.gwas_upload_db.populate_associations(upload_associations)
 
-        updated_gwas = self.gwas_upload_db.update_gwas_status(gwas.guid, GwasStatus.COMPLETED)
+        updated_gwas = self.gwas_upload_db.update_gwas_status(
+            gwas.guid, GwasStatus.COMPLETED, message=update_gwas_request.message
+        )
         updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
         return updated_gwas
 
@@ -237,8 +239,12 @@ class GwasUploadService:
 
         gwas.status = GwasStatus.FAILED.value
         gwas.failure_reason = update_gwas_request.failure_reason
+        gwas.message = update_gwas_request.message
         updated_gwas = self.gwas_upload_db.update_gwas_status(
-            gwas.guid, GwasStatus.FAILED, failure_reason=update_gwas_request.failure_reason
+            gwas.guid,
+            GwasStatus.FAILED,
+            failure_reason=update_gwas_request.failure_reason,
+            message=update_gwas_request.message,
         )
         updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
 

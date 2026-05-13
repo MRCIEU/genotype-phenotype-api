@@ -367,17 +367,23 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
-    def update_gwas_status(self, guid: str, status: GwasStatus, failure_reason: Optional[str] = None):
+    def update_gwas_status(
+        self,
+        guid: str,
+        status: GwasStatus,
+        failure_reason: Optional[str] = None,
+        message: Optional[str] = None,
+    ):
         conn = self.connect()
         try:
             conn.execute(
-                "UPDATE gwas_upload SET status = ?, failure_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE guid = ?",
-                [status.value, failure_reason, guid],
+                "UPDATE gwas_upload SET status = ?, failure_reason = ?, message = ?, updated_at = CURRENT_TIMESTAMP WHERE guid = ?",
+                [status.value, failure_reason, message, guid],
             )
             conn.commit()
 
             result = conn.execute(
-                "SELECT id, guid, email, name, sample_size, ancestry, category, is_published, doi, should_be_added, upload_metadata, status, failure_reason, created_at, updated_at FROM gwas_upload WHERE guid = ?",
+                "SELECT id, guid, email, name, sample_size, ancestry, category, is_published, doi, should_be_added, upload_metadata, status, failure_reason, created_at, updated_at, message FROM gwas_upload WHERE guid = ?",
                 [guid],
             )
             return result.fetchone()

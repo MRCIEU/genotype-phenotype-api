@@ -1,4 +1,5 @@
 {
   "success": false,
-  "failure_reason": "Failed to process GWAS"
+  "failure_reason": "Failed to process GWAS",
+  "message": "Worker reported a processing error."
 }

@@ -585,6 +585,7 @@ class GwasUpload(BaseModel):
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
     updated_at: Optional[datetime.datetime] = None
+    message: Optional[str] = None
 
 
 GwasUpload.model_rebuild()
