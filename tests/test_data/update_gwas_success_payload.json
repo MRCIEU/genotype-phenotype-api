@@ -1,6 +1,7 @@
 {
   "success": true,
   "failure_reason": null,
+  "message": "Pipeline completed successfully.",
   "coloc_pairs": [
     {
       "unique_study_id_a": "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b_EUR/1/21002467-22858108_1",

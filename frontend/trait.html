@@ -121,6 +121,17 @@
                             threshold.
                         </div>
 
+                        <div
+                            class="columns mt-3 is-centered mb-0"
+                            x-show="userUpload && data && data.trait.message && data.trait.message.trim() !== ''"
+                        >
+                            <div class="column is-10">
+                                <div class="notification is-info is-light mb-0">
+                                    <p class="mb-0" style="white-space: pre-wrap" x-text="data.trait.message"></p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div x-show="showResults" class="mb-0">
                             <p class="is-size-7 has-text-centered" x-show="!userUpload">
                                 Displays colocalised results of the study in question, and shows all studies which

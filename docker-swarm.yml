@@ -9,7 +9,7 @@ services:
         constraints:
           - node.labels.type == api
       restart_policy:
-        condition: on-failure
+        condition: any
     command: >
       redis-server
         --save 60 1
@@ -39,7 +39,7 @@ services:
         constraints:
           - node.labels.type == api
       restart_policy:
-        condition: on-failure
+        condition: any
     working_dir: /workspace
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     healthcheck:
@@ -64,7 +64,7 @@ services:
         constraints:
           - node.labels.type == api
       restart_policy:
-        condition: on-failure
+        condition: any
     volumes:
       - api_volume:/home/opc/gpmap_data
       - ./certbot/webroot:/var/www/certbot

@@ -500,6 +500,7 @@ class ProcessGwasRequest(BaseModel):
 class UpdateGwasRequest(BaseModel):
     success: bool
     failure_reason: Optional[str] = None
+    message: Optional[str] = None
     coloc_pairs: Optional[List[UpdateGwasColocPair]] = None
     coloc_groups: Optional[List[UpdateGwasColocGroup]] = None
     study_extractions: Optional[List[UpdateGwasStudyExtraction]] = None
@@ -585,6 +586,7 @@ class GwasUpload(BaseModel):
     failure_reason: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
     updated_at: Optional[datetime.datetime] = None
+    message: Optional[str] = None
 
 
 GwasUpload.model_rebuild()

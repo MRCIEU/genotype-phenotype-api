@@ -133,6 +133,7 @@ def test_put_gwas_failure(test_guid, mock_email_service):
     print(response.json())
     assert response.status_code == 200
     assert response.json()["status"] == GwasStatus.FAILED.value
+    assert response.json()["message"] == update_gwas_payload["message"]
     mock_email_service.send_failure_email.assert_called_once()
 
 
@@ -153,6 +154,7 @@ def test_put_gwas_success(test_guid, mock_email_service):
     assert response.status_code == 200
     gwas_model = GwasUpload(**response.json())
     assert gwas_model.status == GwasStatus.COMPLETED
+    assert gwas_model.message == update_gwas_payload["message"]
     mock_email_service.send_results_email.assert_called_once()
 
 
@@ -167,6 +169,7 @@ def test_get_gwas(test_guid):
     gwas_model = UploadTraitResponse(**response.json())
     assert gwas_model.trait.guid == test_guid
     assert gwas_model.trait.status == GwasStatus.COMPLETED
+    assert gwas_model.trait.message == update_gwas_payload["message"]
     assert len(gwas_model.coloc_groups) == len(update_gwas_payload["coloc_groups"])
     assert len(gwas_model.coloc_pairs) == len(update_gwas_payload["coloc_pairs"])
     assert len(gwas_model.study_extractions) >= 1

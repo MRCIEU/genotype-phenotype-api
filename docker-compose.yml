@@ -33,7 +33,7 @@ services:
     volumes:
       - ./tests/test_data:/workspace/tests/test_data
       - ./app:/workspace/app
-    restart: unless-stopped
+    restart: always
     depends_on:
       - redis
     profiles:
@@ -51,7 +51,7 @@ services:
       - /app/node_modules
     ports:
       - "5173:5173"
-    restart: unless-stopped
+    restart: always
     depends_on:
       - api
     profiles:

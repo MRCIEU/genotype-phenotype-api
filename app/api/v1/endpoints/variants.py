@@ -18,7 +18,7 @@ from app.models.schemas import (
 )
 from typing import List, Optional, Tuple
 from app.logging_config import get_logger, time_endpoint
-from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
+from app.rate_limiting import DEFAULT_RATE_LIMIT, ENTITY_RESOURCE_RATE_LIMIT, limiter
 from app.services.associations_service import AssociationsService
 from app.services.studies_service import StudiesService
 from app.services.summary_stat_service import SummaryStatService
@@ -29,7 +29,7 @@ router = APIRouter()
 
 @router.get("", response_model=GetVariantsResponse)
 @time_endpoint
-@limiter.limit(DEFAULT_RATE_LIMIT)
+@limiter.shared_limit(ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_variants(
     request: Request,
     variants: List[str] = Query(
@@ -235,7 +235,7 @@ async def get_variant_with_summary_stats(
 
 @router.get("/{variant_id}", response_model=VariantResponse)
 @time_endpoint
-@limiter.limit(DEFAULT_RATE_LIMIT)
+@limiter.shared_limit(ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_variant(
     request: Request,
     variant_id: str = Path(
