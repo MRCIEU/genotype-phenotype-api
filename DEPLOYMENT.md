@@ -28,7 +28,7 @@ The 'process GWAS' pipeline allows users to upload their own data, there are a s
 
 ### Renewing the SSL certificate
 
-**Swarm has no built-in “run daily” scheduler**—use **`./refresh_ssl_certs.sh`** on the **Swarm manager** (same host as `docker stack deploy`). It scales **`gpmap_certbot`**, waits, then **`docker service update --force gpmap_frontend`** so nginx reloads certs from `certbot/letsencrypt`.
+**Swarm has no built-in “run daily” scheduler**—use **`scripts/refresh_ssl_certs.sh`** on the **Swarm manager** (same host as `docker stack deploy`). It runs **`certbot renew`** in a one-off container, then **`nginx -s reload`** on the running **`gpmap_frontend`** task so nginx picks up certs from `certbot/letsencrypt` without a rolling service restart. The **`gpmap_certbot`** service stays at **0 replicas** (renew is not a long-running Swarm task).
 
 #### Run the script every day (cron on the manager)
 
@@ -55,6 +55,7 @@ If there are problems when trying to update the docker swarm config / images, ch
 * ```sudo docker service logs -f --tail 50 gpmap_api```: you can also look at the container logs
 * ```sudo docker service inspect gpmap_api --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'```: verify image version
 * ```sudo docker service update --force gpmap_gwas_upload_worker```: if the upload worker just stopped.
+* ```sudo docker service scale gpmap_api=0```: takes the API down (doesn't delete anything)
 
 
 ## Upload Server Configuration
