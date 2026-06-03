@@ -78,6 +78,9 @@ services:
   certbot:
     image: certbot/certbot
     deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
       placement:
         constraints:
           - node.labels.type == api
