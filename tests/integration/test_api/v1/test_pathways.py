@@ -36,9 +36,7 @@ def test_pathway_enrichment_with_source_filter():
 
 def test_pathway_enrichment_with_p_value_threshold():
     """Test that a very strict p-value threshold returns fewer or no results."""
-    response = client.get(
-        "/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1e-50"
-    )
+    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1e-50")
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -48,9 +46,7 @@ def test_pathway_enrichment_with_p_value_threshold():
 
 def test_pathway_enrichment_lenient_threshold():
     """Test that a lenient p-value threshold returns results."""
-    response = client.get(
-        "/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1.0"
-    )
+    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1.0")
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
