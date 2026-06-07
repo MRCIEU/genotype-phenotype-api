@@ -692,8 +692,10 @@ class PathwayEnrichmentResult(BaseModel):
     source: str
     description: Optional[str] = None
     pathway_size: int
+    background_size: int
     overlap: int
     p_value: float
+    fdr: float
     gene_ids: List[int]
 
 
@@ -703,6 +705,7 @@ class PathwayEnrichmentResponse(BaseModel):
     matched_gene_count: int
     source: Optional[str] = None
     p_value_threshold: float
+    total_terms_tested: int
 
 
 class GPMapMetadata(BaseModel):
