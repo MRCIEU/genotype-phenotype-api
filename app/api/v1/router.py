@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     internal,
     associations,
     pleiotropy,
+    pathways,
 )
 
 api_router = APIRouter()
@@ -36,3 +37,5 @@ api_router.include_router(info.router, prefix="/info", tags=["info"])
 api_router.include_router(internal.router, prefix="/internal", tags=["internal"])
 
 api_router.include_router(pleiotropy.router, prefix="/pleiotropy", tags=["pleiotropy"])
+
+api_router.include_router(pathways.router, prefix="/pathways", tags=["pathways"])

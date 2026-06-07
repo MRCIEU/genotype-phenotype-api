@@ -692,6 +692,37 @@ class StudiesDBClient:
         return self.studies_conn.execute(query).fetchall()
 
     @log_performance
+    def get_pathway_mappings_for_genes(self, gene_ids: List[int], source: str = None):
+        if not gene_ids:
+            return []
+        query = "SELECT * FROM pathway_mappings WHERE gene_id IN (SELECT * FROM UNNEST(?))"
+        params = [gene_ids]
+        if source:
+            query += " AND source = ?"
+            params.append(source)
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_pathway_sizes(self, term_ids: List[str], source: str = None):
+        if not term_ids:
+            return []
+        query = "SELECT * FROM pathway_sizes WHERE term_id IN (SELECT * FROM UNNEST(?))"
+        params = [term_ids]
+        if source:
+            query += " AND source = ?"
+            params.append(source)
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
+    def get_all_pathway_sizes(self, source: str = None):
+        query = "SELECT term_id, pathway_size FROM pathway_sizes"
+        params = []
+        if source:
+            query += " WHERE source = ?"
+            params.append(source)
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
     def get_variant_pleiotropy_scores(self):
         query = """SELECT
             variant_pleiotropy.variant_id, variant_annotations.display_snp, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes

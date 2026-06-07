@@ -687,6 +687,27 @@ class ExtendedUploadColocGroup(UploadColocGroup):
         return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
 
 
+class PathwayEnrichmentResult(BaseModel):
+    term_id: str
+    source: str
+    description: Optional[str] = None
+    pathway_size: int
+    background_size: int
+    overlap: int
+    p_value: float
+    fdr: float
+    gene_ids: List[int]
+
+
+class PathwayEnrichmentResponse(BaseModel):
+    results: List[PathwayEnrichmentResult]
+    input_gene_count: int
+    matched_gene_count: int
+    source: Optional[str] = None
+    p_value_threshold: float
+    total_terms_tested: int
+
+
 class GPMapMetadata(BaseModel):
     num_common_studies: int
     num_rare_studies: int
