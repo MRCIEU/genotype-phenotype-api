@@ -100,8 +100,29 @@ class PathwayService:
             all_results.extend(category_results)
             total_terms_tested += category_tested
 
+        all_results = self._attach_pathway_gene_ids(all_results)
         all_results.sort(key=lambda r: (r.fdr, r.source, r.term_id))
         return all_results, len(matched_gene_ids), total_terms_tested
+
+    def _attach_pathway_gene_ids(self, results: list[PathwayEnrichmentResult]) -> list[PathwayEnrichmentResult]:
+        if not results:
+            return results
+
+        term_ids_by_source: dict[str, list[str]] = {}
+        for result in results:
+            term_ids_by_source.setdefault(result.source, []).append(result.term_id)
+
+        pathway_genes_by_term: dict[tuple[str, str], list[int]] = {}
+        for src, term_ids in term_ids_by_source.items():
+            for term_id, gene_id in self.studies_db.get_pathway_genes_for_terms(term_ids, src):
+                pathway_genes_by_term.setdefault((term_id, src), []).append(gene_id)
+
+        return [
+            result.model_copy(
+                update={"pathway_gene_ids": pathway_genes_by_term.get((result.term_id, result.source), [])}
+            )
+            for result in results
+        ]
 
     def _enrich_category(
         self,
@@ -164,6 +185,7 @@ class PathwayService:
                         p_value=p_value,
                         fdr=fdr,
                         gene_ids=sorted(genes_in_term),
+                        pathway_gene_ids=[],
                     )
                 )
 

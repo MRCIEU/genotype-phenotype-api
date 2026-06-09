@@ -5,9 +5,14 @@ from app.models.schemas import PathwayEnrichmentResponse
 client = TestClient(app)
 
 
+def enrich(gene_ids, **kwargs):
+    payload = {"gene_ids": gene_ids, **kwargs}
+    return client.post("/v1/pathways/enrichment", json=payload)
+
+
 def test_pathway_enrichment_basic():
     """Test enrichment with gene IDs known to have KEGG pathway mappings."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&gene_ids=558")
+    response = enrich([700, 1967, 2275, 558])
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -24,11 +29,12 @@ def test_pathway_enrichment_basic():
         assert r.p_value <= r.fdr or r.fdr == r.p_value
         assert r.fdr <= 0.05
         assert len(r.gene_ids) == r.overlap
+        assert set(r.gene_ids).issubset(set(r.pathway_gene_ids))
 
 
 def test_pathway_enrichment_with_source_filter():
     """Test enrichment filtered to KEGG only."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&source=KEGG")
+    response = enrich([700, 1967, 2275], source="KEGG")
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -39,7 +45,7 @@ def test_pathway_enrichment_with_source_filter():
 
 def test_pathway_enrichment_with_strict_threshold():
     """Test that a very strict FDR threshold returns fewer or no results."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1e-50")
+    response = enrich([700, 1967, 2275], p_value_threshold=1e-50)
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -49,7 +55,7 @@ def test_pathway_enrichment_with_strict_threshold():
 
 def test_pathway_enrichment_lenient_threshold():
     """Test that a lenient FDR threshold returns results."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1.0")
+    response = enrich([700, 1967, 2275], p_value_threshold=1.0)
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -61,9 +67,7 @@ def test_pathway_enrichment_lenient_threshold():
 
 def test_pathway_enrichment_fdr_greater_than_or_equal_to_raw_p():
     """FDR-adjusted p-values should always be >= the raw p-value."""
-    response = client.get(
-        "/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&gene_ids=2694&p_value_threshold=1.0"
-    )
+    response = enrich([700, 1967, 2275, 2694], p_value_threshold=1.0)
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
     for r in result.results:
@@ -72,7 +76,7 @@ def test_pathway_enrichment_fdr_greater_than_or_equal_to_raw_p():
 
 def test_pathway_enrichment_no_matching_genes():
     """Test enrichment with gene IDs that have no pathway mappings."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=999999&gene_ids=999998")
+    response = enrich([999999, 999998])
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -84,29 +88,26 @@ def test_pathway_enrichment_no_matching_genes():
 
 def test_pathway_enrichment_invalid_source():
     """Test that an invalid source returns 400."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&source=InvalidSource")
+    response = enrich([700], source="InvalidSource")
     assert response.status_code == 400
     assert "Invalid source" in response.json()["detail"]
 
 
 def test_pathway_enrichment_invalid_p_value():
-    """Test that an invalid p_value_threshold returns 400."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&p_value_threshold=0")
-    assert response.status_code == 400
-    assert "p_value_threshold" in response.json()["detail"]
+    """Test that an invalid p_value_threshold returns 422."""
+    response = enrich([700], p_value_threshold=0)
+    assert response.status_code == 422
 
 
 def test_pathway_enrichment_no_gene_ids():
-    """Test that missing gene_ids returns 422 (FastAPI validation)."""
-    response = client.get("/v1/pathways/enrichment")
+    """Test that missing gene_ids returns 422."""
+    response = client.post("/v1/pathways/enrichment", json={"p_value_threshold": 0.05})
     assert response.status_code == 422
 
 
 def test_pathway_enrichment_results_sorted_by_fdr():
     """Test that results are sorted by FDR ascending."""
-    response = client.get(
-        "/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&gene_ids=2694&p_value_threshold=1.0"
-    )
+    response = enrich([700, 1967, 2275, 2694], p_value_threshold=1.0)
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
@@ -117,9 +118,7 @@ def test_pathway_enrichment_results_sorted_by_fdr():
 
 def test_pathway_enrichment_resource_specific_background():
     """Verify that background_size varies per source (resource-specific normalization)."""
-    response = client.get(
-        "/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&gene_ids=558&p_value_threshold=1.0"
-    )
+    response = enrich([700, 1967, 2275, 558], p_value_threshold=1.0)
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
     backgrounds_by_source: dict[str, set[int]] = {}
@@ -131,7 +130,7 @@ def test_pathway_enrichment_resource_specific_background():
 
 def test_pathway_enrichment_total_terms_tested():
     """total_terms_tested should be reported and be at least the number of results."""
-    response = client.get("/v1/pathways/enrichment?gene_ids=700&gene_ids=1967&gene_ids=2275&p_value_threshold=1.0")
+    response = enrich([700, 1967, 2275], p_value_threshold=1.0)
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
     assert result.total_terms_tested >= len(result.results)
@@ -139,9 +138,9 @@ def test_pathway_enrichment_total_terms_tested():
 
 def test_pathway_enrichment_source_filter_matches_per_category_fdr():
     """STRING applies BH per category; KEGG FDR should match with or without source filter."""
-    genes = "gene_ids=700&gene_ids=1967&gene_ids=2275"
-    all_response = client.get(f"/v1/pathways/enrichment?{genes}&p_value_threshold=1.0")
-    kegg_response = client.get(f"/v1/pathways/enrichment?{genes}&source=KEGG&p_value_threshold=1.0")
+    gene_ids = [700, 1967, 2275]
+    all_response = enrich(gene_ids, p_value_threshold=1.0)
+    kegg_response = enrich(gene_ids, source="KEGG", p_value_threshold=1.0)
     assert all_response.status_code == 200
     assert kegg_response.status_code == 200
 
@@ -157,9 +156,28 @@ def test_pathway_enrichment_source_filter_matches_per_category_fdr():
 
 def test_pathway_enrichment_total_terms_tested_is_overlapping_only():
     """total_terms_tested counts overlapping viable terms tested, not the full catalogue."""
-    genes = "gene_ids=700&gene_ids=1967&gene_ids=2275"
-    response = client.get(f"/v1/pathways/enrichment?{genes}&source=KEGG&p_value_threshold=1.0")
+    response = enrich([700, 1967, 2275], source="KEGG", p_value_threshold=1.0)
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
     assert result.total_terms_tested < 371
     assert result.total_terms_tested >= len(result.results)
+
+
+def test_pathway_enrichment_includes_pathway_gene_ids():
+    """Each result should include full pathway membership from pathway_mappings."""
+    response = enrich([700, 1967, 2275], p_value_threshold=1.0)
+    assert response.status_code == 200
+    result = PathwayEnrichmentResponse(**response.json())
+    assert len(result.results) > 0
+    for r in result.results:
+        assert len(r.pathway_gene_ids) >= r.overlap
+        assert set(r.gene_ids).issubset(set(r.pathway_gene_ids))
+
+
+def test_pathway_enrichment_large_gene_list():
+    """POST accepts large gene lists (e.g. trait-level gene sets)."""
+    gene_ids = list(range(1, 601))
+    response = enrich(gene_ids)
+    assert response.status_code == 200
+    result = PathwayEnrichmentResponse(**response.json())
+    assert result.input_gene_count == 600

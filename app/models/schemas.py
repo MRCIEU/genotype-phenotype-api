@@ -697,6 +697,27 @@ class PathwayEnrichmentResult(BaseModel):
     p_value: float
     fdr: float
     gene_ids: List[int]
+    pathway_gene_ids: List[int]
+
+
+class PathwayEnrichmentRequest(BaseModel):
+    gene_ids: List[int]
+    source: Optional[str] = None
+    p_value_threshold: float = 0.05
+
+    @field_validator("gene_ids")
+    def validate_gene_ids(cls, v):
+        if not v:
+            raise ValueError("At least one gene_id is required")
+        if len(v) > 5000:
+            raise ValueError("Cannot request more than 5000 gene_ids in one request")
+        return v
+
+    @field_validator("p_value_threshold")
+    def validate_p_value_threshold(cls, v):
+        if v <= 0 or v > 1:
+            raise ValueError("p_value_threshold must be between 0 and 1")
+        return v
 
 
 class PathwayEnrichmentResponse(BaseModel):
