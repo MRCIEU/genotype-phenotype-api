@@ -723,6 +723,18 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, params).fetchall()
 
     @log_performance
+    def get_pathway_genes_for_terms(self, term_ids: List[str], source: str):
+        if not term_ids:
+            return []
+        query = """
+            SELECT term_id, gene_id
+            FROM pathway_mappings
+            WHERE term_id IN (SELECT * FROM UNNEST(?)) AND source = ?
+            ORDER BY term_id, gene_id
+        """
+        return self.studies_conn.execute(query, [term_ids, source]).fetchall()
+
+    @log_performance
     def get_variant_pleiotropy_scores(self):
         query = """SELECT
             variant_pleiotropy.variant_id, variant_annotations.display_snp, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
