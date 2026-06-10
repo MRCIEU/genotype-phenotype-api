@@ -715,7 +715,7 @@ class StudiesDBClient:
 
     @log_performance
     def get_all_pathway_sizes(self, source: str = None):
-        query = "SELECT term_id, pathway_size FROM pathway_sizes"
+        query = "SELECT term_id, source, description, pathway_size, background_size FROM pathway_sizes"
         params = []
         if source:
             query += " WHERE source = ?"

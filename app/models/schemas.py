@@ -701,22 +701,29 @@ class PathwayEnrichmentResult(BaseModel):
 
 
 class PathwayEnrichmentRequest(BaseModel):
-    gene_ids: List[int]
+    genes: List[Union[str, int]]
     source: Optional[str] = None
     p_value_threshold: float = 0.05
+    minimum_count_in_network: int = 2
 
-    @field_validator("gene_ids")
-    def validate_gene_ids(cls, v):
+    @field_validator("genes")
+    def validate_genes(cls, v):
         if not v:
-            raise ValueError("At least one gene_id is required")
+            raise ValueError("At least one gene is required")
         if len(v) > 5000:
-            raise ValueError("Cannot request more than 5000 gene_ids in one request")
+            raise ValueError("Cannot request more than 5000 genes in one request")
         return v
 
     @field_validator("p_value_threshold")
     def validate_p_value_threshold(cls, v):
         if v <= 0 or v > 1:
             raise ValueError("p_value_threshold must be between 0 and 1")
+        return v
+
+    @field_validator("minimum_count_in_network")
+    def validate_minimum_count_in_network(cls, v):
+        if v < 1:
+            raise ValueError("minimum_count_in_network must be at least 1")
         return v
 
 
@@ -726,6 +733,7 @@ class PathwayEnrichmentResponse(BaseModel):
     matched_gene_count: int
     source: Optional[str] = None
     p_value_threshold: float
+    minimum_count_in_network: int
     total_terms_tested: int
 
 
