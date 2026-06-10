@@ -245,9 +245,10 @@ def test_pathway_enrichment_with_mixed_genes_and_ids():
     mixed_response = enrich(["TAB2", 1967, "ARHGAP5"])
     assert id_response.status_code == 200
     assert mixed_response.status_code == 200
-    assert PathwayEnrichmentResponse(**id_response.json()).matched_gene_count == PathwayEnrichmentResponse(
-        **mixed_response.json()
-    ).matched_gene_count
+    assert (
+        PathwayEnrichmentResponse(**id_response.json()).matched_gene_count
+        == PathwayEnrichmentResponse(**mixed_response.json()).matched_gene_count
+    )
 
 
 def test_pathway_enrichment_with_string_gene_ids():
