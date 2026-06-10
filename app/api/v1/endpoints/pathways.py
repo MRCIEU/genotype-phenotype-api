@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.logging_config import get_logger, time_endpoint
 from app.models.schemas import PathwayEnrichmentRequest, PathwayEnrichmentResponse
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
-from app.services.pathway_service import PathwayService, VALID_SOURCES
+from app.services.pathway_service import PathwayService, UnknownGenesError, VALID_SOURCES
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -27,19 +27,23 @@ async def pathway_enrichment(
 
         pathway_service = PathwayService()
         results, matched_gene_count, total_terms_tested = pathway_service.get_pathway_enrichment(
-            gene_ids=body.gene_ids,
+            genes=body.genes,
             source=body.source,
             p_value_threshold=body.p_value_threshold,
+            minimum_count_in_network=body.minimum_count_in_network,
         )
 
         return PathwayEnrichmentResponse(
             results=results,
-            input_gene_count=len(body.gene_ids),
+            input_gene_count=len(body.genes),
             matched_gene_count=matched_gene_count,
             source=body.source,
             p_value_threshold=body.p_value_threshold,
+            minimum_count_in_network=body.minimum_count_in_network,
             total_terms_tested=total_terms_tested,
         )
+    except UnknownGenesError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException as e:
         raise e
     except Exception as e:

@@ -11,9 +11,39 @@ logger = get_logger(__name__)
 VALID_SOURCES = {"Reactome", "KEGG", "HP"}
 
 
+class UnknownGenesError(Exception):
+    def __init__(self, unknown_genes: list[str | int]):
+        self.unknown_genes = unknown_genes
+        super().__init__(f"Unknown genes: {', '.join(str(g) for g in unknown_genes)}")
+
+
 class PathwayService:
     def __init__(self):
         self.studies_db = StudiesDBClient()
+
+    def resolve_genes(self, genes: List[str | int]) -> list[int]:
+        """Resolve gene symbols or numeric IDs to gene_annotations IDs."""
+        rows = self.studies_db.get_genes_by_ids(genes)
+        ids_found = {row[0] for row in rows}
+        symbols_to_id = {row[2]: row[0] for row in rows}
+
+        resolved: list[int] = []
+        unknown: list[str | int] = []
+        for gene in genes:
+            if isinstance(gene, int) or (isinstance(gene, str) and gene.isdigit()):
+                gene_id = int(gene)
+                if gene_id in ids_found:
+                    resolved.append(gene_id)
+                else:
+                    unknown.append(gene)
+            elif gene in symbols_to_id:
+                resolved.append(symbols_to_id[gene])
+            else:
+                unknown.append(gene)
+
+        if unknown:
+            raise UnknownGenesError(unknown)
+        return resolved
 
     @staticmethod
     def _fisher_enrichment_pvalue(
@@ -50,27 +80,29 @@ class PathwayService:
 
     def get_pathway_enrichment(
         self,
-        gene_ids: List[int],
+        genes: List[str | int],
         source: Optional[str] = None,
         p_value_threshold: float = 0.05,
+        minimum_count_in_network: int = 2,
     ) -> tuple[list[PathwayEnrichmentResult], int, int]:
         """
-        Run STRING-style pathway enrichment for the given gene IDs.
+        Run STRING-style pathway enrichment for the given genes.
 
         Returns (results, matched_gene_count, total_terms_tested).
         """
-        mappings = self.studies_db.get_pathway_mappings_for_genes(gene_ids, source)
+        gene_ids = self.resolve_genes(genes)
+        unique_gene_ids = list(set(gene_ids))
+        query_size = len(unique_gene_ids)
+
+        mappings = self.studies_db.get_pathway_mappings_for_genes(unique_gene_ids, source)
         if not mappings:
             return [], 0, 0
 
         matched_gene_ids = set()
         term_genes_by_source: dict[str, dict[str, set[int]]] = {}
-        term_meta_by_source: dict[str, dict[str, tuple[str, str | None]]] = {}
-        for gene_id, term_id, src, desc in mappings:
+        for gene_id, term_id, src, _desc in mappings:
             matched_gene_ids.add(gene_id)
             term_genes_by_source.setdefault(src, {}).setdefault(term_id, set()).add(gene_id)
-            if term_id not in term_meta_by_source.setdefault(src, {}):
-                term_meta_by_source[src][term_id] = (src, desc)
 
         sources_to_test = [source] if source else sorted(term_genes_by_source.keys())
         all_results: list[PathwayEnrichmentResult] = []
@@ -81,21 +113,13 @@ class PathwayService:
             if not term_genes:
                 continue
 
-            term_ids = list(term_genes.keys())
-            pathway_sizes_rows = self.studies_db.get_pathway_sizes(term_ids, src)
-            size_lookup: dict[str, tuple[int, int]] = {}
-            for term_id, _, _, pathway_size, background_size in pathway_sizes_rows:
-                size_lookup[term_id] = (pathway_size, background_size)
-
-            genes_in_source = {gid for genes in term_genes.values() for gid in genes}
-            query_size = len(genes_in_source)
-
+            all_pathway_sizes = self.studies_db.get_all_pathway_sizes(src)
             category_results, category_tested = self._enrich_category(
                 term_genes=term_genes,
-                term_meta=term_meta_by_source[src],
-                size_lookup=size_lookup,
+                all_pathway_sizes=all_pathway_sizes,
                 query_size=query_size,
                 fdr_threshold=p_value_threshold,
+                minimum_count_in_network=minimum_count_in_network,
             )
             all_results.extend(category_results)
             total_terms_tested += category_tested
@@ -127,53 +151,42 @@ class PathwayService:
     def _enrich_category(
         self,
         term_genes: dict[str, set[int]],
-        term_meta: dict[str, tuple[str, str | None]],
-        size_lookup: dict[str, tuple[int, int]],
+        all_pathway_sizes: list[tuple],
         query_size: int,
         fdr_threshold: float,
+        minimum_count_in_network: int,
     ) -> tuple[list[PathwayEnrichmentResult], int]:
         """
         STRING-style enrichment for one pathway source/category:
-        - Only test terms that overlap the input gene list.
-        - Pathway size 1: only tested when that gene is present (overlap > 0).
-        - Exclude terms that could not pass BH even in the best-case overlap.
-        - Apply BH FDR only across terms actually tested in this category.
+        - Query size is the full submitted gene list (STRING foreground).
+        - Only terms with overlap >= minimum_count_in_network are tested and included in BH FDR.
+        - Only significant overlapping terms are returned.
         """
-        candidate_ids = [term_id for term_id in term_genes if term_id in size_lookup]
-        if not candidate_ids:
+        if not all_pathway_sizes:
             return [], 0
 
-        num_candidates = len(candidate_ids)
-
-        tested_terms: list[tuple[str, set[int], int, int, float]] = []
-        for term_id in candidate_ids:
-            pathway_size, background_size = size_lookup[term_id]
-            genes_in_term = term_genes[term_id]
+        tested_terms: list[tuple[str, set[int], str, str | None, int, int, float]] = []
+        for term_id, src, desc, pathway_size, background_size in all_pathway_sizes:
+            genes_in_term = term_genes.get(term_id, set())
             overlap = len(genes_in_term)
 
-            if pathway_size == 1 and overlap == 0:
-                continue
-
-            best_overlap = min(query_size, pathway_size)
-            if best_overlap == 0:
-                continue
-            p_best = self._fisher_enrichment_pvalue(best_overlap, query_size, pathway_size, background_size)
-            if p_best > fdr_threshold / num_candidates:
+            if overlap < minimum_count_in_network:
                 continue
 
             p_value = self._fisher_enrichment_pvalue(overlap, query_size, pathway_size, background_size)
-            tested_terms.append((term_id, genes_in_term, pathway_size, background_size, p_value))
+            tested_terms.append((term_id, genes_in_term, src, desc, pathway_size, background_size, p_value))
 
         if not tested_terms:
             return [], 0
 
-        raw_p_values = [t[4] for t in tested_terms]
+        raw_p_values = [t[6] for t in tested_terms]
         fdr_values = self._benjamini_hochberg(raw_p_values)
 
         results: list[PathwayEnrichmentResult] = []
-        for (term_id, genes_in_term, pathway_size, background_size, p_value), fdr in zip(tested_terms, fdr_values):
+        for (term_id, genes_in_term, src, desc, pathway_size, background_size, p_value), fdr in zip(
+            tested_terms, fdr_values
+        ):
             if fdr <= fdr_threshold:
-                src, desc = term_meta[term_id]
                 results.append(
                     PathwayEnrichmentResult(
                         term_id=term_id,
