@@ -12,6 +12,7 @@ from app.middleware.analytics import AnalyticsMiddleware
 from app.api.v1.router import api_router
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
+from app.db.gwas_db import GwasDBClient
 from app.db.redis import RedisClient
 from app.logging_config import get_logger
 from app.rate_limiting import limiter
@@ -71,6 +72,14 @@ def create_app() -> FastAPI:
             "queue": peeked_queue,
             "in_progress_queue_size": len(in_progress_queue),
             "dead_letter_queue": len(dead_letter_queue),
+        }
+
+    @app.get("/upload-health")
+    async def upload_health_check(request: Request):
+        upload_status_counts = GwasDBClient().get_upload_status_counts()
+        return {
+            "status": "healthy",
+            **upload_status_counts,
         }
 
     app.include_router(api_router, prefix="/v1")

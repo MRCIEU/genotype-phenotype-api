@@ -89,7 +89,7 @@ class AnalyticsMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # Skip analytics for health checks and docs
-        if request.url.path in ["/health", "/docs", "/redoc", "/openapi.json"]:
+        if request.url.path in ["/health", "/upload-health", "/docs", "/redoc", "/openapi.json"]:
             return await call_next(request)
 
         # Skip if GA4 not configured

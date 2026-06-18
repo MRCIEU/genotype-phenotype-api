@@ -50,7 +50,7 @@ class Formatter:
 
 def path_filter(record):
     try:
-        exclude_paths = ["/health", "/favicon.ico"]
+        exclude_paths = ["/health", "/upload-health", "/favicon.ico"]
         return not any(path in record["message"] for path in exclude_paths)
     except Exception:
         return True

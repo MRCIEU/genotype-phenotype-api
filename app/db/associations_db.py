@@ -19,12 +19,6 @@ class AssociationsDBClient:
     def __init__(self):
         self.associations_conn = get_associations_db_connection()
 
-    # TODO: keeping this for when we need to use the associations_full database.
-    @log_performance
-    def get_associations_metadata(self):
-        query = "SELECT * FROM associations_metadata"
-        return self.associations_conn.execute(query).fetchall()
-
     @log_performance
     def get_associations_by_table_name(
         self,
