@@ -1,6 +1,8 @@
 import oci
 import os
-from datetime import datetime, timedelta
+import shutil
+import tempfile
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app.config import get_settings
@@ -9,6 +11,8 @@ from app.models.schemas import Singleton
 
 settings = get_settings()
 logger = get_logger(__name__)
+
+GWAS_UPLOAD_DB_BACKUP_PREFIX = "db_backups/gwas_upload"
 
 
 class OCIService(metaclass=Singleton):
@@ -89,6 +93,37 @@ class OCIService(metaclass=Singleton):
         except Exception as e:
             logger.error(f"Failed to upload file {local_file_path} to OCI: {e}")
             raise
+
+    def backup_gwas_upload_db(self, local_db_path: str) -> str:
+        """Copy gwas_upload.db locally, then upload a timestamped snapshot to Object Storage."""
+        if not os.path.isfile(local_db_path):
+            raise FileNotFoundError(f"GWAS upload database not found at {local_db_path}")
+
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        object_name = f"{GWAS_UPLOAD_DB_BACKUP_PREFIX}/gwas_upload_{timestamp}.db"
+
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
+            snapshot_path = tmp_file.name
+
+        try:
+            shutil.copy2(local_db_path, snapshot_path)
+            self.upload_file(
+                snapshot_path,
+                object_name,
+                content_type="application/octet-stream",
+                metadata={
+                    "backup_timestamp": timestamp,
+                    "source_path": local_db_path,
+                },
+            )
+            logger.info(
+                f"Backed up GWAS upload database from {local_db_path} to "
+                f"oci://{self.bucket_name}/{object_name}"
+            )
+            return object_name
+        finally:
+            if os.path.exists(snapshot_path):
+                os.unlink(snapshot_path)
 
     def get_file(self, object_name: str, download_to_local_file: bool = False, local_file_path: str = None) -> str:
         """

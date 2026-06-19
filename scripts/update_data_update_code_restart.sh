@@ -27,15 +27,16 @@ if [ -f /home/opc/gpmap_data/db/ld_new.db ]; then
     mv /home/opc/gpmap_data/db/ld_new.db /home/opc/gpmap_data/db/ld.db
 fi
 
+cp /home/opc/gpmap_data/db/gwas_upload.db /home/opc/gpmap_data/db/gwas_upload_backup.db
 
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune --detach=true
 sudo sudo docker service update --force gpmap_api
 sudo sudo docker service update --force gpmap_gwas_upload_worker
 
-cp /home/opc/gpmap_data/db/gwas_upload.db /home/opc/gpmap_data/db/gwas_upload_backup.db
-bash /home/opc/genotype-phenotype-api/scripts/backup_gwas_upload_db.sh
+sleep 10
+"$SCRIPT_DIR/backup_gwas_upload_db.sh"
 
 echo "Refreshing cache"
 sleep 5
