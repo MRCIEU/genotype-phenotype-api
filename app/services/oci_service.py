@@ -117,8 +117,7 @@ class OCIService(metaclass=Singleton):
                 },
             )
             logger.info(
-                f"Backed up GWAS upload database from {local_db_path} to "
-                f"oci://{self.bucket_name}/{object_name}"
+                f"Backed up GWAS upload database from {local_db_path} to oci://{self.bucket_name}/{object_name}"
             )
             return object_name
         finally:
