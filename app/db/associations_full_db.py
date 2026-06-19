@@ -19,7 +19,6 @@ class AssociationsFullDBClient:
     def __init__(self):
         self.associations_conn = get_associations_full_db_connection()
 
-    # TODO: keeping this for when we need to use the associations_full database.
     @log_performance
     def get_associations_metadata(self):
         query = "SELECT * FROM associations_metadata"
@@ -31,7 +30,6 @@ class AssociationsFullDBClient:
         table_name: str,
         snp_study_pairs: List[Tuple[int, int]],
     ) -> Tuple[List[tuple], List[str]]:
-        raise Exception("associations_full_db is not currently used")
         if not snp_study_pairs:
             return [], []
 

@@ -389,3 +389,34 @@ class GwasDBClient:
             return result.fetchone()
         finally:
             conn.close()
+
+    @log_performance
+    def get_upload_status_counts(self) -> dict[str, int]:
+        conn = self.connect()
+        try:
+            completed = GwasStatus.COMPLETED.value
+            failed = GwasStatus.FAILED.value
+            caught_error_pattern = "%Caught error%"
+            row = conn.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (WHERE status = ?) AS completed_uploads,
+                    COUNT(*) FILTER (
+                        WHERE status = ?
+                        AND (failure_reason IS NULL OR failure_reason NOT LIKE ?)
+                    ) AS failed_uploads,
+                    COUNT(*) FILTER (
+                        WHERE status = ?
+                        AND failure_reason LIKE ?
+                    ) AS failed_caught_error_uploads
+                FROM gwas_upload
+                """,
+                [completed, failed, caught_error_pattern, failed, caught_error_pattern],
+            ).fetchone()
+            return {
+                "completed_uploads": row[0],
+                "failed_uploads": row[1],
+                "failed_caught_error_uploads": row[2],
+            }
+        finally:
+            conn.close()

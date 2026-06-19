@@ -83,6 +83,14 @@ def snp_study_pairs_in_associations_db():
     }
 
 
+@pytest.fixture(scope="session")
+def snp_study_pairs_in_associations_full_db():
+    return {
+        "studies": [926, 927, 932],
+        "snps": [80717],
+    }
+
+
 @pytest.fixture(scope="module", autouse=True)
 def mock_redis():
     """Mock the underlying Redis connection so actual RedisClient code runs."""

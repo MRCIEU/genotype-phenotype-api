@@ -1,14 +1,19 @@
-from functools import lru_cache, wraps
+from functools import wraps
 from typing import List, Tuple
+
 from app.db.associations_db import AssociationsDBClient
 from app.db.associations_full_db import AssociationsFullDBClient
 from app.db.redis import RedisClient
+from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
 from app.services.redis_decorator import redis_cache
+from app.services.studies_service import StudiesService
 from app.models.schemas import (
     AssociationMetadata,
     ColocGroup,
     RareResult,
+    Trait,
+    VariantType,
     convert_duckdb_to_pydantic_model,
     convert_duckdb_tuples_to_dicts,
     ExtendedStudyExtraction,
@@ -56,6 +61,7 @@ class AssociationsService:
         self.associations_full_db = AssociationsFullDBClient()
         self.redis_client = RedisClient()
         self.cache_prefix = "associations_cache"
+        self.full_cache_prefix = "associations_full_cache"
 
     @associations_redis_cache(min_size=4000, prefix="associations_cache")
     def get_associations(
@@ -79,15 +85,12 @@ class AssociationsService:
         associations = convert_duckdb_tuples_to_dicts(associations, columns)
         return associations
 
-    @lru_cache(maxsize=1)
     def get_associations_full_metadata(self):
-        raise Exception("associations_full_db is not currently used")
         metadata = self.associations_full_db.get_associations_metadata()
         metadata = convert_duckdb_to_pydantic_model(AssociationMetadata, metadata)
         return metadata
 
     def split_association_query_by_metadata(self, snp_study_pairs: List[Tuple[int, int]]):
-        raise Exception("associations_full_db is not currently used")
         associations_metadata = self.get_associations_full_metadata()
         metadata_to_pairs = {metadata.associations_table_name: [] for metadata in associations_metadata}
 
@@ -97,60 +100,94 @@ class AssociationsService:
                     metadata_to_pairs[metadata.associations_table_name].append(pair)
         return metadata_to_pairs
 
-    @associations_redis_cache(min_size=4000, prefix="associations_full_cache")
-    def get_associations_full(self, colocs: List[ColocGroup] = [], rare_results: List[RareResult] = []):
-        raise Exception("associations_full_db is not currently used")
-        colocs = colocs or []
-        rare_results = rare_results or []
+    def _fetch_associations_full_for_pairs(self, snp_study_pairs: List[Tuple[int, int]]) -> list[dict]:
+        if not snp_study_pairs:
+            return []
+
+        snp_study_pairs_set = set(snp_study_pairs)
+        snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
+        all_associations = []
+        for table_name, pairs in snp_study_pairs_by_table.items():
+            if not pairs:
+                continue
+            associations, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
+            associations = convert_duckdb_tuples_to_dicts(associations, columns)
+            all_associations.extend(associations)
+
+        return [
+            association
+            for association in all_associations
+            if (association["variant_id"], association["study_id"]) in snp_study_pairs_set
+        ]
+
+    def get_associations_full(self, trait_id: int) -> list[dict] | None:
+        studies_db = StudiesDBClient()
+        if studies_db.get_trait(trait_id) is None:
+            return None
+        return self._get_associations_full_cached(trait_id=trait_id, cache_id=str(trait_id))
+
+    @redis_cache(expire=0, prefix="associations_full_cache")
+    def _get_associations_full_cached(self, trait_id: int, cache_id: str = None):
+        studies_db = StudiesDBClient()
+        studies_service = StudiesService()
+
+        trait = convert_duckdb_to_pydantic_model(Trait, studies_db.get_trait(trait_id))
+        studies = studies_service.get_studies_by_trait_ids([trait.id])
+
+        common_study = None
+        rare_study = None
+        for study in studies:
+            if study.variant_type == VariantType.common.value:
+                common_study = study
+            else:
+                rare_study = study
+
+        study_ids = [study.id for study in [common_study, rare_study] if study is not None]
+
+        rare_results = []
+        if rare_study is not None:
+            rare_results_data = studies_db.get_rare_results_for_study_id(rare_study.id)
+            if rare_results_data:
+                rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results_data)
+
+        colocs = []
+        study_extractions = []
+        if study_ids:
+            colocs_data = studies_db.get_all_colocs_for_study_ids(study_ids)
+            if colocs_data:
+                colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs_data)
+
+            study_extractions_data = studies_db.get_study_extractions_for_studies(study_ids)
+            if study_extractions_data:
+                study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions_data)
 
         snp_study_pairs = [(coloc.variant_id, coloc.study_id) for coloc in colocs] + [
-            (r.variant_id, r.study_id) for r in rare_results
+            (rare_result.variant_id, rare_result.study_id) for rare_result in rare_results
         ]
-        logger.info(f"Getting associations for {len(snp_study_pairs)} SNP-study pairs")
+        existing_pairs = set(snp_study_pairs)
+        for study_extraction in study_extractions:
+            pair = (study_extraction.variant_id, study_extraction.study_id)
+            if pair not in existing_pairs:
+                snp_study_pairs.append(pair)
+                existing_pairs.add(pair)
 
-        snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
-        all_associations = []
-        for table_name, pairs in list(snp_study_pairs_by_table.items()):
-            if len(pairs) > 0:
-                associations, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
-                associations = convert_duckdb_tuples_to_dicts(associations, columns)
-                all_associations.extend(associations)
-
-        # Filter associations to only include those that match the original snp_study_pairs
-        filtered_associations = []
-        snp_study_pairs_set = set(snp_study_pairs)
-        for association in all_associations:
-            if (association["variant_id"], association["study_id"]) in snp_study_pairs_set:
-                filtered_associations.append(association)
-
-        logger.info(f"Returning {len(filtered_associations)} associations for {len(snp_study_pairs)}")
-        return filtered_associations
-
-    def get_associations_full_by_study_ids(self, variant_ids: List[int], study_ids: List[int]):
-        raise Exception("associations_full_db is not currently used")
-
-        snp_study_pairs = [(variant_id, study_id) for variant_id in variant_ids for study_id in study_ids]
-        snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
-        all_associations = []
-        for table_name, pairs in list(snp_study_pairs_by_table.items()):
-            if len(pairs) > 0:
-                associations, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
-                associations = convert_duckdb_tuples_to_dicts(associations, columns)
-                all_associations.extend(associations)
-
-        logger.info(
-            f"Returning {len(all_associations)} associations for {len(variant_ids)} SNPs and {len(study_ids)} studies"
-        )
-        return all_associations
+        logger.info(f"Getting full associations for trait {trait_id} ({len(snp_study_pairs)} SNP-study pairs)")
+        associations = self._fetch_associations_full_for_pairs(snp_study_pairs)
+        logger.info(f"Returning {len(associations)} full associations for trait {trait_id}")
+        return associations
 
     def clear_cache(self):
         """Clear associations Redis cache entries (use with caution)"""
         try:
-            keys = self.redis_client.redis.keys(f"{self.cache_prefix}:*")
-            if keys:
-                self.redis_client.redis.delete(*keys)
-                logger.info(f"Cleared {len(keys)} cache keys")
+            cleared = 0
+            for prefix in (self.cache_prefix, self.full_cache_prefix):
+                keys = self.redis_client.redis.keys(f"{prefix}:*")
+                if keys:
+                    self.redis_client.redis.delete(*keys)
+                    cleared += len(keys)
+            if cleared:
+                logger.info(f"Cleared {cleared} associations cache keys")
             else:
-                logger.info("No cache keys found to clear")
+                logger.info("No associations cache keys found to clear")
         except Exception as e:
             logger.error(f"Failed to clear associations Redis cache: {e}")

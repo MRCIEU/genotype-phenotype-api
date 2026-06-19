@@ -28,11 +28,14 @@ if [ -f /home/opc/gpmap_data/db/ld_new.db ]; then
 fi
 
 
-cp /home/opc/gpmap_data/db/gwas_upload.db /home/opc/gpmap_data/db/gwas_upload_backup.db
+
 
 sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune --detach=true
 sudo sudo docker service update --force gpmap_api
 sudo sudo docker service update --force gpmap_gwas_upload_worker
+
+cp /home/opc/gpmap_data/db/gwas_upload.db /home/opc/gpmap_data/db/gwas_upload_backup.db
+bash /home/opc/genotype-phenotype-api/scripts/backup_gwas_upload_db.sh
 
 echo "Refreshing cache"
 sleep 5

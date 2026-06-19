@@ -1,10 +1,11 @@
 import oci
-from typing import Optional
+import os
 from datetime import datetime, timedelta
+from typing import Optional
+
 from app.config import get_settings
 from app.logging_config import get_logger
 from app.models.schemas import Singleton
-import os
 
 settings = get_settings()
 logger = get_logger(__name__)
