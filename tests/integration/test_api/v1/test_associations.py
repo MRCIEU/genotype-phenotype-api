@@ -59,6 +59,27 @@ def test_get_associations_full_includes_study_extractions_not_in_colocs():
     assert any(a["variant_id"] == 80717 and a["study_id"] == trait_id for a in associations)
 
 
+def test_get_associations_full_uses_variant_study_cross_product(mocker):
+    service = AssociationsService()
+    fetch = mocker.spy(service, "_fetch_associations_full_for_pairs")
+    service._get_associations_full_cached(trait_id=926, cache_id="926")
+
+    pairs = fetch.call_args[0][0]
+    variant_ids = {80717, 80732, 5553677}
+    assert variant_ids == {variant_id for variant_id, _ in pairs}
+    assert len({study_id for _, study_id in pairs}) > 1
+    assert len(pairs) == len(variant_ids) * len({study_id for _, study_id in pairs})
+
+
+def test_get_associations_full_cross_product_includes_linked_study_associations():
+    trait_id = 926
+    response = client.get(f"v1/associations/full?trait_id={trait_id}")
+    assert response.status_code == 200
+
+    associations = response.json()["associations"]
+    assert any(a["variant_id"] == 80717 and a["study_id"] != trait_id for a in associations)
+
+
 def test_get_associations_full_uses_trait_id_cache(mocker):
     import json
 

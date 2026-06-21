@@ -161,17 +161,31 @@ class AssociationsService:
             if study_extractions_data:
                 study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions_data)
 
-        snp_study_pairs = [(coloc.variant_id, coloc.study_id) for coloc in colocs] + [
-            (rare_result.variant_id, rare_result.study_id) for rare_result in rare_results
-        ]
-        existing_pairs = set(snp_study_pairs)
+        trait_study_ids = set(study_ids)
+        variant_ids = set()
+        for coloc in colocs:
+            if coloc.study_id in trait_study_ids:
+                variant_ids.add(coloc.variant_id)
+        for rare_result in rare_results:
+            variant_ids.add(rare_result.variant_id)
         for study_extraction in study_extractions:
-            pair = (study_extraction.variant_id, study_extraction.study_id)
-            if pair not in existing_pairs:
-                snp_study_pairs.append(pair)
-                existing_pairs.add(pair)
+            variant_ids.add(study_extraction.variant_id)
 
-        logger.info(f"Getting full associations for trait {trait_id} ({len(snp_study_pairs)} SNP-study pairs)")
+        coloc_study_ids = {coloc.study_id for coloc in colocs} | trait_study_ids
+
+        if not variant_ids or not coloc_study_ids:
+            return []
+
+        snp_study_pairs = [
+            (variant_id, study_id)
+            for variant_id in variant_ids
+            for study_id in coloc_study_ids
+        ]
+
+        logger.info(
+            f"Getting full associations for trait {trait_id} "
+            f"({len(variant_ids)} variants x {len(coloc_study_ids)} studies = {len(snp_study_pairs)} pairs)"
+        )
         associations = self._fetch_associations_full_for_pairs(snp_study_pairs)
         logger.info(f"Returning {len(associations)} full associations for trait {trait_id}")
         return associations
