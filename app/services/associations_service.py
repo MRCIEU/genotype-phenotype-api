@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import List, Tuple
+from typing import List
 
 from app.db.associations_db import AssociationsDBClient
 from app.db.associations_full_db import AssociationsFullDBClient
@@ -12,6 +12,7 @@ from app.models.schemas import (
     AssociationMetadata,
     ColocGroup,
     RareResult,
+    Study,
     Trait,
     VariantType,
     convert_duckdb_to_pydantic_model,
@@ -90,35 +91,49 @@ class AssociationsService:
         metadata = convert_duckdb_to_pydantic_model(AssociationMetadata, metadata)
         return metadata
 
-    def split_association_query_by_metadata(self, snp_study_pairs: List[Tuple[int, int]]):
+    def split_variant_ids_by_metadata(self, variant_ids: List[int]):
         associations_metadata = self.get_associations_full_metadata()
-        metadata_to_pairs = {metadata.associations_table_name: [] for metadata in associations_metadata}
+        metadata_to_variants = {metadata.associations_table_name: [] for metadata in associations_metadata}
 
-        for pair in snp_study_pairs:
+        for variant_id in variant_ids:
             for metadata in associations_metadata:
-                if metadata.start_variant_id <= pair[0] <= metadata.stop_variant_id:
-                    metadata_to_pairs[metadata.associations_table_name].append(pair)
-        return metadata_to_pairs
+                if metadata.start_variant_id <= variant_id <= metadata.stop_variant_id:
+                    metadata_to_variants[metadata.associations_table_name].append(variant_id)
+                    break
+        return metadata_to_variants
 
-    def _fetch_associations_full_for_pairs(self, snp_study_pairs: List[Tuple[int, int]]) -> list[dict]:
-        if not snp_study_pairs:
+    def _fetch_associations_full_for_variant_ids_and_study_ids(
+        self,
+        variant_ids: List[int],
+        study_ids: List[int],
+    ) -> list[dict]:
+        if not variant_ids:
             return []
 
-        snp_study_pairs_set = set(snp_study_pairs)
-        snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
+        study_ids_set = set(study_ids)
+        variants_by_table = self.split_variant_ids_by_metadata(variant_ids)
         all_associations = []
-        for table_name, pairs in snp_study_pairs_by_table.items():
-            if not pairs:
+        for table_name, table_variant_ids in variants_by_table.items():
+            if not table_variant_ids:
                 continue
-            associations, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
+            associations, columns = self.associations_full_db.get_associations_by_table_name_and_variant_ids(
+                table_name, table_variant_ids
+            )
             associations = convert_duckdb_tuples_to_dicts(associations, columns)
             all_associations.extend(associations)
 
-        return [
-            association
-            for association in all_associations
-            if (association["variant_id"], association["study_id"]) in snp_study_pairs_set
+        logger.info(
+            f"Fetched {len(all_associations)} full association rows for {len(variant_ids)} variants"
+        )
+
+        filtered_associations = [
+            association for association in all_associations if association["study_id"] in study_ids_set
         ]
+        logger.info(
+            f"Returning {len(filtered_associations)} full association rows "
+            f"after filtering to {len(study_ids_set)} studies"
+        )
+        return filtered_associations
 
     def get_associations_full(self, trait_id: int) -> list[dict] | None:
         studies_db = StudiesDBClient()
@@ -168,18 +183,29 @@ class AssociationsService:
         for study_extraction in study_extractions:
             variant_ids.add(study_extraction.variant_id)
 
-        coloc_study_ids = {coloc.study_id for coloc in colocs} | trait_study_ids
+        study_ids_set = {coloc.study_id for coloc in colocs} | trait_study_ids
 
-        if not variant_ids or not coloc_study_ids:
+        if not variant_ids or not study_ids_set:
             return []
 
-        snp_study_pairs = [(variant_id, study_id) for variant_id in variant_ids for study_id in coloc_study_ids]
+        linked_studies_data = studies_db.get_studies_by_id(list(study_ids_set))
+        linked_studies = convert_duckdb_to_pydantic_model(Study, linked_studies_data)
+        if not isinstance(linked_studies, list):
+            linked_studies = [linked_studies] if linked_studies else []
+        linked_trait_ids = {study.trait_id for study in linked_studies if study.trait_id is not None}
+
+        variant_ids_list = sorted(variant_ids)
+        study_ids_list = sorted(study_ids_set)
 
         logger.info(
-            f"Getting full associations for trait {trait_id} "
-            f"({len(variant_ids)} variants x {len(coloc_study_ids)} studies = {len(snp_study_pairs)} pairs)"
+            f"Getting full associations for trait {trait_id}: "
+            f"{len(linked_trait_ids)} linked trait ids, "
+            f"{len(variant_ids_list)} variant ids, "
+            f"{len(study_ids_list)} study ids"
         )
-        associations = self._fetch_associations_full_for_pairs(snp_study_pairs)
+        associations = self._fetch_associations_full_for_variant_ids_and_study_ids(
+            variant_ids_list, study_ids_list
+        )
         logger.info(f"Returning {len(associations)} full associations for trait {trait_id}")
         return associations
 
