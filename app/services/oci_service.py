@@ -95,12 +95,12 @@ class OCIService(metaclass=Singleton):
             raise
 
     def backup_gwas_upload_db(self, local_db_path: str) -> str:
-        """Copy gwas_upload.db locally, then upload a timestamped snapshot to Object Storage."""
+        """Copy gwas_upload.db locally, then upload a snapshot to Object Storage."""
         if not os.path.isfile(local_db_path):
             raise FileNotFoundError(f"GWAS upload database not found at {local_db_path}")
 
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        object_name = f"{GWAS_UPLOAD_DB_BACKUP_PREFIX}/gwas_upload_{timestamp}.db"
+        object_name = f"{GWAS_UPLOAD_DB_BACKUP_PREFIX}/gwas_upload.db"
 
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
             snapshot_path = tmp_file.name

@@ -12,8 +12,7 @@ def test_backup_gwas_upload_db_uploads_timestamped_snapshot(tmp_path, mocker):
     service.bucket_name = "gp_map_storage"
     object_name = service.backup_gwas_upload_db(str(db_path))
 
-    assert object_name.startswith(f"{GWAS_UPLOAD_DB_BACKUP_PREFIX}/gwas_upload_")
-    assert object_name.endswith(".db")
+    assert object_name == f"{GWAS_UPLOAD_DB_BACKUP_PREFIX}/gwas_upload.db"
     upload_file.assert_called_once()
     uploaded_path, uploaded_object_name = upload_file.call_args.args[:2]
     assert uploaded_object_name == object_name
