@@ -66,9 +66,10 @@ def test_get_associations_full_uses_variant_study_cross_product(mocker):
 
     pairs = fetch.call_args[0][0]
     variant_ids = {80717, 80732, 5553677}
+    study_ids = {study_id for _, study_id in pairs}
     assert variant_ids == {variant_id for variant_id, _ in pairs}
-    assert len({study_id for _, study_id in pairs}) > 1
-    assert len(pairs) == len(variant_ids) * len({study_id for _, study_id in pairs})
+    assert len(study_ids) > 1
+    assert len(pairs) == len(variant_ids) * len(study_ids)
 
 
 def test_get_associations_full_cross_product_includes_linked_study_associations():

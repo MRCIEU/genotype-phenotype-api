@@ -143,6 +143,7 @@ class AssociationsService:
                 rare_study = study
 
         study_ids = [study.id for study in [common_study, rare_study] if study is not None]
+        trait_study_ids = set(study_ids)
 
         rare_results = []
         if rare_study is not None:
@@ -161,11 +162,7 @@ class AssociationsService:
             if study_extractions_data:
                 study_extractions = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions_data)
 
-        trait_study_ids = set(study_ids)
-        variant_ids = set()
-        for coloc in colocs:
-            if coloc.study_id in trait_study_ids:
-                variant_ids.add(coloc.variant_id)
+        variant_ids = {coloc.variant_id for coloc in colocs}
         for rare_result in rare_results:
             variant_ids.add(rare_result.variant_id)
         for study_extraction in study_extractions:
@@ -176,11 +173,7 @@ class AssociationsService:
         if not variant_ids or not coloc_study_ids:
             return []
 
-        snp_study_pairs = [
-            (variant_id, study_id)
-            for variant_id in variant_ids
-            for study_id in coloc_study_ids
-        ]
+        snp_study_pairs = [(variant_id, study_id) for variant_id in variant_ids for study_id in coloc_study_ids]
 
         logger.info(
             f"Getting full associations for trait {trait_id} "

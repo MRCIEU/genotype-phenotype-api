@@ -33,11 +33,10 @@ sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prun
 sudo sudo docker service update --force gpmap_api
 sudo sudo docker service update --force gpmap_gwas_upload_worker
 
-sleep 5
+sleep 20
 bash /home/opc/genotype-phenotype-api/backup_gwas_upload_db.sh
 
 echo "Refreshing cache"
-sleep 5
 ./refresh_cache.sh
 
 echo "Done"
