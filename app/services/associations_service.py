@@ -1,8 +1,8 @@
 from functools import wraps
-from typing import List, Tuple
+from typing import List
 
 from app.db.associations_db import AssociationsDBClient
-from app.db.associations_full_db import AssociationsFullDBClient
+from app.db.associations_full_db import AssociationsFullDBClient, clear_table_study_ids_cache
 from app.db.redis import RedisClient
 from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
@@ -90,37 +90,48 @@ class AssociationsService:
         metadata = convert_duckdb_to_pydantic_model(AssociationMetadata, metadata)
         return metadata
 
-    def split_association_query_by_metadata(self, snp_study_pairs: List[Tuple[int, int]]):
+    def split_variants_by_metadata(self, variant_ids: set[int]) -> dict[str, list[int]]:
         associations_metadata = self.get_associations_full_metadata()
-        metadata_to_pairs = {metadata.associations_table_name: [] for metadata in associations_metadata}
+        metadata_to_variants = {metadata.associations_table_name: [] for metadata in associations_metadata}
 
-        for pair in snp_study_pairs:
+        for variant_id in variant_ids:
             for metadata in associations_metadata:
-                if metadata.start_variant_id <= pair[0] <= metadata.stop_variant_id:
-                    metadata_to_pairs[metadata.associations_table_name].append(pair)
-        return metadata_to_pairs
+                if metadata.start_variant_id <= variant_id <= metadata.stop_variant_id:
+                    metadata_to_variants[metadata.associations_table_name].append(variant_id)
+                    break
 
-    def _fetch_associations_full_for_pairs(
-        self, snp_study_pairs: List[Tuple[int, int]]
+        return metadata_to_variants
+
+    def _fetch_associations_full(
+        self, variant_ids: set[int], study_ids: set[int]
     ) -> tuple[list[str], list[list]]:
-        if not snp_study_pairs:
+        if not variant_ids or not study_ids:
             return [], []
 
-        snp_study_pairs_set = set(snp_study_pairs)
-        snp_study_pairs_by_table = self.split_association_query_by_metadata(snp_study_pairs)
+        variants_by_table = self.split_variants_by_metadata(variant_ids)
         column_names: list[str] = []
         all_rows: list[list] = []
-        for table_name, pairs in snp_study_pairs_by_table.items():
-            if not pairs:
+        for table_name, table_variant_ids in variants_by_table.items():
+            if not table_variant_ids:
                 continue
-            rows, columns = self.associations_full_db.get_associations_by_table_name(table_name, pairs)
+
+            table_study_ids = self.associations_full_db.filter_study_ids_for_table(table_name, study_ids)
+            if not table_study_ids:
+                logger.debug(
+                    f"Skipping {table_name}: none of {len(study_ids)} requested studies exist in table"
+                )
+                continue
+
+            logger.debug(
+                f"Querying {table_name} with {len(table_variant_ids)} variants "
+                f"and {len(table_study_ids)} studies (filtered from {len(study_ids)})"
+            )
+            rows, columns = self.associations_full_db.get_associations_by_table_name(
+                table_name, table_variant_ids, table_study_ids
+            )
             if not column_names:
                 column_names = columns
-            variant_idx = columns.index("variant_id")
-            study_idx = columns.index("study_id")
-            for row in rows:
-                if (row[variant_idx], row[study_idx]) in snp_study_pairs_set:
-                    all_rows.append(list(row))
+            all_rows.extend(list(row) for row in rows)
 
         return column_names, all_rows
 
@@ -180,18 +191,17 @@ class AssociationsService:
         if not variant_ids or not study_ids_set:
             return {"column_names": [], "rows": []}
 
-        snp_study_pairs = [(variant_id, study_id) for variant_id in variant_ids for study_id in study_ids_set]
-
         logger.info(
             f"Getting full associations for trait {trait_id} "
-            f"({len(variant_ids)} variants x {len(study_ids_set)} studies = {len(snp_study_pairs)} pairs)"
+            f"({len(variant_ids)} variants x {len(study_ids_set)} studies)"
         )
-        column_names, rows = self._fetch_associations_full_for_pairs(snp_study_pairs)
+        column_names, rows = self._fetch_associations_full(variant_ids, study_ids_set)
         logger.info(f"Returning {len(rows)} full associations for trait {trait_id}")
         return {"column_names": column_names, "rows": rows}
 
     def clear_cache(self):
         """Clear associations Redis cache entries (use with caution)"""
+        clear_table_study_ids_cache()
         try:
             cleared = 0
             for prefix in (self.cache_prefix, self.full_cache_prefix):

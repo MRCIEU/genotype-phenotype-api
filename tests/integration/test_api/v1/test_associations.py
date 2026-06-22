@@ -24,17 +24,30 @@ def test_get_associations_by_study_ids(snp_study_pairs_in_associations_db):
     assert len(associations) > 2
 
 
-def test_get_associations_full_uses_snp_study_pairs(mocker):
+def test_get_associations_full_uses_variant_and_study_sets(mocker):
     service = AssociationsService()
-    fetch = mocker.spy(service, "_fetch_associations_full_for_pairs")
+    fetch = mocker.spy(service, "_fetch_associations_full")
     service._get_associations_full_cached(trait_id=926, cache_id="926")
 
-    snp_study_pairs = fetch.call_args[0][0]
-    variant_ids = {80717, 80732, 5553677}
-    study_ids = {study_id for _, study_id in snp_study_pairs}
-    assert variant_ids == {variant_id for variant_id, _ in snp_study_pairs}
+    variant_ids, study_ids = fetch.call_args[0]
+    assert variant_ids == {80717, 80732, 5553677}
     assert len(study_ids) > 1
-    assert len(snp_study_pairs) == len(variant_ids) * len(study_ids)
+
+
+def test_get_associations_full_filters_studies_by_table(mocker):
+    service = AssociationsService()
+    mocker.patch.object(
+        service.associations_full_db,
+        "get_study_ids_for_table_name",
+        return_value=frozenset({926}),
+    )
+    query = mocker.spy(service.associations_full_db, "get_associations_by_table_name")
+
+    service._fetch_associations_full({80717}, {926, 927, 932})
+
+    assert query.call_count >= 1
+    for call in query.call_args_list:
+        assert call[0][2] == [926]
 
 
 def test_get_associations_full_uses_trait_id_cache(mocker):
@@ -48,7 +61,7 @@ def test_get_associations_full_uses_trait_id_cache(mocker):
 
     trait_id = 926
     service = AssociationsService()
-    fetch = mocker.spy(service, "_fetch_associations_full_for_pairs")
+    fetch = mocker.spy(service, "_fetch_associations_full")
     result_first = service.get_associations_full(trait_id)
     result_second = service.get_associations_full(trait_id)
 
