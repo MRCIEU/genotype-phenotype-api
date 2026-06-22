@@ -11,7 +11,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.post("/enrichment", response_model=PathwayEnrichmentResponse)
+@router.post(
+    "/enrichment",
+    response_model=PathwayEnrichmentResponse,
+    summary="Run pathway enrichment analysis",
+    description="Performs Fisher's exact test pathway enrichment for a list of input genes.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def pathway_enrichment(

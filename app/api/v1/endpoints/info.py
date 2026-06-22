@@ -21,14 +21,23 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/version")
+@router.get(
+    "/version",
+    summary="Get API version",
+    description="Returns the current API version string from application configuration.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_version(request: Request):
     return {"version": settings.VERSION}
 
 
-@router.get("/study_sources", response_model=GetStudySourcesResponse)
+@router.get(
+    "/study_sources",
+    response_model=GetStudySourcesResponse,
+    summary="List GWAS study sources",
+    description="Returns metadata about data sources (catalogues) included in the GP Map database.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_study_sources(request: Request) -> GetStudySourcesResponse:
@@ -44,7 +53,12 @@ async def get_study_sources(request: Request) -> GetStudySourcesResponse:
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/gpmap_metadata", response_model=GPMapMetadata)
+@router.get(
+    "/gpmap_metadata",
+    response_model=GPMapMetadata,
+    summary="Get GP Map database metadata",
+    description="Returns summary statistics about the GP Map database, including counts of traits, genes, and variants.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gpmap_metadata(request: Request):
@@ -59,7 +73,11 @@ async def get_gpmap_metadata(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/contact")
+@router.post(
+    "/contact",
+    summary="Send a contact message",
+    description="Sends a contact form submission to the GP Map team via email.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def contact(request: Request, request_body: ContactRequest):

@@ -20,7 +20,13 @@ router = APIRouter()
 settings = get_settings()
 
 
-@router.post("/clear-cache/all", response_model=dict, include_in_schema=False)
+@router.post(
+    "/clear-cache/all",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Clear all Redis caches",
+    description="Clears studies and associations Redis caches, including per-trait associations-full cache and table study ID cache.",
+)
 @time_endpoint
 async def clear_cache(request: Request):
     try:
@@ -36,7 +42,13 @@ async def clear_cache(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/clear-cache/studies", response_model=dict, include_in_schema=False)
+@router.post(
+    "/clear-cache/studies",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Clear studies Redis cache",
+    description="Clears Redis cache entries for studies, traits, genes, and search terms.",
+)
 @time_endpoint
 async def clear_cache_studies(request: Request):
     try:
@@ -50,14 +62,26 @@ async def clear_cache_studies(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/rate-limiter", response_model=dict, include_in_schema=False)
+@router.get(
+    "/rate-limiter",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Test rate limiter",
+    description="Internal endpoint for testing rate limiting. Blocks after 3 calls per minute.",
+)
 @limiter.limit("3/minute")
 async def rate_limiter(request: Request):
     """For testing rate limiting. Should block more than 2 calls per minute."""
     return {"success": True}
 
 
-@router.get("/gwas-dlq", response_model=dict, include_in_schema=False)
+@router.get(
+    "/gwas-dlq",
+    response_model=dict,
+    include_in_schema=False,
+    summary="List GWAS dead letter queue entries",
+    description="Returns all failed GWAS processing messages with error details from the dead letter queue.",
+)
 @time_endpoint
 async def get_gwas_dlq(request: Request):
     """
@@ -75,7 +99,13 @@ async def get_gwas_dlq(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/gwas-dlq/{guid}/retry", response_model=dict, include_in_schema=False)
+@router.post(
+    "/gwas-dlq/{guid}/retry",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Retry a GWAS upload from DLQ",
+    description="Moves a specific failed GWAS processing message from the dead letter queue back to the processing queue.",
+)
 @time_endpoint
 async def retry_gwas_dlq_by_guid(
     request: Request, guid: str = Path(..., description="GUID of the GWAS upload to retry")
@@ -99,7 +129,13 @@ async def retry_gwas_dlq_by_guid(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/gwas-dlq/retry", response_model=dict, include_in_schema=False)
+@router.post(
+    "/gwas-dlq/retry",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Retry all GWAS uploads from DLQ",
+    description="Moves all failed GWAS processing messages from the dead letter queue back to the processing queue.",
+)
 @time_endpoint
 async def retry_all_gwas_dlq(request: Request):
     """
@@ -122,7 +158,13 @@ async def retry_all_gwas_dlq(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/gwas/{guid}/rerun", response_model=dict, include_in_schema=False)
+@router.post(
+    "/gwas/{guid}/rerun",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Rerun a GWAS upload",
+    description="Re-queues a GWAS upload for processing using its stored upload metadata.",
+)
 @time_endpoint
 async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to rerun")):
     """
@@ -147,7 +189,13 @@ async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID o
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/gwas-dlq", response_model=dict, include_in_schema=False)
+@router.delete(
+    "/gwas-dlq",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Clear GWAS dead letter queue",
+    description="Permanently removes all messages from the GWAS dead letter queue.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def clear_gwas_dlq(request: Request):
@@ -170,7 +218,13 @@ async def clear_gwas_dlq(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/gwas/{guid}", response_model=dict, include_in_schema=False)
+@router.delete(
+    "/gwas/{guid}",
+    response_model=dict,
+    include_in_schema=False,
+    summary="Delete a GWAS upload",
+    description="Deletes a GWAS upload by GUID, including OCI files, database records, and queue entries.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def delete_gwas(request: Request, guid: str = Path(..., description="GUID of the GWAS upload to delete")):

@@ -27,7 +27,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=GetVariantsResponse)
+@router.get(
+    "",
+    response_model=GetVariantsResponse,
+    summary="Search variants or fetch by genomic range",
+    description="Returns variant annotations for the requested variants or genomic range.",
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_variants(
@@ -188,7 +193,14 @@ async def get_variants(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{variant_id}/summary-stats")
+@router.get(
+    "/{variant_id}/summary-stats",
+    summary="Download summary statistics for a variant",
+    description=(
+        "Returns a ZIP file of GWAS summary statistics for all studies linked to the variant "
+        "via coloc groups, rare results, or study extractions."
+    ),
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_variant_with_summary_stats(
@@ -233,7 +245,12 @@ async def get_variant_with_summary_stats(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{variant_id}", response_model=VariantResponse)
+@router.get(
+    "/{variant_id}",
+    response_model=VariantResponse,
+    summary="Get a single variant",
+    description="Returns variant metadata, coloc groups, rare results, study extractions, and associations.",
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_variant(

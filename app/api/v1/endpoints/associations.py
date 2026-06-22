@@ -7,7 +7,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=dict)
+@router.get(
+    "",
+    response_model=dict,
+    summary="Get associations by variant and study IDs",
+    description="Returns GWAS association statistics for the cross product of the given variant_ids and study_ids.",
+)
 @time_endpoint
 async def get_associations(
     study_ids: List[int] = Query(None, description="List of study_ids to filter results"),
@@ -20,16 +25,4 @@ async def get_associations(
     associations = association_service.get_associations_by_variant_ids_and_study_ids(
         variant_ids=variant_ids, study_ids=study_ids
     )
-    return {"associations": associations}
-
-
-@router.get("/full", response_model=dict)
-@time_endpoint
-async def get_associations_full(
-    trait_id: int = Query(..., description="Trait ID to fetch full associations for"),
-) -> dict:
-    association_service = AssociationsService()
-    associations = association_service.get_associations_full(trait_id)
-    if associations is None:
-        raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
     return {"associations": associations}

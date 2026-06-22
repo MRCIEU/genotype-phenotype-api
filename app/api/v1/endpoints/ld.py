@@ -12,7 +12,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/matrix", response_model=Lds)
+@router.get(
+    "/matrix",
+    response_model=Lds,
+    summary="Get LD matrix for variants",
+    description="Returns pairwise LD (r²) values between the requested variants.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_matrix(
@@ -47,7 +52,12 @@ async def get_matrix(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/proxies", response_model=Lds)
+@router.get(
+    "/proxies",
+    response_model=Lds,
+    summary="Get LD proxies for variants",
+    description="Returns LD proxy relationships for the requested variants.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_proxies(

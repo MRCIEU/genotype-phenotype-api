@@ -145,3 +145,50 @@ def test_get_trait_coloc_pairs():
     assert len(coloc_pairs) > 0
     coloc_pair_columns = response_json["coloc_pair_column_names"]
     assert len(coloc_pair_columns) > 0
+
+
+def _associations_full_as_dicts(response_json):
+    columns = response_json["associations_full_column_names"]
+    rows = response_json["associations_full_rows"]
+    return [dict(zip(columns, row)) for row in rows]
+
+
+def test_get_trait_associations_full_not_found():
+    response = client.get("/v1/traits/999999999/associations-full")
+    assert response.status_code == 404
+
+
+def test_get_trait_associations_full_by_trait_id():
+    trait_id = 926
+    response = client.get(f"/v1/traits/{trait_id}/associations-full")
+    assert response.status_code == 200
+
+    response_json = response.json()
+    assert len(response_json["associations_full_column_names"]) > 0
+    associations = _associations_full_as_dicts(response_json)
+    assert len(associations) > 0
+    assert any(association["study_id"] == trait_id for association in associations)
+    for association in associations:
+        assert "beta" in association
+        assert "se" in association
+        assert "p" in association
+        assert "eaf" in association
+        assert "imputed" in association
+
+
+def test_get_trait_associations_full_includes_study_extractions_not_in_colocs():
+    trait_id = 926
+    response = client.get(f"/v1/traits/{trait_id}/associations-full")
+    assert response.status_code == 200
+
+    associations = _associations_full_as_dicts(response.json())
+    assert any(a["variant_id"] == 80717 and a["study_id"] == trait_id for a in associations)
+
+
+def test_get_trait_associations_full_cross_product_includes_linked_study_associations():
+    trait_id = 926
+    response = client.get(f"/v1/traits/{trait_id}/associations-full")
+    assert response.status_code == 200
+
+    associations = _associations_full_as_dicts(response.json())
+    assert any(a["variant_id"] == 80717 and a["study_id"] != trait_id for a in associations)

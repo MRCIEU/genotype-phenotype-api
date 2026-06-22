@@ -27,7 +27,12 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
-@router.get("", response_model=GetTraitsResponse)
+@router.get(
+    "",
+    response_model=GetTraitsResponse,
+    summary="List or batch-fetch traits",
+    description="Returns all traits, or up to 10 traits when IDs are provided.",
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_traits(
@@ -149,7 +154,14 @@ async def get_traits(
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/{trait_id}", response_model=TraitResponse)
+@router.get(
+    "/{trait_id}",
+    response_model=TraitResponse,
+    summary="Get a single trait",
+    description=(
+        "Returns metadata, studies, coloc groups, rare results, and study extractions for one trait. "
+    ),
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_trait(
@@ -211,7 +223,13 @@ async def get_trait(
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/{trait_id}/coloc-pairs")
+@router.get(
+    "/{trait_id}/coloc-pairs",
+    summary="Get coloc pairs for a trait",
+    description=(
+        "Returns coloc pair data for SNPs linked to the trait via coloc groups. "
+    ),
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait_coloc_pairs(
@@ -256,6 +274,37 @@ async def get_trait_coloc_pairs(
         raise e
     except Exception as e:
         logger.error(f"Error in get_trait_coloc_pairs: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+
+@router.get(
+    "/{trait_id}/associations-full",
+    summary="Get full association matrix for a trait",
+    description=(
+        "Returns association statistics for all SNPs in the trait's coloc network crossed with all linked studies. "
+    ),
+)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def get_trait_associations_full(
+    request: Request,
+    trait_id: str = Path(..., description="Trait ID or name"),
+) -> dict:
+    try:
+        association_service = AssociationsService()
+        result = association_service.get_associations_full(trait_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
+
+        column_names, rows = result
+        return {
+            "associations_full_column_names": column_names,
+            "associations_full_rows": rows,
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in get_trait_associations_full: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 

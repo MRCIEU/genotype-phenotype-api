@@ -21,6 +21,6 @@ sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prun
 
 echo "Refreshing cache"
 sleep 5
-./refresh_cache.sh
+bash /home/opc/genotype-phenotype-api/refresh_cache.sh
 
 echo "Done"

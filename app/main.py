@@ -57,7 +57,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    @app.get("/health")
+    @app.get(
+        "/health",
+        summary="Health check",
+        description="Returns API health status and GWAS processing queue sizes.",
+    )
     async def health_check(request: Request):
         redis_client = RedisClient()
         StudiesDBClient()
@@ -74,7 +78,11 @@ def create_app() -> FastAPI:
             "dead_letter_queue": len(dead_letter_queue),
         }
 
-    @app.get("/upload-health")
+    @app.get(
+        "/upload-health",
+        summary="GWAS upload health check",
+        description="Returns counts of GWAS uploads by processing status.",
+    )
     async def upload_health_check(request: Request):
         upload_status_counts = GwasDBClient().get_upload_status_counts()
         return {
