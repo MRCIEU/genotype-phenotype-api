@@ -7,7 +7,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=dict)
+@router.get(
+    "",
+    response_model=dict,
+    summary="Get associations by variant and study IDs",
+    description="Returns GWAS association statistics for the cross product of the given variant_ids and study_ids.",
+)
 @time_endpoint
 async def get_associations(
     study_ids: List[int] = Query(None, description="List of study_ids to filter results"),

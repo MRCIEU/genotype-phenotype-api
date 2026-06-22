@@ -23,7 +23,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=GetGenesResponse)
+@router.get(
+    "",
+    response_model=GetGenesResponse,
+    summary="List or batch-fetch genes",
+    description="Returns all genes, or up to 10 genes when IDs are provided.",
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_genes(
@@ -182,7 +187,12 @@ async def get_genes(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{gene_identifier}", response_model=GeneResponse)
+@router.get(
+    "/{gene_identifier}",
+    response_model=GeneResponse,
+    summary="Get a single gene",
+    description="Returns gene metadata, regional context, coloc groups, rare results, study extractions, and variants.",
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_gene(

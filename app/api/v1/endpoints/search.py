@@ -20,7 +20,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/options", response_model=SearchTerms)
+@router.get(
+    "/options",
+    response_model=SearchTerms,
+    summary="Get search autocomplete options",
+    description="Returns cached trait, gene, and variant names used to populate search dropdowns in the GP Map UI.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_search_options(request: Request, response: Response):
@@ -40,7 +45,12 @@ async def get_search_options(request: Request, response: Response):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/variant/{search_term}", response_model=VariantSearchResponse)
+@router.get(
+    "/variant/{search_term}",
+    response_model=VariantSearchResponse,
+    summary="Search variants with LD proxies",
+    description="Looks up a variant and returns LD proxy variants with coloc and rare result counts.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def variant_search(

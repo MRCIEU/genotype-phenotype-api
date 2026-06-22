@@ -19,7 +19,14 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/{ld_block_id}", response_model=RegionResponse)
+@router.get(
+    "/{ld_block_id}",
+    response_model=RegionResponse,
+    summary="Get an LD block region",
+    description=(
+        "Returns LD block coordinates, genes in the region, coloc groups, rare results, variants, and tissue metadata."
+    ),
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_region(

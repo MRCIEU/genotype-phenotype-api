@@ -35,7 +35,15 @@ router = APIRouter()
 logger = get_logger(__name__)
 
 
-@router.post("", response_model=GwasUpload)
+@router.post(
+    "",
+    response_model=GwasUpload,
+    summary="Upload a GWAS summary statistics file",
+    description=(
+        "Submits a GWAS file for colocalisation analysis. Returns a GUID to track processing status. "
+        "Sends confirmation email and queues the file for background processing."
+    ),
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def upload_gwas(request: Request, request_body_str: str = Form(..., alias="request"), file: UploadFile = None):
@@ -133,7 +141,14 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{guid}")
+@router.put(
+    "/{guid}",
+    summary="Update GWAS upload processing status",
+    description=(
+        "Called by the GWAS processing pipeline to report success or failure. "
+        "On success, stores coloc results and sends a results email. On failure, sends a failure email."
+    ),
+)
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def update_gwas(
     request: Request,
@@ -167,7 +182,12 @@ async def update_gwas(
         raise HTTPException(status_code=500, detail=f"{str(e)}\n\n{error_traceback}")
 
 
-@router.get("/{guid}", response_model=UploadTraitResponse)
+@router.get(
+    "/{guid}",
+    response_model=UploadTraitResponse,
+    summary="Get GWAS upload results",
+    description="Returns processing status and, when complete, coloc groups, coloc pairs, and study extractions.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gwas(
@@ -251,7 +271,12 @@ async def get_gwas(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{guid}/summary-stats", response_model=str)
+@router.get(
+    "/{guid}/summary-stats",
+    response_model=str,
+    summary="Get GWAS summary statistics download URL",
+    description="Returns a pre-signed URL to download the processed GWAS summary statistics file (gwas_with_lbfs.tsv.gz).",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gwas_summary_stats(

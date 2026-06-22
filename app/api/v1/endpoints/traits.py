@@ -27,7 +27,12 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
-@router.get("", response_model=GetTraitsResponse)
+@router.get(
+    "",
+    response_model=GetTraitsResponse,
+    summary="List or batch-fetch traits",
+    description="Returns all traits, or up to 10 traits when IDs are provided.",
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_traits(
@@ -149,7 +154,14 @@ async def get_traits(
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/{trait_id}", response_model=TraitResponse)
+@router.get(
+    "/{trait_id}",
+    response_model=TraitResponse,
+    summary="Get a single trait",
+    description=(
+        "Returns metadata, studies, coloc groups, rare results, and study extractions for one trait. "
+    ),
+)
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
 async def get_trait(
@@ -211,7 +223,13 @@ async def get_trait(
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/{trait_id}/coloc-pairs")
+@router.get(
+    "/{trait_id}/coloc-pairs",
+    summary="Get coloc pairs for a trait",
+    description=(
+        "Returns coloc pair data for SNPs linked to the trait via coloc groups. "
+    ),
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait_coloc_pairs(
@@ -259,7 +277,13 @@ async def get_trait_coloc_pairs(
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/{trait_id}/associations-full")
+@router.get(
+    "/{trait_id}/associations-full",
+    summary="Get full association matrix for a trait",
+    description=(
+        "Returns association statistics for all SNPs in the trait's coloc network crossed with all linked studies. "
+    ),
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_trait_associations_full(

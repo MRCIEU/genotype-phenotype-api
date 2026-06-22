@@ -15,7 +15,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/genes", response_model=GenePleiotropyResponse)
+@router.get(
+    "/genes",
+    response_model=GenePleiotropyResponse,
+    summary="Get gene pleiotropy scores",
+    description="Returns pleiotropy scores for all genes in the GP Map database.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_genes_pleiotropy(request: Request) -> GenePleiotropyResponse:
@@ -31,7 +36,12 @@ async def get_genes_pleiotropy(request: Request) -> GenePleiotropyResponse:
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
-@router.get("/snps", response_model=SnpPleiotropyResponse)
+@router.get(
+    "/snps",
+    response_model=SnpPleiotropyResponse,
+    summary="Get SNP pleiotropy scores",
+    description="Returns pleiotropy scores for all variants in the GP Map database.",
+)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_snps_pleiotropy(request: Request) -> SnpPleiotropyResponse:
