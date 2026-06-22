@@ -23,5 +23,5 @@ trait_ids=(
 
 for trait_id in "${trait_ids[@]}"; do
     echo "Setting associations cache for: $trait_id"
-    curl "http://127.0.0.1:8000/v1/associations/full?trait_id=$trait_id" > /dev/null
+    curl "http://127.0.0.1:8000/v1/traits/$trait_id/associations-full" > /dev/null
 done

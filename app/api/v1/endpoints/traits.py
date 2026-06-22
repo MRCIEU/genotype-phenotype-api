@@ -259,6 +259,31 @@ async def get_trait_coloc_pairs(
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
+@router.get("/{trait_id}/associations-full")
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def get_trait_associations_full(
+    request: Request,
+    trait_id: str = Path(..., description="Trait ID or name"),
+) -> dict:
+    try:
+        association_service = AssociationsService()
+        result = association_service.get_associations_full(trait_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
+
+        column_names, rows = result
+        return {
+            "associations_full_column_names": column_names,
+            "associations_full_rows": rows,
+        }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error in get_trait_associations_full: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+
 def populate_trait_studies(trait: Trait, studies: List[Study]):
     common_study = None
     rare_study = None

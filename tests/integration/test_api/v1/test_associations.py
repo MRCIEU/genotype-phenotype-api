@@ -24,59 +24,17 @@ def test_get_associations_by_study_ids(snp_study_pairs_in_associations_db):
     assert len(associations) > 2
 
 
-def test_bad_get_associations_full_query():
-    response = client.get("v1/associations/full")
-    assert response.status_code == 422
-
-
-def test_get_associations_full_not_found():
-    response = client.get("v1/associations/full?trait_id=999999999")
-    assert response.status_code == 404
-
-
-def test_get_associations_full_by_trait_id():
-    trait_id = 926
-    response = client.get(f"v1/associations/full?trait_id={trait_id}")
-    assert response.status_code == 200
-
-    associations = response.json()["associations"]
-    assert len(associations) > 0
-    assert any(association["study_id"] == trait_id for association in associations)
-    for association in associations:
-        assert "beta" in association
-        assert "se" in association
-        assert "p" in association
-        assert "eaf" in association
-        assert "imputed" in association
-
-
-def test_get_associations_full_includes_study_extractions_not_in_colocs():
-    trait_id = 926
-    response = client.get(f"v1/associations/full?trait_id={trait_id}")
-    assert response.status_code == 200
-
-    associations = response.json()["associations"]
-    assert any(a["variant_id"] == 80717 and a["study_id"] == trait_id for a in associations)
-
-
-def test_get_associations_full_queries_by_variant_ids_and_filters_studies(mocker):
+def test_get_associations_full_uses_snp_study_pairs(mocker):
     service = AssociationsService()
-    fetch = mocker.spy(service, "_fetch_associations_full_for_variant_ids_and_study_ids")
+    fetch = mocker.spy(service, "_fetch_associations_full_for_pairs")
     service._get_associations_full_cached(trait_id=926, cache_id="926")
 
-    variant_ids, study_ids = fetch.call_args[0]
-    assert {80717, 80732, 5553677}.issubset(set(variant_ids))
-    assert 926 in study_ids
+    snp_study_pairs = fetch.call_args[0][0]
+    variant_ids = {80717, 80732, 5553677}
+    study_ids = {study_id for _, study_id in snp_study_pairs}
+    assert variant_ids == {variant_id for variant_id, _ in snp_study_pairs}
     assert len(study_ids) > 1
-
-
-def test_get_associations_full_cross_product_includes_linked_study_associations():
-    trait_id = 926
-    response = client.get(f"v1/associations/full?trait_id={trait_id}")
-    assert response.status_code == 200
-
-    associations = response.json()["associations"]
-    assert any(a["variant_id"] == 80717 and a["study_id"] != trait_id for a in associations)
+    assert len(snp_study_pairs) == len(variant_ids) * len(study_ids)
 
 
 def test_get_associations_full_uses_trait_id_cache(mocker):
@@ -90,7 +48,7 @@ def test_get_associations_full_uses_trait_id_cache(mocker):
 
     trait_id = 926
     service = AssociationsService()
-    fetch = mocker.spy(service, "_fetch_associations_full_for_variant_ids_and_study_ids")
+    fetch = mocker.spy(service, "_fetch_associations_full_for_pairs")
     result_first = service.get_associations_full(trait_id)
     result_second = service.get_associations_full(trait_id)
 

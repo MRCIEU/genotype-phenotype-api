@@ -21,15 +21,3 @@ async def get_associations(
         variant_ids=variant_ids, study_ids=study_ids
     )
     return {"associations": associations}
-
-
-@router.get("/full", response_model=dict)
-@time_endpoint
-async def get_associations_full(
-    trait_id: int = Query(..., description="Trait ID to fetch full associations for"),
-) -> dict:
-    association_service = AssociationsService()
-    associations = association_service.get_associations_full(trait_id)
-    if associations is None:
-        raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
-    return {"associations": associations}
