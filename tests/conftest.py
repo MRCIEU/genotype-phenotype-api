@@ -146,6 +146,7 @@ def mock_email_service():
     mock_email_service_instance = Mock()
     mock_email_service_instance.send_failure_email = AsyncMock(return_value=None)
     mock_email_service_instance.send_results_email = AsyncMock(return_value=None)
+    mock_email_service_instance.send_already_uploaded_email = AsyncMock(return_value=None)
     mock_email_service_instance.send_submission_email = AsyncMock(return_value=None)
     with (
         patch("app.api.v1.endpoints.gwas.EmailService", return_value=mock_email_service_instance),

@@ -62,15 +62,17 @@ If there are problems when trying to update the docker swarm config / images, ch
 
 You may want to increase the swap on each server, to do this
 ```
-# 1. Create a 12GB file named 'extraswap' in the root directory
-sudo fallocate -l 12G /extraswap
+# 1. Create a 32GB file named 'extraswap' in the /oradiskvdb1/ mount
+sudo fallocate -l 32G /oradiskvdb1/extraswap
 # 2. Set strict permissions so only the root user can read it
-sudo chmod 600 /extraswap
+sudo chmod 600 /oradiskvdb1/extraswap
 # 3. Format the file to be used as swap
-sudo mkswap /extraswap
+sudo mkswap /oradiskvdb1/extraswap
 # 4. Activate the swap file immediately
-sudo swapon /extraswap
+sudo swapon /oradiskvdb1/extraswap
 ```
+Then add this line to /etc/fstab: `/oradiskvdb1/extraswap none swap sw 0 0`
+
 
 ## Docker Swarm Configuration
 

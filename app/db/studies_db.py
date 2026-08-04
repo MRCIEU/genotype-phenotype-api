@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import List
 import duckdb
 
-from app.models.schemas import CisTrans, StudyDataType
+from app.models.schemas import CisTrans, StudyDataType, VariantType
 from app.db.utils import log_performance
 from app.logging_config import get_logger
 
@@ -291,12 +291,27 @@ class StudiesDBClient:
 
     @log_performance
     def get_trait_names_for_search(self):
-        return self.studies_conn.execute(f"""
-            SELECT traits.id, traits.trait_name, studies.sample_size, studies.ancestry
+        common_variant_type = VariantType.common.value
+        return self.studies_conn.execute(
+            f"""
+            SELECT
+                traits.id,
+                traits.trait_name,
+                COALESCE(
+                    MAX(CASE WHEN studies.variant_type = ? THEN studies.sample_size END),
+                    MAX(studies.sample_size)
+                ) AS sample_size,
+                COALESCE(
+                    MAX(CASE WHEN studies.variant_type = ? THEN studies.ancestry END),
+                    MAX(studies.ancestry)
+                ) AS ancestry
             FROM traits
-            JOIN studies ON traits.id = studies.trait_id 
+            JOIN studies ON traits.id = studies.trait_id
             WHERE traits.data_type IN ({",".join(self.common_data_types)})
-        """).fetchall()
+            GROUP BY traits.id, traits.trait_name
+        """,
+            [common_variant_type, common_variant_type],
+        ).fetchall()
 
     @log_performance
     def get_gene(self, symbol: str = None, id: int = None):

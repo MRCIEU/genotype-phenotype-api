@@ -72,6 +72,29 @@ class EmailService:
             logger.error(f"Failed to send results email: {e}")
             raise
 
+    async def send_already_uploaded_email(self, to_email: EmailStr, guid: str) -> None:
+        """
+        Send an email when a GWAS file matching an existing completed upload is submitted again.
+        """
+        subject = "Your Genotype-Phenotype Map Upload Already Exists"
+        html = f"""
+        <html>
+        <body>
+            <p>Thanks for using the Genotype-Phenotype Map!</p>
+            <p>This GWAS file has already been uploaded and processed. No new analysis was run.</p>
+            <p>You can view the existing results <a href='{settings.WEBSITE_URL}/trait.html?id={guid}'>here</a>.</p>
+            {self.footer}
+        </body>
+        </html>
+        """
+        msg = MessageSchema(subject=subject, recipients=[to_email], body=html, subtype="html")
+        fm = FastMail(self.conf)
+        try:
+            await fm.send_message(msg)
+        except Exception as e:
+            logger.error(f"Failed to send already uploaded email: {e}")
+            raise
+
     async def send_submission_email(self, to_email: EmailStr, guid: str, queue_position: int) -> None:
         """
         Send an email notification that a job has been successfully submitted.
