@@ -160,6 +160,7 @@ def test_put_gwas_success(test_guid, mock_email_service):
 
 def test_upload_gwas_already_completed_sends_already_uploaded_email(test_guid, mock_email_service, test_request_data):
     mock_email_service.send_already_uploaded_email.reset_mock()
+    mock_email_service.send_results_email.reset_mock()
 
     with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
         response = client.post(
