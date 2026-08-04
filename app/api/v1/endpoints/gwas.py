@@ -109,6 +109,8 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
             gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
             if gwas.status == GwasStatus.COMPLETED:
                 logger.info(f"GWAS already exists: {file_guid}")
+                email_service = EmailService()
+                await email_service.send_already_uploaded_email(request_body.email, file_guid)
                 return gwas
             else:
                 db.delete_gwas_upload(file_guid)

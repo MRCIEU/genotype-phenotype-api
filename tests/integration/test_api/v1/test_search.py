@@ -21,6 +21,9 @@ def test_get_search_options(mock_redis_cache):
         if search_term.type == "gene":
             assert search_term.alt_name is not None
 
+    trait_type_ids = [term.type_id for term in search_terms.search_terms if term.type == "trait"]
+    assert len(trait_type_ids) == len(set(trait_type_ids))
+
 
 def test_search_variant_by_rsid(variants_in_studies_db, mock_redis_cache):
     rsids = [variant["rsid"] for variant in variants_in_studies_db.values()]

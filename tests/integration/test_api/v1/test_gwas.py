@@ -158,6 +158,25 @@ def test_put_gwas_success(test_guid, mock_email_service):
     mock_email_service.send_results_email.assert_called_once()
 
 
+def test_upload_gwas_already_completed_sends_already_uploaded_email(test_guid, mock_email_service, test_request_data):
+    mock_email_service.send_already_uploaded_email.reset_mock()
+
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
+        response = client.post(
+            "/v1/gwas/",
+            data={
+                "request": json.dumps(test_request_data),
+            },
+            files={"file": f},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["guid"] == test_guid
+    assert response.json()["status"] == GwasStatus.COMPLETED.value
+    mock_email_service.send_already_uploaded_email.assert_called_once_with(test_request_data["email"], test_guid)
+    mock_email_service.send_results_email.assert_not_called()
+
+
 def test_get_gwas(test_guid):
     response = client.get(f"/v1/gwas/{test_guid}")
     print(response.json())
