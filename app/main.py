@@ -134,8 +134,7 @@ def create_app() -> FastAPI:
             guid = payload.get("oldest_unprocessed_guid")
             payload["status"] = "unhealthy"
             payload["unhealthy_reason"] = (
-                f"Oldest processing upload {guid} has been unprocessed for "
-                f"{age_seconds}s (>24h)"
+                f"Oldest processing upload {guid} has been unprocessed for {age_seconds}s (>24h)"
             )
             return JSONResponse(status_code=503, content=payload)
 

@@ -30,9 +30,21 @@ def test_upload_health_includes_upload_status_counts():
         [
             ("health-completed-1", "completed", None, "2026-01-01 00:00:00", "2026-01-01 01:00:00"),
             ("health-completed-2", "completed", None, "2026-01-01 00:00:00", "2026-01-01 01:00:00"),
-            ("health-failed-1", "failed", "Validation error: missing columns", "2026-01-01 00:00:00", "2026-01-01 01:00:00"),
+            (
+                "health-failed-1",
+                "failed",
+                "Validation error: missing columns",
+                "2026-01-01 00:00:00",
+                "2026-01-01 01:00:00",
+            ),
             ("health-failed-2", "failed", None, "2026-01-01 00:00:00", "2026-01-01 01:00:00"),
-            ("health-failed-3", "failed", "Caught error: invalid file format", "2026-01-01 00:00:00", "2026-01-01 01:00:00"),
+            (
+                "health-failed-3",
+                "failed",
+                "Caught error: invalid file format",
+                "2026-01-01 00:00:00",
+                "2026-01-01 01:00:00",
+            ),
             ("health-failed-4", "failed", "Caught error during parsing", "2026-01-01 00:00:00", "2026-01-01 01:00:00"),
             ("health-processing-1", "processing", None, recent, None),
             ("health-processing-2", "processing", None, recent, None),

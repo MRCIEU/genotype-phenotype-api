@@ -158,9 +158,7 @@ async def get_traits(
     "/{trait_id}",
     response_model=TraitResponse,
     summary="Get a single trait",
-    description=(
-        "Returns metadata, studies, coloc groups, rare results, and study extractions for one trait. "
-    ),
+    description=("Returns metadata, studies, coloc groups, rare results, and study extractions for one trait. "),
 )
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
@@ -226,9 +224,7 @@ async def get_trait(
 @router.get(
     "/{trait_id}/coloc-pairs",
     summary="Get coloc pairs for a trait",
-    description=(
-        "Returns coloc pair data for SNPs linked to the trait via coloc groups. "
-    ),
+    description=("Returns coloc pair data for SNPs linked to the trait via coloc groups. "),
 )
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
