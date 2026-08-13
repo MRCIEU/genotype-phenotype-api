@@ -66,7 +66,7 @@ class ColocGroup(BaseModel):
     study_extraction_id: int
     variant_id: int
     ld_block_id: int
-    situated_gene_id: Optional[int] = None
+    # situated_gene_id: Optional[int] = None
     h4_connectedness: float
     h3_connectedness: float
     chr: Optional[int] = None
@@ -78,7 +78,7 @@ class ColocGroup(BaseModel):
     rsid: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
-    situated_gene: Optional[str] = None
+    # situated_gene: Optional[str] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
