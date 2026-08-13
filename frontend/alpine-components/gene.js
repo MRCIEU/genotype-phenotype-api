@@ -98,6 +98,7 @@ export default function gene() {
                 ...study,
                 mbp: study.bp / 1000000,
             }));
+            graphTransformations.relaxStudyPValueIfNeeded(this.data.coloc_groups, this.data.rare_results);
         },
 
         filterDataForGraphs() {

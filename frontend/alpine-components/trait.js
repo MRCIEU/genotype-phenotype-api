@@ -128,6 +128,7 @@ export default function trait() {
                 return c;
             });
             this.data.coloc_groups.sort((a, b) => a.chr > b.chr);
+            graphTransformations.relaxStudyPValueIfNeeded(this.data.coloc_groups, this.data.rare_results);
         },
 
         filterDataForGraphs() {
@@ -401,6 +402,8 @@ export default function trait() {
                 this.displayFilters.gene = item.label;
                 this.displayFilters.traitName = null;
             }
+            this.traitSearch.text = item.label;
+            this.traitSearch.showDropDown = false;
         },
 
         tryParseJson(text) {
@@ -468,11 +471,15 @@ export default function trait() {
 
         get getDataForColocTable() {
             const entries = this.getColocTableGroupEntries();
+            if (this.displayFilters.traitName || this.displayFilters.gene) {
+                return stringify(Object.fromEntries(entries));
+            }
             const max = this.constants.maxResultTableGroups;
             return stringify(Object.fromEntries(entries.slice(0, max)));
         },
 
         get colocTableTruncated() {
+            if (this.displayFilters.traitName || this.displayFilters.gene) return false;
             return this.getColocTableGroupEntries().length > this.constants.maxResultTableGroups;
         },
 
@@ -524,11 +531,15 @@ export default function trait() {
 
         get getDataForRareTable() {
             const entries = this.getRareTableGroupEntries();
+            if (this.displayFilters.traitName || this.displayFilters.gene) {
+                return stringify(Object.fromEntries(entries));
+            }
             const max = this.constants.maxResultTableGroups;
             return stringify(Object.fromEntries(entries.slice(0, max)));
         },
 
         get rareTableTruncated() {
+            if (this.displayFilters.traitName || this.displayFilters.gene) return false;
             return this.getRareTableGroupEntries().length > this.constants.maxResultTableGroups;
         },
 

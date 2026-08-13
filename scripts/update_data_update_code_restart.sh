@@ -37,6 +37,6 @@ sleep 20
 bash /home/opc/genotype-phenotype-api/backup_gwas_upload_db.sh
 
 echo "Refreshing cache"
-./refresh_cache.sh
+bash /home/opc/genotype-phenotype-api/refresh_cache.sh
 
 echo "Done"

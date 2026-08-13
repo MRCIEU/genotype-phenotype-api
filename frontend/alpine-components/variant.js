@@ -91,6 +91,8 @@ export default function variant() {
                     type: "rare",
                 }));
 
+                graphTransformations.relaxStudyPValueIfNeeded(this.data.coloc_groups, this.data.rare_results);
+
                 const snpGraphStore = Alpine.store("snpGraphStore");
                 snpGraphStore.colocs = this.data.coloc_groups;
                 snpGraphStore.variant = this.data.variant;

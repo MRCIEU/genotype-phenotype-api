@@ -5,6 +5,7 @@ from slowapi import _rate_limit_exceeded_handler
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.middleware.security import SecurityMiddleware
 
@@ -19,6 +20,8 @@ from app.rate_limiting import limiter
 
 settings = get_settings()
 logger = get_logger("app.main")
+
+UPLOAD_STUCK_THRESHOLD_SECONDS = 24 * 60 * 60
 
 
 def create_app() -> FastAPI:
@@ -81,14 +84,62 @@ def create_app() -> FastAPI:
     @app.get(
         "/upload-health",
         summary="GWAS upload health check",
-        description="Returns counts of GWAS uploads by processing status.",
+        description=(
+            "Returns counts of GWAS uploads by processing status, age of the oldest "
+            "still-unprocessed upload, and cross-checks those GUIDs against Redis queues. "
+            "Returns 503 if a processing upload has been unprocessed for more than 24 hours."
+        ),
     )
     async def upload_health_check(request: Request):
         upload_status_counts = GwasDBClient().get_upload_status_counts()
-        return {
+        redis_client = RedisClient()
+
+        queued = redis_client.peek_queue(redis_client.process_gwas_queue)
+        in_progress = redis_client.peek_queue(redis_client.process_gwas_in_progress)
+        dlq = redis_client.peek_queue(redis_client.process_gwas_dlq)
+
+        def _guids_from_messages(messages: list) -> list[str]:
+            guids = []
+            for message in messages:
+                if not isinstance(message, dict):
+                    continue
+                guid = message.get("metadata", {}).get("guid")
+                if guid:
+                    guids.append(guid)
+            return guids
+
+        redis_queue_guids = _guids_from_messages(queued)
+        redis_in_progress_guids = _guids_from_messages(in_progress)
+        redis_active_guids = set(redis_queue_guids) | set(redis_in_progress_guids)
+        db_processing_guids = set(upload_status_counts.get("processing_guids") or [])
+
+        payload = {
             "status": "healthy",
             **upload_status_counts,
+            "redis_queue_size": len(queued),
+            "redis_in_progress_size": len(in_progress),
+            "redis_dlq_size": len(dlq),
+            "redis_queue_guids": redis_queue_guids,
+            "redis_in_progress_guids": redis_in_progress_guids,
+            "processing_not_in_redis": sorted(db_processing_guids - redis_active_guids),
+            "redis_not_in_db_processing": sorted(redis_active_guids - db_processing_guids),
         }
+
+        age_seconds = payload.get("oldest_unprocessed_age_seconds")
+        if (
+            (payload.get("processing_uploads") or 0) > 0
+            and age_seconds is not None
+            and age_seconds > UPLOAD_STUCK_THRESHOLD_SECONDS
+        ):
+            guid = payload.get("oldest_unprocessed_guid")
+            payload["status"] = "unhealthy"
+            payload["unhealthy_reason"] = (
+                f"Oldest processing upload {guid} has been unprocessed for "
+                f"{age_seconds}s (>24h)"
+            )
+            return JSONResponse(status_code=503, content=payload)
+
+        return payload
 
     app.include_router(api_router, prefix="/v1")
     return app

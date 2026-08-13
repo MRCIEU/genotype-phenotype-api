@@ -4,6 +4,7 @@ export default function contact() {
     return {
         email: "",
         reason: "",
+        uploadId: "",
         message: "",
         submitting: false,
         successMessage: false,
@@ -22,12 +23,14 @@ export default function contact() {
                         email: this.email,
                         reason: this.reason,
                         message: this.message,
+                        upload_id: this.reason === "GWAS Upload" ? this.uploadId.trim() || null : null,
                     }),
                 });
                 if (response.ok) {
                     this.successMessage = "Your message has been sent!";
                     this.email = "";
                     this.reason = "";
+                    this.uploadId = "";
                     this.message = "";
                 } else {
                     this.errorMessage = "There was a problem sending your message.";

@@ -87,6 +87,7 @@ export default function region() {
                 minMbp: gene.start / 1000000,
                 maxMbp: gene.stop / 1000000,
             }));
+            graphTransformations.relaxStudyPValueIfNeeded(this.data.coloc_groups, this.data.rare_results);
         },
 
         filterDataForGraphs() {
