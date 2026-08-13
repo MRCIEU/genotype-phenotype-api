@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 import duckdb
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -23,10 +23,14 @@ class GwasDBClient:
         wait=wait_exponential(multiplier=1, min=4, max=20),
         reraise=True,
     )
-    def connect(self) -> duckdb.DuckDBPyConnection:
-        """Connect to DuckDB with retries"""
+    def connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
+        """Connect to DuckDB with retries.
+
+        Use read_only=True for SELECT queries so concurrent readers do not take the
+        exclusive write lock. Writes must keep read_only=False (DuckDB default).
+        """
         try:
-            conn = duckdb.connect(settings.GWAS_UPLOAD_DB_PATH)
+            conn = duckdb.connect(settings.GWAS_UPLOAD_DB_PATH, read_only=read_only)
             conn.execute("SELECT 1").fetchone()
             return conn
         except Exception as e:
@@ -35,7 +39,7 @@ class GwasDBClient:
 
     @log_performance
     def get_gwases(self):
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             result = conn.execute("SELECT * FROM gwas_upload").fetchall()
             return result
@@ -44,7 +48,7 @@ class GwasDBClient:
 
     @log_performance
     def get_gwas_by_guid(self, guid: str):
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             result = conn.execute(f"SELECT * FROM gwas_upload WHERE guid = '{guid}'").fetchone()
             return result
@@ -53,7 +57,7 @@ class GwasDBClient:
 
     @log_performance
     def get_coloc_groups_by_gwas_upload_id(self, gwas_upload_id: int):
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         conn.execute(f"ATTACH DATABASE '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
 
         try:
@@ -139,7 +143,7 @@ class GwasDBClient:
 
     @log_performance
     def get_coloc_pairs_by_gwas_upload_id(self, gwas_upload_id: int):
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             result = conn.execute(f"SELECT * FROM coloc_pairs WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
             return result
@@ -148,7 +152,7 @@ class GwasDBClient:
 
     @log_performance
     def get_study_extractions_by_gwas_upload_id(self, gwas_upload_id: int):
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             result = conn.execute(f"SELECT * FROM study_extractions WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
             return result
@@ -160,7 +164,7 @@ class GwasDBClient:
         """Get study extractions from gwas_upload DB by ids (for any upload)."""
         if not study_extraction_ids:
             return []
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             placeholders = ",".join(["?" for _ in study_extraction_ids])
             result = conn.execute(
@@ -178,7 +182,7 @@ class GwasDBClient:
         """Get study extractions from gwas_upload DB (for compare_with uploads)."""
         if not unique_study_ids:
             return []
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             placeholders = ",".join(["?" for _ in unique_study_ids])
             query = f"SELECT * FROM study_extractions WHERE unique_study_id IN ({placeholders})"
@@ -193,7 +197,7 @@ class GwasDBClient:
 
     @log_performance
     def get_associations_by_gwas_upload_id(self, gwas_upload_id: int):
-        conn = self.connect()
+        conn = self.connect(read_only=True)
         try:
             cursor = conn.execute(f"SELECT * FROM associations WHERE gwas_upload_id = {gwas_upload_id}")
             rows = cursor.fetchall()
@@ -391,11 +395,12 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
-    def get_upload_status_counts(self) -> dict[str, int]:
-        conn = self.connect()
+    def get_upload_status_counts(self) -> dict[str, Any]:
+        conn = self.connect(read_only=True)
         try:
             completed = GwasStatus.COMPLETED.value
             failed = GwasStatus.FAILED.value
+            processing = GwasStatus.PROCESSING.value
             caught_error_pattern = "%Caught error%"
             row = conn.execute(
                 """
@@ -408,15 +413,54 @@ class GwasDBClient:
                     COUNT(*) FILTER (
                         WHERE status = ?
                         AND failure_reason LIKE ?
-                    ) AS failed_caught_error_uploads
+                    ) AS failed_caught_error_uploads,
+                    COUNT(*) FILTER (WHERE status = ?) AS processing_uploads,
+                    MAX(date_diff('second', created_at, CURRENT_TIMESTAMP)) FILTER (
+                        WHERE status = ? AND updated_at IS NULL AND created_at IS NOT NULL
+                    ) AS oldest_unprocessed_age_seconds
                 FROM gwas_upload
                 """,
-                [completed, failed, caught_error_pattern, failed, caught_error_pattern],
+                [
+                    completed,
+                    failed,
+                    caught_error_pattern,
+                    failed,
+                    caught_error_pattern,
+                    processing,
+                    processing,
+                ],
             ).fetchone()
+
+            oldest = conn.execute(
+                """
+                SELECT guid, created_at
+                FROM gwas_upload
+                WHERE status = ? AND updated_at IS NULL AND created_at IS NOT NULL
+                ORDER BY created_at ASC
+                LIMIT 1
+                """,
+                [processing],
+            ).fetchone()
+
+            processing_rows = conn.execute(
+                """
+                SELECT guid, created_at
+                FROM gwas_upload
+                WHERE status = ?
+                ORDER BY created_at ASC
+                """,
+                [processing],
+            ).fetchall()
+
             return {
                 "completed_uploads": row[0],
                 "failed_uploads": row[1],
                 "failed_caught_error_uploads": row[2],
+                "processing_uploads": row[3],
+                "oldest_unprocessed_age_seconds": row[4],
+                "oldest_unprocessed_guid": oldest[0] if oldest else None,
+                "oldest_unprocessed_created_at": oldest[1].isoformat() if oldest and oldest[1] else None,
+                "processing_guids": [r[0] for r in processing_rows],
             }
         finally:
             conn.close()

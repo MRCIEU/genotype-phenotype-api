@@ -77,12 +77,28 @@
                                     <div class="select">
                                         <select x-model="reason" required>
                                             <option value="">Select reason</option>
+                                            <option value="GWAS Upload">GWAS Upload</option>
                                             <option value="data">Collaboration / Data Inquiry</option>
                                             <option value="feedback">Feedback</option>
                                             <option value="other">Other</option>
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="field" x-show="reason === 'GWAS Upload'">
+                                <label class="label">Upload ID (GUID)</label>
+                                <div class="control">
+                                    <input
+                                        class="input"
+                                        type="text"
+                                        x-model="uploadId"
+                                        placeholder="e.g. 22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b"
+                                    />
+                                </div>
+                                <p class="help">
+                                    Optional — include your upload GUID if you have it (from the upload confirmation or
+                                    trait page URL).
+                                </p>
                             </div>
                             <div class="field">
                                 <label class="label">Message</label>

@@ -91,6 +91,7 @@ const graphOptions = {
     updatePValue() {
         this.pValue = this.pValueOptions[this.pValueIndex];
         this.$store.graphOptionStore.pValue = this.pValue;
+        this.$store.graphOptionStore.pValueIndex = this.pValueIndex;
     },
     hasAnyCategorySelected() {
         const categories = this.categories;

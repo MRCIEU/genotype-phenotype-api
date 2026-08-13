@@ -102,9 +102,7 @@ class AssociationsService:
 
         return metadata_to_variants
 
-    def _fetch_associations_full(
-        self, variant_ids: set[int], study_ids: set[int]
-    ) -> tuple[list[str], list[list]]:
+    def _fetch_associations_full(self, variant_ids: set[int], study_ids: set[int]) -> tuple[list[str], list[list]]:
         if not variant_ids or not study_ids:
             return [], []
 
@@ -117,9 +115,7 @@ class AssociationsService:
 
             table_study_ids = self.associations_full_db.filter_study_ids_for_table(table_name, study_ids)
             if not table_study_ids:
-                logger.debug(
-                    f"Skipping {table_name}: none of {len(study_ids)} requested studies exist in table"
-                )
+                logger.debug(f"Skipping {table_name}: none of {len(study_ids)} requested studies exist in table")
                 continue
 
             logger.debug(

@@ -1,8 +1,51 @@
+import Alpine from "alpinejs";
 import constants from "./constants.js";
 import * as d3 from "d3";
 import graphTransformations from "./graphTransformations.js";
 
+const DEFAULT_STUDY_P_VALUE = 0.00000005; // 5e-8
+const RELAXED_STUDY_P_VALUE = 0.00015; // 1.5e-4
+
 export default {
+    /**
+     * If coloc/rare data exists but none pass the default study p-value (5e-8),
+     * lower the graph option threshold to 1.5e-4 so something is shown on load.
+     */
+    relaxStudyPValueIfNeeded(colocGroups, rareResults) {
+        const colocs = colocGroups || [];
+        const rares = rareResults || [];
+        if (colocs.length === 0 && rares.length === 0) return false;
+
+        const anyPassDefault = [...colocs, ...rares].some(
+            entry => entry.min_p != null && entry.min_p <= DEFAULT_STUDY_P_VALUE
+        );
+        if (anyPassDefault) return false;
+
+        const store = Alpine.store("graphOptionStore");
+        if (!store) return false;
+
+        // Only auto-relax when still at the default threshold.
+        if (store.pValueIndex !== 7 && store.pValue !== DEFAULT_STUDY_P_VALUE) return false;
+
+        const relaxedIndex = store.pValueOptions?.indexOf(RELAXED_STUDY_P_VALUE) ?? 0;
+        store.pValue = RELAXED_STUDY_P_VALUE;
+        store.pValueIndex = relaxedIndex;
+
+        const graphOptionsEl = document.getElementById("graphOptions");
+        if (graphOptionsEl) {
+            try {
+                const localOptions = Alpine.$data(graphOptionsEl);
+                if (localOptions) {
+                    localOptions.pValue = RELAXED_STUDY_P_VALUE;
+                    localOptions.pValueIndex = relaxedIndex;
+                }
+            } catch {
+                // graph-options may not be Alpine-initialized yet; x-init syncs from store
+            }
+        }
+        return true;
+    },
+
     groupBySnp(data, type, id, displayFilters, userUpload = false) {
         id = parseInt(id);
         let attribute = null;

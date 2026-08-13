@@ -3,6 +3,12 @@
     x-data="graphOptions"
     x-init="
         (() => {
+            // Pick up store values in case data load already relaxed the study p-value.
+            pValue = $store.graphOptionStore.pValue;
+            pValueIndex = $store.graphOptionStore.pValueIndex;
+            $watch('$store.graphOptionStore.pValue', value => { pValue = value; });
+            $watch('$store.graphOptionStore.pValueIndex', value => { pValueIndex = value; });
+
             const includeTransAllowed = $el.dataset.showIncludeTrans !== 'false';
             const phenotypeAllowed = $el.dataset.showPhenotype !== 'false';
             $store.graphOptionStore.showIncludeTransOption = includeTransAllowed;

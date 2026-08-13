@@ -25,7 +25,9 @@ class EmailService:
             USE_CREDENTIALS=True,
         )
 
-    async def send_contact_email(self, email: EmailStr, reason: str, message: str) -> None:
+    async def send_contact_email(
+        self, email: EmailStr, reason: str, message: str, upload_id: str | None = None
+    ) -> None:
         """
         Send an email to the contact email address from the contact form.
         """
@@ -33,11 +35,13 @@ class EmailService:
         send_to = settings.EMAIL_TO
 
         subject = f"GPMap Contact Form Submission: {reason}"
+        upload_id_html = f"<p><b>Upload ID:</b> {upload_id}</p>" if upload_id else ""
         html = f"""
         <html>
         <body>
             <p><b>From:</b> {email}</p>
             <p><b>Reason:</b> {reason}</p>
+            {upload_id_html}
             <p><b>Message:</b><br>{message}</p>
         </body>
         </html>
