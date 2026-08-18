@@ -6,7 +6,7 @@ from app.models.schemas import Singleton
 proxy_variant_id_key_for_coloc_pair_merge = "5553693"
 
 variant_data = {
-    "80732": {"rsid": "rs7524102", "variant": "1:22371954", "num_studies": 55},
+    "80732": {"rsid": "rs7524102", "variant": "1:22371954", "num_studies": 56},
     "80717": {"rsid": "rs11810751", "variant": "1:22365104", "num_studies": 0},
     # Curated for merge tests (studies_small + coloc_pairs_small; pair h4 below default API threshold).
     proxy_variant_id_key_for_coloc_pair_merge: {

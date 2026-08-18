@@ -530,7 +530,25 @@ class StudiesDBClient:
 
     @log_performance
     def get_gene_names(self):
-        return self.studies_conn.execute("SELECT gene, ensembl_id FROM gene_annotations").fetchall()
+        """Return gene symbols, ensembl ids and gene aliases. Falls back gracefully when the
+        gene_aliases column is absent (e.g. older or small test databases)."""
+        if self._table_has_column("gene_annotations", "gene_aliases"):
+            return self.studies_conn.execute("SELECT gene, ensembl_id, gene_aliases FROM gene_annotations").fetchall()
+        return self.studies_conn.execute(
+            "SELECT gene, ensembl_id, NULL AS gene_aliases FROM gene_annotations"
+        ).fetchall()
+
+    @staticmethod
+    def _table_has_column(table: str, column: str) -> bool:
+        result = (
+            get_gpm_db_connection()
+            .execute(
+                "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = ? AND column_name = ?",
+                [table, column],
+            )
+            .fetchone()
+        )
+        return bool(result and result[0] > 0)
 
     @log_performance
     def get_num_study_extractions_per_study(self):

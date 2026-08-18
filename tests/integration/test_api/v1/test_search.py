@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import SearchTerms, VariantSearchResponse
+from app.db.studies_db import StudiesDBClient
 
 client = TestClient(app)
 
@@ -23,6 +24,34 @@ def test_get_search_options(mock_redis_cache):
 
     trait_type_ids = [term.type_id for term in search_terms.search_terms if term.type == "trait"]
     assert len(trait_type_ids) == len(set(trait_type_ids))
+
+
+def test_search_options_gene_aliases(mock_redis_cache):
+    response = client.get("/v1/search/options")
+    assert response.status_code == 200
+    search_terms = SearchTerms(**response.json())
+    gene_terms = [term for term in search_terms.search_terms if term.type == "gene"]
+    assert len(gene_terms) > 0
+
+    has_aliases = StudiesDBClient._table_has_column("gene_annotations", "gene_aliases")
+
+    if has_aliases:
+        # Aliases are exposed as their own search terms, so at least one gene has more than one term.
+        symbols = [term.type_id for term in gene_terms]
+        duplicated = {symbol for symbol in symbols if symbols.count(symbol) > 1}
+        assert len(duplicated) > 0
+
+        # Alias terms must still point at a resolvable gene (the canonical symbol) and carry an ensembl alt_name.
+        for term in gene_terms:
+            assert term.name is not None
+            assert term.alt_name is not None
+            assert term.type_id is not None
+    else:
+        # Backwards compatibility: one term per gene, each with a non-null ensembl alt_name.
+        type_ids = [term.type_id for term in gene_terms]
+        assert len(type_ids) == len(set(type_ids))
+        for term in gene_terms:
+            assert term.alt_name is not None
 
 
 def test_search_variant_by_rsid(variants_in_studies_db, mock_redis_cache):

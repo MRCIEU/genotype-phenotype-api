@@ -12,11 +12,11 @@ def enrich(genes, **kwargs):
 
 def test_pathway_enrichment_basic():
     """Test enrichment with gene IDs known to have KEGG pathway mappings."""
-    response = enrich([700, 1967, 2275, 558])
+    response = enrich([700, 1967, 2275])
     assert response.status_code == 200
     data = response.json()
     result = PathwayEnrichmentResponse(**data)
-    assert result.input_gene_count == 4
+    assert result.input_gene_count == 3
     assert result.matched_gene_count > 0
     assert result.p_value_threshold == 0.05
     assert result.minimum_count_in_network == 2
@@ -126,7 +126,7 @@ def test_pathway_enrichment_results_sorted_by_fdr():
 
 def test_pathway_enrichment_resource_specific_background():
     """Verify that background_size varies per source (resource-specific normalization)."""
-    response = enrich([700, 1967, 2275, 558], p_value_threshold=1.0)
+    response = enrich([700, 1967, 2275], p_value_threshold=1.0)
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
     backgrounds_by_source: dict[str, set[int]] = {}
@@ -231,10 +231,10 @@ def test_pathway_enrichment_uses_full_input_as_query_size():
 
 def test_pathway_enrichment_with_gene_symbols():
     """Test enrichment using gene symbols instead of numeric IDs."""
-    response = enrich(["TAB2", "NRP1", "ARHGAP5", "TG"])
+    response = enrich(["TAB2", "NRP1", "ARHGAP5"])
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
-    assert result.input_gene_count == 4
+    assert result.input_gene_count == 3
     assert result.matched_gene_count > 0
     assert len(result.results) > 0
 

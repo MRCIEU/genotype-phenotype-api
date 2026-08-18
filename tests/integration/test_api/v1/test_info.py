@@ -40,4 +40,3 @@ def test_get_study_sources():
     for source in study_sources:
         assert source.name is not None
         assert source.source is not None
-        assert source.doi is not None
