@@ -86,12 +86,20 @@ export class NavigationBar extends HTMLElement {
 
         this.searchTimeout = setTimeout(() => {
             this.filteredItems = this.searchOptions
-                .filter(
-                    item =>
-                        item.name.toLowerCase().includes(text) ||
-                        (item.alt_name && item.alt_name.toLowerCase().includes(text)) ||
-                        (item.aliases && item.aliases.toLowerCase().includes(text))
-                )
+                .map(item => {
+                    const name = item.name.toLowerCase();
+                    const alt = item.alt_name ? item.alt_name.toLowerCase() : "";
+                    const aliases = item.aliases ? item.aliases.toLowerCase() : "";
+                    const isNameMatch = name.includes(text);
+                    const isAliasMatch = aliases.includes(text);
+                    const isAltMatch = alt.includes(text);
+                    if (!isNameMatch && !isAliasMatch && !isAltMatch) return null;
+                    return {
+                        ...item,
+                        _matchRank: isNameMatch ? 0 : isAliasMatch ? 1 : 2,
+                    };
+                })
+                .filter(Boolean)
                 .sort(compareSearchTerms)
                 .slice(0, 20);
             this.renderItems(this.filteredItems);

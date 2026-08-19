@@ -134,12 +134,21 @@ export default function homepage() {
 
             const q = this.searchText.toLowerCase();
             this.searchMetadata.searchTimeout = setTimeout(() => {
-                let next = (this.searchOptionData || []).filter(item => {
-                    const name = item.name?.toLowerCase() ?? "";
-                    const alt = item.alt_name?.toLowerCase() ?? "";
-                    const aliases = item.aliases?.toLowerCase() ?? "";
-                    return name.includes(q) || alt.includes(q) || aliases.includes(q);
-                });
+                let next = (this.searchOptionData || [])
+                    .map(item => {
+                        const name = item.name?.toLowerCase() ?? "";
+                        const alt = item.alt_name?.toLowerCase() ?? "";
+                        const aliases = item.aliases?.toLowerCase() ?? "";
+                        const isNameMatch = name.includes(q);
+                        const isAliasMatch = aliases.includes(q);
+                        const isAltMatch = alt.includes(q);
+                        if (!isNameMatch && !isAliasMatch && !isAltMatch) return null;
+                        return {
+                            ...item,
+                            _matchRank: isNameMatch ? 0 : isAliasMatch ? 1 : 2,
+                        };
+                    })
+                    .filter(Boolean);
                 next.sort(compareSearchTerms);
                 this.filteredItems = next.slice(0, this.maxSearchDropdownItems);
                 this.searchMetadata.searchOpen = this.filteredItems.length > 0;

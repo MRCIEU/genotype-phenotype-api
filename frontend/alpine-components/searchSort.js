@@ -1,9 +1,15 @@
 /**
  * Sort order for /search/options rows (traits + genes) in typeahead UIs.
+ * 0) Matches on the primary name first, then alias matches, then ensembl/alt matches.
  * 1) Any colocalisation groups first; rare-only (zero coloc groups) second.
  * 2) Within each tier, higher (rare + coloc) totals first.
  */
 export function compareSearchTerms(a, b) {
+    const ra = a._matchRank ?? 1;
+    const rb = b._matchRank ?? 1;
+    if (ra !== rb) {
+        return ra - rb;
+    }
     const ca = a.num_coloc_groups ?? 0;
     const cb = b.num_coloc_groups ?? 0;
     const aHasColoc = ca > 0;
