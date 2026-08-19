@@ -170,36 +170,27 @@ class StudiesService(metaclass=Singleton):
                 continue
             ensembl_id = gene[1]
             gene_aliases = gene[2] if len(gene) > 2 else None
+            aliases = StudiesService.parse_gene_aliases(gene_aliases)
             counts = dict(
                 num_study_extractions=num_extractions_per_gene.get(gene_symbol, 0),
                 num_coloc_groups=num_coloc_groups_per_gene.get(gene_symbol, 0),
                 num_coloc_studies=num_coloc_studies_per_gene.get(gene_symbol, 0),
                 num_rare_results=num_rare_results_per_gene.get(gene_symbol, 0),
             )
+            # One term per gene (canonical symbol). Historical aliases and the ensembl id are
+            # folded into alt_name so any of them match this single term, while the canonical
+            # symbol stays in type_id for navigation.
+            searchable = ([ensembl_id] if ensembl_id else []) + aliases
             gene_search_terms.append(
                 SearchTerm(
                     type="gene",
                     name=gene_symbol,
-                    alt_name=ensembl_id,
+                    alt_name=", ".join(searchable) if searchable else None,
                     type_id=gene_symbol,
+                    aliases=", ".join(aliases) if aliases else None,
                     **counts,
                 )
             )
-            # Expose historical gene aliases as their own search terms. type_id is kept as the
-            # primary symbol so selecting an alias navigates to the canonical gene page, and
-            # alt_name carries the ensembl id so all names remain searchable.
-            for alias in StudiesService.parse_gene_aliases(gene_aliases):
-                if alias == gene_symbol:
-                    continue
-                gene_search_terms.append(
-                    SearchTerm(
-                        type="gene",
-                        name=alias,
-                        alt_name=ensembl_id,
-                        type_id=gene_symbol,
-                        **counts,
-                    )
-                )
 
         num_extractions_per_study = self.db.get_num_study_extractions_per_study()
         num_extractions_per_study = {

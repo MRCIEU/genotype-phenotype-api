@@ -35,23 +35,26 @@ def test_search_options_gene_aliases(mock_redis_cache):
 
     has_aliases = StudiesDBClient._table_has_column("gene_annotations", "gene_aliases")
 
-    if has_aliases:
-        # Aliases are exposed as their own search terms, so at least one gene has more than one term.
-        symbols = [term.type_id for term in gene_terms]
-        duplicated = {symbol for symbol in symbols if symbols.count(symbol) > 1}
-        assert len(duplicated) > 0
+    # One term per gene (canonical symbol), so gene type_ids are unique.
+    type_ids = [term.type_id for term in gene_terms]
+    assert len(type_ids) == len(set(type_ids))
 
-        # Alias terms must still point at a resolvable gene (the canonical symbol) and carry an ensembl alt_name.
-        for term in gene_terms:
-            assert term.name is not None
-            assert term.alt_name is not None
-            assert term.type_id is not None
-    else:
-        # Backwards compatibility: one term per gene, each with a non-null ensembl alt_name.
-        type_ids = [term.type_id for term in gene_terms]
-        assert len(type_ids) == len(set(type_ids))
-        for term in gene_terms:
-            assert term.alt_name is not None
+    for term in gene_terms:
+        assert term.name is not None
+        assert term.alt_name is not None
+        assert term.type_id is not None
+
+    if has_aliases:
+        # Genes with aliases carry them in the new aliases field, and their alt_name (ensembl id
+        # + aliases) makes every name searchable against a single canonical term.
+        aliased_terms = [term for term in gene_terms if term.aliases]
+        assert len(aliased_terms) > 0
+        for term in aliased_terms:
+            assert term.aliases not in (None, "")
+            for alias in term.aliases.split(","):
+                alias = alias.strip()
+                assert alias and alias != term.name
+                assert alias.lower() in term.alt_name.lower()
 
 
 def test_search_variant_by_rsid(variants_in_studies_db, mock_redis_cache):

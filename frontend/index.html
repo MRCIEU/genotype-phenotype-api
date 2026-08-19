@@ -74,7 +74,14 @@
                                     >
                                         <a class="dropdown-item" @click="goToItem(item)">
                                             <div>
-                                                <div x-text="item.name" class="has-text-weight-semibold"></div>
+                                                <div class="has-text-weight-semibold">
+                                                    <span x-text="item.name"></span>
+                                                    <span
+                                                        x-show="item.aliases"
+                                                        class="is-size-7 has-text-grey"
+                                                        x-text="' (' + item.aliases + ')'"
+                                                    ></span>
+                                                </div>
                                                 <div class="is-size-7 has-text-grey">
                                                     <span
                                                         x-show="item.num_rare_results > 0"
