@@ -46,6 +46,20 @@ class StudiesService(metaclass=Singleton):
         return result
 
     @staticmethod
+    def parse_gene_aliases(gene_aliases: Optional[str]) -> List[str]:
+        """Split a comma-separated gene alias string into individual aliases (deduplicated, stripped)."""
+        if not gene_aliases:
+            return []
+        aliases = []
+        seen = set()
+        for alias in gene_aliases.split(","):
+            alias = alias.strip()
+            if alias and alias not in seen:
+                seen.add(alias)
+                aliases.append(alias)
+        return aliases
+
+    @staticmethod
     def study_extraction_ids_from_coloc_pairs(coloc_pairs: Optional[List[dict]]) -> List[int]:
         if not coloc_pairs:
             return []
@@ -149,22 +163,34 @@ class StudiesService(metaclass=Singleton):
         }
 
         genes = self.db.get_gene_names()
-        gene_search_terms = [
-            SearchTerm(
-                type="gene",
-                name=gene[0],
-                alt_name=gene[1],
-                type_id=gene[0],
-                sample_size=None,
-                ancestry=None,
-                num_study_extractions=num_extractions_per_gene.get(gene[0], 0),
-                num_coloc_groups=num_coloc_groups_per_gene.get(gene[0], 0),
-                num_coloc_studies=num_coloc_studies_per_gene.get(gene[0], 0),
-                num_rare_results=num_rare_results_per_gene.get(gene[0], 0),
+        gene_search_terms = []
+        for gene in genes:
+            gene_symbol = gene[0]
+            if gene_symbol is None:
+                continue
+            ensembl_id = gene[1]
+            gene_aliases = gene[2] if len(gene) > 2 else None
+            aliases = StudiesService.parse_gene_aliases(gene_aliases)
+            counts = dict(
+                num_study_extractions=num_extractions_per_gene.get(gene_symbol, 0),
+                num_coloc_groups=num_coloc_groups_per_gene.get(gene_symbol, 0),
+                num_coloc_studies=num_coloc_studies_per_gene.get(gene_symbol, 0),
+                num_rare_results=num_rare_results_per_gene.get(gene_symbol, 0),
             )
-            for gene in genes
-            if gene[0] is not None
-        ]
+            # One term per gene (canonical symbol). Historical aliases and the ensembl id are
+            # folded into alt_name so any of them match this single term, while the canonical
+            # symbol stays in type_id for navigation.
+            searchable = ([ensembl_id] if ensembl_id else []) + aliases
+            gene_search_terms.append(
+                SearchTerm(
+                    type="gene",
+                    name=gene_symbol,
+                    alt_name=", ".join(searchable) if searchable else None,
+                    type_id=gene_symbol,
+                    aliases=", ".join(aliases) if aliases else None,
+                    **counts,
+                )
+            )
 
         num_extractions_per_study = self.db.get_num_study_extractions_per_study()
         num_extractions_per_study = {
@@ -285,15 +311,16 @@ class StudiesService(metaclass=Singleton):
                 id=gene[0],
                 ensembl_id=gene[1],
                 gene=gene[2],
-                description=gene[3],
-                gene_biotype=gene[4],
-                chr=gene[5],
-                start=gene[6],
-                stop=gene[7],
-                strand=gene[8],
-                source=gene[9],
-                distinct_trait_categories=gene[10],
-                distinct_protein_coding_genes=gene[11],
+                gene_aliases=gene[3],
+                description=gene[4],
+                gene_biotype=gene[5],
+                chr=gene[6],
+                start=gene[7],
+                stop=gene[8],
+                strand=gene[9],
+                source=gene[10],
+                distinct_trait_categories=gene[11],
+                distinct_protein_coding_genes=gene[12],
                 num_study_extractions=num_extractions_per_gene.get(gene[0], 0),
                 num_coloc_groups=num_coloc_groups_per_gene.get(gene[0], 0),
                 num_coloc_studies=num_coloc_studies_per_gene.get(gene[0], 0),

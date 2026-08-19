@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import SearchTerms, VariantSearchResponse
+from app.db.studies_db import StudiesDBClient
 
 client = TestClient(app)
 
@@ -23,6 +24,37 @@ def test_get_search_options(mock_redis_cache):
 
     trait_type_ids = [term.type_id for term in search_terms.search_terms if term.type == "trait"]
     assert len(trait_type_ids) == len(set(trait_type_ids))
+
+
+def test_search_options_gene_aliases(mock_redis_cache):
+    response = client.get("/v1/search/options")
+    assert response.status_code == 200
+    search_terms = SearchTerms(**response.json())
+    gene_terms = [term for term in search_terms.search_terms if term.type == "gene"]
+    assert len(gene_terms) > 0
+
+    has_aliases = StudiesDBClient._table_has_column("gene_annotations", "gene_aliases")
+
+    # One term per gene (canonical symbol), so gene type_ids are unique.
+    type_ids = [term.type_id for term in gene_terms]
+    assert len(type_ids) == len(set(type_ids))
+
+    for term in gene_terms:
+        assert term.name is not None
+        assert term.alt_name is not None
+        assert term.type_id is not None
+
+    if has_aliases:
+        # Genes with aliases carry them in the new aliases field, and their alt_name (ensembl id
+        # + aliases) makes every name searchable against a single canonical term.
+        aliased_terms = [term for term in gene_terms if term.aliases]
+        assert len(aliased_terms) > 0
+        for term in aliased_terms:
+            assert term.aliases not in (None, "")
+            for alias in term.aliases.split(","):
+                alias = alias.strip()
+                assert alias and alias != term.name
+                assert alias.lower() in term.alt_name.lower()
 
 
 def test_search_variant_by_rsid(variants_in_studies_db, mock_redis_cache):

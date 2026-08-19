@@ -87,6 +87,7 @@ To create a swarm, you must choose a server node to be a 'manager', and initalis
 ```
 sudo docker swarm init --advertise-addr <private-ip-address-of-server>
 sudo docker swarm update --task-history-limit 2
+sudo docker swarm update --dispatcher-heartbeat 60s #this is so if the upload worker doesn't restart too quickly if temporarily unresponsive
 ```
 
 You will also need to manually create the network

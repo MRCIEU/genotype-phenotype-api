@@ -137,7 +137,8 @@ export default function homepage() {
                 let next = (this.searchOptionData || []).filter(item => {
                     const name = item.name?.toLowerCase() ?? "";
                     const alt = item.alt_name?.toLowerCase() ?? "";
-                    return name.includes(q) || alt.includes(q);
+                    const aliases = item.aliases?.toLowerCase() ?? "";
+                    return name.includes(q) || alt.includes(q) || aliases.includes(q);
                 });
                 next.sort(compareSearchTerms);
                 this.filteredItems = next.slice(0, this.maxSearchDropdownItems);

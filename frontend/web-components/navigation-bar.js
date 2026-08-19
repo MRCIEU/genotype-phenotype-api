@@ -89,7 +89,8 @@ export class NavigationBar extends HTMLElement {
                 .filter(
                     item =>
                         item.name.toLowerCase().includes(text) ||
-                        (item.alt_name && item.alt_name.toLowerCase().includes(text))
+                        (item.alt_name && item.alt_name.toLowerCase().includes(text)) ||
+                        (item.aliases && item.aliases.toLowerCase().includes(text))
                 )
                 .sort(compareSearchTerms)
                 .slice(0, 20);
@@ -163,8 +164,9 @@ export class NavigationBar extends HTMLElement {
             const counts = [];
             if (item.num_coloc_groups > 0) counts.push(item.num_coloc_groups + " coloc groups");
             if (item.num_rare_results > 0) counts.push(item.num_rare_results + " rare results");
+            const aliasesSuffix = item.aliases ? ` (${this.esc(item.aliases)})` : "";
             a.innerHTML =
-                `<div style="font-weight: 600">${this.esc(item.name)}</div>` +
+                `<div style="font-weight: 600">${this.esc(item.name)}<span class="nav-search-subtitle">${aliasesSuffix}</span></div>` +
                 (counts.length > 0
                     ? `<div class="nav-search-subtitle">${typeLabel} · ${counts.join(", ")}</div>`
                     : `<div class="nav-search-subtitle">${typeLabel}</div>`);

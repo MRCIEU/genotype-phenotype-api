@@ -44,8 +44,8 @@ class StudySource(BaseModel):
     id: int
     source: str
     name: str
-    url: str
-    doi: str
+    url: Optional[str] = None
+    doi: Optional[str] = None
 
 
 class AssociationMetadata(BaseModel):
@@ -66,7 +66,7 @@ class ColocGroup(BaseModel):
     study_extraction_id: int
     variant_id: int
     ld_block_id: int
-    # situated_gene_id: Optional[int] = None
+    situated_gene_id: Optional[int] = None
     h4_connectedness: float
     h3_connectedness: float
     chr: Optional[int] = None
@@ -78,7 +78,7 @@ class ColocGroup(BaseModel):
     rsid: str
     gene: Optional[str] = None
     gene_id: Optional[int] = None
-    # situated_gene: Optional[str] = None
+    situated_gene: Optional[str] = None
     trait_id: Optional[int] = None
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
@@ -118,6 +118,7 @@ class Gene(BaseModel):
     id: int
     ensembl_id: str
     gene: str
+    gene_aliases: Optional[str] = None
     description: Optional[str] = None
     gene_biotype: Optional[str] = None
     chr: int
@@ -293,6 +294,7 @@ class SearchTerm(BaseModel):
     name: Optional[str] = None
     alt_name: Optional[str] = None
     type_id: Optional[int | str] = None
+    aliases: Optional[str] = None
     sample_size: Optional[int] = None
     ancestry: Optional[str] = None
     num_study_extractions: Optional[int] = None

@@ -290,6 +290,23 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
+    def delete_all_gwases(self):
+        conn = self.connect()
+        try:
+            tables = conn.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='main' AND table_name='associations'"
+            ).fetchall()
+            if tables:
+                conn.execute("DELETE FROM associations")
+            conn.execute("DELETE FROM coloc_groups")
+            conn.execute("DELETE FROM coloc_pairs")
+            conn.execute("DELETE FROM study_extractions")
+            conn.execute("DELETE FROM gwas_upload")
+            conn.commit()
+        finally:
+            conn.close()
+
+    @log_performance
     def delete_uploaded_data_for_gwas_upload_id(self, gwas_upload_id: int) -> None:
         """
         Remove child rows for a GWAS upload (associations, coloc_groups, coloc_pairs,
