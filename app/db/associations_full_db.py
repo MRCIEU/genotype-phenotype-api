@@ -17,7 +17,7 @@ def get_associations_full_db_connection():
 
 @lru_cache(maxsize=200)
 def _get_cached_study_ids_for_table(table_name: str) -> frozenset[int]:
-    connection = get_associations_full_db_connection()
+    connection = get_associations_full_db_connection().cursor()
     query = f"SELECT DISTINCT study_id FROM {table_name}"
     rows = connection.execute(query).fetchall()
     return frozenset(row[0] for row in rows)
@@ -29,7 +29,7 @@ def clear_table_study_ids_cache() -> None:
 
 class AssociationsFullDBClient:
     def __init__(self):
-        self.associations_conn = get_associations_full_db_connection()
+        self.associations_conn = get_associations_full_db_connection().cursor()
 
     @log_performance
     def get_associations_metadata(self):

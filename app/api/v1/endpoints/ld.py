@@ -7,6 +7,7 @@ from app.models.schemas import Ld, Lds, Variant, convert_duckdb_to_pydantic_mode
 from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
+from app.db.utils import run_sync
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -25,31 +26,35 @@ async def get_matrix(
     variants: List[str] = Query(None, description="List of variants to filter results"),
     variant_ids: List[int] = Query(None, description="List of variant_ids to filter results"),
 ):
-    try:
-        ld_db = LdDBClient()
-        studies_db = StudiesDBClient()
-        if variants:
-            variant_annotations = studies_db.get_variants(variant_prefixes=variants)
-            variant_annotations = convert_duckdb_to_pydantic_model(Variant, variant_annotations)
-            variant_ids = [variant_annotation.id for variant_annotation in variant_annotations]
+    def _run():
+        try:
+            ld_db = LdDBClient()
+            studies_db = StudiesDBClient()
+            resolved_variant_ids = variant_ids
+            if variants:
+                variant_annotations = studies_db.get_variants(variant_prefixes=variants)
+                variant_annotations = convert_duckdb_to_pydantic_model(Variant, variant_annotations)
+                resolved_variant_ids = [variant_annotation.id for variant_annotation in variant_annotations]
 
-        if not variant_ids:
-            raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
-        ld_matrix = ld_db.get_ld_matrix(variant_ids)
-        print(variant_ids)
-        print(ld_matrix)
-        if ld_matrix is None or len(ld_matrix) == 0:
-            raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
+            if not resolved_variant_ids:
+                raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
+            ld_matrix = ld_db.get_ld_matrix(resolved_variant_ids)
+            print(resolved_variant_ids)
+            print(ld_matrix)
+            if ld_matrix is None or len(ld_matrix) == 0:
+                raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
 
-        response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
-        response = Lds(lds=response)
-        return response
+            response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
+            response = Lds(lds=response)
+            return response
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_matrix: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_matrix: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.get(
@@ -66,30 +71,36 @@ async def get_proxies(
     variant_ids: List[int] = Query(None, description="List of variant_ids to filter results"),
     rsquared_threshold: float = Query(0.8, description="R squared threshold for LD proxies"),
 ):
-    try:
-        if rsquared_threshold < 0.8 or rsquared_threshold > 1:
-            raise HTTPException(status_code=400, detail="R squared threshold must be between 0.8 and 1")
+    def _run():
+        try:
+            if rsquared_threshold < 0.8 or rsquared_threshold > 1:
+                raise HTTPException(status_code=400, detail="R squared threshold must be between 0.8 and 1")
 
-        ld_db = LdDBClient()
-        studies_db = StudiesDBClient()
-        if variants:
-            variant_annotations = studies_db.get_variants(variant_prefixes=variants)
-            variant_annotations = convert_duckdb_to_pydantic_model(Variant, variant_annotations)
-            variant_ids = [variant_annotation.id for variant_annotation in variant_annotations]
+            ld_db = LdDBClient()
+            studies_db = StudiesDBClient()
+            resolved_variant_ids = variant_ids
+            if variants:
+                variant_annotations = studies_db.get_variants(variant_prefixes=variants)
+                variant_annotations = convert_duckdb_to_pydantic_model(Variant, variant_annotations)
+                resolved_variant_ids = [variant_annotation.id for variant_annotation in variant_annotations]
 
-        if not variant_ids:
-            raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
+            if not resolved_variant_ids:
+                raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
 
-        ld_proxies = ld_db.get_ld_proxies(variant_ids, rsquared_threshold)
-        if ld_proxies is None or len(ld_proxies) == 0:
-            raise HTTPException(status_code=404, detail=f"LD proxies for variant_ids {variant_ids} not found")
+            ld_proxies = ld_db.get_ld_proxies(resolved_variant_ids, rsquared_threshold)
+            if ld_proxies is None or len(ld_proxies) == 0:
+                raise HTTPException(
+                    status_code=404, detail=f"LD proxies for variant_ids {resolved_variant_ids} not found"
+                )
 
-        response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
-        response = Lds(lds=response)
-        return response
+            response = convert_duckdb_to_pydantic_model(Ld, ld_proxies)
+            response = Lds(lds=response)
+            return response
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_proxies: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_proxies: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)

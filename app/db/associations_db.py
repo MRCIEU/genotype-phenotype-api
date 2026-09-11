@@ -17,7 +17,7 @@ def get_associations_db_connection():
 
 class AssociationsDBClient:
     def __init__(self):
-        self.associations_conn = get_associations_db_connection()
+        self.associations_conn = get_associations_db_connection().cursor()
 
     @log_performance
     def get_associations_by_table_name(

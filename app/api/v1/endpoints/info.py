@@ -15,6 +15,7 @@ from app.services.studies_service import StudiesService
 from app.logging_config import get_logger, time_endpoint
 from app.services.email_service import EmailService
 from app.config import get_settings
+from app.db.utils import run_sync
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -41,16 +42,19 @@ async def get_version(request: Request):
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_study_sources(request: Request) -> GetStudySourcesResponse:
-    try:
-        studies_db = StudiesDBClient()
-        sources = studies_db.get_study_sources()
-        sources = convert_duckdb_to_pydantic_model(StudySource, sources)
-        return GetStudySourcesResponse(sources=sources)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_study_sources: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=traceback.format_exc())
+    def _run():
+        try:
+            studies_db = StudiesDBClient()
+            sources = studies_db.get_study_sources()
+            sources = convert_duckdb_to_pydantic_model(StudySource, sources)
+            return GetStudySourcesResponse(sources=sources)
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_study_sources: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+    return await run_sync(_run)
 
 
 @router.get(
@@ -62,15 +66,18 @@ async def get_study_sources(request: Request) -> GetStudySourcesResponse:
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_gpmap_metadata(request: Request):
-    try:
-        studies_service = StudiesService()
-        metadata = studies_service.get_gpmap_metadata()
-        return metadata
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_study_metadata: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            studies_service = StudiesService()
+            metadata = studies_service.get_gpmap_metadata()
+            return metadata
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_study_metadata: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.post(

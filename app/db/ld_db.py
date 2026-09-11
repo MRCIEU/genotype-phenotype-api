@@ -17,7 +17,7 @@ def get_gpm_db_connection():
 
 class LdDBClient:
     def __init__(self):
-        self.ld_conn = get_gpm_db_connection()
+        self.ld_conn = get_gpm_db_connection().cursor()
 
     @log_performance
     def get_ld_proxies(self, variant_ids: List[int], rsquared_threshold: float = 0.8):

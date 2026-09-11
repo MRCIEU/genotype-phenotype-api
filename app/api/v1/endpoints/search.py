@@ -15,6 +15,7 @@ from typing import List
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
+from app.db.utils import run_sync
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -29,20 +30,23 @@ router = APIRouter()
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def get_search_options(request: Request, response: Response):
-    try:
-        # Add cache control headers
-        response.headers["Cache-Control"] = "no-cache, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
+    def _run():
+        try:
+            # Add cache control headers
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
 
-        studies_service = StudiesService()
-        search_terms = studies_service.get_search_terms()
-        return search_terms
+            studies_service = StudiesService()
+            search_terms = studies_service.get_search_terms()
+            return search_terms
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_search_options: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_search_options: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.get(
@@ -58,55 +62,58 @@ async def variant_search(
     search_term: str,
     rsquared_threshold: float = Query(0.8, description="R squared threshold for LD proxies"),
 ):
-    try:
-        if rsquared_threshold < 0.8 or rsquared_threshold > 1:
-            raise HTTPException(status_code=400, detail="R squared threshold must be between 0.8 and 1")
+    def _run():
+        try:
+            if rsquared_threshold < 0.8 or rsquared_threshold > 1:
+                raise HTTPException(status_code=400, detail="R squared threshold must be between 0.8 and 1")
 
-        studies_db = StudiesDBClient()
-        ld_db = LdDBClient()
+            studies_db = StudiesDBClient()
+            ld_db = LdDBClient()
 
-        original_variants = []
-        if search_term.startswith("rs"):
-            original_variants = studies_db.get_variants(rsids=[search_term])
-        elif any(c.isdigit() for c in search_term) and ":" in search_term:
-            original_variants = studies_db.get_variants(variant_prefixes=[search_term])
+            original_variants = []
+            if search_term.startswith("rs"):
+                original_variants = studies_db.get_variants(rsids=[search_term])
+            elif any(c.isdigit() for c in search_term) and ":" in search_term:
+                original_variants = studies_db.get_variants(variant_prefixes=[search_term])
 
-        if not original_variants:
-            return VariantSearchResponse(original_variants=[], proxy_variants=[])
+            if not original_variants:
+                return VariantSearchResponse(original_variants=[], proxy_variants=[])
 
-        original_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, original_variants)
-        variant_ids = [variant.id for variant in original_variants]
-        proxies = ld_db.get_ld_proxies(variant_ids=variant_ids, rsquared_threshold=rsquared_threshold)
-        proxies = convert_duckdb_to_pydantic_model(Ld, proxies)
-        proxy_variant_ids = list(
-            set([proxy.lead_variant_id for proxy in proxies] + [proxy.proxy_variant_id for proxy in proxies])
-        )
-        proxy_variant_ids = [variant_id for variant_id in proxy_variant_ids if variant_id not in variant_ids]
+            original_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, original_variants)
+            variant_ids = [variant.id for variant in original_variants]
+            proxies = ld_db.get_ld_proxies(variant_ids=variant_ids, rsquared_threshold=rsquared_threshold)
+            proxies = convert_duckdb_to_pydantic_model(Ld, proxies)
+            proxy_variant_ids = list(
+                set([proxy.lead_variant_id for proxy in proxies] + [proxy.proxy_variant_id for proxy in proxies])
+            )
+            proxy_variant_ids = [variant_id for variant_id in proxy_variant_ids if variant_id not in variant_ids]
 
-        variant_proxies = studies_db.get_variants(variant_ids=proxy_variant_ids)
-        proxy_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, variant_proxies)
+            variant_proxies = studies_db.get_variants(variant_ids=proxy_variant_ids)
+            proxy_variants = convert_duckdb_to_pydantic_model(ExtendedVariant, variant_proxies)
 
-        all_variant_ids = list(set(variant_ids + proxy_variant_ids))
-        colocs = studies_db.get_colocs_for_variants(variant_ids=all_variant_ids)
-        colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
+            all_variant_ids = list(set(variant_ids + proxy_variant_ids))
+            colocs = studies_db.get_colocs_for_variants(variant_ids=all_variant_ids)
+            colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs)
 
-        rare_results = studies_db.get_rare_results_for_variants(variant_ids=variant_ids)
-        rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
+            rare_results = studies_db.get_rare_results_for_variants(variant_ids=variant_ids)
+            rare_results = convert_duckdb_to_pydantic_model(RareResult, rare_results)
 
-        for variant in original_variants:
-            populate_variant_search_results(variant, colocs, rare_results, proxies)
-        for variant in proxy_variants:
-            populate_variant_search_results(variant, colocs, rare_results, proxies)
+            for variant in original_variants:
+                populate_variant_search_results(variant, colocs, rare_results, proxies)
+            for variant in proxy_variants:
+                populate_variant_search_results(variant, colocs, rare_results, proxies)
 
-        proxy_variants = [variant for variant in proxy_variants if variant.num_colocs > 0]
-        proxy_variants.sort(key=lambda x: x.num_colocs, reverse=True)
+            proxy_variants = [variant for variant in proxy_variants if variant.num_colocs > 0]
+            proxy_variants.sort(key=lambda x: x.num_colocs, reverse=True)
 
-        return VariantSearchResponse(original_variants=original_variants, proxy_variants=proxy_variants)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in search variant: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+            return VariantSearchResponse(original_variants=original_variants, proxy_variants=proxy_variants)
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in search variant: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 def populate_variant_search_results(

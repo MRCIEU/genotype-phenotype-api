@@ -28,6 +28,7 @@ from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
 from app.services.oci_service import OCIService
 from app.services.studies_service import StudiesService
+from app.db.utils import run_sync
 
 settings = get_settings()
 router = APIRouter()
@@ -47,83 +48,100 @@ logger = get_logger(__name__)
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
 async def upload_gwas(request: Request, request_body_str: str = Form(..., alias="request"), file: UploadFile = None):
+    file_directory = None
     try:
-        redis = RedisClient()
 
-        request_body = ProcessGwasRequest.model_validate(request_body_str)
-        processing_guids = redis.get_processing_guids_for_user(request_body.email)
+        def _validate_and_save_file():
+            redis = RedisClient()
 
-        if processing_guids:
-            raise HTTPException(
-                status_code=429,
-                detail=f"You already have an upload processing (GUIDs: {', '.join(processing_guids)}). Please wait until it finishes.",
-            )
+            request_body = ProcessGwasRequest.model_validate(request_body_str)
+            processing_guids = redis.get_processing_guids_for_user(request_body.email)
 
-        if request_body.compare_with_upload_guids:
+            if processing_guids:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"You already have an upload processing (GUIDs: {', '.join(processing_guids)}). Please wait until it finishes.",
+                )
+
+            if request_body.compare_with_upload_guids:
+                db = GwasDBClient()
+                invalid_guids = []
+                if len(request_body.compare_with_upload_guids) > 10:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="You can only compare with up to 10 uploads at a time.  If you wish to compare with more, please get in touch directly.",
+                    )
+                for guid in request_body.compare_with_upload_guids:
+                    gwas = db.get_gwas_by_guid(guid)
+                    if gwas is None:
+                        invalid_guids.append(guid)
+                    else:
+                        gwas_model = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+                        if gwas_model.status != GwasStatus.COMPLETED:
+                            invalid_guids.append(f"{guid} (not completed)")
+                if invalid_guids:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid or incomplete upload GUIDs to compare with: {', '.join(invalid_guids)}. GUIDs must exist and be completed.",
+                    )
+
+            sha256_hash = hashlib.sha256()
+            file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            with open(file_path, "wb") as buffer:
+                while chunk := file.file.read(8192):
+                    buffer.write(chunk)
+                    sha256_hash.update(chunk)
+
+            hash_bytes = sha256_hash.digest()[:16]
+            file_guid = str(uuid.UUID(bytes=hash_bytes))
+
+            file_directory = os.path.join(settings.GWAS_DIR, file_guid)
+            os.makedirs(file_directory, exist_ok=True)
+            file_location = os.path.join(file_directory, file.filename)
+
+            bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
+            os.rename(file_path, file_location)
+
+            oci_service = OCIService()
+            oci_service.upload_file(file_location, bucket_file_location)
+
+            return redis, request_body, file_guid, file_directory, bucket_file_location
+
+        redis, request_body, file_guid, file_directory, bucket_file_location = await run_sync(_validate_and_save_file)
+
+        def _check_existing():
             db = GwasDBClient()
-            invalid_guids = []
-            if len(request_body.compare_with_upload_guids) > 10:
-                raise HTTPException(
-                    status_code=400,
-                    detail="You can only compare with up to 10 uploads at a time.  If you wish to compare with more, please get in touch directly.",
-                )
-            for guid in request_body.compare_with_upload_guids:
-                gwas = db.get_gwas_by_guid(guid)
-                if gwas is None:
-                    invalid_guids.append(guid)
+            gwas = db.get_gwas_by_guid(file_guid)
+            if gwas is not None:
+                gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+                if gwas.status == GwasStatus.COMPLETED:
+                    return gwas, True
                 else:
-                    gwas_model = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-                    if gwas_model.status != GwasStatus.COMPLETED:
-                        invalid_guids.append(f"{guid} (not completed)")
-            if invalid_guids:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid or incomplete upload GUIDs to compare with: {', '.join(invalid_guids)}. GUIDs must exist and be completed.",
-                )
+                    db.delete_gwas_upload(file_guid)
+            return None, False
 
-        sha256_hash = hashlib.sha256()
-        file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        with open(file_path, "wb") as buffer:
-            while chunk := file.file.read(8192):
-                buffer.write(chunk)
-                sha256_hash.update(chunk)
-
-        hash_bytes = sha256_hash.digest()[:16]
-        file_guid = str(uuid.UUID(bytes=hash_bytes))
-
-        file_directory = os.path.join(settings.GWAS_DIR, file_guid)
-        os.makedirs(file_directory, exist_ok=True)
-        file_location = os.path.join(file_directory, file.filename)
-
-        bucket_file_location = os.path.join("gwas_upload", file_guid, file.filename)
-        os.rename(file_path, file_location)
-
-        oci_service = OCIService()
-        oci_service.upload_file(file_location, bucket_file_location)
-
-        db = GwasDBClient()
-        gwas = db.get_gwas_by_guid(file_guid)
-        if gwas is not None:
-            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-            if gwas.status == GwasStatus.COMPLETED:
-                logger.info(f"GWAS already exists: {file_guid}")
-                email_service = EmailService()
-                await email_service.send_already_uploaded_email(request_body.email, file_guid)
-                return gwas
-            else:
-                db.delete_gwas_upload(file_guid)
+        existing_gwas, already_completed = await run_sync(_check_existing)
+        if already_completed:
+            logger.info(f"GWAS already exists: {file_guid}")
+            email_service = EmailService()
+            await email_service.send_already_uploaded_email(request_body.email, file_guid)
+            return existing_gwas
 
         request_body.guid = file_guid
         request_body.status = GwasStatus.PROCESSING
 
-        db = GwasDBClient()
-        gwas = db.create_gwas_upload(request_body)
-        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+        def _create_and_queue():
+            db = GwasDBClient()
+            gwas = db.create_gwas_upload(request_body)
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
 
-        redis.add_gwas_to_queue(bucket_file_location, request_body.model_dump(mode="json"))
-        queue_position = redis.get_queue_position(redis.process_gwas_queue, file_guid)
+            redis.add_gwas_to_queue(bucket_file_location, request_body.model_dump(mode="json"))
+            queue_position = redis.get_queue_position(redis.process_gwas_queue, file_guid)
+            return gwas, queue_position
+
+        gwas, queue_position = await run_sync(_create_and_queue)
 
         email_service = EmailService()
         await email_service.send_submission_email(request_body.email, file_guid, queue_position)
@@ -136,7 +154,7 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
         raise e
     except Exception as e:
         # Clean up file directory if there's an error
-        if "file_directory" in locals() and os.path.exists(file_directory):
+        if file_directory and os.path.exists(file_directory):
             shutil.rmtree(file_directory)
 
         logger.error(f"Error: {e}\n{traceback.format_exc()}")
@@ -158,22 +176,30 @@ async def update_gwas(
     update_gwas_request: UpdateGwasRequest,
 ):
     try:
-        gwas_upload_db = GwasDBClient()
-        gwas_upload_service = GwasUploadService()
+
+        def _load_and_process():
+            gwas_upload_db = GwasDBClient()
+            gwas_upload_service = GwasUploadService()
+
+            gwas = gwas_upload_db.get_gwas_by_guid(guid)
+            if gwas is None:
+                raise HTTPException(status_code=404, detail=f"Uploaded GWAS with GUID {guid} not found")
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+
+            if not update_gwas_request.success:
+                updated_gwas = gwas_upload_service.update_gwas_failure(gwas, update_gwas_request)
+                return gwas, updated_gwas, False
+
+            updated_gwas = gwas_upload_service.update_gwas_success(gwas, update_gwas_request)
+            return gwas, updated_gwas, True
+
+        gwas, updated_gwas, succeeded = await run_sync(_load_and_process)
+
         email_service = EmailService()
-
-        gwas = gwas_upload_db.get_gwas_by_guid(guid)
-        if gwas is None:
-            raise HTTPException(status_code=404, detail=f"Uploaded GWAS with GUID {guid} not found")
-        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-
-        if not update_gwas_request.success:
-            updated_gwas = gwas_upload_service.update_gwas_failure(gwas, update_gwas_request)
+        if not succeeded:
             await email_service.send_failure_email(gwas.email, guid)
-            return updated_gwas
-
-        updated_gwas = gwas_upload_service.update_gwas_success(gwas, update_gwas_request)
-        await email_service.send_results_email(gwas.email, guid)
+        else:
+            await email_service.send_results_email(gwas.email, guid)
 
         return updated_gwas
     except HTTPException as e:
@@ -197,80 +223,91 @@ async def get_gwas(
     guid: str,
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
 ) -> UploadTraitResponse:
-    try:
-        studies_db = StudiesDBClient()
-        gwas_upload_db = GwasDBClient()
+    def _run():
+        try:
+            studies_db = StudiesDBClient()
+            gwas_upload_db = GwasDBClient()
 
-        gwas = gwas_upload_db.get_gwas_by_guid(guid)
-        if gwas is None:
-            raise HTTPException(status_code=404, detail="GWAS not found")
+            gwas = gwas_upload_db.get_gwas_by_guid(guid)
+            if gwas is None:
+                raise HTTPException(status_code=404, detail="GWAS not found")
 
-        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-        gwas.email = None
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+            gwas.email = None
 
-        if gwas.status != GwasStatus.COMPLETED:
-            queue_status = None
-            queue_position = None
-            if gwas.status == GwasStatus.PROCESSING:
-                redis_client = RedisClient()
-                queue_status, queue_position = redis_client.get_gwas_queue_status(guid)
+            if gwas.status != GwasStatus.COMPLETED:
+                queue_status = None
+                queue_position = None
+                if gwas.status == GwasStatus.PROCESSING:
+                    redis_client = RedisClient()
+                    queue_status, queue_position = redis_client.get_gwas_queue_status(guid)
 
-            return UploadTraitResponse(trait=gwas, queue_status=queue_status, queue_position=queue_position)
+                return UploadTraitResponse(trait=gwas, queue_status=queue_status, queue_position=queue_position)
 
-        coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
-        coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
-        coloc_pairs = gwas_upload_db.get_coloc_pairs_by_gwas_upload_id(gwas.id)
-        coloc_pairs = convert_duckdb_to_pydantic_model(UploadColocPair, coloc_pairs)
+            coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
+            coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
+            coloc_pairs = gwas_upload_db.get_coloc_pairs_by_gwas_upload_id(gwas.id)
+            coloc_pairs = convert_duckdb_to_pydantic_model(UploadColocPair, coloc_pairs)
 
-        # Collect study_extraction_ids from coloc_groups and coloc_pairs (covers current + compare_with uploads)
-        upload_study_extraction_ids = (
-            [c.study_extraction_id for c in coloc_groups if c.study_extraction_id is not None]
-            + [p.study_extraction_id_a for p in coloc_pairs if p.study_extraction_id_a is not None]
-            + [p.study_extraction_id_b for p in coloc_pairs if p.study_extraction_id_b is not None]
-        )
-        upload_study_extraction_ids = list(set(upload_study_extraction_ids))
-        upload_study_extractions = gwas_upload_db.get_study_extractions_by_ids(upload_study_extraction_ids)
-        upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
+            # Collect study_extraction_ids from coloc_groups and coloc_pairs (covers current + compare_with uploads)
+            upload_study_extraction_ids = (
+                [c.study_extraction_id for c in coloc_groups if c.study_extraction_id is not None]
+                + [p.study_extraction_id_a for p in coloc_pairs if p.study_extraction_id_a is not None]
+                + [p.study_extraction_id_b for p in coloc_pairs if p.study_extraction_id_b is not None]
+            )
+            upload_study_extraction_ids = list(set(upload_study_extraction_ids))
+            upload_study_extractions = gwas_upload_db.get_study_extractions_by_ids(upload_study_extraction_ids)
+            upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
 
-        associations = None
-        if include_associations:
-            assoc_rows, assoc_columns = gwas_upload_db.get_associations_by_gwas_upload_id(gwas.id)
-            associations = convert_duckdb_tuples_to_dicts(assoc_rows, assoc_columns)
+            associations = None
+            if include_associations:
+                assoc_rows, assoc_columns = gwas_upload_db.get_associations_by_gwas_upload_id(gwas.id)
+                associations = convert_duckdb_tuples_to_dicts(assoc_rows, assoc_columns)
 
-        # Collect existing_study_extraction_ids from coloc_groups and coloc_pairs (studies DB)
-        existing_study_extraction_ids = (
-            [c.existing_study_extraction_id for c in coloc_groups if c.existing_study_extraction_id is not None]
-            + [p.existing_study_extraction_id_a for p in coloc_pairs if p.existing_study_extraction_id_a is not None]
-            + [p.existing_study_extraction_id_b for p in coloc_pairs if p.existing_study_extraction_id_b is not None]
-        )
-        existing_study_extraction_ids = list(set(existing_study_extraction_ids))
-        existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
-        existing_study_extractions = convert_duckdb_to_pydantic_model(
-            ExtendedStudyExtraction, existing_study_extractions
-        )
-        studies_service = StudiesService()
-        if existing_study_extractions is not None and not isinstance(existing_study_extractions, list):
-            existing_study_extractions = [existing_study_extractions]
-        existing_study_extractions = studies_service.merge_study_extractions_for_upload_coloc_pairs(
-            list(existing_study_extractions or []),
-            coloc_pairs,
-        )
+            # Collect existing_study_extraction_ids from coloc_groups and coloc_pairs (studies DB)
+            existing_study_extraction_ids = (
+                [c.existing_study_extraction_id for c in coloc_groups if c.existing_study_extraction_id is not None]
+                + [
+                    p.existing_study_extraction_id_a
+                    for p in coloc_pairs
+                    if p.existing_study_extraction_id_a is not None
+                ]
+                + [
+                    p.existing_study_extraction_id_b
+                    for p in coloc_pairs
+                    if p.existing_study_extraction_id_b is not None
+                ]
+            )
+            existing_study_extraction_ids = list(set(existing_study_extraction_ids))
+            existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
+            existing_study_extractions = convert_duckdb_to_pydantic_model(
+                ExtendedStudyExtraction, existing_study_extractions
+            )
+            studies_service = StudiesService()
+            if existing_study_extractions is not None and not isinstance(existing_study_extractions, list):
+                existing_study_extractions = [existing_study_extractions]
+            existing_study_extractions = studies_service.merge_study_extractions_for_upload_coloc_pairs(
+                list(existing_study_extractions or []),
+                coloc_pairs,
+            )
 
-        return UploadTraitResponse(
-            trait=gwas,
-            study_extractions=existing_study_extractions,
-            upload_study_extractions=upload_study_extractions,
-            coloc_groups=coloc_groups,
-            coloc_pairs=coloc_pairs,
-            rare_results=[],
-            associations=associations,
-        )
+            return UploadTraitResponse(
+                trait=gwas,
+                study_extractions=existing_study_extractions,
+                upload_study_extractions=upload_study_extractions,
+                coloc_groups=coloc_groups,
+                coloc_pairs=coloc_pairs,
+                rare_results=[],
+                associations=associations,
+            )
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_gwas: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_gwas: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.get(
@@ -285,11 +322,14 @@ async def get_gwas_summary_stats(
     request: Request,
     guid: str,
 ):
-    try:
-        oci_service = OCIService()
-        return oci_service.get_file_url(f"gwas_upload/{guid}/gwas_with_lbfs.tsv.gz")
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_gwas_summary_stats: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            oci_service = OCIService()
+            return oci_service.get_file_url(f"gwas_upload/{guid}/gwas_with_lbfs.tsv.gz")
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_gwas_summary_stats: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
