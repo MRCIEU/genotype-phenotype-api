@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, Request, Form, Query
+from fastapi.responses import Response
+import re
 import traceback
 import uuid
 import os
@@ -312,9 +314,8 @@ async def get_gwas(
 
 @router.get(
     "/{guid}/summary-stats",
-    response_model=str,
-    summary="Get GWAS summary statistics download URL",
-    description="Returns a pre-signed URL to download the processed GWAS summary statistics file (gwas_with_lbfs.tsv.gz).",
+    summary="Download GWAS summary statistics",
+    description="Downloads the processed GWAS summary statistics file, named gpmap_{upload name}_gwas_with_lbfs.tsv.gz.",
 )
 @time_endpoint
 @limiter.limit(DEFAULT_RATE_LIMIT)
@@ -324,8 +325,23 @@ async def get_gwas_summary_stats(
 ):
     def _run():
         try:
+            gwas_upload_db = GwasDBClient()
+            gwas = gwas_upload_db.get_gwas_by_guid(guid)
+            if gwas is None:
+                raise HTTPException(status_code=404, detail="GWAS not found")
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+
             oci_service = OCIService()
-            return oci_service.get_file_url(f"gwas_upload/{guid}/gwas_with_lbfs.tsv.gz")
+            file_content = oci_service.get_file(f"gwas_upload/{guid}/gwas_with_lbfs.tsv.gz")
+
+            sanitized_name = re.sub(r"[^a-zA-Z0-9_-]+", "_", gwas.name).strip("_")
+            filename = f"gpmap_{sanitized_name}_gwas_with_lbfs.tsv.gz"
+
+            return Response(
+                content=file_content,
+                media_type="application/gzip",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
         except HTTPException as e:
             raise e
         except Exception as e:

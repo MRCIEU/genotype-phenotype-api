@@ -322,10 +322,9 @@ export default function trait() {
                         this.errorMessage = `Failed to get summary stats: ${response.status} ${response.statusText}`;
                         return;
                     }
-                    const downloadUrl = await response.json();
-                    if (downloadUrl) {
-                        downloads.downloadFile(downloadUrl);
-                    }
+                    const blob = await response.blob();
+                    const sanitizedName = this.data.trait.name.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+                    downloads.downloadBlob(blob, `gpmap_${sanitizedName}_gwas_with_lbfs.tsv.gz`);
                 } catch (error) {
                     console.error("Error downloading GWAS data:", error);
                     this.errorMessage = "Error initiating download. Please try again.";

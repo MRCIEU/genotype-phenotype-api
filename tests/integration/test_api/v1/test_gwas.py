@@ -232,3 +232,17 @@ def test_get_gwas_with_associations(test_guid):
     assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][1]["beta"])
     assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][1]["se"])
     assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][1]["p"])
+
+
+def test_get_gwas_summary_stats(test_guid, mock_oci_service):
+    response = client.get(f"/v1/gwas/{test_guid}/summary-stats")
+
+    assert response.status_code == 200
+    mock_oci_service.get_file.assert_called_once_with(f"gwas_upload/{test_guid}/gwas_with_lbfs.tsv.gz")
+    assert response.headers["Content-Disposition"] == 'attachment; filename="gpmap_Example_Study_gwas_with_lbfs.tsv.gz"'
+    assert response.content == b"fake summary stat content"
+
+
+def test_get_gwas_summary_stats_not_found():
+    response = client.get("/v1/gwas/bad-guid/summary-stats")
+    assert response.status_code == 404
