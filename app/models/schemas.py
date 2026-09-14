@@ -742,6 +742,20 @@ class PathwayEnrichmentResponse(BaseModel):
     total_terms_tested: int
 
 
+class PathwayTerm(BaseModel):
+    term_id: str
+    source: str
+    description: Optional[str] = None
+    pathway_size: int
+    background_size: int
+    gene_ids: List[int]
+
+
+class PathwayRawDataResponse(BaseModel):
+    terms: List[PathwayTerm]
+    term_count: int
+
+
 class GPMapMetadata(BaseModel):
     num_common_studies: int
     num_rare_studies: int

@@ -1,9 +1,9 @@
 import traceback
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.logging_config import get_logger, time_endpoint
-from app.models.schemas import PathwayEnrichmentRequest, PathwayEnrichmentResponse
+from app.models.schemas import PathwayEnrichmentRequest, PathwayEnrichmentResponse, PathwayRawDataResponse
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.pathway_service import PathwayService, UnknownGenesError, VALID_SOURCES
 from app.db.utils import run_sync
@@ -55,6 +55,40 @@ async def pathway_enrichment(
             raise e
         except Exception as e:
             logger.error(f"Error in pathway_enrichment: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
+
+
+@router.get(
+    "/raw",
+    response_model=PathwayRawDataResponse,
+    summary="Get raw pathway membership data",
+    description=(
+        "Returns raw pathway term sizes and full gene membership for a source (or all "
+        "sources), for client-side continuous/rank-based enrichment calculations."
+    ),
+)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def pathway_raw_data(
+    request: Request,
+    source: str = Query(None, description="Pathway source to filter by. Omit for all sources."),
+) -> PathwayRawDataResponse:
+    def _run():
+        try:
+            if source and source not in VALID_SOURCES:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid source '{source}'. Must be one of: {', '.join(sorted(VALID_SOURCES))}",
+                )
+            pathway_service = PathwayService()
+            terms = pathway_service.get_pathway_raw_data(source=source)
+            return PathwayRawDataResponse(terms=terms, term_count=len(terms))
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in pathway_raw_data: {e}\n{traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=str(e))
 
     return await run_sync(_run)
