@@ -19,7 +19,7 @@ def get_coloc_pairs_db_connection():
 
 class ColocPairsDBClient:
     def __init__(self):
-        self.coloc_pairs_conn = get_coloc_pairs_db_connection()
+        self.coloc_pairs_conn = get_coloc_pairs_db_connection().cursor()
 
     @log_performance
     def get_coloc_pairs_metadata(self):

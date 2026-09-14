@@ -13,6 +13,7 @@ from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 from app.services.associations_service import AssociationsService
 from app.db.redis import RedisClient
+from app.db.utils import run_sync
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -29,17 +30,20 @@ settings = get_settings()
 )
 @time_endpoint
 async def clear_cache(request: Request):
-    try:
-        studies_service = StudiesService()
-        studies_service.clear_cache()
-        associations_service = AssociationsService()
-        associations_service.clear_cache()
-        return {"message": "All caches cleared"}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in clear_cache: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            studies_service = StudiesService()
+            studies_service.clear_cache()
+            associations_service = AssociationsService()
+            associations_service.clear_cache()
+            return {"message": "All caches cleared"}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in clear_cache: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.post(
@@ -51,15 +55,18 @@ async def clear_cache(request: Request):
 )
 @time_endpoint
 async def clear_cache_studies(request: Request):
-    try:
-        studies_service = StudiesService()
-        studies_service.clear_cache()
-        return {"message": "Studies cache cleared"}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in clear_cache_studies: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            studies_service = StudiesService()
+            studies_service.clear_cache()
+            return {"message": "Studies cache cleared"}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in clear_cache_studies: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.get(
@@ -88,15 +95,19 @@ async def get_gwas_dlq(request: Request):
     Get all entries in the GWAS dead letter queue.
     Returns the full list of failed messages with their error details.
     """
-    try:
-        redis_client = RedisClient()
-        entries = redis_client.get_all_entries_from_dlq(redis_client.process_gwas_queue)
-        return {"entries": entries}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in get_gwas_dlq: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+    def _run():
+        try:
+            redis_client = RedisClient()
+            entries = redis_client.get_all_entries_from_dlq(redis_client.process_gwas_queue)
+            return {"entries": entries}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_gwas_dlq: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.post(
@@ -114,19 +125,23 @@ async def retry_gwas_dlq_by_guid(
     Reprocess a specific message from the GWAS dead letter queue by GUID.
     Moves the message back to the normal processing queue.
     """
-    try:
-        redis_client = RedisClient()
-        success = redis_client.retry_guid_from_dlq(redis_client.process_gwas_queue, guid)
 
-        if success:
-            return {"message": f"Successfully moved message with GUID {guid} from DLQ to processing queue"}
-        else:
-            raise HTTPException(status_code=404, detail=f"Message with GUID {guid} not found in dead letter queue")
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in retry_gwas_dlq_by_guid: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            redis_client = RedisClient()
+            success = redis_client.retry_guid_from_dlq(redis_client.process_gwas_queue, guid)
+
+            if success:
+                return {"message": f"Successfully moved message with GUID {guid} from DLQ to processing queue"}
+            else:
+                raise HTTPException(status_code=404, detail=f"Message with GUID {guid} not found in dead letter queue")
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in retry_gwas_dlq_by_guid: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.post(
@@ -142,20 +157,24 @@ async def retry_all_gwas_dlq(request: Request):
     Reprocess all messages from the GWAS dead letter queue.
     Moves all messages back to the normal processing queue.
     """
-    try:
-        redis_client = RedisClient()
-        guids = redis_client.get_all_guids_from_dlq(redis_client.process_gwas_queue)
-        count = 0
-        for guid in guids:
-            if redis_client.retry_guid_from_dlq(redis_client.process_gwas_queue, guid):
-                count += 1
 
-        return {"message": f"Successfully moved {count} message(s) from DLQ to processing queue", "count": count}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in retry_all_gwas_dlq: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            redis_client = RedisClient()
+            guids = redis_client.get_all_guids_from_dlq(redis_client.process_gwas_queue)
+            count = 0
+            for guid in guids:
+                if redis_client.retry_guid_from_dlq(redis_client.process_gwas_queue, guid):
+                    count += 1
+
+            return {"message": f"Successfully moved {count} message(s) from DLQ to processing queue", "count": count}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in retry_all_gwas_dlq: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.post(
@@ -170,23 +189,27 @@ async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID o
     """
     Rerun a GWAS upload by GUID.
     """
-    try:
-        gwas_db = GwasDBClient()
-        redis_client = RedisClient()
 
-        gwas = gwas_db.get_gwas_by_guid(guid)
-        if gwas is None:
-            raise HTTPException(status_code=404, detail="GWAS not found")
+    def _run():
+        try:
+            gwas_db = GwasDBClient()
+            redis_client = RedisClient()
 
-        gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-        redis_client.add_to_queue(redis_client.process_gwas_queue, json.loads(gwas.upload_metadata))
+            gwas = gwas_db.get_gwas_by_guid(guid)
+            if gwas is None:
+                raise HTTPException(status_code=404, detail="GWAS not found")
 
-        return {"message": f"Successfully rerun GWAS upload with GUID {guid}"}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in rerun_gwas: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+            redis_client.add_to_queue(redis_client.process_gwas_queue, json.loads(gwas.upload_metadata))
+
+            return {"message": f"Successfully rerun GWAS upload with GUID {guid}"}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in rerun_gwas: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.delete(
@@ -203,19 +226,23 @@ async def clear_gwas_dlq(request: Request):
     Delete all messages from the GWAS dead letter queue.
     This permanently removes all failed messages from the DLQ.
     """
-    try:
-        redis_client = RedisClient()
-        success = redis_client.clear_dlq(redis_client.process_gwas_queue)
 
-        if success:
-            return {"message": "Successfully cleared all messages from dead letter queue"}
-        else:
-            raise HTTPException(status_code=500, detail="Failed to clear dead letter queue")
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in clear_gwas_dlq: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+    def _run():
+        try:
+            redis_client = RedisClient()
+            success = redis_client.clear_dlq(redis_client.process_gwas_queue)
+
+            if success:
+                return {"message": "Successfully cleared all messages from dead letter queue"}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to clear dead letter queue")
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in clear_gwas_dlq: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.delete(
@@ -232,22 +259,26 @@ async def delete_gwas(request: Request, guid: str = Path(..., description="GUID 
     Delete a GWAS upload by GUID.
     Deletes associated files from OCI and entries from the database.
     """
-    try:
-        oci_service = OCIService()
-        gwas_db = GwasDBClient()
-        redis_client = RedisClient()
 
-        if os.path.exists(f"{settings.GWAS_DIR}/{guid}/"):
-            shutil.rmtree(f"{settings.GWAS_DIR}/{guid}/")
+    def _run():
+        try:
+            oci_service = OCIService()
+            gwas_db = GwasDBClient()
+            redis_client = RedisClient()
 
-        oci_service.delete_prefix(f"gwas_upload/{guid}/")
-        redis_client.add_delete_gwas_to_queue(guid)
-        redis_client.remove_from_queue(redis_client.process_gwas_queue, guid)
-        gwas_db.delete_gwas_upload(guid)
+            if os.path.exists(f"{settings.GWAS_DIR}/{guid}/"):
+                shutil.rmtree(f"{settings.GWAS_DIR}/{guid}/")
 
-        return {"message": f"Successfully deleted GWAS upload with GUID {guid} and all associated data"}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Error in delete_gwas: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+            oci_service.delete_prefix(f"gwas_upload/{guid}/")
+            redis_client.add_delete_gwas_to_queue(guid)
+            redis_client.remove_from_queue(redis_client.process_gwas_queue, guid)
+            gwas_db.delete_gwas_upload(guid)
+
+            return {"message": f"Successfully deleted GWAS upload with GUID {guid} and all associated data"}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in delete_gwas: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)

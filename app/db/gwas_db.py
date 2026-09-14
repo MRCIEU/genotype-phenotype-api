@@ -28,9 +28,17 @@ class GwasDBClient:
 
         Use read_only=True for SELECT queries so concurrent readers do not take the
         exclusive write lock. Writes must keep read_only=False (DuckDB default).
+
+        Unlike the other DB clients, this one is not cached behind a module-level
+        connection: gwas_upload.db is both read and written from this process, and DuckDB
+        refuses a second connection to the same file with a different read_only setting
+        while one is already open. Keeping every connection here short-lived (opened and
+        closed per call, as before) avoids that conflict when reads and writes now run
+        concurrently across threads.
         """
         try:
             conn = duckdb.connect(settings.GWAS_UPLOAD_DB_PATH, read_only=read_only)
+            conn.execute("PRAGMA memory_limit='4GB'")
             conn.execute("SELECT 1").fetchone()
             return conn
         except Exception as e:
@@ -411,7 +419,6 @@ class GwasDBClient:
         finally:
             conn.close()
 
-    @log_performance
     def get_upload_status_counts(self) -> dict[str, Any]:
         conn = self.connect(read_only=True)
         try:
@@ -434,7 +441,8 @@ class GwasDBClient:
                     COUNT(*) FILTER (WHERE status = ?) AS processing_uploads,
                     MAX(date_diff('second', created_at, CURRENT_TIMESTAMP)) FILTER (
                         WHERE status = ? AND updated_at IS NULL AND created_at IS NOT NULL
-                    ) AS oldest_unprocessed_age_seconds
+                    ) AS oldest_unprocessed_age_seconds,
+                    MAX(updated_at) FILTER (WHERE status = ?) AS last_completed_upload_at
                 FROM gwas_upload
                 """,
                 [
@@ -445,6 +453,7 @@ class GwasDBClient:
                     caught_error_pattern,
                     processing,
                     processing,
+                    completed,
                 ],
             ).fetchone()
 
@@ -477,6 +486,7 @@ class GwasDBClient:
                 "oldest_unprocessed_age_seconds": row[4],
                 "oldest_unprocessed_guid": oldest[0] if oldest else None,
                 "oldest_unprocessed_created_at": oldest[1].isoformat() if oldest and oldest[1] else None,
+                "last_completed_upload_at": row[5].isoformat() if row[5] else None,
                 "processing_guids": [r[0] for r in processing_rows],
             }
         finally:

@@ -20,7 +20,7 @@ def get_gpm_db_connection():
 
 class StudiesDBClient:
     def __init__(self):
-        self.studies_conn = get_gpm_db_connection()
+        self.studies_conn = get_gpm_db_connection().cursor()
         self.common_data_types = [
             f"'{StudyDataType.phenotype.name}'",
             f"'{StudyDataType.cell_trait.name}'",

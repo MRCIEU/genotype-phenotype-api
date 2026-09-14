@@ -63,6 +63,7 @@ def test_upload_health_includes_upload_status_counts():
     assert data["oldest_unprocessed_guid"] in {"health-processing-1", "health-processing-2"}
     assert data["oldest_unprocessed_age_seconds"] is not None
     assert data["oldest_unprocessed_age_seconds"] < 24 * 60 * 60
+    assert data["last_completed_upload_at"] == "2026-01-01T01:00:00"
     assert set(data["processing_guids"]) == {"health-processing-1", "health-processing-2"}
     assert data["redis_queue_size"] == 0
     assert data["redis_in_progress_size"] == 0
