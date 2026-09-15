@@ -1,10 +1,17 @@
 import json
+from os import system
 import pytest
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from app.main import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def reset_gwas_upload_db():
+    yield
+    system("git checkout tests/test_data/gwas_upload_small.db")
 
 
 @pytest.fixture
@@ -174,6 +181,103 @@ def test_clear_gwas_dlq_exception(mock_redis_client, mocker):
     response = client.delete("/v1/internal/gwas-dlq")
 
     assert response.status_code == 500
+
+
+@pytest.fixture
+def rerun_guid(mock_redis, mock_oci_service, mock_email_service):
+    """Create a real GWAS upload record (via the upload endpoint) to rerun in tests."""
+    request_data = {
+        "reference_build": "GRCh38",
+        "email": "ae@email.com",
+        "name": "Example Study",
+        "category": "continuous",
+        "is_published": "false",
+        "doi": None,
+        "should_be_added": "false",
+        "sample_size": "23423",
+        "ancestry": "EUR",
+        "p_value_threshold": 1.5e-4,
+        "column_names": {
+            "chr": "CHR",
+            "bp": "BP",
+            "ea": "EA",
+            "oa": "OA",
+            "beta": "BETA",
+            "se": "SE",
+            "p": "P",
+            "eaf": "EAF",
+            "rsid": "RSID",
+        },
+    }
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
+        response = client.post(
+            "/v1/gwas/",
+            data={"request": json.dumps(request_data)},
+            files={"file": f},
+        )
+    assert response.status_code == 200
+    return response.json()["guid"]
+
+
+def test_rerun_gwas_success(rerun_guid, mock_redis_client, mock_oci_service, mocker):
+    """Test that rerun-gwas reads file_location from study_metadata.json and re-queues the correct file."""
+    guid = rerun_guid
+    mocker.patch("app.api.v1.endpoints.internal.RedisClient", return_value=mock_redis_client)
+    mocker.patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service)
+
+    study_metadata = {
+        "file_location": f"/oradiskvdb1/data/gwas_upload/{guid}//metal_european_mothers_hdp.tsv.gz",
+    }
+    mocker.patch.object(mock_oci_service, "get_file", return_value=json.dumps(study_metadata).encode())
+
+    response = client.post(f"/v1/internal/gwas/{guid}/rerun")
+
+    assert response.status_code == 200
+    assert f"Successfully rerun GWAS upload with GUID {guid}" in response.json()["message"]
+
+    mock_oci_service.get_file.assert_called_once_with(f"gwas_upload/{guid}/study_metadata.json")
+
+    mock_redis_client.redis.lpush.assert_called_once()
+    queue_name, message = mock_redis_client.redis.lpush.call_args[0]
+    assert queue_name == mock_redis_client.process_gwas_queue
+
+    queued_message = json.loads(message)
+    assert queued_message["file_location"] == f"gwas_upload/{guid}/metal_european_mothers_hdp.tsv.gz"
+    assert queued_message["metadata"]["guid"] == guid
+
+
+def test_rerun_gwas_not_found(mock_oci_service, mocker):
+    """Test rerunning a GWAS that doesn't exist."""
+    mocker.patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service)
+
+    response = client.post("/v1/internal/gwas/nonexistent-guid/rerun")
+
+    assert response.status_code == 404
+    assert "GWAS not found" in response.json()["detail"]
+
+
+def test_rerun_gwas_missing_study_metadata(rerun_guid, mock_oci_service, mocker):
+    """Test rerun when study_metadata.json can't be found in the bucket."""
+    guid = rerun_guid
+    mocker.patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service)
+    mocker.patch.object(mock_oci_service, "get_file", side_effect=Exception("Not found"))
+
+    response = client.post(f"/v1/internal/gwas/{guid}/rerun")
+
+    assert response.status_code == 404
+    assert "study_metadata.json not found" in response.json()["detail"]
+
+
+def test_rerun_gwas_missing_file_location(rerun_guid, mock_oci_service, mocker):
+    """Test rerun when study_metadata.json has no file_location field."""
+    guid = rerun_guid
+    mocker.patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service)
+    mocker.patch.object(mock_oci_service, "get_file", return_value=json.dumps({}).encode())
+
+    response = client.post(f"/v1/internal/gwas/{guid}/rerun")
+
+    assert response.status_code == 404
+    assert "No file_location found" in response.json()["detail"]
 
 
 def test_delete_gwas_success(mock_oci_service, mocker):
