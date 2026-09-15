@@ -194,13 +194,26 @@ async def rerun_gwas(request: Request, guid: str = Path(..., description="GUID o
         try:
             gwas_db = GwasDBClient()
             redis_client = RedisClient()
+            oci_service = OCIService()
 
             gwas = gwas_db.get_gwas_by_guid(guid)
             if gwas is None:
                 raise HTTPException(status_code=404, detail="GWAS not found")
 
             gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-            redis_client.add_to_queue(redis_client.process_gwas_queue, json.loads(gwas.upload_metadata))
+
+            prefix = f"gwas_upload/{guid}/"
+            list_objects_response = oci_service.object_storage_client.list_objects(
+                namespace_name=oci_service.namespace,
+                bucket_name=oci_service.bucket_name,
+                prefix=prefix,
+            )
+            objects = list_objects_response.data.objects
+            if not objects:
+                raise HTTPException(status_code=404, detail=f"No uploaded file found for GWAS with GUID {guid}")
+
+            file_location = objects[0].name
+            redis_client.add_gwas_to_queue(file_location, json.loads(gwas.upload_metadata))
 
             return {"message": f"Successfully rerun GWAS upload with GUID {guid}"}
         except HTTPException as e:
