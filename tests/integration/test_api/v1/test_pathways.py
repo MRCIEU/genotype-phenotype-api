@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import PathwayEnrichmentResponse
+from app.models.schemas import PathwayEnrichmentResponse, PathwayRawDataResponse
 
 client = TestClient(app)
 
@@ -8,6 +8,11 @@ client = TestClient(app)
 def enrich(genes, **kwargs):
     payload = {"genes": genes, **kwargs}
     return client.post("/v1/pathways/enrichment", json=payload)
+
+
+def raw(source=None):
+    params = {"source": source} if source else {}
+    return client.get("/v1/pathways/raw", params=params)
 
 
 def test_pathway_enrichment_basic():
@@ -280,3 +285,49 @@ def test_pathway_enrichment_large_gene_list():
     assert response.status_code == 200
     result = PathwayEnrichmentResponse(**response.json())
     assert result.input_gene_count == len(genes)
+
+
+def test_pathway_raw_data_all_sources():
+    response = raw()
+    assert response.status_code == 200
+    result = PathwayRawDataResponse(**response.json())
+    assert result.term_count == len(result.terms)
+    assert result.term_count > 0
+    sources_seen = {t.source for t in result.terms}
+    assert sources_seen.issubset({"Reactome", "KEGG", "HP"})
+    for t in result.terms:
+        assert t.pathway_size > 0
+        assert t.background_size > 0
+        assert isinstance(t.gene_ids, list)
+
+
+def test_pathway_raw_data_source_filter():
+    response = raw("KEGG")
+    assert response.status_code == 200
+    result = PathwayRawDataResponse(**response.json())
+    assert result.term_count > 0
+    for t in result.terms:
+        assert t.source == "KEGG"
+
+
+def test_pathway_raw_data_matches_enrichment_gene_membership():
+    """The gene_ids behind an /enrichment result must be a subset of that term's full
+    membership in /raw - proves the two endpoints are reading consistent data."""
+    enrichment_response = enrich([700, 1967, 2275], source="KEGG")
+    assert enrichment_response.status_code == 200
+    enrichment_result = PathwayEnrichmentResponse(**enrichment_response.json())
+    assert len(enrichment_result.results) > 0
+
+    raw_response = raw("KEGG")
+    raw_result = PathwayRawDataResponse(**raw_response.json())
+    terms_by_id = {t.term_id: t for t in raw_result.terms}
+
+    for r in enrichment_result.results:
+        assert r.term_id in terms_by_id
+        assert set(r.gene_ids).issubset(set(terms_by_id[r.term_id].gene_ids))
+
+
+def test_pathway_raw_data_invalid_source():
+    response = raw("NotASource")
+    assert response.status_code == 400
+    assert "Invalid source" in response.json()["detail"]

@@ -4,7 +4,7 @@ from scipy.stats import fisher_exact
 
 from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
-from app.models.schemas import PathwayEnrichmentResult
+from app.models.schemas import PathwayEnrichmentResult, PathwayTerm
 
 logger = get_logger(__name__)
 
@@ -127,6 +127,28 @@ class PathwayService:
         all_results = self._attach_pathway_gene_ids(all_results)
         all_results.sort(key=lambda r: (r.fdr, r.source, r.term_id))
         return all_results, len(matched_gene_ids), total_terms_tested
+
+    def get_pathway_raw_data(self, source: Optional[str] = None) -> list[PathwayTerm]:
+        """Raw term sizes + full gene membership for a source (or all sources), for
+        client-side continuous/rank-based enrichment (vs. the hard-cutoff Fisher's test above)."""
+        sizes = self.studies_db.get_all_pathway_sizes(source)
+        mappings = self.studies_db.get_all_pathway_mappings(source)
+
+        genes_by_term: dict[tuple[str, str], list[int]] = {}
+        for gene_id, term_id, src in mappings:
+            genes_by_term.setdefault((src, term_id), []).append(gene_id)
+
+        return [
+            PathwayTerm(
+                term_id=term_id,
+                source=src,
+                description=description,
+                pathway_size=pathway_size,
+                background_size=background_size,
+                gene_ids=sorted(genes_by_term.get((src, term_id), [])),
+            )
+            for term_id, src, description, pathway_size, background_size in sizes
+        ]
 
     def _attach_pathway_gene_ids(self, results: list[PathwayEnrichmentResult]) -> list[PathwayEnrichmentResult]:
         if not results:

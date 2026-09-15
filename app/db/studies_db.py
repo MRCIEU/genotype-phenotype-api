@@ -768,6 +768,16 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, [term_ids, source]).fetchall()
 
     @log_performance
+    def get_all_pathway_mappings(self, source: str = None):
+        query = "SELECT gene_id, term_id, source FROM pathway_mappings"
+        params = []
+        if source:
+            query += " WHERE source = ?"
+            params.append(source)
+        query += " ORDER BY source, term_id, gene_id"
+        return self.studies_conn.execute(query, params).fetchall()
+
+    @log_performance
     def get_variant_pleiotropy_scores(self):
         query = """SELECT
             variant_pleiotropy.variant_id, variant_annotations.display_snp, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
