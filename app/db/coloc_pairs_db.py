@@ -2,7 +2,6 @@ from app.config import get_settings
 from functools import lru_cache
 from typing import List
 import duckdb
-import json
 from app.logging_config import get_logger
 from app.db.utils import log_performance
 
