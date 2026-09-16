@@ -3,6 +3,7 @@ set -e
 
 sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prune --detach=true
 
+sleep 10
 echo "Waiting for API to become healthy"
 for i in $(seq 1 100); do
     if curl -sf http://127.0.0.1:8000/health > /dev/null; then

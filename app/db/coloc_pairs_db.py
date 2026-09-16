@@ -13,7 +13,7 @@ settings = get_settings()
 @lru_cache()
 def get_coloc_pairs_db_connection():
     connection = duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
-    connection.execute("PRAGMA memory_limit='4GB'")
+    connection.execute("PRAGMA memory_limit='2GB'")
     return connection
 
 
@@ -119,56 +119,3 @@ class ColocPairsDBClient:
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns
-
-    @log_performance
-    def get_coloc_pairs_by_variant_ids_stream(
-        self, variant_ids: List[int], h3_threshold: float = 0.0, h4_threshold: float = 0.8, batch_size: int = 10000000
-    ):
-        """
-        Stream coloc pairs in batches to avoid memory issues with large datasets.
-
-        Args:
-            variant_ids: List of SNP IDs to query
-            batch_size: Number of rows to yield at a time
-
-        Yields:
-            JSON strings of coloc pair records
-        """
-        specific_conn = duckdb.connect(settings.COLOC_PAIRS_DB_PATH, read_only=True)
-        specific_conn.execute("PRAGMA memory_limit='4GB'")
-        if not variant_ids:
-            return
-
-        query = """
-            SELECT * FROM coloc_pairs
-            WHERE variant_id IN (SELECT * FROM UNNEST(?))
-                AND h3 >= ?
-                AND h4 >= ?
-                AND false_positive = FALSE
-            ORDER BY variant_id
-        """
-        cursor = specific_conn.execute(query, [variant_ids, h3_threshold, h4_threshold])
-        columns = [d[0] for d in cursor.description] if cursor.description else []
-
-        try:
-            yield '{"coloc_pairs": ['
-
-            first_batch = True
-            while True:
-                batch = cursor.fetchmany(batch_size)
-                if not batch:
-                    break
-
-                for row in batch:
-                    if not first_batch:
-                        yield ","
-                    else:
-                        first_batch = False
-
-                    row_dict = dict(zip(columns, row))
-                    yield json.dumps(row_dict)
-
-            yield "]}"
-        finally:
-            cursor.close()
-            specific_conn.close()
