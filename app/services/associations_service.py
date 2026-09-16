@@ -21,6 +21,15 @@ from app.models.schemas import (
 
 logger = get_logger(__name__)
 
+# Safety-net TTL so associations_full_cache entries are eligible for the Redis
+# volatile-lru eviction policy under memory pressure; not meant as freshness control
+# (data only changes on a data-update deploy, which already force-clears the cache).
+ASSOCIATIONS_FULL_CACHE_TTL_SECONDS = 90 * 24 * 60 * 60
+
+# Below this row count, recomputing associations_full is cheap enough that caching it
+# isn't worth the Redis memory.
+ASSOCIATIONS_FULL_CACHE_MIN_ROWS = 20000
+
 
 def associations_redis_cache(min_size: int = 100, expire: int = 0, prefix: str = "associations_cache"):
     """
@@ -140,7 +149,11 @@ class AssociationsService:
         result = self._get_associations_full_cached(trait_id=trait.id, cache_id=str(trait.id))
         return result["column_names"], result["rows"]
 
-    @redis_cache(prefix="associations_full_cache")
+    @redis_cache(
+        prefix="associations_full_cache",
+        expire=ASSOCIATIONS_FULL_CACHE_TTL_SECONDS,
+        should_cache=lambda result: len(result.get("rows", [])) >= ASSOCIATIONS_FULL_CACHE_MIN_ROWS,
+    )
     def _get_associations_full_cached(self, trait_id: int, cache_id: str = None):
         studies_db = StudiesDBClient()
         studies_service = StudiesService()

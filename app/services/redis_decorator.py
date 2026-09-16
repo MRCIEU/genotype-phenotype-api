@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Callable
+from typing import Any, Callable
 from functools import wraps
 import json
 import hashlib
@@ -9,7 +9,12 @@ from app.db.redis import RedisClient
 logger = get_logger(__name__)
 
 
-def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseModel = None):
+def redis_cache(
+    expire: int = 0,
+    prefix: str = "db_cache",
+    model_class: BaseModel = None,
+    should_cache: Callable[[Any], bool] = None,
+):
     """
     Redis caching decorator for database methods.
 
@@ -17,6 +22,8 @@ def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseMode
         expire: Cache expiration time in seconds (default: 0 = never expire)
         prefix: Key prefix for Redis cache keys
         model_class: Pydantic model class to cache
+        should_cache: Optional predicate run on the computed result; if provided and it
+            returns False, the result is still returned normally but not written to Redis
     """
 
     def decorator(func: Callable) -> Callable:
@@ -47,13 +54,17 @@ def redis_cache(expire: int = 0, prefix: str = "db_cache", model_class: BaseMode
 
             try:
                 result = func(self, *args, **kwargs)
-                if model_class is not None:
-                    cached_data = result.model_dump_json()
-                else:
-                    cached_data = json.dumps(result)
 
-                redis_client.set_cached_data(cache_key, cached_data, expire)
-                logger.debug(f"Set cached for {cache_key}")
+                if should_cache is None or should_cache(result):
+                    if model_class is not None:
+                        cached_data = result.model_dump_json()
+                    else:
+                        cached_data = json.dumps(result)
+
+                    redis_client.set_cached_data(cache_key, cached_data, expire)
+                    logger.debug(f"Set cached for {cache_key}")
+                else:
+                    logger.debug(f"Skipping cache write for {cache_key} - should_cache returned False")
                 return result
             except Exception as e:
                 logger.error(f"Function execution failed for {cache_key}: {e}")

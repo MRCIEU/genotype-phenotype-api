@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.services.associations_service import AssociationsService
+from app.services.associations_service import AssociationsService, ASSOCIATIONS_FULL_CACHE_MIN_ROWS
 
 client = TestClient(app)
 
@@ -58,6 +58,9 @@ def test_get_associations_full_uses_trait_id_cache(mocker):
     redis_instance = mock_redis.return_value
     redis_instance.get_cached_data.side_effect = lambda key: json.loads(stored[key]) if key in stored else None
     redis_instance.set_cached_data.side_effect = lambda key, data, expire: stored.update({key: data})
+    # Test trait's result is far smaller than the real min-rows gate; disable it here so this
+    # test can focus on the cache_id mechanics (covered separately below).
+    mocker.patch("app.services.associations_service.ASSOCIATIONS_FULL_CACHE_MIN_ROWS", 0)
 
     trait_id = 926
     service = AssociationsService()
@@ -70,3 +73,35 @@ def test_get_associations_full_uses_trait_id_cache(mocker):
     assert redis_instance.set_cached_data.call_count == 1
     assert redis_instance.get_cached_data.call_count == 2
     assert f"associations_full_cache:_get_associations_full_cached:{trait_id}" in stored
+
+
+def test_get_associations_full_skips_cache_write_for_small_result(mocker):
+    """Results below ASSOCIATIONS_FULL_CACHE_MIN_ROWS shouldn't be written to Redis."""
+    mock_redis = mocker.patch("app.services.redis_decorator.RedisClient")
+    redis_instance = mock_redis.return_value
+    redis_instance.get_cached_data.return_value = None
+
+    service = AssociationsService()
+    mocker.patch.object(
+        service, "_fetch_associations_full", return_value=(["col"], [["row"]] * (ASSOCIATIONS_FULL_CACHE_MIN_ROWS - 1))
+    )
+
+    service.get_associations_full(926)
+
+    redis_instance.set_cached_data.assert_not_called()
+
+
+def test_get_associations_full_caches_large_result(mocker):
+    """Results at/above ASSOCIATIONS_FULL_CACHE_MIN_ROWS should be written to Redis."""
+    mock_redis = mocker.patch("app.services.redis_decorator.RedisClient")
+    redis_instance = mock_redis.return_value
+    redis_instance.get_cached_data.return_value = None
+
+    service = AssociationsService()
+    mocker.patch.object(
+        service, "_fetch_associations_full", return_value=(["col"], [["row"]] * ASSOCIATIONS_FULL_CACHE_MIN_ROWS)
+    )
+
+    service.get_associations_full(926)
+
+    redis_instance.set_cached_data.assert_called_once()

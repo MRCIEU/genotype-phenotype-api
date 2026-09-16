@@ -31,6 +31,7 @@ sudo docker stack deploy -c docker-swarm.yml gpmap --resolve-image always --prun
 sudo sudo docker service update --force gpmap_api
 sudo sudo docker service update --force gpmap_gwas_upload_worker
 
+sleep 10
 echo "Waiting for API to become healthy"
 for i in $(seq 1 100); do
     if curl -sf http://127.0.0.1:8000/health > /dev/null; then
