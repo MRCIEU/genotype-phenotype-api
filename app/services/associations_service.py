@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 # Safety-net TTL so associations_full_cache entries are eligible for the Redis
 # volatile-lru eviction policy under memory pressure; not meant as freshness control
 # (data only changes on a data-update deploy, which already force-clears the cache).
-ASSOCIATIONS_FULL_CACHE_TTL_SECONDS = 90 * 24 * 60 * 60
+ASSOCIATIONS_FULL_CACHE_TTL_SECONDS = 60 * 5
 
 # Below this row count, recomputing associations_full is cheap enough that caching it
 # isn't worth the Redis memory.
