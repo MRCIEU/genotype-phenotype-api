@@ -538,16 +538,11 @@ class StudiesDBClient:
             "SELECT gene, ensembl_id, NULL AS gene_aliases FROM gene_annotations"
         ).fetchall()
 
-    @staticmethod
-    def _table_has_column(table: str, column: str) -> bool:
-        result = (
-            get_gpm_db_connection()
-            .execute(
-                "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = ? AND column_name = ?",
-                [table, column],
-            )
-            .fetchone()
-        )
+    def _table_has_column(self, table: str, column: str) -> bool:
+        result = self.studies_conn.execute(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = ? AND column_name = ?",
+            [table, column],
+        ).fetchone()
         return bool(result and result[0] > 0)
 
     @log_performance

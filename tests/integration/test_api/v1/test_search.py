@@ -33,7 +33,7 @@ def test_search_options_gene_aliases(mock_redis_cache):
     gene_terms = [term for term in search_terms.search_terms if term.type == "gene"]
     assert len(gene_terms) > 0
 
-    has_aliases = StudiesDBClient._table_has_column("gene_annotations", "gene_aliases")
+    has_aliases = StudiesDBClient()._table_has_column("gene_annotations", "gene_aliases")
 
     # One term per gene (canonical symbol), so gene type_ids are unique.
     type_ids = [term.type_id for term in gene_terms]
