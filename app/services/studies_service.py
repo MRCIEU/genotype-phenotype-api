@@ -7,7 +7,6 @@ from app.models.schemas import (
     GetGenesResponse,
     SearchTerm,
     SearchTerms,
-    Singleton,
     Study,
     StudyDataType,
     UploadColocPair,
@@ -28,7 +27,7 @@ logger = get_logger(__name__)
 studies_db_cache_prefix = "studies_db_cache"
 
 
-class StudiesService(metaclass=Singleton):
+class StudiesService:
     def __init__(self):
         self.db = StudiesDBClient()
         self.redis_client = RedisClient()
@@ -136,7 +135,11 @@ class StudiesService(metaclass=Singleton):
         merged = list(study_extractions or []) + extra
         return StudiesService.deduplicate_by_key(merged, lambda e: e.id)
 
-    @redis_cache(prefix=studies_db_cache_prefix, model_class=SearchTerms)
+    @redis_cache(
+        prefix=studies_db_cache_prefix,
+        model_class=SearchTerms,
+        should_cache=lambda result: {"gene", "trait"} <= {term.type for term in result.search_terms},
+    )
     def get_search_terms(self) -> SearchTerms:
         """
         Retrieve trait and gene names for search from DuckDB with caching.
