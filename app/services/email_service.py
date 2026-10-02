@@ -10,8 +10,7 @@ class EmailService:
     def __init__(self):
         self.from_email = settings.EMAIL_FROM
         self.footer = f"""<p>Best regards,<br>The GPMap Team</p><br />
-        <p>This email address is not monitored for replies.
-        Please contact us via the <a href='{settings.WEBSITE_URL}/contact.html'>contact form</a>,
+        <p>If you encounter any issues, you can reply to this email, contact us via the <a href='{settings.WEBSITE_URL}/contact.html'>contact form</a>,
         or file a bug report on <a href='https://github.com/MRCIEU/genotype-phenotype-api/issues'>GitHub</a>.</p><br />"""
 
         self.conf = ConnectionConfig(

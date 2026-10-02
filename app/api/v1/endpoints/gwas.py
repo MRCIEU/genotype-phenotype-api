@@ -113,24 +113,6 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
 
         redis, request_body, file_guid, file_directory, bucket_file_location = await run_sync(_validate_and_save_file)
 
-        def _check_existing():
-            db = GwasDBClient()
-            gwas = db.get_gwas_by_guid(file_guid)
-            if gwas is not None:
-                gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-                if gwas.status == GwasStatus.COMPLETED:
-                    return gwas, True
-                else:
-                    db.delete_gwas_upload(file_guid)
-            return None, False
-
-        existing_gwas, already_completed = await run_sync(_check_existing)
-        if already_completed:
-            logger.info(f"GWAS already exists: {file_guid}")
-            email_service = EmailService()
-            await email_service.send_already_uploaded_email(request_body.email, file_guid)
-            return existing_gwas
-
         request_body.guid = file_guid
         request_body.status = GwasStatus.PROCESSING
 

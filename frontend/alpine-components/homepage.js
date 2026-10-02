@@ -217,6 +217,14 @@ export default function homepage() {
                 }
             });
 
+            // Must match client_max_body_size in nginx.conf, otherwise the upload fails with an unhelpful error
+            const maxFileSizeBytes = 1.5 * 1024 * 1024 * 1024;
+            if (this.uploadMetadata.formData.file && this.uploadMetadata.formData.file.size > maxFileSizeBytes) {
+                this.uploadMetadata.validationErrors.file = true;
+                this.uploadMetadata.validationErrors.fileTooLarge = true;
+                hasErrors = true;
+            }
+
             // Check effect size fields - must have either beta/SE or OR/LB/UB
             const hasBetaSE = this.uploadMetadata.formData.beta && this.uploadMetadata.formData.se;
             const hasORCI =
@@ -323,7 +331,7 @@ export default function homepage() {
                 this.uploadMetadata.uploadSuccess = true;
                 this.uploadMetadata.guid = result.guid;
                 this.uploadMetadata.message =
-                    "Upload successful!  An email will be sent to " +
+                    "An email will be sent to " +
                     this.uploadMetadata.formData.email +
                     " once the analysis has been completed.";
             } else {

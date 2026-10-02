@@ -150,6 +150,13 @@
                     </div>
                 </div>
 
+                <!-- Loading bar for user uploads, as initTraitGraph doesn't render one for them -->
+                <div class="columns mt-0 mb-0 pb-0" x-show="userUpload && !data && !errorMessage">
+                    <div class="column is-12">
+                        <progress class="progress is-large is-info" max="100">60%</progress>
+                    </div>
+                </div>
+
                 <!-- Graph and options -->
                 <div class="columns mt-0 mb-0 pb-0" x-show="showResults">
                     <div class="column pb-0 mb-0" :class="userUpload ? 'is-12' : 'is-10'">
