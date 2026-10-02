@@ -4,8 +4,8 @@ import re
 import traceback
 import uuid
 import os
-import hashlib
 import shutil
+# import hashlib
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
@@ -87,17 +87,20 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
                         detail=f"Invalid or incomplete upload GUIDs to compare with: {', '.join(invalid_guids)}. GUIDs must exist and be completed.",
                     )
 
-            sha256_hash = hashlib.sha256()
+            # We might want to use a hash of the file contents to generate a GUID,
+            # but for now we'll just use a random UUID.
+            # sha256_hash = hashlib.sha256()
             file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             with open(file_path, "wb") as buffer:
                 while chunk := file.file.read(8192):
                     buffer.write(chunk)
-                    sha256_hash.update(chunk)
+                    # sha256_hash.update(chunk)
 
-            hash_bytes = sha256_hash.digest()[:16]
-            file_guid = str(uuid.UUID(bytes=hash_bytes))
+            # hash_bytes = sha256_hash.digest()[:16]
+            # file_guid = str(uuid.UUID(bytes=hash_bytes))
+            file_guid = str(uuid.uuid4())
 
             file_directory = os.path.join(settings.GWAS_DIR, file_guid)
             os.makedirs(file_directory, exist_ok=True)

@@ -9,6 +9,7 @@ sqlalchemy==2.0.34
 redis==5.0.0
 ruff==0.12.7
 pydantic-settings==2.7.1
+python-dotenv==1.1.0
 fastapi-cors==0.0.6
 sentry-sdk==2.24.1
 python-multipart==0.0.20

@@ -1,6 +1,14 @@
+from pathlib import Path
+from dotenv import load_dotenv
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from app.models.schemas import Singleton
+
+# Always use .env.test for pytest runs, overriding any values already loaded from .env,
+# so local dev .env files pointing at large/real db files never leak into tests.
+# Must run before any app import, since app modules read settings at import time.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env.test", override=True)
+
+from app.models.schemas import Singleton  # noqa: E402
 
 # Variant variant_id (string key in variant_data) used for coloc_pairs → study_extraction merge tests.
 proxy_variant_id_key_for_coloc_pair_merge = "5553693"

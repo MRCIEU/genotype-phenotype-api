@@ -3,11 +3,16 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 import json
-from app.models.schemas import GwasStatus, UploadTraitResponse, GwasUpload
+from app.models.schemas import GwasStatus, UploadTraitResponse, GwasUpload, convert_duckdb_to_pydantic_model
+from app.db.gwas_db import GwasDBClient
 
 client = TestClient(app)
 
 guid = None
+
+# Guid baked into update_gwas_success_payload.json from when guids were a hash of the upload file.
+# Guids are now random per upload, so swap it for the real one before sending the payload.
+PAYLOAD_GUID = "22d5cdd8-ac0b-bb58-d2c3-c342ac8ec78b"
 
 
 # Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
@@ -146,8 +151,8 @@ def test_put_gwas_not_found():
 
 
 def test_put_gwas_success(test_guid, mock_email_service):
-    with open("tests/test_data/update_gwas_success_payload.json", "rb") as update_gwas_payload:
-        update_gwas_payload = json.load(update_gwas_payload)
+    with open("tests/test_data/update_gwas_success_payload.json", "r") as update_gwas_payload:
+        update_gwas_payload = json.loads(update_gwas_payload.read().replace(PAYLOAD_GUID, test_guid))
         response = client.put(f"/v1/gwas/{test_guid}", json=update_gwas_payload)
 
     print(response.json())
@@ -226,3 +231,38 @@ def test_get_gwas_summary_stats(test_guid, mock_oci_service):
 def test_get_gwas_summary_stats_not_found():
     response = client.get("/v1/gwas/bad-guid/summary-stats")
     assert response.status_code == 404
+
+
+# Must run after test_put_gwas_success so the existing upload has results that should be left untouched
+def test_upload_gwas_same_file_creates_new_guid(
+    test_guid, mock_redis, mock_oci_service, mock_email_service, test_request_data
+):
+    db = GwasDBClient()
+    old_gwas = convert_duckdb_to_pydantic_model(GwasUpload, db.get_gwas_by_guid(test_guid))
+    assert old_gwas.status == GwasStatus.COMPLETED
+    old_associations_count = len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0])
+    old_coloc_pairs_count = len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id))
+    old_study_extractions_count = len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id))
+
+    mock_redis.lpush.reset_mock()
+    mock_email_service.send_submission_email.reset_mock()
+
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
+        response = client.post(
+            "/v1/gwas/",
+            data={"request": json.dumps(test_request_data)},
+            files={"file": f},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["guid"] != test_guid
+    assert response.json()["status"] == GwasStatus.PROCESSING.value
+    mock_redis.lpush.assert_called_once()
+    mock_email_service.send_submission_email.assert_called_once()
+
+    unchanged_gwas = convert_duckdb_to_pydantic_model(GwasUpload, db.get_gwas_by_guid(test_guid))
+    assert unchanged_gwas.id == old_gwas.id
+    assert unchanged_gwas.status == GwasStatus.COMPLETED
+    assert len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0]) == old_associations_count
+    assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)) == old_coloc_pairs_count
+    assert len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id)) == old_study_extractions_count
