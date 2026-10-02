@@ -4,8 +4,8 @@ import re
 import traceback
 import uuid
 import os
-import hashlib
 import shutil
+# import hashlib
 
 from app.config import get_settings
 from app.db.studies_db import StudiesDBClient
@@ -87,17 +87,20 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
                         detail=f"Invalid or incomplete upload GUIDs to compare with: {', '.join(invalid_guids)}. GUIDs must exist and be completed.",
                     )
 
-            sha256_hash = hashlib.sha256()
+            # We might want to use a hash of the file contents to generate a GUID,
+            # but for now we'll just use a random UUID.
+            # sha256_hash = hashlib.sha256()
             file_path = os.path.join(settings.GWAS_DIR, f"{file.filename}")
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             with open(file_path, "wb") as buffer:
                 while chunk := file.file.read(8192):
                     buffer.write(chunk)
-                    sha256_hash.update(chunk)
+                    # sha256_hash.update(chunk)
 
-            hash_bytes = sha256_hash.digest()[:16]
-            file_guid = str(uuid.UUID(bytes=hash_bytes))
+            # hash_bytes = sha256_hash.digest()[:16]
+            # file_guid = str(uuid.UUID(bytes=hash_bytes))
+            file_guid = str(uuid.uuid4())
 
             file_directory = os.path.join(settings.GWAS_DIR, file_guid)
             os.makedirs(file_directory, exist_ok=True)
@@ -112,24 +115,6 @@ async def upload_gwas(request: Request, request_body_str: str = Form(..., alias=
             return redis, request_body, file_guid, file_directory, bucket_file_location
 
         redis, request_body, file_guid, file_directory, bucket_file_location = await run_sync(_validate_and_save_file)
-
-        def _check_existing():
-            db = GwasDBClient()
-            gwas = db.get_gwas_by_guid(file_guid)
-            if gwas is not None:
-                gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
-                if gwas.status == GwasStatus.COMPLETED:
-                    return gwas, True
-                else:
-                    db.delete_gwas_upload(file_guid)
-            return None, False
-
-        existing_gwas, already_completed = await run_sync(_check_existing)
-        if already_completed:
-            logger.info(f"GWAS already exists: {file_guid}")
-            email_service = EmailService()
-            await email_service.send_already_uploaded_email(request_body.email, file_guid)
-            return existing_gwas
 
         request_body.guid = file_guid
         request_body.status = GwasStatus.PROCESSING
