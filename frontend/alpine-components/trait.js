@@ -46,6 +46,10 @@ export default function trait() {
         errorMessage: null,
         downloadClicked: false,
         rPackageModalOpen: false,
+        deleteModalOpen: false,
+        deleteEmail: "",
+        deleteError: null,
+        deleteInProgress: false,
 
         async loadData() {
             let traitId = new URLSearchParams(location.search).get("id");
@@ -304,6 +308,42 @@ export default function trait() {
 
         closeRPackageModal() {
             this.rPackageModalOpen = false;
+        },
+
+        openDeleteModal() {
+            this.deleteEmail = "";
+            this.deleteError = null;
+            this.deleteModalOpen = true;
+        },
+
+        closeDeleteModal() {
+            this.deleteModalOpen = false;
+            this.deleteEmail = "";
+            this.deleteError = null;
+        },
+
+        async deleteGwas() {
+            const traitId = new URLSearchParams(location.search).get("id");
+            this.deleteInProgress = true;
+            this.deleteError = null;
+            try {
+                const response = await fetch(constants.apiUrl + "/gwas/" + traitId, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: this.deleteEmail }),
+                });
+                if (!response.ok) {
+                    const data = this.tryParseJson(await response.text());
+                    this.deleteError = (data && data.detail) || `Failed to delete GWAS: ${response.status}`;
+                    return;
+                }
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Error deleting GWAS:", error);
+                this.deleteError = "Error deleting GWAS. Please try again.";
+            } finally {
+                this.deleteInProgress = false;
+            }
         },
 
         async downloadDataOnly() {

@@ -502,6 +502,10 @@ class ProcessGwasRequest(BaseModel):
         return json.loads(data)
 
 
+class DeleteGwasRequest(BaseModel):
+    email: str
+
+
 class UpdateGwasRequest(BaseModel):
     success: bool
     failure_reason: Optional[str] = None

@@ -310,6 +310,14 @@
                                     </div>
                                 </div>
                             </div>
+                            <button
+                                x-show="userUpload"
+                                class="button is-danger is-small ml-2"
+                                :disabled="!data || data.trait.status === 'processing' || deleteInProgress"
+                                @click="openDeleteModal()"
+                            >
+                                <span>Delete GWAS</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -320,6 +328,56 @@
                     :snippet="`gpmapr::trait('${new URLSearchParams(location.search).get('id')}')`"
                     @close="closeRPackageModal()"
                 ></r-package-modal>
+
+                <!-- Delete GWAS Modal -->
+                <div x-show="deleteModalOpen" x-cloak class="modal" :class="{ 'is-active': deleteModalOpen }">
+                    <div class="modal-background" @click="closeDeleteModal()"></div>
+                    <div class="modal-content">
+                        <div class="box" style="position: relative">
+                            <button
+                                class="delete"
+                                style="position: absolute; top: 10px; right: 10px"
+                                @click="closeDeleteModal()"
+                                aria-label="close"
+                            ></button>
+                            <h3 class="title is-4">Delete GWAS</h3>
+                            <p>
+                                Are you sure you want to delete this GWAS? This will permanently delete the uploaded
+                                file and all of its results, and cannot be undone.
+                            </p>
+                            <div class="field mt-4">
+                                <label class="label">Confirm the email address used for this upload</label>
+                                <div class="control">
+                                    <input
+                                        class="input"
+                                        type="email"
+                                        placeholder="Email"
+                                        x-model="deleteEmail"
+                                        @keyup.enter="deleteEmail && !deleteInProgress && deleteGwas()"
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                x-show="deleteError"
+                                class="notification is-danger is-light"
+                                x-text="deleteError"
+                            ></div>
+                            <div class="buttons mt-4">
+                                <button class="button" @click="closeDeleteModal()" :disabled="deleteInProgress">
+                                    Cancel
+                                </button>
+                                <button
+                                    class="button is-danger"
+                                    :class="{ 'is-loading': deleteInProgress }"
+                                    :disabled="!deleteEmail || deleteInProgress"
+                                    @click="deleteGwas()"
+                                >
+                                    Delete GWAS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Data tables -->
                 <div class="columns mt-0 mb-0 is-centered" x-show="showResults">

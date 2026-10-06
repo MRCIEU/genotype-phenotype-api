@@ -266,3 +266,52 @@ def test_upload_gwas_same_file_creates_new_guid(
     assert len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0]) == old_associations_count
     assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)) == old_coloc_pairs_count
     assert len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id)) == old_study_extractions_count
+
+
+def test_delete_gwas_not_found(test_request_data):
+    response = client.request("DELETE", "/v1/gwas/bad-guid", json={"email": test_request_data["email"]})
+    assert response.status_code == 404
+
+
+def test_delete_gwas_wrong_email(test_guid):
+    response = client.request("DELETE", f"/v1/gwas/{test_guid}", json={"email": "someone.else@email.com"})
+
+    assert response.status_code == 403
+    assert GwasDBClient().get_gwas_by_guid(test_guid) is not None
+
+
+def test_delete_gwas_still_processing(test_request_data):
+    with open("tests/test_data/test_upload.tsv.gz", "rb") as f:
+        upload_response = client.post(
+            "/v1/gwas/",
+            data={"request": json.dumps(test_request_data)},
+            files={"file": f},
+        )
+    processing_guid = upload_response.json()["guid"]
+    assert upload_response.json()["status"] == GwasStatus.PROCESSING.value
+
+    response = client.request("DELETE", f"/v1/gwas/{processing_guid}", json={"email": test_request_data["email"]})
+
+    assert response.status_code == 409
+    assert GwasDBClient().get_gwas_by_guid(processing_guid) is not None
+
+
+# Must run last, since it deletes the shared test_guid upload
+def test_delete_gwas_success(test_guid, mock_redis, mock_oci_service, test_request_data):
+    db = GwasDBClient()
+    old_gwas = convert_duckdb_to_pydantic_model(GwasUpload, db.get_gwas_by_guid(test_guid))
+    assert old_gwas.status == GwasStatus.COMPLETED
+    mock_redis.lpush.reset_mock()
+    mock_oci_service.delete_prefix.reset_mock()
+
+    response = client.request(
+        "DELETE", f"/v1/gwas/{test_guid}", json={"email": f"  {test_request_data['email'].upper()} "}
+    )
+
+    assert response.status_code == 200
+    assert client.get(f"/v1/gwas/{test_guid}").status_code == 404
+    mock_oci_service.delete_prefix.assert_called_once_with(f"gwas_upload/{test_guid}/")
+    assert [call.args[0] for call in mock_redis.lpush.call_args_list] == ["delete_gwas"]
+    assert len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0]) == 0
+    assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)) == 0
+    assert len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id)) == 0

@@ -1,4 +1,9 @@
+import os
+import shutil
+from app.config import get_settings
 from app.db.gwas_db import GwasDBClient
+from app.db.redis import RedisClient
+from app.services.oci_service import OCIService
 from app.models.schemas import (
     GwasUpload,
     UpdateGwasRequest,
@@ -16,6 +21,7 @@ from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 class GwasUploadService:
@@ -249,3 +255,17 @@ class GwasUploadService:
         updated_gwas = convert_duckdb_to_pydantic_model(GwasUpload, updated_gwas)
 
         return updated_gwas
+
+    def delete_gwas_upload(self, guid: str):
+        if os.path.exists(f"{settings.GWAS_DIR}/{guid}/"):
+            shutil.rmtree(f"{settings.GWAS_DIR}/{guid}/")
+
+        oci_service = OCIService()
+        oci_service.delete_prefix(f"gwas_upload/{guid}/")
+
+        # The pipeline worker consumes the delete queue and removes the guid's files from the upload server
+        redis_client = RedisClient()
+        redis_client.add_delete_gwas_to_queue(guid)
+        redis_client.remove_from_queue(redis_client.process_gwas_queue, guid)
+
+        self.gwas_upload_db.delete_gwas_upload(guid)

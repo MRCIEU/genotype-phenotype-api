@@ -184,5 +184,6 @@ def mock_oci_service():
         patch("app.api.v1.endpoints.gwas.OCIService", return_value=mock_oci_service_instance),
         patch("app.services.oci_service.OCIService", return_value=mock_oci_service_instance),
         patch("app.services.summary_stat_service.OCIService", return_value=mock_oci_service_instance),
+        patch("app.services.gwas_upload_service.OCIService", return_value=mock_oci_service_instance),
     ):
         yield mock_oci_service_instance
