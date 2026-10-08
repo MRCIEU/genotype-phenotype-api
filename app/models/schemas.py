@@ -189,6 +189,17 @@ class BasicTraitResponse(BaseModel):
         return VariantType[v].value if enum_has_member(VariantType, v) else v
 
 
+class TraitDuplicate(BaseModel):
+    trait_id: int
+    trait_name: Optional[str] = None
+    parent_trait_id: int
+    parent_trait_name: Optional[str] = None
+
+
+class GetTraitDuplicatesResponse(BaseModel):
+    duplicates: List[TraitDuplicate]
+
+
 class GetTraitsResponse(BaseModel):
     traits: List[BasicTraitResponse | TraitResponse | Trait]
     coloc_groups: Optional[List[ColocGroup]] = None

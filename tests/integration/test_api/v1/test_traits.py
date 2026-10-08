@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.models.schemas import TraitResponse, GetTraitsResponse
+from app.models.schemas import TraitResponse, GetTraitsResponse, GetTraitDuplicatesResponse
 
 client = TestClient(app)
 
@@ -22,6 +22,37 @@ def test_get_traits():
         assert trait.num_coloc_groups is not None
         assert trait.num_coloc_studies is not None
         assert trait.num_rare_results is not None
+
+
+def test_get_trait_duplicates():
+    response = client.get("/v1/traits/duplicates")
+    assert response.status_code == 200
+
+    duplicates = GetTraitDuplicatesResponse(**response.json()).duplicates
+    assert len(duplicates) > 0
+    for duplicate in duplicates:
+        assert duplicate.parent_trait_id is not None
+        assert duplicate.trait_id != duplicate.parent_trait_id
+
+    duplicates_by_trait_id = {duplicate.trait_id: duplicate for duplicate in duplicates}
+    haematocrit = duplicates_by_trait_id[4760]
+    assert haematocrit.trait_name == "Haematocrit percentage"
+    assert haematocrit.parent_trait_id == 919
+    assert haematocrit.parent_trait_name == "Hematocrit"
+
+    haemoglobin_duplicate_ids = {d.trait_id for d in duplicates if d.parent_trait_id == 920}
+    assert haemoglobin_duplicate_ids == {931, 1636, 2584, 4759}
+
+
+def test_get_trait_duplicates_excludes_non_duplicated_traits():
+    response = client.get("/v1/traits/duplicates")
+    assert response.status_code == 200
+
+    duplicate_trait_ids = {duplicate["trait_id"] for duplicate in response.json()["duplicates"]}
+    # Parent traits (and unrelated traits) have no duplicate_of, so must not be listed as duplicates
+    assert 919 not in duplicate_trait_ids
+    assert 920 not in duplicate_trait_ids
+    assert 5020 not in duplicate_trait_ids
 
 
 def test_get_trait_by_id():

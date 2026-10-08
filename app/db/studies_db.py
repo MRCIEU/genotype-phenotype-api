@@ -82,6 +82,19 @@ class StudiesDBClient:
         return self.studies_conn.execute(query, [trait_id]).fetchone()
 
     @log_performance
+    def get_trait_duplicates(self):
+        query = """
+            SELECT trait_duplicates.trait_id, traits.trait_name,
+                trait_duplicates.duplicate_of, parent_traits.trait_name
+            FROM trait_duplicates
+            LEFT JOIN traits ON traits.id = trait_duplicates.trait_id
+            LEFT JOIN traits AS parent_traits ON parent_traits.id = trait_duplicates.duplicate_of
+            WHERE trait_duplicates.duplicate_of IS NOT NULL
+            ORDER BY trait_duplicates.duplicate_of, trait_duplicates.trait_id
+        """
+        return self.studies_conn.execute(query).fetchall()
+
+    @log_performance
     def get_study_sources(self):
         query = "SELECT * FROM study_sources"
         return self.studies_conn.execute(query).fetchall()
