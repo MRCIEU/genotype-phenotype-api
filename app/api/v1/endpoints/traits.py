@@ -11,7 +11,6 @@ from app.models.schemas import (
     ExtendedStudyExtraction,
     TraitResponse,
     Trait,
-    TraitDuplicate,
     VariantType,
     convert_duckdb_to_pydantic_model,
 )
@@ -172,10 +171,8 @@ async def get_traits(
 async def get_trait_duplicates(request: Request) -> GetTraitDuplicatesResponse:
     def _run():
         try:
-            studies_db = StudiesDBClient()
-            duplicates = studies_db.get_trait_duplicates()
-            duplicates = convert_duckdb_to_pydantic_model(TraitDuplicate, duplicates)
-            return GetTraitDuplicatesResponse(duplicates=duplicates)
+            studies_service = StudiesService()
+            return studies_service.get_trait_duplicates()
         except HTTPException as e:
             raise e
         except Exception as e:

@@ -55,6 +55,29 @@ def test_get_trait_duplicates_excludes_non_duplicated_traits():
     assert 5020 not in duplicate_trait_ids
 
 
+def test_get_trait_duplicates_writes_to_cache(mock_redis_cache):
+    response = client.get("/v1/traits/duplicates")
+    assert response.status_code == 200
+
+    mock_redis_cache.set_cached_data.assert_called_once()
+    cache_key, cached_data, expire = mock_redis_cache.set_cached_data.call_args[0]
+    assert cache_key == "studies_db_cache:get_trait_duplicates"
+    assert GetTraitDuplicatesResponse.model_validate_json(cached_data).model_dump() == response.json()
+    assert expire == 0
+
+
+def test_get_trait_duplicates_returns_cached_response(mock_redis_cache, mocker):
+    cached = {"duplicates": [{"trait_id": 1, "trait_name": "a", "parent_trait_id": 2, "parent_trait_name": "b"}]}
+    mock_redis_cache.get_cached_data.return_value = cached
+    db_query = mocker.patch("app.db.studies_db.StudiesDBClient.get_trait_duplicates")
+
+    response = client.get("/v1/traits/duplicates")
+
+    assert response.status_code == 200
+    assert response.json() == cached
+    db_query.assert_not_called()
+
+
 def test_get_trait_by_id():
     trait_id = 5020
     response = client.get(f"/v1/traits/{trait_id}")
