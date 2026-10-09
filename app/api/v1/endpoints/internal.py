@@ -1,5 +1,4 @@
 import traceback
-import shutil
 from fastapi import APIRouter, HTTPException, Request, Path
 import json
 import os
@@ -12,6 +11,7 @@ from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.studies_service import StudiesService
 from app.services.associations_service import AssociationsService
+from app.services.gwas_upload_service import GwasUploadService
 from app.db.redis import RedisClient
 from app.db.utils import run_sync
 
@@ -281,17 +281,7 @@ async def delete_gwas(request: Request, guid: str = Path(..., description="GUID 
 
     def _run():
         try:
-            oci_service = OCIService()
-            gwas_db = GwasDBClient()
-            redis_client = RedisClient()
-
-            if os.path.exists(f"{settings.GWAS_DIR}/{guid}/"):
-                shutil.rmtree(f"{settings.GWAS_DIR}/{guid}/")
-
-            oci_service.delete_prefix(f"gwas_upload/{guid}/")
-            redis_client.add_delete_gwas_to_queue(guid)
-            redis_client.remove_from_queue(redis_client.process_gwas_queue, guid)
-            gwas_db.delete_gwas_upload(guid)
+            GwasUploadService().delete_gwas_upload(guid)
 
             return {"message": f"Successfully deleted GWAS upload with GUID {guid} and all associated data"}
         except HTTPException as e:

@@ -2,6 +2,7 @@ from app.models.schemas import (
     BasicTraitResponse,
     ExtendedGene,
     ExtendedStudyExtraction,
+    GetTraitDuplicatesResponse,
     GetTraitsResponse,
     GPMapMetadata,
     GetGenesResponse,
@@ -9,6 +10,7 @@ from app.models.schemas import (
     SearchTerms,
     Study,
     StudyDataType,
+    TraitDuplicate,
     UploadColocPair,
     VariantType,
     convert_duckdb_to_pydantic_model,
@@ -385,6 +387,12 @@ class StudiesService:
             num_coloc_groups=coloc_groups,
             num_causal_variants=unique_snps,
         )
+
+    @redis_cache(prefix=studies_db_cache_prefix, model_class=GetTraitDuplicatesResponse)
+    def get_trait_duplicates(self) -> GetTraitDuplicatesResponse:
+        duplicates = self.db.get_trait_duplicates()
+        duplicates = convert_duckdb_to_pydantic_model(TraitDuplicate, duplicates)
+        return GetTraitDuplicatesResponse(duplicates=duplicates)
 
     def clear_cache(self):
         """Clear studies Redis cache entries (use with caution)"""

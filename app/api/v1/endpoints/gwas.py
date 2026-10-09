@@ -14,6 +14,7 @@ from app.db.redis import RedisClient
 from app.logging_config import get_logger, time_endpoint
 from app.services.email_service import EmailService
 from app.models.schemas import (
+    DeleteGwasRequest,
     ExtendedStudyExtraction,
     ExtendedUploadColocGroup,
     GwasUpload,
@@ -195,6 +196,46 @@ async def update_gwas(
         error_traceback = traceback.format_exc()
         logger.error("Error: {error}\n{traceback}", error=str(e), traceback=error_traceback)
         raise HTTPException(status_code=500, detail=f"{str(e)}\n\n{error_traceback}")
+
+
+@router.delete(
+    "/{guid}",
+    response_model=dict,
+    summary="Delete a GWAS upload",
+    description=(
+        "Permanently deletes a GWAS upload and all of its results and files. "
+        "Requires the email address used for the upload. Uploads that are still processing cannot be deleted."
+    ),
+)
+@time_endpoint
+@limiter.limit(DEFAULT_RATE_LIMIT)
+async def delete_gwas(request: Request, guid: str, delete_gwas_request: DeleteGwasRequest):
+    def _run():
+        try:
+            gwas = GwasDBClient().get_gwas_by_guid(guid)
+            if gwas is None:
+                raise HTTPException(status_code=404, detail=f"Uploaded GWAS with GUID {guid} not found")
+            gwas = convert_duckdb_to_pydantic_model(GwasUpload, gwas)
+
+            if gwas.email.strip().lower() != delete_gwas_request.email.strip().lower():
+                raise HTTPException(status_code=403, detail="Email does not match the one used for this upload")
+
+            if gwas.status == GwasStatus.PROCESSING:
+                raise HTTPException(
+                    status_code=409, detail="This upload is still processing and can't be deleted until it finishes"
+                )
+
+            GwasUploadService().delete_gwas_upload(guid)
+            logger.info(f"Deleted GWAS upload with GUID {guid}")
+
+            return {"message": f"Successfully deleted GWAS upload with GUID {guid}"}
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return await run_sync(_run)
 
 
 @router.get(

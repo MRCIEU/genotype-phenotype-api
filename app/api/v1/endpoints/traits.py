@@ -4,6 +4,7 @@ from app.services.coloc_pairs_service import ColocPairsService
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     ColocGroup,
+    GetTraitDuplicatesResponse,
     GetTraitsResponse,
     RareResult,
     Study,
@@ -154,6 +155,29 @@ async def get_traits(
         except Exception as e:
             logger.error(f"Error in get_traits: {e}\n{traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+    return await run_sync(_run)
+
+
+# Must be registered before /{trait_id}, otherwise "duplicates" is treated as a trait id
+@router.get(
+    "/duplicates",
+    response_model=GetTraitDuplicatesResponse,
+    summary="List duplicated traits",
+    description="Returns every trait that has been marked as a duplicate, along with the parent trait it duplicates.",
+)
+@time_endpoint
+@limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
+async def get_trait_duplicates(request: Request) -> GetTraitDuplicatesResponse:
+    def _run():
+        try:
+            studies_service = StudiesService()
+            return studies_service.get_trait_duplicates()
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Error in get_trait_duplicates: {e}\n{traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
 
     return await run_sync(_run)
 

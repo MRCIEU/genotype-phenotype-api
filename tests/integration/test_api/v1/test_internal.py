@@ -280,11 +280,9 @@ def test_rerun_gwas_missing_file_location(rerun_guid, mock_oci_service, mocker):
     assert "No file_location found" in response.json()["detail"]
 
 
-def test_delete_gwas_success(mock_oci_service, mocker):
+def test_delete_gwas_success(mock_oci_service):
     """Test successfully deleting a GWAS upload."""
     guid = "test-guid-123"
-
-    mocker.patch("app.api.v1.endpoints.internal.OCIService", return_value=mock_oci_service)
 
     response = client.delete(f"/v1/internal/gwas/{guid}")
 
