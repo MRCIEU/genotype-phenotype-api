@@ -106,7 +106,7 @@
 devtools::install_github('MRCIEU/gpmapr')
 
 # Search for traits, genes, or variants
-gpmapr::search_gpmapr('Haemoglobin')
+gpmapr::search_gpmap('Haemoglobin')
 
 # Retrieve high-resolution data for a specific target
 gpmapr::gene('TREM2')
@@ -169,7 +169,9 @@ gpmapr::upload_gwas(file = 'my_gwas.tsv.gz', name = 'Discovery Study', ...)</cod
                                 and gene level. The first is the number of distinct trait categories, and the second is
                                 the number of distinct protein coding genes, that fall in colocalization groups tagged
                                 by the variant (variant level) or containing gene-specific QTLs (gene level). Rare
-                                variant results are not included in the calculation.
+                                variant results are not included in the calculation. Both scores are calculated for cis
+                                results only and for cis and trans results combined, each using either genome-wide
+                                significant (5e-8) results or all results.
                             </li>
                             <li>
                                 <b>Coverage</b>: dense vs. sparse. Summary statistics that only published results of

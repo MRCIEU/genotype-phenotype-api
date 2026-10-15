@@ -2,12 +2,16 @@ import io
 import zipfile
 from fastapi.testclient import TestClient
 from app.main import app
+from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
     ExtendedColocGroup,
+    ExtendedStudyExtraction,
     Variant,
     VariantResponse,
     GetVariantsResponse,
+    convert_duckdb_to_pydantic_model,
 )
+from app.services.summary_stat_service import SummaryStatService
 
 
 client = TestClient(app)
@@ -91,6 +95,14 @@ def test_get_variants_by_grange(variants_in_grange):
                 "associations",
                 "distinct_trait_categories",
                 "distinct_protein_coding_genes",
+                "distinct_trait_categories_cis_gws",
+                "distinct_trait_categories_cis_all",
+                "distinct_trait_categories_cis_trans_gws",
+                "distinct_trait_categories_cis_trans_all",
+                "distinct_protein_coding_genes_cis_gws",
+                "distinct_protein_coding_genes_cis_all",
+                "distinct_protein_coding_genes_cis_trans_gws",
+                "distinct_protein_coding_genes_cis_trans_all",
             ]
             if field not in optional_fields:
                 assert getattr(variant_model, field) is not None, f"{field} should not be None"
@@ -220,3 +232,39 @@ def test_get_variant_summary_stats(variants_in_studies_db, mock_oci_service):
         assert len(namelist) == variants_in_studies_db[variant_ids[0]]["num_studies"]
         file_content = zf.read(namelist[0])
         assert file_content
+
+
+def test_get_study_summary_stats_uses_file_for_rare_variant_studies(variants_in_studies_db, mock_oci_service):
+    mock_oci_service.get_file.reset_mock()
+    variant_id = int(list(variants_in_studies_db.keys())[0])
+    study_extractions = StudiesDBClient().get_study_extractions_for_variant(variant_id)
+    common_extraction = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, study_extractions)[0]
+
+    # studies_small has a rare exome study (54929) but none of its study extractions, so build one
+    rare_study_id = 54929
+    rare_extraction = common_extraction.model_copy(
+        update={
+            "id": -1,
+            "study_id": rare_study_id,
+            "file": "study/ukb-wes-az-00008986/rare.tsv.gz",
+            "file_with_lbfs": None,
+        }
+    )
+    common_extraction_without_file = common_extraction.model_copy(
+        update={"id": -2, "study_id": -2, "file_with_lbfs": None}
+    )
+
+    zip_buffer = SummaryStatService().get_study_summary_stats(
+        [common_extraction, rare_extraction, common_extraction_without_file]
+    )
+
+    requested_object_names = [call.args[0] for call in mock_oci_service.get_file.call_args_list]
+    assert requested_object_names == [
+        common_extraction.file_with_lbfs.replace("//", "/"),
+        "study/ukb-wes-az-00008986/rare.tsv.gz",
+    ]
+    with zipfile.ZipFile(zip_buffer, "r") as zf:
+        assert zf.namelist() == [
+            f"{common_extraction.study_id}_with_lbfs.tsv.gz",
+            f"{rare_study_id}.tsv.gz",
+        ]

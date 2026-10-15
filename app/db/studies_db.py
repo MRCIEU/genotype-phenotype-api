@@ -11,6 +11,18 @@ settings = get_settings()
 logger = get_logger(__name__)
 
 
+def pleiotropy_columns(table: str) -> str:
+    # The unsuffixed scores predate the cis / cis_trans and gws / all split, and are kept for API compatibility
+    return f"""
+        {table}.distinct_trait_categories_cis_trans_all AS distinct_trait_categories,
+        {table}.distinct_protein_coding_genes_cis_trans_all AS distinct_protein_coding_genes,
+        {table}.distinct_trait_categories_cis_gws, {table}.distinct_trait_categories_cis_all,
+        {table}.distinct_trait_categories_cis_trans_gws, {table}.distinct_trait_categories_cis_trans_all,
+        {table}.distinct_protein_coding_genes_cis_gws, {table}.distinct_protein_coding_genes_cis_all,
+        {table}.distinct_protein_coding_genes_cis_trans_gws, {table}.distinct_protein_coding_genes_cis_trans_all
+    """
+
+
 @lru_cache()
 def get_gpm_db_connection():
     connection = duckdb.connect(settings.STUDIES_DB_PATH, read_only=True)
@@ -84,13 +96,13 @@ class StudiesDBClient:
     @log_performance
     def get_trait_duplicates(self):
         query = """
-            SELECT trait_duplicates.trait_id, traits.trait_name,
-                trait_duplicates.duplicate_of, parent_traits.trait_name
+            SELECT trait_duplicates.trait_id, traits.trait_name, trait_duplicates.duplicate_group,
+                trait_duplicates.is_representative, trait_duplicates.match_rules, trait_duplicates.proxy_group_id,
+                trait_proxy_groups.name, trait_duplicates.proxy_rules
             FROM trait_duplicates
             LEFT JOIN traits ON traits.id = trait_duplicates.trait_id
-            LEFT JOIN traits AS parent_traits ON parent_traits.id = trait_duplicates.duplicate_of
-            WHERE trait_duplicates.duplicate_of IS NOT NULL
-            ORDER BY trait_duplicates.duplicate_of, trait_duplicates.trait_id
+            LEFT JOIN trait_proxy_groups ON trait_proxy_groups.id = trait_duplicates.proxy_group_id
+            ORDER BY trait_duplicates.duplicate_group, trait_duplicates.is_representative DESC, trait_duplicates.trait_id
         """
         return self.studies_conn.execute(query).fetchall()
 
@@ -328,8 +340,8 @@ class StudiesDBClient:
 
     @log_performance
     def get_gene(self, symbol: str = None, id: int = None):
-        query = """SELECT gene_annotations.*,
-            gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+        query = f"""SELECT gene_annotations.*,
+            {pleiotropy_columns("gene_pleiotropy")}
             FROM gene_annotations
             LEFT JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id"""
         if symbol:
@@ -345,9 +357,9 @@ class StudiesDBClient:
 
     @log_performance
     def get_variant(self, variant_id: int):
-        query = """SELECT
+        query = f"""SELECT
             variant_annotations.*,
-            variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
+            {pleiotropy_columns("variant_pleiotropy")}
             FROM variant_annotations
             LEFT JOIN variant_pleiotropy ON variant_annotations.id = variant_pleiotropy.variant_id
             WHERE variant_annotations.id = ?
@@ -356,8 +368,8 @@ class StudiesDBClient:
 
     @log_performance
     def get_genes(self):
-        query = """SELECT
-            gene_annotations.*, gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+        query = f"""SELECT
+            gene_annotations.*, {pleiotropy_columns("gene_pleiotropy")}
             FROM gene_annotations
             LEFT JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id"""
         return self.studies_conn.execute(query).fetchall()
@@ -397,7 +409,7 @@ class StudiesDBClient:
 
         query = f"""
             SELECT gene_annotations.*,
-                gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+                {pleiotropy_columns("gene_pleiotropy")}
             FROM gene_annotations
             LEFT JOIN gene_pleiotropy ON gene_annotations.id = gene_pleiotropy.gene_id
             WHERE {" OR ".join(conditions)}
@@ -464,7 +476,7 @@ class StudiesDBClient:
         if not variant_ids and not variant_prefixes and not rsids and not grange and not variant_strings:
             return []
 
-        query = """SELECT variant_annotations.*, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
+        query = f"""SELECT variant_annotations.*, {pleiotropy_columns("variant_pleiotropy")}
             FROM variant_annotations
             LEFT JOIN variant_pleiotropy ON variant_annotations.id = variant_pleiotropy.variant_id
             WHERE """
@@ -725,8 +737,8 @@ class StudiesDBClient:
 
     @log_performance
     def get_gene_pleiotropy_scores(self):
-        query = """SELECT
-            gene_pleiotropy.gene_id, gene_annotations.gene, gene_pleiotropy.distinct_trait_categories, gene_pleiotropy.distinct_protein_coding_genes
+        query = f"""SELECT
+            gene_pleiotropy.gene_id, gene_annotations.gene, {pleiotropy_columns("gene_pleiotropy")}
             FROM gene_pleiotropy
             JOIN gene_annotations ON gene_pleiotropy.gene_id = gene_annotations.id
         """
@@ -787,8 +799,8 @@ class StudiesDBClient:
 
     @log_performance
     def get_variant_pleiotropy_scores(self):
-        query = """SELECT
-            variant_pleiotropy.variant_id, variant_annotations.display_snp, variant_pleiotropy.distinct_trait_categories, variant_pleiotropy.distinct_protein_coding_genes
+        query = f"""SELECT
+            variant_pleiotropy.variant_id, variant_annotations.display_snp, {pleiotropy_columns("variant_pleiotropy")}
             FROM variant_pleiotropy
             JOIN variant_annotations ON variant_pleiotropy.variant_id = variant_annotations.id
         """

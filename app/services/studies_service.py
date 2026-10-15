@@ -47,6 +47,15 @@ class StudiesService:
         return result
 
     @staticmethod
+    def remove_traits_from_groups(
+        items: List[T], excluded_trait_ids: set[int], trait_id: int, group_key_fn: Callable[[T], object]
+    ) -> List[T]:
+        """Drop rows for excluded traits, then drop groups left with only the queried trait's rows."""
+        kept = [item for item in items if item.trait_id not in excluded_trait_ids]
+        groups_with_other_traits = {group_key_fn(item) for item in kept if item.trait_id != trait_id}
+        return [item for item in kept if group_key_fn(item) in groups_with_other_traits]
+
+    @staticmethod
     def parse_gene_aliases(gene_aliases: Optional[str]) -> List[str]:
         """Split a comma-separated gene alias string into individual aliases (deduplicated, stripped)."""
         if not gene_aliases:
@@ -326,6 +335,14 @@ class StudiesService:
                 source=gene[10],
                 distinct_trait_categories=gene[11],
                 distinct_protein_coding_genes=gene[12],
+                distinct_trait_categories_cis_gws=gene[13],
+                distinct_trait_categories_cis_all=gene[14],
+                distinct_trait_categories_cis_trans_gws=gene[15],
+                distinct_trait_categories_cis_trans_all=gene[16],
+                distinct_protein_coding_genes_cis_gws=gene[17],
+                distinct_protein_coding_genes_cis_all=gene[18],
+                distinct_protein_coding_genes_cis_trans_gws=gene[19],
+                distinct_protein_coding_genes_cis_trans_all=gene[20],
                 num_study_extractions=num_extractions_per_gene.get(gene[0], 0),
                 num_coloc_groups=num_coloc_groups_per_gene.get(gene[0], 0),
                 num_coloc_studies=num_coloc_studies_per_gene.get(gene[0], 0),

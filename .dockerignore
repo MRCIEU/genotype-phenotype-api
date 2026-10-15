@@ -7,3 +7,5 @@ README.md
 .DS_Store
 .venv
 venv
+
+tests/test_data

@@ -11,6 +11,7 @@ from app.main import app
 client = TestClient(app)
 
 
+# Sorry for the massive hack for resetting the database, couldn't think of a better way to reset the tests
 @pytest.fixture(scope="module", autouse=True)
 def reset_gwas_upload_db():
     yield
