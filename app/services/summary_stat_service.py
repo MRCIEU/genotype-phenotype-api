@@ -3,7 +3,8 @@ from typing import List
 import io
 import zipfile
 import sentry_sdk
-from app.models.schemas import ExtendedStudyExtraction
+from app.db.studies_db import StudiesDBClient
+from app.models.schemas import ExtendedStudyExtraction, Study, VariantType, convert_duckdb_to_pydantic_model
 from app.services.oci_service import OCIService
 from app.logging_config import get_logger
 
@@ -16,18 +17,27 @@ class SummaryStatService:
         self.oci_service = OCIService()
 
     def get_study_summary_stats(self, study_extractions: List[ExtendedStudyExtraction]):
+        study_ids = list({study_extraction.study_id for study_extraction in study_extractions})
+        studies = convert_duckdb_to_pydantic_model(Study, StudiesDBClient().get_studies_by_id(study_ids))
+        rare_study_ids = {study.id for study in studies if study and study.variant_type != VariantType.common.value}
+
         zip_buffer = io.BytesIO()
         missing_files = []
         with zipfile.ZipFile(zip_buffer, "w") as zip_file:
             for study_extraction in study_extractions:
-                file_name = f"{study_extraction.study_id}_with_lbfs.tsv.gz"
-                try:
+                # Rare variant study extractions have no file with LBFs, so their summary stats file is used instead
+                if study_extraction.study_id in rare_study_ids:
+                    file_name = f"{study_extraction.study_id}.tsv.gz"
+                    object_name = study_extraction.file
+                else:
+                    file_name = f"{study_extraction.study_id}_with_lbfs.tsv.gz"
                     object_name = study_extraction.file_with_lbfs
-                    object_name = object_name.replace("//", "/")
+                try:
                     if not object_name:
                         missing_files.append(file_name)
                         logger.warning(f"No file path for study extraction {study_extraction.id}")
                         continue
+                    object_name = object_name.replace("//", "/")
 
                     response = self.oci_service.get_file(object_name)
                     zip_file.writestr(file_name, response)

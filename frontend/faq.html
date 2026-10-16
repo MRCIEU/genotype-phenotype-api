@@ -58,7 +58,7 @@
                         <b>Installation and usage</b>:
                         <pre><code>devtools::install_github('MRCIEU/gpmapr')
 library(gpmapr)
-search_gpmapr('haemoglobin')</code></pre>
+search_gpmap('haemoglobin')</code></pre>
                     </li>
                     <li>
                         <b>Usage</b>: There are a series of vignettes available.
@@ -284,7 +284,9 @@ search_gpmapr('haemoglobin')</code></pre>
                         distinct trait categories and the second is the number of distinct protein coding genes that the
                         trait is associated with. They are calculated by counting the number of distinct trait
                         categories and protein coding genes that the gene is associated with in the colocalisation
-                        results. Rare variant results are not included in the calculation.
+                        results. Rare variant results are not included in the calculation. Each score is shown for cis
+                        results only and for cis and trans results combined. When the p-value threshold is set to 5e-8,
+                        only genome-wide significant results are counted, otherwise all results are counted.
                     </li>
                 </ul>
             </div>

@@ -118,6 +118,10 @@ export default function variant() {
             return this.data ? this.data.variant.rsid.split(",")[0] : "...";
         },
 
+        getVariantPleiotropy() {
+            return graphTransformations.pleiotropyText(this.data && this.data.variant);
+        },
+
         hasLdProxyVariantsToShow() {
             if (!this.data) return false;
             const noColoc = !this.data.coloc_groups || this.data.coloc_groups.length === 0;

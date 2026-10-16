@@ -46,6 +46,23 @@ export default {
         return true;
     },
 
+    /**
+     * Pleiotropy scores for a gene or variant, showing cis and cis+trans side by side.
+     * Uses the genome-wide significant scores when the p-value threshold is 5e-8, and all results otherwise.
+     */
+    pleiotropyText(geneOrVariant) {
+        if (!geneOrVariant) return "";
+        const store = Alpine.store("graphOptionStore");
+        const significance = store && store.pValue !== DEFAULT_STUDY_P_VALUE ? "all" : "gws";
+        const categoriesCis = geneOrVariant[`distinct_trait_categories_cis_${significance}`];
+        const categoriesCisTrans = geneOrVariant[`distinct_trait_categories_cis_trans_${significance}`];
+        const genesCis = geneOrVariant[`distinct_protein_coding_genes_cis_${significance}`];
+        const genesCisTrans = geneOrVariant[`distinct_protein_coding_genes_cis_trans_${significance}`];
+        if ([categoriesCis, categoriesCisTrans, genesCis, genesCisTrans].some(score => score == null)) return "";
+
+        return `Pleiotropy info: ${categoriesCis} cis / ${categoriesCisTrans} cis+trans trait categories, ${genesCis} cis / ${genesCisTrans} cis+trans protein coding genes`;
+    },
+
     groupBySnp(data, type, id, displayFilters, userUpload = false) {
         id = parseInt(id);
         let attribute = null;

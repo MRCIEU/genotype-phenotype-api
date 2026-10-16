@@ -128,6 +128,14 @@ class Gene(BaseModel):
     source: Optional[str] = None
     distinct_trait_categories: Optional[int] = None
     distinct_protein_coding_genes: Optional[int] = None
+    distinct_trait_categories_cis_gws: Optional[int] = None
+    distinct_trait_categories_cis_all: Optional[int] = None
+    distinct_trait_categories_cis_trans_gws: Optional[int] = None
+    distinct_trait_categories_cis_trans_all: Optional[int] = None
+    distinct_protein_coding_genes_cis_gws: Optional[int] = None
+    distinct_protein_coding_genes_cis_all: Optional[int] = None
+    distinct_protein_coding_genes_cis_trans_gws: Optional[int] = None
+    distinct_protein_coding_genes_cis_trans_all: Optional[int] = None
     genes_in_region: Optional[List[Gene]] = None
 
 
@@ -157,6 +165,10 @@ class Trait(BaseModel):
     trait_category: Optional[str] = None
     common_study: Optional[Study] = None
     rare_study: Optional[Study] = None
+    duplicate_group: Optional[int] = None
+    is_representative: Optional[bool] = None
+    proxy_group_id: Optional[int] = None
+    proxy_group_name: Optional[str] = None
 
     @field_validator("data_type")
     def validate_data_type(cls, v):
@@ -192,8 +204,12 @@ class BasicTraitResponse(BaseModel):
 class TraitDuplicate(BaseModel):
     trait_id: int
     trait_name: Optional[str] = None
-    parent_trait_id: int
-    parent_trait_name: Optional[str] = None
+    duplicate_group: int
+    is_representative: bool
+    match_rules: Optional[str] = None
+    proxy_group_id: Optional[int] = None
+    proxy_group_name: Optional[str] = None
+    proxy_rules: Optional[str] = None
 
 
 class GetTraitDuplicatesResponse(BaseModel):
@@ -213,6 +229,14 @@ class GenePleiotropy(BaseModel):
     gene: str
     distinct_trait_categories: int
     distinct_protein_coding_genes: int
+    distinct_trait_categories_cis_gws: int
+    distinct_trait_categories_cis_all: int
+    distinct_trait_categories_cis_trans_gws: int
+    distinct_trait_categories_cis_trans_all: int
+    distinct_protein_coding_genes_cis_gws: int
+    distinct_protein_coding_genes_cis_all: int
+    distinct_protein_coding_genes_cis_trans_gws: int
+    distinct_protein_coding_genes_cis_trans_all: int
 
 
 class SnpPleiotropy(BaseModel):
@@ -220,6 +244,14 @@ class SnpPleiotropy(BaseModel):
     display_snp: str
     distinct_trait_categories: int
     distinct_protein_coding_genes: int
+    distinct_trait_categories_cis_gws: int
+    distinct_trait_categories_cis_all: int
+    distinct_trait_categories_cis_trans_gws: int
+    distinct_trait_categories_cis_trans_all: int
+    distinct_protein_coding_genes_cis_gws: int
+    distinct_protein_coding_genes_cis_all: int
+    distinct_protein_coding_genes_cis_trans_gws: int
+    distinct_protein_coding_genes_cis_trans_all: int
 
 
 class GenePleiotropyResponse(BaseModel):
@@ -387,6 +419,14 @@ class Variant(BaseModel):
     sas_af: Optional[float] = None
     distinct_trait_categories: Optional[int] = None
     distinct_protein_coding_genes: Optional[int] = None
+    distinct_trait_categories_cis_gws: Optional[int] = None
+    distinct_trait_categories_cis_all: Optional[int] = None
+    distinct_trait_categories_cis_trans_gws: Optional[int] = None
+    distinct_trait_categories_cis_trans_all: Optional[int] = None
+    distinct_protein_coding_genes_cis_gws: Optional[int] = None
+    distinct_protein_coding_genes_cis_all: Optional[int] = None
+    distinct_protein_coding_genes_cis_trans_gws: Optional[int] = None
+    distinct_protein_coding_genes_cis_trans_all: Optional[int] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 

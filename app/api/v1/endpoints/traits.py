@@ -163,8 +163,11 @@ async def get_traits(
 @router.get(
     "/duplicates",
     response_model=GetTraitDuplicatesResponse,
-    summary="List duplicated traits",
-    description="Returns every trait that has been marked as a duplicate, along with the parent trait it duplicates.",
+    summary="List duplicate and proxy trait groups",
+    description=(
+        "Returns every grouped trait with its duplicate group (whether it is the group's representative, "
+        "and the rules that matched it) and its proxy group (the group's name, and the rules that matched it)."
+    ),
 )
 @time_endpoint
 @limiter.shared_limit(SHARED_ENTITY_RESOURCE_RATE_LIMIT, scope="entity_resource_reads")
@@ -194,6 +197,20 @@ async def get_trait(
     request: Request,
     trait_id: str = Path(..., description="Trait ID or name"),
     include_associations: bool = Query(False, description="Whether to include associations for SNPs"),
+    remove_duplicates: bool = Query(
+        False,
+        description=(
+            "Remove coloc groups and rare results rows for traits in the same duplicate group as this trait "
+            "(see /traits/duplicates)"
+        ),
+    ),
+    remove_proxies: bool = Query(
+        False,
+        description=(
+            "Remove coloc groups and rare results rows for traits in the same proxy group as this trait, "
+            "excluding its duplicates, which are removed by remove_duplicates (see /traits/duplicates)"
+        ),
+    ),
 ) -> TraitResponse:
     def _run():
         try:
@@ -211,6 +228,29 @@ async def get_trait(
 
             trait = convert_duckdb_to_pydantic_model(Trait, trait)
             studies_service = StudiesService()
+
+            trait_duplicates = studies_service.get_trait_duplicates().duplicates
+            trait_duplicate = next((d for d in trait_duplicates if d.trait_id == trait.id), None)
+            excluded_trait_ids = set()
+            if trait_duplicate is not None:
+                trait.duplicate_group = trait_duplicate.duplicate_group
+                trait.is_representative = trait_duplicate.is_representative
+                trait.proxy_group_id = trait_duplicate.proxy_group_id
+                trait.proxy_group_name = trait_duplicate.proxy_group_name
+
+                for duplicate in trait_duplicates:
+                    if duplicate.trait_id == trait.id:
+                        continue
+                    same_duplicate_group = duplicate.duplicate_group == trait_duplicate.duplicate_group
+                    same_proxy_group = (
+                        trait_duplicate.proxy_group_id is not None
+                        and duplicate.proxy_group_id == trait_duplicate.proxy_group_id
+                    )
+                    if remove_duplicates and same_duplicate_group:
+                        excluded_trait_ids.add(duplicate.trait_id)
+                    if remove_proxies and same_proxy_group and not same_duplicate_group:
+                        excluded_trait_ids.add(duplicate.trait_id)
+
             studies = studies_service.get_studies_by_trait_ids([trait.id])
             trait = populate_trait_studies(trait, studies)
             rare_results = []
@@ -237,6 +277,14 @@ async def get_trait(
                     colocs = convert_duckdb_to_pydantic_model(ColocGroup, colocs_data)
             else:
                 study_extractions_local = study_extractions
+
+            if excluded_trait_ids:
+                colocs = StudiesService.remove_traits_from_groups(
+                    colocs, excluded_trait_ids, trait.id, lambda c: c.coloc_group_id
+                )
+                rare_results = StudiesService.remove_traits_from_groups(
+                    rare_results, excluded_trait_ids, trait.id, lambda r: r.rare_result_group_id
+                )
 
             associations = None
             if include_associations:
