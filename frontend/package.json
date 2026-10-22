@@ -24,7 +24,7 @@
         "eslint-plugin-prettier": "^5.5.3",
         "glob": "^11.0.1",
         "prettier": "^3.6.2",
-        "vite": "^5.1.4"
+        "vite": "^8.3.5"
     },
     "dependencies": {
         "alpinejs": "^3.13.5",

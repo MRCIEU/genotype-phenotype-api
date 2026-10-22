@@ -29,7 +29,7 @@ function findHtmlFiles(dir, baseDir = dir) {
     return files;
 }
 
-const htmlFiles = findHtmlFiles(__dirname);
+const htmlFiles = findHtmlFiles(import.meta.dirname);
 
 export default defineConfig({
     css: {
