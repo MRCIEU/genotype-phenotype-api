@@ -25,7 +25,7 @@ def test_upload_health_includes_upload_status_counts():
     conn.executemany(
         """
         INSERT INTO gwas_upload (
-            guid, email, name, sample_size, ancestry, category, is_published, status, failure_reason, created_at, updated_at
+            guid, email, name, sample_size, ancestry, variable_type, is_published, status, failure_reason, created_at, updated_at
         ) VALUES (?, 'a@b.com', 'study', 100, 'EUR', 'continuous', false, ?, ?, ?, ?)
         """,
         [
@@ -82,7 +82,7 @@ def test_upload_health_returns_503_when_processing_stuck_over_24h():
     conn.execute(
         """
         INSERT INTO gwas_upload (
-            guid, email, name, sample_size, ancestry, category, is_published, status, failure_reason, created_at, updated_at
+            guid, email, name, sample_size, ancestry, variable_type, is_published, status, failure_reason, created_at, updated_at
         ) VALUES (?, 'a@b.com', 'study', 100, 'EUR', 'continuous', false, 'processing', NULL, ?, NULL)
         """,
         ["health-stuck-1", stuck_since],

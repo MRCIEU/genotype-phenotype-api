@@ -28,7 +28,7 @@ def test_request_data():
         "reference_build": "GRCh38",
         "email": "ae@email.com",
         "name": "Example Study",
-        "category": "continuous",
+        "variable_type": "continuous",
         "is_published": "false",
         "doi": None,
         "should_be_added": "false",
@@ -182,7 +182,7 @@ def test_get_gwas(test_guid):
 
     pair_existing_ids = set()
     for p in gwas_model.coloc_pairs:
-        for attr in ("existing_study_extraction_id_a", "existing_study_extraction_id_b"):
+        for attr in ("existing_study_extraction_a_id", "existing_study_extraction_b_id"):
             v = getattr(p, attr, None)
             if v is not None:
                 pair_existing_ids.add(v)

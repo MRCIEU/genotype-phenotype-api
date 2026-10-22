@@ -16,7 +16,7 @@ def test_get_traits():
         assert trait.id is not None
         assert trait.trait_name is not None
         assert trait.sample_size is not None
-        assert trait.category is not None
+        assert trait.variable_type is not None
         assert trait.ancestry is not None
         assert trait.num_study_extractions is not None
         assert trait.num_coloc_groups is not None

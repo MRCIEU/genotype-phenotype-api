@@ -90,7 +90,7 @@ class GwasDBClient:
                     study_gwas.name as trait_name,
                     NULL as trait_category,
                     study_gwas.sample_size as sample_size,
-                    study_gwas.category as category,
+                    study_gwas.variable_type as variable_type,
                     study_gwas.ancestry as ancestry,
                     NULL as heritability,
                     NULL as heritability_se,
@@ -101,10 +101,10 @@ class GwasDBClient:
                     NULL as source_name,
                     NULL as source_url
                 FROM coloc_groups
-                LEFT JOIN study_extractions ON coloc_groups.study_extraction_id = study_extractions.id
+                LEFT JOIN study_extractions ON coloc_groups.upload_study_extraction_id = study_extractions.id
                 LEFT JOIN gwas_upload as study_gwas ON study_extractions.gwas_upload_id = study_gwas.id
-                LEFT JOIN studies_db.variant_annotations on coloc_groups.variant_id = studies_db.variant_annotations.id 
-                WHERE coloc_groups.gwas_upload_id = {gwas_upload_id} and coloc_groups.study_extraction_id is not null""").fetchall()
+                LEFT JOIN studies_db.variant_annotations on coloc_groups.variant_id = studies_db.variant_annotations.id
+                WHERE coloc_groups.gwas_upload_id = {gwas_upload_id} and coloc_groups.upload_study_extraction_id is not null""").fetchall()
 
             existing_result = conn.execute(f"""SELECT cg.*,
                     studies_db.variant_annotations.chr,
@@ -127,7 +127,7 @@ class GwasDBClient:
                     studies_db.traits.trait_name,
                     studies_db.traits.trait_category,
                     studies_db.studies.sample_size,
-                    studies_db.studies.category,
+                    studies_db.studies.variable_type,
                     studies_db.studies.ancestry,
                     studies_db.studies.heritability,
                     studies_db.studies.heritability_se,
@@ -246,7 +246,7 @@ class GwasDBClient:
                 email,
                 sample_size,
                 ancestry,
-                category,
+                variable_type,
                 is_published,
                 doi,
                 should_be_added,
@@ -258,7 +258,7 @@ class GwasDBClient:
                 '{gwas_request.email}',
                 {gwas_request.sample_size},
                 '{gwas_request.ancestry}',
-                '{gwas_request.category}',
+                '{gwas_request.variable_type}',
                 {gwas_request.is_published},
                 '{gwas_request.doi}',
                 {gwas_request.should_be_added},
@@ -412,7 +412,7 @@ class GwasDBClient:
             conn.commit()
 
             result = conn.execute(
-                "SELECT id, guid, email, name, sample_size, ancestry, category, is_published, doi, should_be_added, upload_metadata, status, failure_reason, created_at, updated_at, message FROM gwas_upload WHERE guid = ?",
+                "SELECT id, guid, email, name, sample_size, ancestry, variable_type, is_published, doi, should_be_added, upload_metadata, status, failure_reason, created_at, updated_at, message FROM gwas_upload WHERE guid = ?",
                 [guid],
             )
             return result.fetchone()

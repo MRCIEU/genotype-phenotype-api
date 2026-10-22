@@ -419,10 +419,10 @@ export default function trait() {
         },
 
         get getStudySourceLink() {
-            if (this.data === null || this.userUpload || !this.data.trait.trait) return null;
-            const traitForUrl = this.data.trait.trait.replace(/-/g, (match, offset) => {
+            if (this.data === null || this.userUpload || !this.data.trait.pipeline_id) return null;
+            const traitForUrl = this.data.trait.pipeline_id.replace(/-/g, (match, offset) => {
                 // Count dashes before current position
-                const dashesBefore = (this.data.trait.trait.substring(0, offset).match(/-/g) || []).length;
+                const dashesBefore = (this.data.trait.pipeline_id.substring(0, offset).match(/-/g) || []).length;
                 return dashesBefore >= 2 ? "_" : match;
             });
             return "https://opengwas.io/datasets/" + traitForUrl;

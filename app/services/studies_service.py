@@ -116,7 +116,7 @@ class StudiesService:
             return []
         ids: set[int] = set()
         for p in coloc_pairs:
-            for eid in (p.existing_study_extraction_id_a, p.existing_study_extraction_id_b):
+            for eid in (p.existing_study_extraction_a_id, p.existing_study_extraction_b_id):
                 if eid is not None:
                     ids.add(int(eid))
         return list(ids)
@@ -275,12 +275,12 @@ class StudiesService:
             BasicTraitResponse(
                 id=trait[0],
                 data_type=trait[1],
-                trait=trait[2],
+                pipeline_id=trait[2],
                 trait_name=trait[3],
                 trait_category=trait[4],
                 variant_type=trait[5],
                 sample_size=trait[6],
-                category=trait[7],
+                variable_type=trait[7],
                 ancestry=trait[8],
                 heritability=trait[9],
                 heritability_se=trait[10],

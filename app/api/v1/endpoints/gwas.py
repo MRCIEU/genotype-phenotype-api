@@ -279,9 +279,9 @@ async def get_gwas(
 
             # Collect study_extraction_ids from coloc_groups and coloc_pairs (covers current + compare_with uploads)
             upload_study_extraction_ids = (
-                [c.study_extraction_id for c in coloc_groups if c.study_extraction_id is not None]
-                + [p.study_extraction_id_a for p in coloc_pairs if p.study_extraction_id_a is not None]
-                + [p.study_extraction_id_b for p in coloc_pairs if p.study_extraction_id_b is not None]
+                [c.upload_study_extraction_id for c in coloc_groups if c.upload_study_extraction_id is not None]
+                + [p.upload_study_extraction_a_id for p in coloc_pairs if p.upload_study_extraction_a_id is not None]
+                + [p.upload_study_extraction_b_id for p in coloc_pairs if p.upload_study_extraction_b_id is not None]
             )
             upload_study_extraction_ids = list(set(upload_study_extraction_ids))
             upload_study_extractions = gwas_upload_db.get_study_extractions_by_ids(upload_study_extraction_ids)
@@ -296,14 +296,14 @@ async def get_gwas(
             existing_study_extraction_ids = (
                 [c.existing_study_extraction_id for c in coloc_groups if c.existing_study_extraction_id is not None]
                 + [
-                    p.existing_study_extraction_id_a
+                    p.existing_study_extraction_a_id
                     for p in coloc_pairs
-                    if p.existing_study_extraction_id_a is not None
+                    if p.existing_study_extraction_a_id is not None
                 ]
                 + [
-                    p.existing_study_extraction_id_b
+                    p.existing_study_extraction_b_id
                     for p in coloc_pairs
-                    if p.existing_study_extraction_id_b is not None
+                    if p.existing_study_extraction_b_id is not None
                 ]
             )
             existing_study_extraction_ids = list(set(existing_study_extraction_ids))

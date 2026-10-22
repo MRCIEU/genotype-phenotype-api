@@ -160,7 +160,7 @@ class ExtendedColocGroup(ColocGroup):
 class Trait(BaseModel):
     id: int
     data_type: str
-    trait: str
+    pipeline_id: str
     trait_name: str
     trait_category: Optional[str] = None
     common_study: Optional[Study] = None
@@ -178,12 +178,12 @@ class Trait(BaseModel):
 class BasicTraitResponse(BaseModel):
     id: int
     data_type: str
-    trait: str
+    pipeline_id: str
     trait_name: str
     trait_category: Optional[str] = None
     variant_type: str
     sample_size: int
-    category: str
+    variable_type: str
     ancestry: str
     heritability: Optional[float] = None
     heritability_se: Optional[float] = None
@@ -273,7 +273,7 @@ class Study(BaseModel):
     trait_id: int
     ancestry: Optional[str] = None
     sample_size: Optional[int] = None
-    category: Optional[str] = None
+    variable_type: Optional[str] = None
     probe: Optional[str] = None
     tissue: Optional[str] = None
     cell_type: Optional[str] = None
@@ -536,7 +536,7 @@ class ProcessGwasRequest(BaseModel):
     reference_build: str
     email: str
     name: str
-    category: str
+    variable_type: str
     is_published: bool
     doi: Optional[str] = None
     should_be_added: bool
@@ -637,7 +637,7 @@ class GwasUpload(BaseModel):
     name: str
     sample_size: int
     ancestry: str
-    category: str
+    variable_type: str
     is_published: bool
     doi: Optional[str] = None
     should_be_added: bool
@@ -673,7 +673,7 @@ class UploadColocGroup(BaseModel):
     gwas_upload_id: int
     coloc_group_id: int
     existing_study_extraction_id: Optional[int] = None
-    study_extraction_id: Optional[int] = None
+    upload_study_extraction_id: Optional[int] = None
     variant_id: int
     ld_block_id: int
     h4_connectedness: float
@@ -698,10 +698,10 @@ class UploadAssociation(BaseModel):
 
 class UploadColocPair(BaseModel):
     gwas_upload_id: Optional[int] = None
-    existing_study_extraction_id_a: Optional[int] = None
-    study_extraction_id_a: Optional[int] = None
-    existing_study_extraction_id_b: Optional[int] = None
-    study_extraction_id_b: Optional[int] = None
+    existing_study_extraction_a_id: Optional[int] = None
+    upload_study_extraction_a_id: Optional[int] = None
+    existing_study_extraction_b_id: Optional[int] = None
+    upload_study_extraction_b_id: Optional[int] = None
     ld_block_id: int
     h3: float
     h4: float
@@ -731,7 +731,7 @@ class ExtendedUploadColocGroup(UploadColocGroup):
     trait_name: Optional[str] = None
     trait_category: Optional[str] = None
     sample_size: Optional[int] = None
-    category: Optional[str] = None
+    variable_type: Optional[str] = None
     ancestry: Optional[str] = None
     heritability: Optional[float] = None
     heritability_se: Optional[float] = None
