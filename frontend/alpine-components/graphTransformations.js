@@ -65,19 +65,23 @@ export default {
 
     groupBySnp(data, type, id, displayFilters, userUpload = false) {
         id = parseInt(id);
-        let attribute = null;
-        if (type === "trait") {
-            attribute = userUpload ? "gwas_upload_id" : "trait_id";
-        } else if (type === "gene") {
-            attribute = "gene_id";
-        }
+        const shouldFilterById = type === "trait" || type === "gene";
+        // For an upload trait, "this upload's own rows" are the ones sourced from the upload
+        // itself (not an existing study) and owned by this specific upload id - gwas_upload_id
+        // is null on existing rows and, for upload rows, is the id of whichever upload (the
+        // one being viewed, or one it was compared against) the row actually belongs to.
+        const matchesId = entry => {
+            if (type === "gene") {
+                return parseInt(entry.gene_id) === id || parseInt(entry.situated_gene_id) === id;
+            }
+            return userUpload
+                ? entry.source === "upload" && parseInt(entry.gwas_upload_id) === id
+                : parseInt(entry.trait_id) === id;
+        };
         let groupedData = Object.groupBy(data, ({ display_snp }) => display_snp);
 
         groupedData = Object.entries(groupedData).filter(([_, group]) => {
-            let hasId = attribute ? group.some(entry => parseInt(entry[attribute]) === id) : true;
-            if (type === "gene") {
-                hasId = group.some(entry => parseInt(entry.gene_id) === id || parseInt(entry.situated_gene_id) === id);
-            }
+            const hasId = shouldFilterById ? group.some(matchesId) : true;
             const hasTrait = displayFilters.traitName
                 ? group.some(entry => entry.trait_name === displayFilters.traitName)
                 : true;
@@ -92,16 +96,12 @@ export default {
         groupedData.sort((a, b) => {
             const aMinP = Math.min(
                 ...a[1]
-                    .filter(entry =>
-                        attribute ? entry[attribute] === id && entry.min_p !== null : entry.min_p !== null
-                    )
+                    .filter(entry => (shouldFilterById ? matchesId(entry) : true) && entry.min_p !== null)
                     .map(entry => entry.min_p)
             );
             const bMinP = Math.min(
                 ...b[1]
-                    .filter(entry =>
-                        attribute ? entry[attribute] === id && entry.min_p !== null : entry.min_p !== null
-                    )
+                    .filter(entry => (shouldFilterById ? matchesId(entry) : true) && entry.min_p !== null)
                     .map(entry => entry.min_p)
             );
             return (isNaN(aMinP) ? Infinity : aMinP) - (isNaN(bMinP) ? Infinity : bMinP);
@@ -174,7 +174,7 @@ export default {
     },
 
     getOrderedTraits(groupedData, options = {}) {
-        const { excludeTrait, excludeGene } = options;
+        const { excludeTrait, excludeGene, excludeRow } = options;
 
         const traitGroupCount = {};
         const geneGroupCount = {};
@@ -183,6 +183,7 @@ export default {
             const traitsInGroup = new Set();
             const genesInGroup = new Set();
             rows.forEach(r => {
+                if (excludeRow && excludeRow(r)) return;
                 if (r.data_type === "Phenotype" && r.trait_name) traitsInGroup.add(r.trait_name);
                 if (r.gene && r.gene !== "NA") genesInGroup.add(r.gene);
                 if (r.situated_gene && r.situated_gene !== "NA") genesInGroup.add(r.situated_gene);

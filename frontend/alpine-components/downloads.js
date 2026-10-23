@@ -71,11 +71,6 @@ export default {
             zip.file("coloc_groups.tsv", colocTSV);
         }
 
-        if (data.upload_study_extractions && data.upload_study_extractions.length > 0) {
-            const uploadStudyExtractionsTSV = this.arrayToTSV(data.upload_study_extractions);
-            zip.file("upload_study_extractions.tsv", uploadStudyExtractionsTSV);
-        }
-
         if (data.coloc_pairs && data.coloc_pairs.length > 0) {
             const colocPairsTSV = this.arrayToTSV(data.coloc_pairs);
             zip.file("coloc_pairs.tsv", colocPairsTSV);

@@ -178,18 +178,15 @@ def test_get_gwas(test_guid):
     assert len(gwas_model.coloc_groups) == len(update_gwas_payload["coloc_groups"])
     assert len(gwas_model.coloc_pairs) == len(update_gwas_payload["coloc_pairs"])
     assert len(gwas_model.study_extractions) >= 1
-    assert len(gwas_model.upload_study_extractions) >= 1
 
-    pair_existing_ids = set()
+    study_extraction_keys = {(se.source, se.id) for se in gwas_model.study_extractions}
     for p in gwas_model.coloc_pairs:
-        for attr in ("existing_study_extraction_a_id", "existing_study_extraction_b_id"):
-            v = getattr(p, attr, None)
-            if v is not None:
-                pair_existing_ids.add(v)
-    study_extraction_ids = {se.id for se in gwas_model.study_extractions}
-    assert pair_existing_ids <= study_extraction_ids, (
-        "Every studies-DB study_extraction referenced by upload coloc_pairs must be in study_extractions"
-    )
+        assert (p.source_a, p.study_extraction_a_id) in study_extraction_keys, (
+            "Every coloc_pair side must resolve to a study_extractions row with the same source and id"
+        )
+        assert (p.source_b, p.study_extraction_b_id) in study_extraction_keys, (
+            "Every coloc_pair side must resolve to a study_extractions row with the same source and id"
+        )
 
 
 def test_get_gwas_with_associations(test_guid):
@@ -203,20 +200,34 @@ def test_get_gwas_with_associations(test_guid):
     coloc_groups = gwas_model.coloc_groups
     assert len(coloc_groups) == len(update_gwas_payload["coloc_groups"])
     for coloc_group in coloc_groups:
-        print(coloc_group.study_id, coloc_group.existing_study_id)
-        assert (coloc_group.study_id is not None) ^ (coloc_group.existing_study_id is not None)
+        if coloc_group.source == "upload":
+            assert coloc_group.gwas_upload_id is not None
+            assert coloc_group.study_id is None
+        else:
+            assert coloc_group.source == "existing"
+            assert coloc_group.gwas_upload_id is None
 
-    assoc = gwas_model.associations[0]
-    assert "variant_id" in assoc
-    assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][0]["beta"])
-    assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][0]["se"])
-    assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][0]["p"])
+    for assoc, expected in zip(gwas_model.associations, update_gwas_payload["associations"]):
+        assert assoc.variant_id is not None
+        assert assoc.source in ("existing", "upload")
+        assert (assoc.source == "upload") == (assoc.gwas_upload_id is not None and assoc.study_id is None)
+        assert assoc.beta == pytest.approx(expected["beta"])
+        assert assoc.se == pytest.approx(expected["se"])
+        assert assoc.p == pytest.approx(expected["p"])
 
-    assoc = gwas_model.associations[1]
-    assert "variant_id" in assoc
-    assert assoc["beta"] == pytest.approx(update_gwas_payload["associations"][1]["beta"])
-    assert assoc["se"] == pytest.approx(update_gwas_payload["associations"][1]["se"])
-    assert assoc["p"] == pytest.approx(update_gwas_payload["associations"][1]["p"])
+
+def test_get_gwas_coloc_group_sources(test_guid):
+    response = client.get(f"/v1/gwas/{test_guid}")
+    assert response.status_code == 200
+    gwas_model = UploadTraitResponse(**response.json())
+
+    upload_rows = [c for c in gwas_model.coloc_groups if c.source == "upload"]
+    assert len(upload_rows) > 0
+    assert all(c.gwas_upload_id == gwas_model.trait.id for c in upload_rows)
+
+    existing_rows = [c for c in gwas_model.coloc_groups if c.source == "existing"]
+    assert len(existing_rows) > 0
+    assert all(c.gwas_upload_id is None for c in existing_rows)
 
 
 def test_get_gwas_summary_stats(test_guid, mock_oci_service):
@@ -241,7 +252,7 @@ def test_upload_gwas_same_file_creates_new_guid(
     old_gwas = convert_duckdb_to_pydantic_model(GwasUpload, db.get_gwas_by_guid(test_guid))
     assert old_gwas.status == GwasStatus.COMPLETED
     old_associations_count = len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0])
-    old_coloc_pairs_count = len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id))
+    old_coloc_pairs_count = len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)[0])
     old_study_extractions_count = len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id))
 
     mock_redis.lpush.reset_mock()
@@ -264,7 +275,7 @@ def test_upload_gwas_same_file_creates_new_guid(
     assert unchanged_gwas.id == old_gwas.id
     assert unchanged_gwas.status == GwasStatus.COMPLETED
     assert len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0]) == old_associations_count
-    assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)) == old_coloc_pairs_count
+    assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)[0]) == old_coloc_pairs_count
     assert len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id)) == old_study_extractions_count
 
 
@@ -313,5 +324,5 @@ def test_delete_gwas_success(test_guid, mock_redis, mock_oci_service, test_reque
     mock_oci_service.delete_prefix.assert_called_once_with(f"gwas_upload/{test_guid}/")
     assert [call.args[0] for call in mock_redis.lpush.call_args_list] == ["delete_gwas"]
     assert len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0]) == 0
-    assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)) == 0
+    assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)[0]) == 0
     assert len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id)) == 0

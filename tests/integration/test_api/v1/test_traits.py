@@ -144,8 +144,6 @@ def test_get_trait_by_id():
         assert rare_result.bp is not None
         assert rare_result.min_p is not None
 
-    assert trait_response.upload_study_extractions is None
-
 
 def test_get_trait_by_name():
     trait_name = "ukb-d-M13-FIBROBLASTIC"

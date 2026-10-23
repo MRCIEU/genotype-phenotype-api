@@ -187,7 +187,6 @@ export default function trait() {
                 this.userUpload
             );
 
-            const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
             const dropdownColocs = graphTransformations.groupBySnp(
                 this.filteredData.coloc_groups,
                 "trait",
@@ -204,9 +203,15 @@ export default function trait() {
             );
             this.totalColocGroups = Object.keys(dropdownColocs).length;
             this.totalRareGroups = Object.keys(dropdownRare).length;
+            // Exclude the page's own trait from the dropdown. For uploads, do it by identity
+            // (source + gwas_upload_id) rather than name - a compared upload can share the
+            // primary upload's name and must still show up as its own dropdown entry.
+            const excludeOptions = this.userUpload
+                ? { excludeRow: r => r.source === "upload" && r.gwas_upload_id === this.data.trait.id }
+                : { excludeTrait: this.data.trait.trait_name };
             this.traitSearch.orderedTraits = graphTransformations.getOrderedTraits(
                 { ...dropdownColocs, ...dropdownRare },
-                { excludeTrait: pageTrait }
+                excludeOptions
             );
         },
 
@@ -476,18 +481,21 @@ export default function trait() {
                 return true;
             });
 
+            // Always keep the page's own trait/upload rows, even when a trait name/gene filter
+            // is active. For uploads, a trait_name match is unreliable (a compared upload or an
+            // existing study can share the same name) - source + gwas_upload_id is exact.
+            const isPageTraitRow = this.userUpload
+                ? c => c.source === "upload" && c.gwas_upload_id === this.data.trait.id
+                : c => c.trait_name === this.data.trait.trait_name;
+
             if (this.displayFilters.traitName) {
-                const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
-                tableData = tableData.filter(
-                    c => c.trait_name === this.displayFilters.traitName || c.trait_name === pageTrait
-                );
+                tableData = tableData.filter(c => c.trait_name === this.displayFilters.traitName || isPageTraitRow(c));
             }
 
             if (this.displayFilters.gene) {
                 const filterGene = this.displayFilters.gene;
-                const pageTrait = this.userUpload ? this.data.trait.name : this.data.trait.trait_name;
                 tableData = tableData.filter(
-                    c => c.gene === filterGene || c.situated_gene === filterGene || c.trait_name === pageTrait
+                    c => c.gene === filterGene || c.situated_gene === filterGene || isPageTraitRow(c)
                 );
             }
 

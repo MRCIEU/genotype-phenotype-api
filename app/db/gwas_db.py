@@ -58,103 +58,146 @@ class GwasDBClient:
     def get_gwas_by_guid(self, guid: str):
         conn = self.connect(read_only=True)
         try:
-            result = conn.execute(f"SELECT * FROM gwas_upload WHERE guid = '{guid}'").fetchone()
+            result = conn.execute("SELECT * FROM gwas_upload WHERE guid = ?", [guid]).fetchone()
             return result
         finally:
             conn.close()
 
     @log_performance
     def get_coloc_groups_by_gwas_upload_id(self, gwas_upload_id: int):
+        """Coloc groups for an upload result: existing studies and the upload's own (plus any
+        compared uploads') in one shape, distinguished by `source` and `gwas_upload_id`.
+        Returns (rows, columns) matching UploadResultColocGroup fields."""
         conn = self.connect(read_only=True)
         conn.execute(f"ATTACH IF NOT EXISTS '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
 
         try:
-            upload_result = conn.execute(f"""SELECT coloc_groups.*,
+            upload_cursor = conn.execute(
+                """SELECT
+                    coloc_groups.coloc_group_id as coloc_group_id,
+                    NULL as study_id,
+                    coloc_groups.upload_study_extraction_id as study_extraction_id,
+                    coloc_groups.variant_id as variant_id,
+                    coloc_groups.ld_block_id as ld_block_id,
+                    NULL as situated_gene_id,
+                    coloc_groups.h4_connectedness as h4_connectedness,
+                    coloc_groups.h3_connectedness as h3_connectedness,
                     studies_db.variant_annotations.chr as chr,
                     studies_db.variant_annotations.bp as bp,
                     study_extractions.min_p as min_p,
                     NULL as cis_trans,
                     study_extractions.ld_block as ld_block,
-                    study_extractions.unique_study_id as unique_study_id,
-                    study_extractions.study as study,
-                    study_extractions.gwas_upload_id as study_id,
-                    NULL as existing_study_id,
-                    study_extractions.file as file,
-                    NULL as svg_file,
-                    NULL as file_with_lbfs,
-                    studies_db.variant_annotations.display_snp,
-                    studies_db.variant_annotations.rsid,
+                    studies_db.variant_annotations.display_snp as display_snp,
+                    studies_db.variant_annotations.rsid as rsid,
                     NULL as gene,
                     NULL as gene_id,
+                    NULL as situated_gene,
                     NULL as trait_id,
                     study_gwas.name as trait_name,
                     NULL as trait_category,
+                    'Phenotype' as data_type,
+                    NULL as tissue,
+                    NULL as cell_type,
+                    NULL as source_id,
+                    NULL as source_name,
+                    NULL as source_url,
+                    study_extractions.unique_study_id as unique_study_id,
+                    study_extractions.study as study,
+                    study_extractions.file as file,
+                    NULL as svg_file,
+                    NULL as file_with_lbfs,
                     study_gwas.sample_size as sample_size,
                     study_gwas.variable_type as variable_type,
                     study_gwas.ancestry as ancestry,
                     NULL as heritability,
                     NULL as heritability_se,
-                    NULL as data_type,
-                    NULL as tissue,
-                    NULL as cell_type,
-                    NULL as source_id,
-                    NULL as source_name,
-                    NULL as source_url
+                    'upload' as source,
+                    study_extractions.gwas_upload_id as gwas_upload_id
                 FROM coloc_groups
                 LEFT JOIN study_extractions ON coloc_groups.upload_study_extraction_id = study_extractions.id
                 LEFT JOIN gwas_upload as study_gwas ON study_extractions.gwas_upload_id = study_gwas.id
                 LEFT JOIN studies_db.variant_annotations on coloc_groups.variant_id = studies_db.variant_annotations.id
-                WHERE coloc_groups.gwas_upload_id = {gwas_upload_id} and coloc_groups.upload_study_extraction_id is not null""").fetchall()
+                WHERE coloc_groups.gwas_upload_id = ? and coloc_groups.upload_study_extraction_id is not null""",
+                [gwas_upload_id],
+            )
+            upload_result = upload_cursor.fetchall()
+            columns = [d[0] for d in upload_cursor.description]
 
-            existing_result = conn.execute(f"""SELECT cg.*,
-                    studies_db.variant_annotations.chr,
-                    studies_db.variant_annotations.bp,
-                    studies_db.study_extractions.min_p,
-                    studies_db.study_extractions.cis_trans,
-                    studies_db.study_extractions.ld_block,
-                    studies_db.study_extractions.unique_study_id,
-                    studies_db.study_extractions.study,
-                    NULL as study_id,
-                    studies_db.study_extractions.study_id as existing_study_id,
-                    studies_db.study_extractions.file,
-                    studies_db.study_extractions.svg_file,
-                    studies_db.study_extractions.file_with_lbfs,
-                    studies_db.variant_annotations.display_snp,
-                    studies_db.variant_annotations.rsid,
-                    studies_db.gene_annotations.gene,
+            existing_result = conn.execute(
+                """SELECT
+                    cg.coloc_group_id as coloc_group_id,
+                    studies_db.study_extractions.study_id as study_id,
+                    cg.existing_study_extraction_id as study_extraction_id,
+                    cg.variant_id as variant_id,
+                    cg.ld_block_id as ld_block_id,
+                    studies_db.study_extractions.situated_gene_id as situated_gene_id,
+                    cg.h4_connectedness as h4_connectedness,
+                    cg.h3_connectedness as h3_connectedness,
+                    studies_db.variant_annotations.chr as chr,
+                    studies_db.variant_annotations.bp as bp,
+                    studies_db.study_extractions.min_p as min_p,
+                    studies_db.study_extractions.cis_trans as cis_trans,
+                    studies_db.study_extractions.ld_block as ld_block,
+                    studies_db.variant_annotations.display_snp as display_snp,
+                    studies_db.variant_annotations.rsid as rsid,
+                    studies_db.gene_annotations.gene as gene,
                     studies_db.gene_annotations.id as gene_id,
+                    situated_gene_annotations.gene as situated_gene,
                     studies_db.traits.id as trait_id,
-                    studies_db.traits.trait_name,
-                    studies_db.traits.trait_category,
-                    studies_db.studies.sample_size,
-                    studies_db.studies.variable_type,
-                    studies_db.studies.ancestry,
-                    studies_db.studies.heritability,
-                    studies_db.studies.heritability_se,
-                    studies_db.studies.data_type,
-                    studies_db.studies.tissue,
-                    studies_db.studies.cell_type,
+                    studies_db.traits.trait_name as trait_name,
+                    studies_db.traits.trait_category as trait_category,
+                    studies_db.studies.data_type as data_type,
+                    studies_db.studies.tissue as tissue,
+                    studies_db.studies.cell_type as cell_type,
                     studies_db.study_sources.id as source_id,
                     studies_db.study_sources.name as source_name,
-                    studies_db.study_sources.url as source_url
+                    studies_db.study_sources.url as source_url,
+                    studies_db.study_extractions.unique_study_id as unique_study_id,
+                    studies_db.study_extractions.study as study,
+                    studies_db.study_extractions.file as file,
+                    studies_db.study_extractions.svg_file as svg_file,
+                    studies_db.study_extractions.file_with_lbfs as file_with_lbfs,
+                    studies_db.studies.sample_size as sample_size,
+                    studies_db.studies.variable_type as variable_type,
+                    studies_db.studies.ancestry as ancestry,
+                    studies_db.studies.heritability as heritability,
+                    studies_db.studies.heritability_se as heritability_se,
+                    'existing' as source,
+                    NULL as gwas_upload_id
                 FROM coloc_groups as cg
                 LEFT JOIN studies_db.study_extractions ON cg.existing_study_extraction_id = studies_db.study_extractions.id
                 LEFT JOIN studies_db.studies ON studies_db.study_extractions.study_id = studies_db.studies.id
-                LEFT JOIN studies_db.variant_annotations on cg.variant_id = studies_db.variant_annotations.id 
+                LEFT JOIN studies_db.variant_annotations on cg.variant_id = studies_db.variant_annotations.id
                 LEFT JOIN studies_db.gene_annotations on studies_db.studies.gene_id = studies_db.gene_annotations.id
+                LEFT JOIN studies_db.gene_annotations as situated_gene_annotations on studies_db.study_extractions.situated_gene_id = situated_gene_annotations.id
                 LEFT JOIN studies_db.traits ON studies_db.studies.trait_id = studies_db.traits.id
                 LEFT JOIN studies_db.study_sources ON studies_db.studies.source_id = studies_db.study_sources.id
-                WHERE cg.gwas_upload_id = {gwas_upload_id} and cg.existing_study_extraction_id is not null""").fetchall()
+                WHERE cg.gwas_upload_id = ? and cg.existing_study_extraction_id is not null""",
+                [gwas_upload_id],
+            ).fetchall()
         finally:
             conn.close()
-        return upload_result + existing_result
+        return upload_result + existing_result, columns
 
     @log_performance
     def get_coloc_pairs_by_gwas_upload_id(self, gwas_upload_id: int):
+        """Coloc pairs for an upload result, shaped like UploadResultColocPair: each side's id
+        resolves to a study_extractions row of the matching `source`. Returns (rows, columns)."""
         conn = self.connect(read_only=True)
         try:
-            result = conn.execute(f"SELECT * FROM coloc_pairs WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
-            return result
+            cursor = conn.execute(
+                """SELECT
+                    COALESCE(upload_study_extraction_a_id, existing_study_extraction_a_id) as study_extraction_a_id,
+                    CASE WHEN upload_study_extraction_a_id IS NOT NULL THEN 'upload' ELSE 'existing' END as source_a,
+                    COALESCE(upload_study_extraction_b_id, existing_study_extraction_b_id) as study_extraction_b_id,
+                    CASE WHEN upload_study_extraction_b_id IS NOT NULL THEN 'upload' ELSE 'existing' END as source_b,
+                    ld_block_id, h3, h4, false_positive, false_negative, ignore
+                FROM coloc_pairs WHERE gwas_upload_id = ?""",
+                [gwas_upload_id],
+            )
+            rows = cursor.fetchall()
+            columns = [d[0] for d in cursor.description]
+            return rows, columns
         finally:
             conn.close()
 
@@ -184,6 +227,59 @@ class GwasDBClient:
             conn.close()
 
     @log_performance
+    def get_upload_study_extractions_for_response(self, study_extraction_ids: List[int]):
+        """Upload study_extractions shaped like UploadResultStudyExtraction: `study` and
+        `trait_name` come from the owning upload, `display_snp`/`rsid` from the studies DB's
+        variant annotations. Returns (rows, columns)."""
+        if not study_extraction_ids:
+            return [], []
+        conn = self.connect(read_only=True)
+        conn.execute(f"ATTACH IF NOT EXISTS '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
+        try:
+            placeholders = ",".join(["?" for _ in study_extraction_ids])
+            cursor = conn.execute(
+                f"""SELECT
+                    study_extractions.id as id,
+                    NULL as study_id,
+                    study_extractions.variant_id as variant_id,
+                    studies_db.variant_annotations.display_snp as display_snp,
+                    studies_db.variant_annotations.rsid as rsid,
+                    study_extractions.ld_block_id as ld_block_id,
+                    study_extractions.unique_study_id as unique_study_id,
+                    gwas_upload.guid as study,
+                    study_extractions.file as file,
+                    NULL as svg_file,
+                    NULL as file_with_lbfs,
+                    study_extractions.chr as chr,
+                    study_extractions.bp as bp,
+                    study_extractions.min_p as min_p,
+                    NULL as cis_trans,
+                    study_extractions.ld_block as ld_block,
+                    NULL as credible_set,
+                    NULL as gene_id,
+                    NULL as situated_gene_id,
+                    NULL as gene,
+                    NULL as trait_id,
+                    gwas_upload.name as trait_name,
+                    NULL as trait_category,
+                    'Phenotype' as data_type,
+                    NULL as tissue,
+                    NULL as cell_type,
+                    'upload' as source,
+                    study_extractions.gwas_upload_id as gwas_upload_id
+                FROM study_extractions
+                LEFT JOIN gwas_upload ON study_extractions.gwas_upload_id = gwas_upload.id
+                LEFT JOIN studies_db.variant_annotations ON study_extractions.variant_id = studies_db.variant_annotations.id
+                WHERE study_extractions.id IN ({placeholders})""",
+                study_extraction_ids,
+            )
+            rows = cursor.fetchall()
+            columns = [d[0] for d in cursor.description]
+            return rows, columns
+        finally:
+            conn.close()
+
+    @log_performance
     def get_study_extractions_by_unique_study_id(
         self, unique_study_ids: List[str], exclude_gwas_upload_id: Optional[int] = None
     ):
@@ -205,9 +301,21 @@ class GwasDBClient:
 
     @log_performance
     def get_associations_by_gwas_upload_id(self, gwas_upload_id: int):
+        """Associations for an upload result, shaped like UploadResultAssociation: `source`
+        distinguishes upload rows (raw `study_id`) from existing rows (raw `existing_study_id`).
+        Returns (rows, columns)."""
         conn = self.connect(read_only=True)
         try:
-            cursor = conn.execute(f"SELECT * FROM associations WHERE gwas_upload_id = {gwas_upload_id}")
+            cursor = conn.execute(
+                """SELECT
+                    variant_id,
+                    CASE WHEN study_id IS NOT NULL THEN 'upload' ELSE 'existing' END as source,
+                    existing_study_id as study_id,
+                    study_id as gwas_upload_id,
+                    beta, se, p, eaf, imputed
+                FROM associations WHERE gwas_upload_id = ?""",
+                [gwas_upload_id],
+            )
             rows = cursor.fetchall()
             columns = [d[0] for d in cursor.description]
             return rows, columns

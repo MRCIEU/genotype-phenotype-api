@@ -502,18 +502,16 @@ class TraitResponse(BaseModel):
     coloc_groups: Optional[List[ColocGroup]] = None
     rare_results: Optional[List[RareResult]] = None
     study_extractions: Optional[List[ExtendedStudyExtraction]] = None
-    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
     associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
 
 
 class UploadTraitResponse(BaseModel):
     trait: GwasUpload
-    coloc_groups: Optional[List[ExtendedUploadColocGroup]] = None
-    coloc_pairs: Optional[List[UploadColocPair]] = None
-    study_extractions: Optional[List[ExtendedStudyExtraction]] = None
-    upload_study_extractions: Optional[List[UploadStudyExtraction]] = None
+    coloc_groups: Optional[List[UploadResultColocGroup]] = None
+    coloc_pairs: Optional[List[UploadResultColocPair]] = None
+    study_extractions: Optional[List[UploadResultStudyExtraction]] = None
     rare_results: Optional[List[RareResult]] = None
-    associations: Optional[List[dict]] = None  # allow raw dict rows to avoid overhead
+    associations: Optional[List[UploadResultAssociation]] = None
     queue_position: Optional[int] = None
     queue_status: Optional[str] = None  # "in_progress" | "queued" | None
 
@@ -710,41 +708,62 @@ class UploadColocPair(BaseModel):
     ignore: bool
 
 
-class ExtendedUploadColocGroup(UploadColocGroup):
-    chr: Optional[int] = None
-    bp: Optional[int] = None
-    min_p: Optional[float] = None
-    cis_trans: Optional[str] = None
-    ld_block: Optional[str] = None
+class UploadResultStudyExtraction(ExtendedStudyExtraction):
+    """A study_extractions row for an upload result: existing studies and the upload's own
+    (plus any compared uploads') in one shape, distinguished by `source` and `gwas_upload_id`."""
+
+    study_id: Optional[int] = None
+    trait_id: Optional[int] = None
+    trait_name: Optional[str] = None
+    data_type: Optional[str] = None
+    source: str
+    gwas_upload_id: Optional[int] = None
+
+
+class UploadResultColocGroup(ColocGroup):
+    """A coloc_groups row for an upload result, distinguished by `source` and `gwas_upload_id`."""
+
+    study_id: Optional[int] = None
+    source_id: Optional[int] = None
+    source_name: Optional[str] = None
+    source_url: Optional[str] = None
     unique_study_id: Optional[str] = None
     study: Optional[str] = None
-    study_id: Optional[int] = None
-    existing_study_id: Optional[int] = None
     file: Optional[str] = None
     svg_file: Optional[str] = None
     file_with_lbfs: Optional[str] = None
-    display_snp: Optional[str] = None
-    rsid: Optional[str] = None
-    gene: Optional[str] = None
-    gene_id: Optional[int] = None
-    trait_id: Optional[int] = None
-    trait_name: Optional[str] = None
-    trait_category: Optional[str] = None
     sample_size: Optional[int] = None
     variable_type: Optional[str] = None
     ancestry: Optional[str] = None
     heritability: Optional[float] = None
     heritability_se: Optional[float] = None
-    data_type: Optional[str] = None
-    tissue: Optional[str] = None
-    cell_type: Optional[str] = None
-    source_id: Optional[int] = None
-    source_name: Optional[str] = None
-    source_url: Optional[str] = None
+    source: str
+    gwas_upload_id: Optional[int] = None
 
-    @field_validator("data_type")
-    def validate_data_type(cls, v):
-        return StudyDataType[v].value if enum_has_member(StudyDataType, v) else v
+
+class UploadResultColocPair(BaseModel):
+    study_extraction_a_id: int
+    source_a: str
+    study_extraction_b_id: int
+    source_b: str
+    ld_block_id: int
+    h3: float
+    h4: float
+    false_positive: bool
+    false_negative: bool
+    ignore: bool
+
+
+class UploadResultAssociation(BaseModel):
+    variant_id: int
+    source: str
+    study_id: Optional[int] = None
+    gwas_upload_id: Optional[int] = None
+    beta: float
+    se: float
+    p: float
+    eaf: float
+    imputed: bool
 
 
 class PathwayEnrichmentResult(BaseModel):
