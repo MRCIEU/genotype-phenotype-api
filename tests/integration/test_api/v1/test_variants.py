@@ -88,7 +88,7 @@ def test_get_variants_by_grange(variants_in_grange):
     assert len(variants) > 0
     for row in variants:
         variant_model = Variant(**row)
-        for field in variant_model.model_fields:
+        for field in Variant.model_fields:
             optional_fields = [
                 "canonical",
                 "gene_id",

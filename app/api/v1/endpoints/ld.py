@@ -39,10 +39,8 @@ async def get_matrix(
             if not resolved_variant_ids:
                 raise HTTPException(status_code=400, detail="No SNPs found provided in the request")
             ld_matrix = ld_db.get_ld_matrix(resolved_variant_ids)
-            print(resolved_variant_ids)
-            print(ld_matrix)
-            if ld_matrix is None or len(ld_matrix) == 0:
-                raise HTTPException(status_code=404, detail=f"LD matrix for variants {variants} not found")
+            if not ld_matrix:
+                return Lds(lds=[])
 
             response = convert_duckdb_to_pydantic_model(Ld, ld_matrix)
             response = Lds(lds=response)

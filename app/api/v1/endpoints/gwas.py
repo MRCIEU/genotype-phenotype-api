@@ -16,21 +16,21 @@ from app.services.email_service import EmailService
 from app.models.schemas import (
     DeleteGwasRequest,
     ExtendedStudyExtraction,
-    ExtendedUploadColocGroup,
     GwasUpload,
     ProcessGwasRequest,
     GwasStatus,
+    UploadResultAssociation,
+    UploadResultColocGroup,
+    UploadResultColocPair,
+    UploadResultStudyExtraction,
     UploadTraitResponse,
     UpdateGwasRequest,
-    UploadStudyExtraction,
-    UploadColocPair,
     convert_duckdb_to_pydantic_model,
     convert_duckdb_tuples_to_dicts,
 )
 from app.rate_limiting import limiter, DEFAULT_RATE_LIMIT
 from app.services.gwas_upload_service import GwasUploadService
 from app.services.oci_service import OCIService
-from app.services.studies_service import StudiesService
 from app.db.utils import run_sync
 
 settings = get_settings()
@@ -272,57 +272,56 @@ async def get_gwas(
 
                 return UploadTraitResponse(trait=gwas, queue_status=queue_status, queue_position=queue_position)
 
-            coloc_groups = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
-            coloc_groups = convert_duckdb_to_pydantic_model(ExtendedUploadColocGroup, coloc_groups)
-            coloc_pairs = gwas_upload_db.get_coloc_pairs_by_gwas_upload_id(gwas.id)
-            coloc_pairs = convert_duckdb_to_pydantic_model(UploadColocPair, coloc_pairs)
+            coloc_group_rows, coloc_group_columns = gwas_upload_db.get_coloc_groups_by_gwas_upload_id(gwas.id)
+            coloc_groups = [
+                UploadResultColocGroup(**row)
+                for row in convert_duckdb_tuples_to_dicts(coloc_group_rows, coloc_group_columns)
+            ]
+            coloc_pair_rows, coloc_pair_columns = gwas_upload_db.get_coloc_pairs_by_gwas_upload_id(gwas.id)
+            coloc_pairs = [
+                UploadResultColocPair(**row)
+                for row in convert_duckdb_tuples_to_dicts(coloc_pair_rows, coloc_pair_columns)
+            ]
 
-            # Collect study_extraction_ids from coloc_groups and coloc_pairs (covers current + compare_with uploads)
-            upload_study_extraction_ids = (
-                [c.study_extraction_id for c in coloc_groups if c.study_extraction_id is not None]
-                + [p.study_extraction_id_a for p in coloc_pairs if p.study_extraction_id_a is not None]
-                + [p.study_extraction_id_b for p in coloc_pairs if p.study_extraction_id_b is not None]
+            # Collect study_extraction ids referenced by coloc_groups and coloc_pairs, split by
+            # source (covers the current upload, any compare_with uploads, and existing studies)
+            upload_extraction_ids = list(
+                {c.study_extraction_id for c in coloc_groups if c.source == "upload"}
+                | {p.study_extraction_a_id for p in coloc_pairs if p.source_a == "upload"}
+                | {p.study_extraction_b_id for p in coloc_pairs if p.source_b == "upload"}
             )
-            upload_study_extraction_ids = list(set(upload_study_extraction_ids))
-            upload_study_extractions = gwas_upload_db.get_study_extractions_by_ids(upload_study_extraction_ids)
-            upload_study_extractions = convert_duckdb_to_pydantic_model(UploadStudyExtraction, upload_study_extractions)
+            existing_extraction_ids = list(
+                {c.study_extraction_id for c in coloc_groups if c.source == "existing"}
+                | {p.study_extraction_a_id for p in coloc_pairs if p.source_a == "existing"}
+                | {p.study_extraction_b_id for p in coloc_pairs if p.source_b == "existing"}
+            )
+
+            existing_extractions = convert_duckdb_to_pydantic_model(
+                ExtendedStudyExtraction, studies_db.get_study_extractions_by_id(existing_extraction_ids)
+            )
+            existing_extractions = [
+                UploadResultStudyExtraction(**e.model_dump(), source="existing", gwas_upload_id=None)
+                for e in existing_extractions
+                if e is not None
+            ]
+
+            upload_rows, upload_columns = gwas_upload_db.get_upload_study_extractions_for_response(
+                upload_extraction_ids
+            )
+            upload_extractions = [
+                UploadResultStudyExtraction(**row) for row in convert_duckdb_tuples_to_dicts(upload_rows, upload_columns)
+            ]
 
             associations = None
             if include_associations:
                 assoc_rows, assoc_columns = gwas_upload_db.get_associations_by_gwas_upload_id(gwas.id)
-                associations = convert_duckdb_tuples_to_dicts(assoc_rows, assoc_columns)
-
-            # Collect existing_study_extraction_ids from coloc_groups and coloc_pairs (studies DB)
-            existing_study_extraction_ids = (
-                [c.existing_study_extraction_id for c in coloc_groups if c.existing_study_extraction_id is not None]
-                + [
-                    p.existing_study_extraction_id_a
-                    for p in coloc_pairs
-                    if p.existing_study_extraction_id_a is not None
+                associations = [
+                    UploadResultAssociation(**row) for row in convert_duckdb_tuples_to_dicts(assoc_rows, assoc_columns)
                 ]
-                + [
-                    p.existing_study_extraction_id_b
-                    for p in coloc_pairs
-                    if p.existing_study_extraction_id_b is not None
-                ]
-            )
-            existing_study_extraction_ids = list(set(existing_study_extraction_ids))
-            existing_study_extractions = studies_db.get_study_extractions_by_id(existing_study_extraction_ids)
-            existing_study_extractions = convert_duckdb_to_pydantic_model(
-                ExtendedStudyExtraction, existing_study_extractions
-            )
-            studies_service = StudiesService()
-            if existing_study_extractions is not None and not isinstance(existing_study_extractions, list):
-                existing_study_extractions = [existing_study_extractions]
-            existing_study_extractions = studies_service.merge_study_extractions_for_upload_coloc_pairs(
-                list(existing_study_extractions or []),
-                coloc_pairs,
-            )
 
             return UploadTraitResponse(
                 trait=gwas,
-                study_extractions=existing_study_extractions,
-                upload_study_extractions=upload_study_extractions,
+                study_extractions=existing_extractions + upload_extractions,
                 coloc_groups=coloc_groups,
                 coloc_pairs=coloc_pairs,
                 rare_results=[],

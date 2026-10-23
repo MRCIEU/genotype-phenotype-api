@@ -190,7 +190,7 @@ def rerun_guid(mock_redis, mock_oci_service, mock_email_service):
         "reference_build": "GRCh38",
         "email": "ae@email.com",
         "name": "Example Study",
-        "category": "continuous",
+        "variable_type": "continuous",
         "is_published": "false",
         "doi": None,
         "should_be_added": "false",

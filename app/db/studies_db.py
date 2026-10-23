@@ -42,7 +42,7 @@ class StudiesDBClient:
     @log_performance
     def get_traits(self, trait_ids: List[int] = None):
         query = f"""
-            SELECT traits.*, studies.variant_type, studies.sample_size, studies.category, studies.ancestry, studies.heritability, studies.heritability_se
+            SELECT traits.*, studies.variant_type, studies.sample_size, studies.variable_type, studies.ancestry, studies.heritability, studies.heritability_se
             FROM traits
             JOIN studies ON traits.id = studies.trait_id
             WHERE traits.data_type IN ({",".join(self.common_data_types)})
@@ -76,7 +76,7 @@ class StudiesDBClient:
             params.append(ids)
 
         if names:
-            conditions.append("trait IN (SELECT * FROM UNNEST(?))")
+            conditions.append("pipeline_id IN (SELECT * FROM UNNEST(?))")
             params.append(names)
 
         if not conditions:
@@ -88,7 +88,7 @@ class StudiesDBClient:
     @log_performance
     def get_trait(self, trait_id: str | int):
         if isinstance(trait_id, str) and not trait_id.isdigit():
-            query = "SELECT * FROM traits WHERE trait = ?"
+            query = "SELECT * FROM traits WHERE pipeline_id = ?"
         else:
             query = "SELECT * FROM traits WHERE id = ?"
         return self.studies_conn.execute(query, [trait_id]).fetchone()

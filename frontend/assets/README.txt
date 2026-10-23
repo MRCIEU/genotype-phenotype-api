@@ -8,8 +8,7 @@ Files may include:
 - rare.tsv: Rare variant results  
 - trait.tsv: High level information about the trait
 - gene.tsv: High level information about the gene
-- study_extractions.tsv: Study extraction data
-- upload_study_extractions.tsv: Additional upload-specific study extraction data
+- study_extractions.tsv: Study extraction data (for GWAS uploads, covers both existing studies and the upload's own, marked by the "source" column)
 - README.txt: This file
 
 Column descriptions:

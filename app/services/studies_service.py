@@ -11,7 +11,6 @@ from app.models.schemas import (
     Study,
     StudyDataType,
     TraitDuplicate,
-    UploadColocPair,
     VariantType,
     convert_duckdb_to_pydantic_model,
 )
@@ -106,44 +105,6 @@ class StudiesService:
         if not isinstance(extra, list):
             extra = [extra]
         merged = list(study_extractions) + extra
-        return StudiesService.deduplicate_by_key(merged, lambda e: e.id)
-
-    @staticmethod
-    def existing_study_extraction_ids_from_upload_coloc_pairs(
-        coloc_pairs: Optional[List[UploadColocPair]],
-    ) -> List[int]:
-        if not coloc_pairs:
-            return []
-        ids: set[int] = set()
-        for p in coloc_pairs:
-            for eid in (p.existing_study_extraction_id_a, p.existing_study_extraction_id_b):
-                if eid is not None:
-                    ids.add(int(eid))
-        return list(ids)
-
-    def merge_study_extractions_for_upload_coloc_pairs(
-        self,
-        study_extractions: Optional[List[ExtendedStudyExtraction]],
-        coloc_pairs: Optional[List[UploadColocPair]],
-    ) -> List[ExtendedStudyExtraction]:
-        """Like merge_study_extractions_for_coloc_pairs, for GWAS upload pair rows (studies DB ids)."""
-        if not coloc_pairs:
-            base: list[ExtendedStudyExtraction] = list(study_extractions or [])
-            return base
-        pair_ids = self.existing_study_extraction_ids_from_upload_coloc_pairs(coloc_pairs)
-        if not pair_ids:
-            return list(study_extractions or [])
-        have = {e.id for e in (study_extractions or [])}
-        missing = list({i for i in pair_ids if i not in have})
-        if not missing:
-            return list(study_extractions or [])
-        rows = self.db.get_study_extractions_by_id(missing)
-        if not rows:
-            return list(study_extractions or [])
-        extra = convert_duckdb_to_pydantic_model(ExtendedStudyExtraction, rows)
-        if not isinstance(extra, list):
-            extra = [extra]
-        merged = list(study_extractions or []) + extra
         return StudiesService.deduplicate_by_key(merged, lambda e: e.id)
 
     @redis_cache(
@@ -275,12 +236,12 @@ class StudiesService:
             BasicTraitResponse(
                 id=trait[0],
                 data_type=trait[1],
-                trait=trait[2],
+                pipeline_id=trait[2],
                 trait_name=trait[3],
                 trait_category=trait[4],
                 variant_type=trait[5],
                 sample_size=trait[6],
-                category=trait[7],
+                variable_type=trait[7],
                 ancestry=trait[8],
                 heritability=trait[9],
                 heritability_se=trait[10],

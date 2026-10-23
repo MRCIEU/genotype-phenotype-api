@@ -107,7 +107,7 @@ export class ResultsTable extends HTMLElement {
                                         ) {
                                             return `<td><a href="trait.html?id=${row.trait_id}">${row.trait_name}</a></td>`;
                                         } else if (col.key === "min_p") {
-                                            return `<td>${row.min_p.toExponential(2)}</td>`;
+                                            return `<td>${row.min_p != null ? row.min_p.toExponential(2) : ""}</td>`;
                                         } else if (col.key === "tissue" && row.cell_type) {
                                             return `<td>${row.tissue} (${row.cell_type})</td>`;
                                         } else {

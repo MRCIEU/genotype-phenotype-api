@@ -16,7 +16,7 @@ def test_get_traits():
         assert trait.id is not None
         assert trait.trait_name is not None
         assert trait.sample_size is not None
-        assert trait.category is not None
+        assert trait.variable_type is not None
         assert trait.ancestry is not None
         assert trait.num_study_extractions is not None
         assert trait.num_coloc_groups is not None
@@ -143,8 +143,6 @@ def test_get_trait_by_id():
         assert rare_result.chr is not None
         assert rare_result.bp is not None
         assert rare_result.min_p is not None
-
-    assert trait_response.upload_study_extractions is None
 
 
 def test_get_trait_by_name():

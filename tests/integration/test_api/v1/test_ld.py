@@ -37,6 +37,12 @@ def test_get_ld_matrix_with_variants(variants_in_ld_db):
         assert row.r is not None
 
 
+def test_get_ld_matrix_with_no_ld_pairs_returns_empty():
+    response = client.get("v1/ld/matrix?variant_ids=999999998&variant_ids=999999999")
+    assert response.status_code == 200
+    assert response.json() == {"lds": []}
+
+
 def test_get_ld_proxy_with_variant_ids(variants_in_ld_db):
     variant_ids = list(variants_in_ld_db.keys())
     response = client.get(f"v1/ld/proxies?variant_ids={variant_ids[0]}&variant_ids={variant_ids[1]}")

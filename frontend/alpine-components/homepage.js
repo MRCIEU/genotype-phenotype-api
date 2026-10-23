@@ -266,7 +266,7 @@ export default function homepage() {
                 name: this.uploadMetadata.formData.traitName,
                 reference_build: this.uploadMetadata.formData.genomeBuild,
                 email: this.uploadMetadata.formData.email,
-                category: this.uploadMetadata.formData.studyType.toLowerCase(),
+                variable_type: this.uploadMetadata.formData.studyType.toLowerCase(),
                 is_published: !!this.uploadMetadata.formData.isPublished,
                 doi: this.uploadMetadata.formData.doi,
                 should_be_added: !!this.uploadMetadata.formData.shouldBeAdded,
