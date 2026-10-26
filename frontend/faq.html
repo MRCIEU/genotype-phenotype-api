@@ -134,19 +134,19 @@ gpmappy.search_gpmap('haemoglobin')</code></pre>
                 </p>
                 <ul>
                     <li>
-                        <b>Upload:</b> Your file is received by the GPMap API server (an OCI compute instance) and copied
-                        to a private OCI Object Storage bucket. The temporary copy on the API server is removed once the
-                        upload has been queued.
+                        <b>Upload:</b> Your file is received by the GPMap API server (an OCI compute instance) and
+                        copied to a private OCI Object Storage bucket. The temporary copy on the API server is removed
+                        once the upload has been queued.
                     </li>
                     <li>
                         <b>Processing:</b> A dedicated OCI upload server downloads the file from the bucket and runs the
-                        <a href="#gwas-upload-pipeline-view">GWAS upload pipeline</a>. Intermediate files (e.g. extracted
-                        regions and fine-mapping results) are kept on that server's disk.
+                        <a href="#gwas-upload-pipeline-view">GWAS upload pipeline</a>. Intermediate files (e.g.
+                        extracted regions and fine-mapping results) are kept on that server's disk.
                     </li>
                     <li>
                         <b>Results:</b> Processed files are written back to the bucket, and the colocalization and
-                        association results are stored in the GPMap results database on the API server. This database
-                        is periodically backed up to the same bucket.
+                        association results are stored in the GPMap results database on the API server. This database is
+                        periodically backed up to the same bucket.
                     </li>
                     <li>
                         <b>Retention:</b> Uploaded files and results are kept until they are deleted; there is no
