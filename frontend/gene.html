@@ -201,7 +201,7 @@
                                             Download zip file
                                         </a>
                                         <a class="dropdown-item" @click="openRPackageModal(); open = false;">
-                                            Download via R package
+                                            Download via R / Python package
                                         </a>
                                     </div>
                                 </div>
@@ -210,10 +210,11 @@
                     </div>
                 </div>
 
-                <!-- R Package Modal -->
+                <!-- R / Python Package Modal -->
                 <r-package-modal
                     :show="rPackageModalOpen"
                     :snippet="`gpmapr::gene('${new URLSearchParams(location.search).get('id')}')`"
+                    :python-snippet="`gpmappy.gene('${new URLSearchParams(location.search).get('id')}')`"
                     @close="closeRPackageModal()"
                 ></r-package-modal>
                 <!-- Data tables -->

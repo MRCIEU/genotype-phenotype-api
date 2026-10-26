@@ -17,6 +17,7 @@ from app.models.schemas import (
 from app.db.studies_db import StudiesDBClient
 from app.db.redis import RedisClient
 from typing import Callable, List, Optional, TypeVar
+from urllib.parse import urlparse
 from app.logging_config import get_logger
 
 from app.services.redis_decorator import redis_cache
@@ -395,7 +396,7 @@ class StudiesService:
         study_models = convert_duckdb_to_pydantic_model(Study, studies)
 
         for study in study_models:
-            if study and study.url and study.url.startswith("https://opengwas.io"):
+            if study and study.url and urlparse(study.url).hostname == "opengwas.io":
                 # Concat url with /datasets/ and the study_name
                 full_url = f"{study.url.rstrip('/')}/datasets/{study.study_name}"
                 study.url = self._replace_first_two_dashes_with_underscores(full_url)

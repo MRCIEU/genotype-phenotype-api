@@ -238,14 +238,14 @@
                                 <div class="mt-2">
                                     <div class="box has-background-success-light has-text-centered py-4 px-5">
                                         <p class="mb-3 has-text-weight-semibold is-size-6">
-                                            Analyze data programmatically with our R package
+                                            Analyze data programmatically with our R and Python packages
                                         </p>
                                         <button
                                             class="button is-success is-medium is-size-6"
                                             data-target="r-package-modal"
                                             @click="openRPackageModal()"
                                         >
-                                            Get started with gpmapr
+                                            Get started with gpmapr or gpmappy
                                         </button>
                                     </div>
                                 </div>
@@ -267,11 +267,11 @@
                                         ></button>
                                         <div x-show="uploadMetadata.uploadSuccess">
                                             <h3 class="is-4">Upload Successful</h3>
-                                            <p x-html="uploadMetadata.message"></p>
+                                            <p x-text="uploadMetadata.message"></p>
                                         </div>
                                         <div x-show="uploadMetadata.uploadSuccess === false" class="notification">
                                             <h3 class="title is-4">Upload Failed</h3>
-                                            <p x-html="uploadMetadata.message"></p>
+                                            <p x-text="uploadMetadata.message"></p>
                                         </div>
                                         <div class="buttons mt-4">
                                             <template x-if="uploadMetadata.uploadSuccess">
@@ -666,10 +666,11 @@
                             </div>
                         </div>
 
-                        <!-- R Package Modal -->
+                        <!-- R / Python Package Modal -->
                         <r-package-modal
                             :show="rPackageModalOpen"
                             :snippet="'#to search for a trait, gene, or variant:\ngpmapr::search_gpmap(\'Haemoglobin\')\n#get data for a gene:\ngpmapr::gene(\'TREM2\')'"
+                            :python-snippet="'#to search for a trait, gene, or variant:\ngpmappy.search_gpmap(\'Haemoglobin\')\n#get data for a gene:\ngpmappy.gene(\'TREM2\')'"
                             @close="closeRPackageModal()"
                         ></r-package-modal>
 

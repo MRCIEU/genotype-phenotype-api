@@ -205,7 +205,9 @@ class GwasDBClient:
     def get_study_extractions_by_gwas_upload_id(self, gwas_upload_id: int):
         conn = self.connect(read_only=True)
         try:
-            result = conn.execute(f"SELECT * FROM study_extractions WHERE gwas_upload_id = {gwas_upload_id}").fetchall()
+            result = conn.execute(
+                "SELECT * FROM study_extractions WHERE gwas_upload_id = ?", [gwas_upload_id]
+            ).fetchall()
             return result
         finally:
             conn.close()
@@ -348,7 +350,8 @@ class GwasDBClient:
         upload_metadata = json.dumps(gwas_request.model_dump(mode="json"))
         conn = self.connect()
         try:
-            result = conn.execute(f"""INSERT INTO gwas_upload (
+            result = conn.execute(
+                """INSERT INTO gwas_upload (
                 guid,
                 name,
                 email,
@@ -360,19 +363,21 @@ class GwasDBClient:
                 should_be_added,
                 upload_metadata,
                 status
-            ) VALUES (
-                '{gwas_request.guid}',
-                '{gwas_request.name}',
-                '{gwas_request.email}',
-                {gwas_request.sample_size},
-                '{gwas_request.ancestry}',
-                '{gwas_request.variable_type}',
-                {gwas_request.is_published},
-                '{gwas_request.doi}',
-                {gwas_request.should_be_added},
-                '{upload_metadata}',
-                '{gwas_request.status.value}'
-            ) RETURNING *""").fetchone()
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *""",
+                [
+                    gwas_request.guid,
+                    gwas_request.name,
+                    gwas_request.email,
+                    gwas_request.sample_size,
+                    gwas_request.ancestry,
+                    gwas_request.variable_type,
+                    gwas_request.is_published,
+                    gwas_request.doi,
+                    gwas_request.should_be_added,
+                    upload_metadata,
+                    gwas_request.status.value,
+                ],
+            ).fetchone()
             conn.commit()
             return result
         finally:

@@ -97,8 +97,10 @@
 
                         <h2>Accessing the Map</h2>
                         <p>
-                            The GPMap is an open-access resource available via our web interface or the
-                            <a href="https://github.com/MRCIEU/gpmapr">gpmapr</a> R package for programmatic analysis.
+                            The GPMap is an open-access resource available via our web interface, the
+                            <a href="https://github.com/MRCIEU/gpmapr">gpmapr</a> R package, or the
+                            <a href="https://github.com/MRCIEU/gpmappy">gpmappy</a> Python package for programmatic
+                            analysis.
                         </p>
 
                         <h2>Quick Start with gpmapr</h2>
@@ -114,6 +116,19 @@ gpmapr::gene('TREM2')
 # Project your own results against the map
 gpmapr::upload_gwas(file = 'my_gwas.tsv.gz', name = 'Discovery Study', ...)</code></pre>
 
+                        <h2>Quick Start with gpmappy</h2>
+                        <pre><code># Install the package
+pip install gpmappy
+
+# Search for traits, genes, or variants
+gpmappy.search_gpmap('Haemoglobin')
+
+# Retrieve high-resolution data for a specific target
+gpmappy.gene('TREM2')
+
+# Project your own results against the map
+gpmappy.upload_gwas(file='my_gwas.tsv.gz', name='Discovery Study', ...)</code></pre>
+
                         <h2>Project Components</h2>
                         <p>The Genotype-Phenotype Map is comprised of 3 distinct efforts:</p>
                         <ul>
@@ -122,7 +137,10 @@ gpmapr::upload_gwas(file = 'my_gwas.tsv.gz', name = 'Discovery Study', ...)</cod
                                     >The data processing pipeline (which includes GWAS Upload)</a
                                 >
                             </li>
-                            <li><a href="https://github.com/MRCIEU/gpmapr">An R package</a></li>
+                            <li>
+                                Client packages: <a href="https://github.com/MRCIEU/gpmapr">R (gpmapr)</a> and
+                                <a href="https://github.com/MRCIEU/gpmappy">Python (gpmappy)</a>
+                            </li>
                             <li><a href="https://github.com/MRCIEU/genotype-phenotype-api">The website and API</a></li>
                         </ul>
 

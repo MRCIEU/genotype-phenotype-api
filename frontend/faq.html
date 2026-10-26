@@ -47,21 +47,29 @@
         <div class="content columns mt-2 is-centered">
             <div x-data="faq" class="column is-8">
                 <h1>FAQ</h1>
-                <h2 id="r-package-view">How do I use the R package?</h2>
+                <h2 id="r-package-view">How do I use the R or Python package?</h2>
 
                 <p>
-                    <a href="https://github.com/MRCIEU/gpmapr">The R package</a> is used to download the data from the
-                    API and perform the colocalization and rare variant analysis.
+                    <a href="https://github.com/MRCIEU/gpmapr">The R package (gpmapr)</a> or the
+                    <a href="https://github.com/MRCIEU/gpmappy">Python package (gpmappy)</a> can be used to download the
+                    data from the API and perform the colocalization and rare variant analysis.
                 </p>
                 <ul>
                     <li>
-                        <b>Installation and usage</b>:
+                        <b>Installation and usage (R)</b>:
                         <pre><code>pak::pak('MRCIEU/gpmapr')
 library(gpmapr)
 search_gpmap('haemoglobin')</code></pre>
                     </li>
                     <li>
-                        <b>Usage</b>: There are a series of vignettes available.
+                        <b>Installation and usage (Python)</b>:
+                        <pre><code>pip install gpmappy
+
+import gpmappy
+gpmappy.search_gpmap('haemoglobin')</code></pre>
+                    </li>
+                    <li>
+                        <b>Usage</b>: There are a series of R vignettes available.
                         <a href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
                             >Please start with the introductory vignette.</a
                         >
@@ -88,6 +96,16 @@ search_gpmap('haemoglobin')</code></pre>
   ...
 )</code></pre>
                     </li>
+                    <li>
+                        Use the <a href="https://github.com/MRCIEU/gpmappy">gpmappy</a> Python package:
+                        <pre><code>gpmappy.upload_gwas(
+    file='gwas.tsv.gz',
+    name='My new GWAS',
+    email='me@example.com',
+    column_names={...},
+    ...
+)</code></pre>
+                    </li>
                 </ul>
                 <h2 id="upload-data-privacy-view">Is my uploaded data available to others?</h2>
                 <p>
@@ -103,8 +121,42 @@ search_gpmap('haemoglobin')</code></pre>
                         <a href="contact.html">contact us</a> to collaborate.
                     </li>
                     <li>
-                        If you have already uploaded your data and wish to remove it,
-                        <a href="contact.html">contact us</a> to have it removed.
+                        If you have already uploaded your data and wish to remove it, use the <b>Delete GWAS</b> button
+                        on the results page, or <a href="contact.html">contact us</a> to have it removed.
+                    </li>
+                </ul>
+                <h2 id="upload-data-storage-view">Where is my uploaded data stored and processed?</h2>
+                <p>
+                    GPMap is hosted entirely on Oracle Cloud Infrastructure (OCI), in a cloud account managed by the
+                    University of Bristol under contract with Oracle. Uploaded GWAS summary statistics are not stored or
+                    processed on University of Bristol on-premises servers, and are not sent to any other third-party
+                    service.
+                </p>
+                <ul>
+                    <li>
+                        <b>Upload:</b> Your file is received by the GPMap API server (an OCI compute instance) and copied
+                        to a private OCI Object Storage bucket. The temporary copy on the API server is removed once the
+                        upload has been queued.
+                    </li>
+                    <li>
+                        <b>Processing:</b> A dedicated OCI upload server downloads the file from the bucket and runs the
+                        <a href="#gwas-upload-pipeline-view">GWAS upload pipeline</a>. Intermediate files (e.g. extracted
+                        regions and fine-mapping results) are kept on that server's disk.
+                    </li>
+                    <li>
+                        <b>Results:</b> Processed files are written back to the bucket, and the colocalization and
+                        association results are stored in the GPMap results database on the API server. This database
+                        is periodically backed up to the same bucket.
+                    </li>
+                    <li>
+                        <b>Retention:</b> Uploaded files and results are kept until they are deleted; there is no
+                        automatic expiry.
+                    </li>
+                    <li>
+                        <b>Deletion:</b> Use the <b>Delete GWAS</b> button on the results page (you will need the email
+                        address used for the upload), or the <code>DELETE /gwas/{guid}</code> API endpoint. This
+                        permanently removes the original file, intermediate files and results from the bucket, upload
+                        server and results database.
                     </li>
                 </ul>
                 <h2 id="gwas-upload-pipeline-view">How does the GWAS upload pipeline work?</h2>

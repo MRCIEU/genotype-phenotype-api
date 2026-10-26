@@ -38,7 +38,7 @@ def redis_cache(
             elif args or kwargs:
                 args_str = json.dumps([str(arg) for arg in args], sort_keys=True)
                 kwargs_str = json.dumps(kwargs, sort_keys=True)
-                key_hash = hashlib.md5(f"{args_str}:{kwargs_str}".encode()).hexdigest()[:8]
+                key_hash = hashlib.sha256(f"{args_str}:{kwargs_str}".encode(), usedforsecurity=False).hexdigest()[:8]
                 cache_key = f"{cache_key}:{key_hash}"
 
             try:

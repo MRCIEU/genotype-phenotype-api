@@ -6,6 +6,16 @@ import graphTransformations from "./graphTransformations.js";
 const DEFAULT_STUDY_P_VALUE = 0.00000005; // 5e-8
 const RELAXED_STUDY_P_VALUE = 0.00015; // 1.5e-4
 
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 export default {
     /**
      * If coloc/rare data exists but none pass the default study p-value (5e-8),
@@ -218,8 +228,11 @@ export default {
         const uniqueTraits = [
             ...new Set(content.map(s => (s.trait_name.length > 70 ? `${s.trait_name.slice(0, 70)}...` : s.trait_name))),
         ];
-        const traitNames = uniqueTraits.slice(0, 9).join("<br>");
-        let tooltipContent = `<b>SNP: ${content[0].display_snp}</b><br>${traitNames}`;
+        const traitNames = uniqueTraits
+            .slice(0, 9)
+            .map(name => escapeHtml(name))
+            .join("<br>");
+        let tooltipContent = `<b>SNP: ${escapeHtml(content[0].display_snp)}</b><br>${traitNames}`;
         if (uniqueTraits.length > 10) {
             tooltipContent += `<br>${uniqueTraits.length - 10} more...`;
         }
@@ -228,7 +241,8 @@ export default {
 
     initGraph(chartContainer, graphData, errorMessage, graphFunction) {
         if (errorMessage) {
-            chartContainer.innerHTML = '<div class="notification is-danger is-light mt-4">' + errorMessage + "</div>";
+            chartContainer.innerHTML =
+                '<div class="notification is-danger is-light mt-4">' + escapeHtml(errorMessage) + "</div>";
             return;
         } else if (!graphData) {
             chartContainer.innerHTML = '<progress class="progress is-large is-info" max="100">60%</progress>';
