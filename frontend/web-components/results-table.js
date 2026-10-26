@@ -1,5 +1,20 @@
 import { parse } from "flatted";
 
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function urlId(value) {
+    if (value === null || value === undefined) return "";
+    return encodeURIComponent(value);
+}
+
 export class ResultsTable extends HTMLElement {
     constructor() {
         super();
@@ -74,12 +89,12 @@ export class ResultsTable extends HTMLElement {
                                         if (col.key === "display_snp" && i === 0) {
                                             const variantContent = row.display_snp
                                                 ? this.hideVariantLink
-                                                    ? `Candidate Variant: ${row.display_snp}<br>`
-                                                    : `Candidate Variant: <a href="variant.html?id=${row.variant_id}">${row.display_snp}</a><br>`
+                                                    ? `Candidate Variant: ${escapeHtml(row.display_snp)}<br>`
+                                                    : `Candidate Variant: <a href="variant.html?id=${urlId(row.variant_id)}">${escapeHtml(row.display_snp)}</a><br>`
                                                 : "";
                                             return `<td rowspan="${rows.length}">
                                             ${variantContent}
-                                            ${row.ld_block_id ? `LD Region: <a href="region.html?id=${row.ld_block_id}">${row.ld_block || ""}</a><br>` : ""}
+                                            ${row.ld_block_id ? `LD Region: <a href="region.html?id=${urlId(row.ld_block_id)}">${escapeHtml(row.ld_block || "")}</a><br>` : ""}
                                             ${
                                                 row.posterior_prob !== undefined && row.posterior_prob !== null
                                                     ? `Posterior Probability (PP): <b>${Number(row.posterior_prob).toFixed(3)}</b><br>
@@ -94,24 +109,24 @@ export class ResultsTable extends HTMLElement {
                                             row.data_type === "Phenotype" &&
                                             row.trait_category
                                         ) {
-                                            return `<td>${row.data_type} (${row.trait_category})</td>`;
+                                            return `<td>${escapeHtml(row.data_type)} (${escapeHtml(row.trait_category)})</td>`;
                                         } else if (col.key === "gene" && row.gene) {
-                                            return `<td><a href="gene.html?id=${row.gene}">${row.gene}</a></td>`;
+                                            return `<td><a href="gene.html?id=${urlId(row.gene)}">${escapeHtml(row.gene)}</a></td>`;
                                         } else if (col.key === "situated_gene" && row.situated_gene) {
-                                            return `<td><a href="gene.html?id=${row.situated_gene}">${row.situated_gene}</a></td>`;
+                                            return `<td><a href="gene.html?id=${urlId(row.situated_gene)}">${escapeHtml(row.situated_gene)}</a></td>`;
                                         } else if (
                                             col.key === "trait_name" &&
                                             row.data_type === "Phenotype" &&
                                             row.trait_id &&
                                             !row.rare_result_group_id
                                         ) {
-                                            return `<td><a href="trait.html?id=${row.trait_id}">${row.trait_name}</a></td>`;
+                                            return `<td><a href="trait.html?id=${urlId(row.trait_id)}">${escapeHtml(row.trait_name)}</a></td>`;
                                         } else if (col.key === "min_p") {
                                             return `<td>${row.min_p != null ? row.min_p.toExponential(2) : ""}</td>`;
                                         } else if (col.key === "tissue" && row.cell_type) {
-                                            return `<td>${row.tissue} (${row.cell_type})</td>`;
+                                            return `<td>${escapeHtml(row.tissue)} (${escapeHtml(row.cell_type)})</td>`;
                                         } else {
-                                            return `<td>${row[col.key] ?? ""}</td>`;
+                                            return `<td>${escapeHtml(row[col.key] ?? "")}</td>`;
                                         }
                                     })
                                     .join("")}

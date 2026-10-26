@@ -1,4 +1,4 @@
-from hashlib import sha1
+from hashlib import sha256
 
 from slowapi import Limiter
 from starlette.requests import Request
@@ -17,7 +17,7 @@ def rate_limit_identifier(request: Request) -> str:
     Returns a hash of the request headers, which will generally remain the same for a session
     """
     try:
-        header_hash = sha1(str(request.headers).encode()).hexdigest()
+        header_hash = sha256(str(request.headers).encode(), usedforsecurity=False).hexdigest()
     except Exception as e:
         logger.error(e)
         raise

@@ -20,10 +20,11 @@ export class RPackageModal extends HTMLElement {
         super();
         this.show = false;
         this.snippet = "";
+        this.pythonSnippet = "";
     }
 
     static get observedAttributes() {
-        return ["show", "snippet"];
+        return ["show", "snippet", "python-snippet"];
     }
 
     connectedCallback() {
@@ -35,6 +36,8 @@ export class RPackageModal extends HTMLElement {
             this.show = newValue === "true";
         } else if (name === "snippet") {
             this.snippet = newValue;
+        } else if (name === "python-snippet") {
+            this.pythonSnippet = newValue;
         }
         this.render();
     }
@@ -42,10 +45,12 @@ export class RPackageModal extends HTMLElement {
     async render() {
         const show = this.getAttribute("show") === "true";
         const snippet = this.getAttribute("snippet") ?? this.snippet ?? "";
+        const pythonSnippet = this.getAttribute("python-snippet") ?? this.pythonSnippet ?? "";
         const template = await getTemplate();
         const html = template
             .replace("{{MODAL_ACTIVE_CLASS}}", show ? "is-active" : "")
-            .replace("{{SNIPPET}}", escapeHtml(snippet));
+            .replace("{{SNIPPET}}", escapeHtml(snippet))
+            .replace("{{PYTHON_SNIPPET}}", escapeHtml(pythonSnippet));
 
         this.innerHTML = html;
 

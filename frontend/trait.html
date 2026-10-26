@@ -179,7 +179,7 @@
                         <div class="notification is-info is-light mb-0">
                             <p class="mb-2">
                                 The best way to view these results is with the
-                                <a href="#" @click.prevent="openRPackageModal()">R package</a>
+                                <a href="#" @click.prevent="openRPackageModal()">R or Python package</a>
                             </p>
                             <p class="mb-0">
                                 For a tutorial on GWAS upload and analysis in R, see the
@@ -305,7 +305,7 @@
                                             </div>
                                         </template>
                                         <a class="dropdown-item" @click="openRPackageModal(); open = false;">
-                                            Download via R package
+                                            Download via R / Python package
                                         </a>
                                     </div>
                                 </div>
@@ -322,10 +322,11 @@
                     </div>
                 </div>
 
-                <!-- R Package Modal -->
+                <!-- R / Python Package Modal -->
                 <r-package-modal
                     :show="rPackageModalOpen"
                     :snippet="`gpmapr::trait('${new URLSearchParams(location.search).get('id')}')`"
+                    :python-snippet="`gpmappy.trait('${new URLSearchParams(location.search).get('id')}')`"
                     @close="closeRPackageModal()"
                 ></r-package-modal>
 

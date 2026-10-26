@@ -2,31 +2,47 @@
     <div class="modal-background" id="modal-bg"></div>
     <div class="modal-card">
         <header class="modal-card-head">
-            <p class="modal-card-title">R Package Installation</p>
+            <p class="modal-card-title">R &amp; Python Package Installation</p>
             <button class="delete" aria-label="close" id="close-btn-header"></button>
         </header>
         <section class="modal-card-body pb-0 pt-0">
             <div class="content">
-                <div class="box mt-4">
+                <p class="has-text-weight-semibold mb-2">R: gpmapr</p>
+                <div class="box mt-2">
                     <pre
                         style="white-space: pre-wrap; word-break: break-all"
                     ><code id="snippet-code">pak::pak('MRCIEU/gpmapr')
 {{SNIPPET}}</code></pre>
                 </div>
 
-                <p>
+                <div class="buttons">
                     <a
                         href="https://mrcieu.r-universe.dev/articles/gpmapr/gpmapr.html"
                         target="_blank"
-                        class="button is-success"
+                        class="button is-success is-small"
                         >View Vignettes</a
                     >
-                    <br />
-                    <br />
-                    <a href="https://github.com/MRCIEU/gpmapr" target="_blank" class="button is-success">
+                    <a href="https://github.com/MRCIEU/gpmapr" target="_blank" class="button is-success is-small">
                         <span>View on GitHub</span>
                     </a>
-                </p>
+                </div>
+
+                <p class="has-text-weight-semibold mb-2 mt-5">Python: gpmappy</p>
+                <div class="box mt-2">
+                    <pre
+                        style="white-space: pre-wrap; word-break: break-all"
+                    ><code id="python-snippet-code">pip install gpmappy
+{{PYTHON_SNIPPET}}</code></pre>
+                </div>
+
+                <div class="buttons">
+                    <a href="https://github.com/MRCIEU/gpmappy" target="_blank" class="button is-success is-small">
+                        <span>View on GitHub</span>
+                    </a>
+                    <a href="https://pypi.org/project/gpmappy/" target="_blank" class="button is-success is-small">
+                        <span>View on PyPI</span>
+                    </a>
+                </div>
             </div>
         </section>
         <footer class="modal-card-foot">

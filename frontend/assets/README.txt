@@ -13,6 +13,7 @@ Files may include:
 
 Column descriptions:
 You can find detailed descriptions of the columns for each tsv in the "details" section of the documentation in the R package: https://mrcieu.r-universe.dev/gpmapr/doc/manual.html#trait
+A Python package (gpmappy) is also available: https://github.com/MRCIEU/gpmappy
 
 For more information, visit: https://gpmap.opengwas.io
 
