@@ -228,8 +228,9 @@ export default function trait() {
                     maxLp = Math.max(maxLp, -Math.log10(r.min_p));
                 }
             }
-            maxLp = Math.min(Math.max(Math.ceil(maxLp * 1.05), 10), 500);
-            meta.y_axis = { ...meta.y_axis, max_lp: maxLp, min_lp: 0 };
+            maxLp = Math.min(Math.max(Math.ceil(maxLp * 1.05), 10), 300);
+            // Set explicitly (linear, no ticks) so compression fields from the bundled metadata aren't carried over
+            meta.y_axis = { max_lp: maxLp, min_lp: 0, min_lp_pixel: 500, max_lp_pixel: 0 };
             return meta;
         },
 
@@ -248,9 +249,11 @@ export default function trait() {
             // Production uses real trait id paths on the CDN.
             let assetTraitId = traitId;
             if (constants.isLocal) {
-                const colocGroups = this.data?.coloc_groups ?? [];
+                // Only this trait's own coloc results; coloc_groups also contains the other traits in each group
+                const colocGroups = (this.data?.coloc_groups ?? []).filter(coloc => coloc.trait_id === traitId);
                 const minP = colocGroups.reduce((min, se) => Math.min(min, se.min_p), Infinity);
-                assetTraitId = minP < 1e-10 ? "gwas" : "short_gwas";
+                // gwas_* is the log-compressed (> 50 -log10 p) test asset, short_gwas_* the linear one
+                assetTraitId = minP < 1e-50 ? "gwas" : "short_gwas";
             }
 
             const metadataUrl = `${constants.assetBaseUrl}/traits/${assetTraitId}_metadata.json`;
@@ -736,16 +739,31 @@ export default function trait() {
             // Add chromosome labels (will be drawn on canvas)
             const chrLabels = plotGroup.append("g").attr("class", "chr-labels");
 
+            // Pipeline SVGs plot compressed -log10(p): linear up to compression_start_lp, log-compressed above it.
+            // Metadata without a scale (not yet re-rendered, or synthetic) is linear, and the old SVGs were
+            // drawn capped at 300 even though their metadata max_lp wasn't.
+            const yAxisMeta = self.svgs.metadata.y_axis;
+            const isCompressed = yAxisMeta.scale === "log_compressed";
+            const compressionStart = yAxisMeta.compression_start_lp ?? 50;
+            const maxLp = Math.min(yAxisMeta.max_lp, 300);
+            const compressLp = lp => {
+                if (!isCompressed || lp <= compressionStart) return lp;
+                return compressionStart + compressionStart * Math.log(lp / compressionStart);
+            };
             const yScale = d3
                 .scaleLinear()
-                .domain([self.svgs.metadata.y_axis.min_lp, self.svgs.metadata.y_axis.max_lp])
+                .domain([0, yAxisMeta.compressed_max_lp ?? maxLp])
                 .range([height, 0]);
+            const lpToY = lp => yScale(compressLp(lp));
 
             // Add Y-axis to SVG (behind Canvas)
-            const yAxis = d3
-                .axisLeft(yScale)
-                .ticks(10)
-                .tickFormat(d => d);
+            const yAxis = d3.axisLeft(yScale);
+            if (yAxisMeta.ticks) {
+                const tickLabels = new Map(yAxisMeta.ticks.map(tick => [compressLp(tick.lp), tick.lp]));
+                yAxis.tickValues([...tickLabels.keys()]).tickFormat(d => tickLabels.get(d));
+            } else {
+                yAxis.ticks(10).tickFormat(d => d);
+            }
             const yAxisGroup = plotGroup.append("g").call(yAxis);
             yAxisGroup
                 .selectAll("text")
@@ -769,8 +787,8 @@ export default function trait() {
                 .append("line")
                 .attr("x1", 0)
                 .attr("x2", width)
-                .attr("y1", yScale(4))
-                .attr("y2", yScale(4))
+                .attr("y1", lpToY(4))
+                .attr("y2", lpToY(4))
                 .attr("stroke", textColor)
                 .attr("opacity", 0.8)
                 .attr("stroke-width", 0.6)
@@ -780,11 +798,25 @@ export default function trait() {
                 .append("line")
                 .attr("x1", 0)
                 .attr("x2", width)
-                .attr("y1", yScale(7.3))
-                .attr("y2", yScale(7.3))
+                .attr("y1", lpToY(7.3))
+                .attr("y2", lpToY(7.3))
                 .attr("stroke", textColor)
                 .attr("opacity", 0.8)
                 .attr("stroke-width", 0.6);
+
+            // Mark where the y-axis switches from linear to log-compressed
+            if (isCompressed) {
+                referenceLines
+                    .append("line")
+                    .attr("x1", 0)
+                    .attr("x2", width)
+                    .attr("y1", lpToY(compressionStart))
+                    .attr("y2", lpToY(compressionStart))
+                    .attr("stroke", textColor)
+                    .attr("opacity", 0.25)
+                    .attr("stroke-width", 0.5)
+                    .attr("stroke-dasharray", "2,3");
+            }
 
             // Canvas rendering functions
             const renderCanvas = () => {
@@ -1165,12 +1197,9 @@ export default function trait() {
                     const bpPosition = d.bp / (chrMeta.bp_end - chrMeta.bp_start);
                     const x = bpPosition * width;
                     const yValue = -Math.log10(d.min_p);
-                    const clippedYValue = Math.max(
-                        self.svgs.metadata.y_axis.min_lp,
-                        Math.min(self.svgs.metadata.y_axis.max_lp, yValue)
-                    );
-                    let y = yScale(clippedYValue);
-                    if (yValue > self.svgs.metadata.y_axis.max_lp) {
+                    const clippedYValue = Math.max(0, Math.min(maxLp, yValue));
+                    let y = lpToY(clippedYValue);
+                    if (yValue > maxLp) {
                         y = y + 8;
                     }
                     const radius = calculateDynamicCircleRadius(d._group.length);
@@ -1266,12 +1295,9 @@ export default function trait() {
                                 self.svgs.metadata.svg_width) *
                             width;
                         const yValue = -Math.log10(d.min_p);
-                        const clippedYValue = Math.max(
-                            self.svgs.metadata.y_axis.min_lp,
-                            Math.min(self.svgs.metadata.y_axis.max_lp, yValue)
-                        );
-                        let y = yScale(clippedYValue);
-                        if (yValue > self.svgs.metadata.y_axis.max_lp) {
+                        const clippedYValue = Math.max(0, Math.min(maxLp, yValue));
+                        let y = lpToY(clippedYValue);
+                        if (yValue > maxLp) {
                             y = y + 8;
                         }
                         const radius = calculateDynamicCircleRadius(d._group.length);
