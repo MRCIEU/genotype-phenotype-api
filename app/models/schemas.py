@@ -520,6 +520,7 @@ class GwasStatus(Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+    DELETED = "deleted"
 
 
 class ContactRequest(BaseModel):

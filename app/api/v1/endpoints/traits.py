@@ -1,5 +1,6 @@
 import traceback
-from fastapi import APIRouter, HTTPException, Path, Query, Request
+import orjson
+from fastapi import APIRouter, HTTPException, Path, Query, Request, Response
 from app.services.coloc_pairs_service import ColocPairsService
 from app.db.studies_db import StudiesDBClient
 from app.models.schemas import (
@@ -14,7 +15,7 @@ from app.models.schemas import (
     VariantType,
     convert_duckdb_to_pydantic_model,
 )
-from typing import List
+from typing import List, Literal
 from app.logging_config import get_logger, time_endpoint
 from app.rate_limiting import DEFAULT_RATE_LIMIT, SHARED_ENTITY_RESOURCE_RATE_LIMIT, limiter
 from app.services.associations_service import AssociationsService
@@ -318,7 +319,12 @@ async def get_trait_coloc_pairs(
     trait_id: str = Path(..., description="Trait ID or name"),
     h3_threshold: float = Query(0.0, description="H3 threshold for coloc pairs"),
     h4_threshold: float = Query(0.8, description="H4 threshold for coloc pairs"),
-) -> dict:
+    format: Literal["rows", "columnar"] = Query(
+        "rows",
+        description="'rows' returns coloc_pair_rows (list of rows); 'columnar' returns coloc_pair_columns "
+        "(one list per column), which is smaller and faster for large responses",
+    ),
+) -> Response:
     def _run():
         try:
             studies_db = StudiesDBClient()
@@ -341,16 +347,20 @@ async def get_trait_coloc_pairs(
                 colocs = []
 
             variant_ids = sorted([coloc.variant_id for coloc in colocs])
-            coloc_pairs = coloc_pairs_service.get_coloc_pairs_full(
-                variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
-            )
-            if coloc_pairs:
-                pair_columns = list(coloc_pairs[0].keys())
-                pair_rows = [[d[col] for col in pair_columns] for d in coloc_pairs]
+            if format == "columnar":
+                pair_columns, pair_data = coloc_pairs_service.get_coloc_pairs_full_columns(
+                    variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+                )
+                body = orjson.dumps(
+                    {"coloc_pair_column_names": pair_columns, "coloc_pair_columns": pair_data},
+                    option=orjson.OPT_SERIALIZE_NUMPY,
+                )
             else:
-                pair_columns = []
-                pair_rows = []
-            return {"coloc_pair_column_names": pair_columns, "coloc_pair_rows": pair_rows}
+                pair_columns, pair_rows = coloc_pairs_service.get_coloc_pairs_full_rows(
+                    variant_ids, h3_threshold=h3_threshold, h4_threshold=h4_threshold
+                )
+                body = orjson.dumps({"coloc_pair_column_names": pair_columns, "coloc_pair_rows": pair_rows})
+            return Response(content=body, media_type="application/json")
 
         except HTTPException as e:
             raise e
@@ -373,19 +383,20 @@ async def get_trait_coloc_pairs(
 async def get_trait_associations_full(
     request: Request,
     trait_id: str = Path(..., description="Trait ID or name"),
-) -> dict:
+    format: Literal["rows", "columnar"] = Query(
+        "rows",
+        description="'rows' returns associations_full_rows (list of rows); 'columnar' returns "
+        "associations_full_columns (one list per column), which is smaller and faster for large responses",
+    ),
+) -> Response:
     def _run():
         try:
             association_service = AssociationsService()
-            result = association_service.get_associations_full(trait_id)
-            if result is None:
+            body = association_service.get_associations_full(trait_id, format=format)
+            if body is None:
                 raise HTTPException(status_code=404, detail=f"Trait {trait_id} not found")
 
-            column_names, rows = result
-            return {
-                "associations_full_column_names": column_names,
-                "associations_full_rows": rows,
-            }
+            return Response(content=body, media_type="application/json")
         except HTTPException as e:
             raise e
         except Exception as e:

@@ -24,6 +24,8 @@ class RedisClient(metaclass=Singleton):
         ]
         self.scheduled_jobs_key = "scheduled_jobs"
         self.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
+        # For large pre-serialised response bodies, which shouldn't be decoded into a str
+        self.redis_bytes = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=False)
 
     def get_cached_data(self, key: str):
         data = self.redis.get(key)
