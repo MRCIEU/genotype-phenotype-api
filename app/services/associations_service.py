@@ -1,9 +1,12 @@
 from functools import wraps
 from typing import List
 
+import orjson
+
 from app.db.associations_db import AssociationsDBClient
 from app.db.associations_full_db import AssociationsFullDBClient, clear_table_study_ids_cache
 from app.db.redis import RedisClient
+from app.db.utils import concatenate_numpy_columns
 from app.db.studies_db import StudiesDBClient
 from app.logging_config import get_logger
 from app.services.redis_decorator import redis_cache
@@ -111,13 +114,16 @@ class AssociationsService:
 
         return metadata_to_variants
 
-    def _fetch_associations_full(self, variant_ids: set[int], study_ids: set[int]) -> tuple[list[str], list[list]]:
+    def _fetch_associations_full(
+        self, variant_ids: set[int], study_ids: set[int], columnar: bool = False
+    ) -> tuple[list[str], list[tuple] | dict]:
         if not variant_ids or not study_ids:
-            return [], []
+            return [], {} if columnar else []
 
         variants_by_table = self.split_variants_by_metadata(variant_ids)
         column_names: list[str] = []
-        all_rows: list[list] = []
+        all_rows: list[tuple] = []
+        table_columns: list[dict] = []
         for table_name, table_variant_ids in variants_by_table.items():
             if not table_variant_ids:
                 continue
@@ -132,29 +138,52 @@ class AssociationsService:
                 f"and {len(table_study_ids)} studies (filtered from {len(study_ids)})"
             )
             rows, columns = self.associations_full_db.get_associations_by_table_name(
-                table_name, table_variant_ids, table_study_ids
+                table_name, table_variant_ids, table_study_ids, columnar=columnar
             )
             if not column_names:
                 column_names = columns
-            all_rows.extend(list(row) for row in rows)
+            if columnar:
+                table_columns.append(rows)
+            else:
+                all_rows.extend(rows)
 
+        if columnar:
+            if not table_columns:
+                return [], {}
+            return column_names, concatenate_numpy_columns(table_columns, column_names)
         return column_names, all_rows
 
-    def get_associations_full(self, trait_id: str | int) -> tuple[list[str], list[list]] | None:
+    def get_associations_full(self, trait_id: str | int, format: str = "rows") -> bytes | None:
+        """
+        Returns the serialised JSON response body. The bytes are cached directly, so a cache hit
+        skips both the queries and JSON encoding.
+        """
         studies_db = StudiesDBClient()
         trait_row = studies_db.get_trait(trait_id)
         if trait_row is None:
             return None
         trait = convert_duckdb_to_pydantic_model(Trait, trait_row)
-        result = self._get_associations_full_cached(trait_id=trait.id, cache_id=str(trait.id))
-        return result["column_names"], result["rows"]
 
-    @redis_cache(
-        prefix="associations_full_cache",
-        expire=ASSOCIATIONS_FULL_CACHE_TTL_SECONDS,
-        should_cache=lambda result: len(result.get("rows", [])) >= ASSOCIATIONS_FULL_CACHE_MIN_ROWS,
-    )
-    def _get_associations_full_cached(self, trait_id: int, cache_id: str = None):
+        cache_key = f"{self.full_cache_prefix}:{trait.id}:{format}"
+        try:
+            cached_body = self.redis_client.redis_bytes.get(cache_key)
+            if cached_body is not None:
+                logger.debug(f"Cache hit for {cache_key}")
+                return cached_body
+        except Exception as e:
+            logger.warning(f"Redis cache get failed for {cache_key}: {e}")
+
+        body, row_count = self._get_associations_full_body(trait.id, format)
+
+        if row_count >= ASSOCIATIONS_FULL_CACHE_MIN_ROWS:
+            try:
+                self.redis_client.redis_bytes.set(cache_key, body, ex=ASSOCIATIONS_FULL_CACHE_TTL_SECONDS)
+                logger.debug(f"Set cached for {cache_key}")
+            except Exception as e:
+                logger.warning(f"Redis cache set failed for {cache_key}: {e}")
+        return body
+
+    def _get_associations_full_body(self, trait_id: int, format: str) -> tuple[bytes, int]:
         studies_db = StudiesDBClient()
         studies_service = StudiesService()
 
@@ -197,16 +226,23 @@ class AssociationsService:
 
         study_ids_set = {coloc.study_id for coloc in colocs} | trait_study_ids
 
-        if not variant_ids or not study_ids_set:
-            return {"column_names": [], "rows": []}
-
         logger.info(
             f"Getting full associations for trait {trait_id} "
             f"({len(variant_ids)} variants x {len(study_ids_set)} studies)"
         )
-        column_names, rows = self._fetch_associations_full(variant_ids, study_ids_set)
-        logger.info(f"Returning {len(rows)} full associations for trait {trait_id}")
-        return {"column_names": column_names, "rows": rows}
+        if format == "columnar":
+            column_names, columns = self._fetch_associations_full(variant_ids, study_ids_set, columnar=True)
+            row_count = len(columns[column_names[0]]) if column_names else 0
+            body = orjson.dumps(
+                {"associations_full_column_names": column_names, "associations_full_columns": columns},
+                option=orjson.OPT_SERIALIZE_NUMPY,
+            )
+        else:
+            column_names, rows = self._fetch_associations_full(variant_ids, study_ids_set)
+            row_count = len(rows)
+            body = orjson.dumps({"associations_full_column_names": column_names, "associations_full_rows": rows})
+        logger.info(f"Returning {row_count} full associations for trait {trait_id}")
+        return body, row_count
 
     def clear_cache(self):
         """Clear associations Redis cache entries (use with caution)"""

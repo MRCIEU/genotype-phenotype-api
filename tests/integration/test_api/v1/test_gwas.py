@@ -326,3 +326,11 @@ def test_delete_gwas_success(test_guid, mock_redis, mock_oci_service, test_reque
     assert len(db.get_associations_by_gwas_upload_id(old_gwas.id)[0]) == 0
     assert len(db.get_coloc_pairs_by_gwas_upload_id(old_gwas.id)[0]) == 0
     assert len(db.get_study_extractions_by_gwas_upload_id(old_gwas.id)) == 0
+    assert db.get_gwas_by_guid(test_guid) is None
+
+    conn = db.connect(read_only=True)
+    try:
+        status = conn.execute("SELECT status FROM gwas_upload WHERE guid = ?", [test_guid]).fetchone()
+    finally:
+        conn.close()
+    assert status[0] == GwasStatus.DELETED.value

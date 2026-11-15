@@ -75,6 +75,7 @@ class ColocPairsDBClient:
         variant_ids: List[int],
         h3_threshold: float = 0.0,
         h4_threshold: float = 0.8,
+        columnar: bool = False,
     ):
         if not variant_ids:
             return [], []
@@ -87,7 +88,7 @@ class ColocPairsDBClient:
                 AND false_positive = FALSE
         """
         cursor = self.coloc_pairs_conn.execute(query, [variant_ids, h3_threshold, h4_threshold])
-        rows = cursor.fetchall()
+        rows = cursor.fetchnumpy() if columnar else cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns
 
@@ -96,6 +97,7 @@ class ColocPairsDBClient:
         self,
         study_extraction_ids: List[int],
         h4_threshold: float = 0.8,
+        columnar: bool = False,
     ):
         """
         Get coloc pairs that are not part of a coloc group (variant_id IS NULL),
@@ -115,6 +117,6 @@ class ColocPairsDBClient:
         """
         params = [h4_threshold, study_extraction_ids, study_extraction_ids]
         cursor = self.coloc_pairs_conn.execute(query, params)
-        rows = cursor.fetchall()
+        rows = cursor.fetchnumpy() if columnar else cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
         return rows, columns

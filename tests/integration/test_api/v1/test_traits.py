@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.models.schemas import TraitResponse, GetTraitsResponse, GetTraitDuplicatesResponse, TraitDuplicate
@@ -402,3 +403,58 @@ def test_get_trait_associations_full_cross_product_includes_linked_study_associa
 
     associations = _associations_full_as_dicts(response.json())
     assert any(a["variant_id"] == 80717 and a["study_id"] != trait_id for a in associations)
+
+
+def _columnar_as_rows(column_names, columns):
+    for column_name in column_names:
+        assert len(columns[column_name]) == len(columns[column_names[0]])
+    return [list(row) for row in zip(*[columns[column_name] for column_name in column_names])]
+
+
+def _assert_rows_match(rows_a, rows_b):
+    assert len(rows_a) == len(rows_b)
+    for row_a, row_b in zip(rows_a, rows_b):
+        for value_a, value_b in zip(row_a, row_b):
+            if isinstance(value_a, float):
+                assert value_a == pytest.approx(value_b, rel=1e-6)
+            else:
+                assert value_a == value_b
+
+
+def test_get_trait_coloc_pairs_columnar_matches_rows():
+    rows_json = client.get("/v1/traits/5020/coloc-pairs").json()
+    response = client.get("/v1/traits/5020/coloc-pairs?format=columnar")
+    assert response.status_code == 200
+    columnar_json = response.json()
+
+    assert "coloc_pair_rows" not in columnar_json
+    assert columnar_json["coloc_pair_column_names"] == rows_json["coloc_pair_column_names"]
+    columnar_rows = _columnar_as_rows(columnar_json["coloc_pair_column_names"], columnar_json["coloc_pair_columns"])
+    assert len(columnar_rows) > 0
+    _assert_rows_match(columnar_rows, rows_json["coloc_pair_rows"])
+
+
+def test_get_trait_associations_full_columnar_matches_rows():
+    trait_id = 926
+    rows_json = client.get(f"/v1/traits/{trait_id}/associations-full").json()
+    response = client.get(f"/v1/traits/{trait_id}/associations-full?format=columnar")
+    assert response.status_code == 200
+    columnar_json = response.json()
+
+    assert "associations_full_rows" not in columnar_json
+    assert columnar_json["associations_full_column_names"] == rows_json["associations_full_column_names"]
+    columnar_rows = _columnar_as_rows(
+        columnar_json["associations_full_column_names"], columnar_json["associations_full_columns"]
+    )
+    assert len(columnar_rows) > 0
+    _assert_rows_match(columnar_rows, rows_json["associations_full_rows"])
+
+
+def test_get_trait_coloc_pairs_invalid_format():
+    response = client.get("/v1/traits/5020/coloc-pairs?format=bogus")
+    assert response.status_code == 422
+
+
+def test_get_trait_associations_full_invalid_format():
+    response = client.get("/v1/traits/926/associations-full?format=bogus")
+    assert response.status_code == 422

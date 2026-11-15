@@ -11,11 +11,11 @@ settings = get_settings()
 @lru_cache()
 def get_associations_full_db_connection():
     connection = duckdb.connect(settings.ASSOCIATIONS_FULL_DB_PATH, read_only=True)
-    connection.execute("PRAGMA memory_limit='4GB'")
+    connection.execute("PRAGMA memory_limit='1GB'")
     return connection
 
 
-@lru_cache(maxsize=200)
+@lru_cache(maxsize=500)
 def _get_cached_study_ids_for_table(table_name: str) -> frozenset[int]:
     connection = get_associations_full_db_connection().cursor()
     query = f"SELECT DISTINCT study_id FROM {table_name}"
@@ -49,7 +49,8 @@ class AssociationsFullDBClient:
         table_name: str,
         variant_ids: List[int],
         study_ids: List[int],
-    ) -> Tuple[List[tuple], List[str]]:
+        columnar: bool = False,
+    ) -> Tuple[List[tuple] | dict, List[str]]:
         if not variant_ids or not study_ids:
             return [], []
 
@@ -57,6 +58,6 @@ class AssociationsFullDBClient:
             SELECT * FROM {table_name} WHERE variant_id IN (SELECT * FROM UNNEST(?)) AND study_id IN (SELECT * FROM UNNEST(?))
         """
         cursor = self.associations_conn.execute(query, [variant_ids, study_ids])
-        rows = cursor.fetchall()
+        rows = cursor.fetchnumpy() if columnar else cursor.fetchall()
         columns = [d[0] for d in cursor.description]
         return rows, columns

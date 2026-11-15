@@ -58,7 +58,9 @@ class GwasDBClient:
     def get_gwas_by_guid(self, guid: str):
         conn = self.connect(read_only=True)
         try:
-            result = conn.execute("SELECT * FROM gwas_upload WHERE guid = ?", [guid]).fetchone()
+            result = conn.execute(
+                "SELECT * FROM gwas_upload WHERE guid = ? AND status != ?", [guid, GwasStatus.DELETED.value]
+            ).fetchone()
             return result
         finally:
             conn.close()
@@ -405,7 +407,11 @@ class GwasDBClient:
                 "DELETE FROM study_extractions WHERE gwas_upload_id = (SELECT id FROM gwas_upload WHERE guid = ?)",
                 [guid],
             )
-            conn.execute("DELETE FROM gwas_upload WHERE guid = ?", [guid])
+            # Keep the gwas_upload row as a record of the upload, but mark it as deleted
+            conn.execute(
+                "UPDATE gwas_upload SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE guid = ?",
+                [GwasStatus.DELETED.value, guid],
+            )
             conn.commit()
         finally:
             conn.close()

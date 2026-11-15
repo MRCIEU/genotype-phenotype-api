@@ -3,6 +3,7 @@ import contextvars
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
 import time
+import numpy as np
 from loguru import logger
 
 
@@ -38,3 +39,19 @@ async def run_sync(func, *args, **kwargs):
     loop = asyncio.get_running_loop()
     ctx = contextvars.copy_context()
     return await loop.run_in_executor(_db_executor, ctx.run, partial(func, *args, **kwargs))
+
+
+def concatenate_numpy_columns(parts: list[dict], column_names: list[str]) -> dict:
+    """
+    Concatenate per-query duckdb fetchnumpy() results into one array per column.
+    duckdb returns masked arrays for columns containing NULLs; those are converted to
+    lists (masked values become None) since orjson can't serialise masked arrays.
+    """
+    columns = {}
+    for column_name in column_names:
+        combined = np.ma.concatenate([part[column_name] for part in parts])
+        if np.ma.is_masked(combined):
+            columns[column_name] = combined.tolist()
+        else:
+            columns[column_name] = np.ma.getdata(combined)
+    return columns
