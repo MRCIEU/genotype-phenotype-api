@@ -3,6 +3,7 @@ import duckdb
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 import json
+import threading
 from app.config import get_settings
 from app.models.schemas import (
     GwasStatus,
@@ -15,6 +16,10 @@ from app.models.schemas import (
 from app.db.utils import log_performance
 
 settings = get_settings()
+
+# ATTACH IF NOT EXISTS isn't atomic across threads: two concurrent requests can both see studies_db as
+# not attached and both try to attach it, failing with 'database with name "studies_db" already exists'.
+_attach_lock = threading.Lock()
 
 
 class GwasDBClient:
@@ -71,7 +76,8 @@ class GwasDBClient:
         compared uploads') in one shape, distinguished by `source` and `gwas_upload_id`.
         Returns (rows, columns) matching UploadResultColocGroup fields."""
         conn = self.connect(read_only=True)
-        conn.execute(f"ATTACH IF NOT EXISTS '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
+        with _attach_lock:
+            conn.execute(f"ATTACH IF NOT EXISTS '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
 
         try:
             upload_cursor = conn.execute(
@@ -238,7 +244,8 @@ class GwasDBClient:
         if not study_extraction_ids:
             return [], []
         conn = self.connect(read_only=True)
-        conn.execute(f"ATTACH IF NOT EXISTS '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
+        with _attach_lock:
+            conn.execute(f"ATTACH IF NOT EXISTS '{settings.STUDIES_DB_PATH}' AS studies_db (READ_ONLY)")
         try:
             placeholders = ",".join(["?" for _ in study_extraction_ids])
             cursor = conn.execute(

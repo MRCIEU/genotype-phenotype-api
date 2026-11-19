@@ -24,10 +24,11 @@ from app.models.schemas import (
 
 logger = get_logger(__name__)
 
-# Safety-net TTL so associations_full_cache entries are eligible for the Redis
-# volatile-lru eviction policy under memory pressure; not meant as freshness control
-# (data only changes on a data-update deploy, which already force-clears the cache).
-ASSOCIATIONS_FULL_CACHE_TTL_SECONDS = 60 * 5
+# Redis' volatile-lru policy only evicts keys that have a TTL, so this TTL makes associations_full_cache
+# entries evictable once maxmemory is reached (keys without a TTL, e.g. the studies caches, are never evicted).
+# It is deliberately long: entries should stay until evicted under memory pressure, or until a data-update
+# deploy force-clears the cache. A short TTL expires them regardless of free memory.
+ASSOCIATIONS_FULL_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60
 
 # Below this row count, recomputing associations_full is cheap enough that caching it
 # isn't worth the Redis memory.
